@@ -3,6 +3,7 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
+import { wornEquipment } from "./equipment-core.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
@@ -44,21 +45,27 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
         evasion: override(),
         armorRating: override(),
-        movement: override()
+        movement: override(),
+        armorAgilityPenalty: override()
       })
     };
   }
 
   prepareDerivedData() {
+    this.equipment = wornEquipment({
+      items: this.parent?.items ?? [], agility: this.stats.agl.value, strength: this.stats.str.value,
+      penaltyOverride: this.overrides.armorAgilityPenalty
+    });
     for (const { key } of STATS) {
       const stat = this.stats[key];
-      stat.mod = statModifier(key, stat.value);
-      stat.milestones = milestonesReached(stat.value);
+      stat.effective = key === "agl" ? this.equipment.effectiveAgility : stat.value;
+      stat.mod = statModifier(key, stat.effective);
+      stat.milestones = milestonesReached(stat.effective);
     }
     this.core = coreNumbers({
       level: this.level,
-      stats: this.stats,
-      bonuses: this.bonuses,
+      stats: { ...this.stats, agl: { value: this.equipment.effectiveAgility } },
+      bonuses: { armor: this.equipment.armor + this.bonuses.armor, evasion: this.equipment.evasion + this.bonuses.evasion },
       overrides: {
         ...this.overrides,
         healthMax: this.health.maxOverride,
@@ -135,6 +142,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder }
       ],
       defyFate: system.stats.fth.value >= 21,
+      worn: system.equipment,
       equipment: equipmentRows(this.actor.items ?? []),
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
