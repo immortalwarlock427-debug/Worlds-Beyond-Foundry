@@ -13,6 +13,44 @@
     </label>
   </header>
 
+  <section class="wb-resources" aria-label="Resources">
+    {{#each resources as |resource|}}
+    <div class="wb-resource wb-resource-{{resource.key}}">
+      <label class="wb-resource-label">
+        <span class="wb-eyebrow">{{resource.label}}</span>
+        <span class="wb-resource-values">
+          <input type="number" name="{{resource.inputName}}" value="{{resource.value}}" step="any" aria-label="Current {{resource.label}}" {{#unless @root.editable}}disabled{{/unless}}>
+          <span class="wb-resource-max" aria-label="Maximum {{resource.label}}">/ {{resource.max}}</span>
+        </span>
+      </label>
+      <label class="wb-override-label">
+        <span>Max override</span>
+        <input type="number" name="system.{{resource.key}}.maxOverride" value="{{resource.maxOverride}}" placeholder="Auto" step="any" aria-label="{{resource.label}} maximum override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}>
+      </label>
+    </div>
+    {{/each}}
+  </section>
+
+  <section class="wb-core" aria-label="Core numbers">
+    {{#each coreDetails as |detail|}}
+    <div class="wb-core-detail">
+      <span class="wb-eyebrow">{{detail.label}}</span>
+      <strong class="wb-core-value">{{detail.value}} <small>{{detail.unit}}</small></strong>
+      <label class="wb-override-label">
+        <span>Override</span>
+        <input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="{{detail.automatic}}" step="any" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}>
+      </label>
+    </div>
+    {{/each}}
+  </section>
+
+  <fieldset class="wb-armor-bonuses">
+    <legend>Armor contributions</legend>
+    <label><span>Armor Rating from armor</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label><span>Evasion from light armor</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+  </fieldset>
+  <p class="wb-core-hint">Clear an override to use the rules. Enter armor contributions here until equipment is added. Health follows changes to its maximum; current pools remain editable.</p>
+
   <section class="wb-stats">
     {{#each groups as |group|}}
     <div class="wb-group">
