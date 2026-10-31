@@ -25,10 +25,11 @@ Website features map to Foundry like this:
 - **Stats.** Character actor with level and the 8 stats, modifiers per the Notion chart, milestone diamonds at 21/28, click-to-roll d20 + modifier, d20 + WIS initiative.
 - **Core numbers.** Health, hit die, AP, reactions, Natural Evasion, Armor Rating, movement per AP, manual overrides and Health/AP token bars. The user confirmed the installed release works in Foundry on 2026-10-31 and authorized the next step. See [rules and regression checklist](CORE-NUMBERS.md).
 
+- **Rolls.** Checks/saves, advantage/disadvantage, readable chat cards, Wonder and long rest. The user tested the installed release and merged PR #5 before requesting equipment.
+
 ## Next
 
-2. **Rolls — implemented, awaiting Foundry validation.** Checks/saves with advantage/disadvantage, Wonder uses/refill, FTH 21 Defy Fate, initiative rerolls and chat cards. Check the [in-world validation checklist](ROLLS.md) before proceeding to equipment.
-3. **Equipment.** Weapon, armor and shield item types with their properties. Worn slots (armor by piece: chest, pants, arm guards, leg guards as a pair, helmet). Armor sets AR, Evasion bonus and the heavy-armor AGL penalty. Inventory slots (10 + STR mod, backpack adds more). The full weapon list from Notion's Weapons Explained page. The weapon list can ship as a compendium pack.
+3. **Equipment — item records/sheets implemented, awaiting validation.** First test weapon/armor/shield records and character add/edit/equip/remove controls using the [checklist](EQUIPMENT.md). Remaining parts: equipment-derived defenses/AGL penalties, capacity and catalog. Overall scope: Weapon, armor and shield item types with their properties. Worn slots (armor by piece: chest, pants, arm guards, leg guards as a pair, helmet). Armor sets AR, Evasion bonus and the heavy-armor AGL penalty. Inventory slots (10 + STR mod, backpack adds more). The full weapon list from Notion's Weapons Explained page. The weapon list can ship as a compendium pack.
 4. **Attacks and damage.** Attack vs Natural Evasion, damage dice scaling at levels 5/10/15/20, Finesse/Paragon crit range 18–20, Heavy and Paragon double modifiers, two-handed hits halving AR, Block dice. Signature properties start as descriptive text and get automated one at a time.
 5. **Combat flow.** AP and reactions reset at turn start through combat hooks. Block, Dodge, Parry and opportunity attacks as reactions. Command passing AP to an ally.
 6. **Mana, holy power and custom resources.** Max = INT or FTH × (level + 2) from the current stat. Custom pools with current/max, regeneration and long-rest refill.

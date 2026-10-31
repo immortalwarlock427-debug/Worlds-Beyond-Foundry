@@ -1,0 +1,39 @@
+<div class="wb-body wb-equipment-form">
+  <header><span class="wb-eyebrow">{{typeLabel}}</span>
+    <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Item name" {{#unless editable}}disabled{{/unless}}>
+  </header>
+  <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
+  <div class="wb-equipment-fields">
+    <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
+    <label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>
+  </div>
+  {{#if weapon}}
+  <div class="wb-equipment-fields">
+    <label>Base damage<input type="text" name="system.damage" value="{{system.damage}}" placeholder="1d8" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Versatile damage<input type="text" name="system.versatileDamage" value="{{system.versatileDamage}}" placeholder="1d10" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Damage type<input type="text" name="system.damageType" value="{{system.damageType}}" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Range (ft)<input type="text" name="system.range" value="{{system.range}}" placeholder="30/60" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Loading (shots)<input type="text" name="system.loading" value="{{system.loading}}" {{#unless editable}}disabled{{/unless}}></label>
+  </div>
+  <label>Properties<input type="text" name="system.properties" value="{{system.properties}}" placeholder="Finesse, Light, Thrown" {{#unless editable}}disabled{{/unless}}></label>
+  <label>Signature properties<input type="text" name="system.signature" value="{{system.signature}}" placeholder="Quickdraw, Concealed" {{#unless editable}}disabled{{/unless}}></label>
+  {{/if}}
+  {{#if armor}}
+  <div class="wb-equipment-fields">
+    <label>Armor type<select name="system.armorType" {{#unless editable}}disabled{{/unless}}>{{#each armorTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Worn piece<select name="system.piece" {{#unless editable}}disabled{{/unless}}>{{#each armorPieces}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Natural Evasion bonus<input type="number" name="system.evasionBonus" value="{{system.evasionBonus}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+  </div>
+  {{/if}}
+  {{#if shield}}
+  <div class="wb-equipment-fields">
+    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
+  </div>
+  {{/if}}
+  <label>Description and rules<textarea name="system.description" rows="5" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
+  <p class="wb-core-hint">Equipment records are editable. Enter armor contributions on the character sheet; equipped items do not yet change stats or roll attacks.</p>
+</div>

@@ -79,5 +79,27 @@
     {{/each}}
   </section>
 
+  <section class="wb-equipment" aria-label="Equipment">
+    <h2>Equipment</h2>
+    <div class="wb-equipment-actions">
+      <button type="button" data-action="equipment" data-operation="create" data-type="weapon" {{#unless editable}}disabled{{/unless}}>Add weapon</button>
+      <button type="button" data-action="equipment" data-operation="create" data-type="armor" {{#unless editable}}disabled{{/unless}}>Add armor</button>
+      <button type="button" data-action="equipment" data-operation="create" data-type="shield" {{#unless editable}}disabled{{/unless}}>Add shield</button>
+    </div>
+    <p class="wb-core-hint">Drop items here from the Items directory, or add your own. Equipping records what you wear or wield; enter armor contributions above until equipment calculations are added.</p>
+    <ul class="wb-equipment-list">
+      {{#each equipment}}
+      <li data-item-id="{{id}}">
+        <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit">{{name}}</button>
+        <span>{{typeLabel}} · Qty {{quantity}}</span>
+        <p>{{detail}}</p>
+        <div class="wb-equipment-actions">
+          {{#if canEquip}}<button type="button" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if equipped}}Equipped{{else}}Equip{{/if}}</button>{{/if}}
+          <button type="button" data-action="equipment" data-operation="delete" {{#unless @root.editable}}disabled{{/unless}}>Remove</button>
+        </div>
+      </li>
+      {{else}}<li>No equipment yet.</li>{{/each}}
+    </ul>
+  </section>
   <p class="wb-hint">Click a stat for a check or save with normal dice, advantage or disadvantage. Use Wonder from its chat card. The diamonds light up at 21 and 28.</p>
 </div>

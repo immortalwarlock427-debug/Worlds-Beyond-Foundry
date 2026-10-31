@@ -3,6 +3,7 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
+import { EquipmentData, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -97,6 +98,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     actions: {
       rollStat: CharacterSheet.#onRollStat,
       longRest: CharacterSheet.#onLongRest,
+      equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait
     }
   };
@@ -133,6 +135,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder }
       ],
       defyFate: system.stats.fth.value >= 21,
+      equipment: equipmentRows(this.actor.items ?? []),
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
@@ -175,6 +178,20 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     catch (error) { ui.notifications.error(error.message); }
   }
 
+  static async #onEquipment(event, target) {
+    const operation = target.dataset.operation;
+    const item = this.actor.items.get(target.closest("[data-item-id]")?.dataset.itemId);
+    if (operation !== "edit" && !this.isEditable) return;
+    try {
+      if (operation === "create") return await createEquipment(this.actor, target.dataset.type);
+      if (operation === "edit") return item?.sheet.render({ force: true });
+      if (operation === "toggle") return await toggleEquipment(this.actor, item?.id);
+      if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
+        window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
+      })) return await item.delete();
+    } catch (error) { ui.notifications.error(error.message); }
+  }
+
   static async #onPickPortrait(event, target) {
     if (!this.isEditable) return;
     const FilePicker = foundry.applications.apps.FilePicker.implementation;
@@ -195,6 +212,10 @@ Hooks.once("init", () => {
   CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Combatant.documentClass = CharacterCombatant;
   CONFIG.Actor.dataModels.character = CharacterData;
+  for (const type of Object.keys(EQUIPMENT_TYPES)) CONFIG.Item.dataModels[type] = EquipmentData;
+  foundry.documents.collections.Items.registerSheet(SYSTEM_ID, EquipmentSheet, {
+    types: Object.keys(EQUIPMENT_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
+  });
   CONFIG.Actor.trackableAttributes = {
     character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
   };

@@ -22,7 +22,7 @@ globalThis.foundry = {
   documents: { Actor: ActorStub, Combatant: class {} },
   abstract: { TypeDataModel: class { async _preCreate() {} } },
   data: { fields: {} },
-  applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ActorSheetV2: SheetStub } },
+  applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ActorSheetV2: SheetStub, ItemSheetV2: SheetStub } },
   utils: { getProperty, setProperty, hasProperty: (object, path) => getProperty(object, path) !== undefined }
 };
 globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
