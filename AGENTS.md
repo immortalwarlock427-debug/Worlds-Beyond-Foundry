@@ -1,0 +1,39 @@
+# Working on Worlds Beyond for Foundry
+
+For Claude, Codex and other assistants. This repository is the Worlds Beyond homebrew as a **Foundry VTT v14 game system**. Read `README.md` first. Full gameplay rules live in Notion → D&D > Game Systems. Weavecasting is separate.
+
+The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separate project. Its rules code (for example `js/combat-core.js`) can be ported here, but don't edit that repository from this one.
+
+- **Trust-based character sheet:** players may customize and correct values. Don't add anti-cheat or unsolicited gameplay restrictions.
+- Reflect the actual rules in Notion. Critically evaluate changes and explain contradictions and consequences. Use 1.5× or 150% notation.
+- Build in small steps: get one part of the sheet working and looking right in Foundry before adding the next.
+- Use the GitHub noreply email for commits (`314470577+immortalwarlock427-debug@users.noreply.github.com`). Pushes with a private email are rejected.
+
+## Two assistants, one repository
+
+- Never edit `main` directly. Fetch the latest main and create `claude/<task>` or `codex/<task>`. Check other open PRs first. **One branch and PR per task.**
+- Prefix every commit and PR title with `Claude:` or `Codex:`, explaining **why**. Use **one commit per logical change**, not one per file.
+- Don't force-push main, reset or discard another assistant's work. Work in separate clones or worktrees if sharing a machine.
+- Preserve both intentions in noncontradictory conflicts. Ask the DM before resolving conflicting game rules.
+- Test before opening a PR. Merge only after the user reviews and approves.
+
+## Foundry guardrails
+
+- **Target Foundry v14** (currently build 365). Use ApplicationV2 sheets (`HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2)`), `foundry.abstract.TypeDataModel` data models and namespaced APIs (`foundry.documents.collections.Actors`, `foundry.applications.*`, `foundry.dice.Roll`). Don't use deprecated globals or AppV1 sheets.
+- **Never change the system id `worlds-beyond`.** Worlds are tied to it, and renaming it breaks them.
+- Data model changes affect actors that already exist. Prefer adding fields with sensible `initial` values. Renaming or removing a field needs a migration, so ask the user first.
+- Bump `version` in `system.json` with each merged release.
+- **Keep folders one level deep** (`module/`, `templates/`, `styles/`, `tests/`). Claude copies files into the user's Foundry folder, and it can't reach files nested deeper than that.
+- No build step. Foundry loads the files in this repository as they are.
+- Rules math lives in Foundry-free modules (like `module/stats.mjs`) so it can be tested with `node --test`. Sheets and Foundry hooks import from them and don't repeat the math.
+- Scope all CSS under `.worlds-beyond` so it can't restyle Foundry's own windows or other systems.
+- Match the Worlds Beyond website's dark theme: navy backgrounds, brass accents, Marcellus SC and Alegreya Sans.
+
+## Testing
+
+- Run `node --test` before every PR.
+- Changes to sheets or styles need checking inside Foundry itself. Note in the PR what was checked in Foundry and what wasn't.
+
+## Installing into Foundry
+
+The user's Foundry runs from `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond`. It is a plain copy, not a git clone. After a PR is merged, the merged `main` gets copied there. Never install an unmerged branch over it unless the user asks to test that branch.
