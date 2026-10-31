@@ -31,6 +31,11 @@
     {{/each}}
   </section>
 
+  <div class="wb-wonder-rest">
+    <p>{{#if defyFate}}Defy Fate: use Wonder on a failed check or save to declare a success. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20 roll. Uses equal your FTH modifier and return on a long rest.{{/if}}</p>
+    <button type="button" data-action="restoreWonder" {{#unless editable}}disabled{{/unless}}>Restore Wonder · long rest</button>
+  </div>
+
   <section class="wb-core" aria-label="Core numbers">
     {{#each coreDetails as |detail|}}
     <div class="wb-core-detail">
@@ -58,7 +63,7 @@
       <ol class="wb-stat-list">
         {{#each group.rows as |stat|}}
         <li class="wb-stat">
-          <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="Roll {{stat.label}}: d20 {{stat.modLabel}}">{{stat.abbr}}</button>
+          <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage">{{stat.abbr}}</button>
           <span class="wb-label">{{stat.label}}</span>
           <input class="wb-score" type="number" name="system.stats.{{stat.key}}.value" value="{{stat.value}}" min="0" step="1" aria-label="{{stat.label}} score" {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
@@ -74,5 +79,5 @@
     {{/each}}
   </section>
 
-  <p class="wb-hint">Click a stat's abbreviation to roll d20 + its modifier. The diamonds light up at 21 and 28.</p>
+  <p class="wb-hint">Click a stat for a check or save with normal dice, advantage or disadvantage. Use Wonder from its chat card. The diamonds light up at 21 and 28.</p>
 </div>
