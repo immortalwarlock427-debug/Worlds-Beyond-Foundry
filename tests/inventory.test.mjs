@@ -60,6 +60,8 @@ test("Block dice gain a die every 5 levels and the largest equipped shield sets 
   assert.equal(blockDice({ level: 4 }).formula, "1d4");
   assert.equal(blockDice({ level: 5 }).formula, "2d4");
   assert.equal(blockDice({ level: 20 }).formula, "5d4");
+  assert.equal(blockDice({ level: 1 }).nextLevel, 5);
+  assert.equal(blockDice({ level: 7 }).nextLevel, 10);
   const plate = item("plate", "shield", { equipped: true, blockDie: "1d10" });
   const wood = item("wood", "shield", { equipped: true, blockDie: "d6" });
   const stowed = item("big", "shield", { equipped: false, blockDie: "1d12" });

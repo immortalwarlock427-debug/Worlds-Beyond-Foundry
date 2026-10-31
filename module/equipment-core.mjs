@@ -66,5 +66,5 @@ export function blockDice({ level = 1, items = [] } = {}) {
     .map(item => Number(/d(\d+)/i.exec(String(item.system.blockDie ?? ""))?.[1]))
     .filter(Number.isFinite);
   const size = faces.length ? Math.max(...faces) : 4;
-  return { count, size, formula: `${count}d${size}`, fromShield: faces.length > 0 };
+  return { count, size, formula: `${count}d${size}`, fromShield: faces.length > 0, nextLevel: count * 5 };
 }
