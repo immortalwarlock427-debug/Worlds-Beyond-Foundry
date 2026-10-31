@@ -5,6 +5,7 @@ For Claude, Codex and other assistants. This repository is the Worlds Beyond hom
 The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separate project. Its rules code (for example `js/combat-core.js`) can be ported here, but don't edit that repository from this one.
 
 - **Trust-based character sheet:** players may customize and correct values. Don't add anti-cheat or unsolicited gameplay restrictions.
+- **Requested Wonder behavior:** using Wonder requires at least one current use and consumes each roll result only once. Its new reroll result may use Wonder again. Keep the sheet's manual pool corrections editable.
 - Reflect the actual rules in Notion. Critically evaluate changes and explain contradictions and consequences. Use 1.5× or 150% notation.
 - Build in small steps: get one part of the sheet working and looking right in Foundry before adding the next.
 - Use the GitHub noreply email for commits (`314470577+immortalwarlock427-debug@users.noreply.github.com`). Pushes with a private email are rejected.
@@ -37,3 +38,5 @@ The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separa
 ## Installing into Foundry
 
 The user's Foundry runs from `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond`. It is a plain copy, not a git clone. After a PR is merged, the merged `main` gets copied there. Never install an unmerged branch over it unless the user asks to test that branch.
+
+The user explicitly authorized Codex on 2026-10-31 to install each new Codex PR's exact tested commit before merging. Back up and verify the existing system first, preserve unrelated files, never touch world/actor data or program binaries, and verify installed files against that commit. Report the PR/version and backup location; ask the user to restart Foundry and refresh player browsers. The user tests and merges. Check the actual user's data path: a sandbox's `%LOCALAPPDATA%` can point elsewhere.

@@ -212,7 +212,7 @@
 /* Core numbers: comfortable touch targets, using the sheet width rather than screen width. */
 .worlds-beyond .wb-resources,
 .worlds-beyond .wb-core { display: grid; gap: 12px; }
-.worlds-beyond .wb-resources { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.worlds-beyond .wb-resources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .worlds-beyond .wb-core { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .worlds-beyond .wb-resource,
 .worlds-beyond .wb-core-detail {
@@ -225,6 +225,7 @@
 .worlds-beyond .wb-resource-health { border-top: 2px solid var(--wb-blood); }
 .worlds-beyond .wb-resource-ap { border-top: 2px solid var(--wb-brass); }
 .worlds-beyond .wb-resource-reactions { border-top: 2px solid var(--wb-verdigris); }
+.worlds-beyond .wb-resource-wonder { border-top: 2px solid var(--wb-brass); }
 .worlds-beyond .wb-resource-label { display: block; }
 .worlds-beyond .wb-resource-values { display: flex; align-items: baseline; gap: 6px; margin: 4px 0; }
 .worlds-beyond .wb-body .wb-resource-values input {
@@ -280,7 +281,46 @@
   .worlds-beyond .wb-body .wb-name { font-size: 22px; min-height: 44px; }
   .worlds-beyond .wb-body .wb-level input { min-height: 44px; }
   .worlds-beyond .wb-resources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .worlds-beyond .wb-resource-health { grid-column: 1 / -1; }
   .worlds-beyond .wb-core { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .worlds-beyond .wb-stats { grid-template-columns: minmax(0, 1fr); }
 }
+
+.worlds-beyond .wb-wonder-rest { display: grid; gap: 8px; }
+.worlds-beyond .wb-wonder-rest p { margin: 0; color: var(--wb-muted); font-size: 14px; }
+.worlds-beyond .wb-wonder-rest button {
+  min-height: 44px;
+  height: auto;
+  padding: 8px;
+  white-space: normal;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-brass-soft);
+  color: var(--wb-brass);
+  font: inherit;
+}
+
+/* Roll dialogs and chat cards share the sheet's palette without styling other systems. */
+.worlds-beyond.wb-roll-dialog { min-width: min(300px, 100vw); max-width: 100vw; }
+.worlds-beyond.wb-roll-dialog .window-header { background: #0D111E; color: #E7E4D8; }
+.worlds-beyond.wb-roll-dialog .window-content { background: #141A2B; color: #E7E4D8; }
+.worlds-beyond .wb-check-options { display: grid; gap: 16px; font-family: "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-check-options > label { display: grid; gap: 8px; }
+.worlds-beyond .wb-check-options select { min-height: 44px; background: #1A2136; color: #E7E4D8; }
+.worlds-beyond .wb-check-options fieldset { min-width: 0; border: 1px solid #2C3452; border-radius: 4px; }
+.worlds-beyond .wb-check-options legend { color: #D6A85C; }
+.worlds-beyond .wb-check-options fieldset label { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.worlds-beyond.wb-roll-dialog .form-footer button { min-height: 44px; }
+.worlds-beyond.wb-chat-message { background: #141A2B; color: #E7E4D8; border: 1px solid #2C3452; }
+.worlds-beyond.wb-chat-message .message-header { color: #959CB2; }
+.worlds-beyond.wb-roll-card { padding: 10px 0; font-family: "Alegreya Sans", sans-serif; color: #E7E4D8; }
+.worlds-beyond.wb-roll-card header { display: grid; gap: 4px; margin-bottom: 10px; }
+.worlds-beyond.wb-roll-card h3 { margin: 0; border: 0; font-family: "Marcellus SC", serif; font-size: 18px; color: #D6A85C; }
+.worlds-beyond .wb-roll-mode { color: #959CB2; font-size: 13px; }
+.worlds-beyond.wb-chat-message .dice-formula,
+.worlds-beyond.wb-chat-message .dice-total { background: #1A2136; color: #E7E4D8; border-color: #2C3452; box-shadow: none; }
+.worlds-beyond.wb-chat-message .dice-tooltip { color: #E7E4D8; }
+.worlds-beyond .wb-roll-note { margin: 10px 0 0; color: #959CB2; font-size: 14px; }
+.worlds-beyond .wb-roll-success { padding: 8px; border: 1px solid #5DB6AA; color: #5DB6AA; font-weight: bold; }
+.worlds-beyond .wb-wonder-action { min-height: 44px; height: auto; margin-top: 8px; background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond .wb-wonder-action:disabled { opacity: 0.65; cursor: default; }
+.worlds-beyond .wb-dice-results { margin: 8px 0; color: #E7E4D8; font-size: 14px; text-align: center; }
+.worlds-beyond.wb-chat-message .dice-formula { white-space: normal; overflow-wrap: anywhere; }

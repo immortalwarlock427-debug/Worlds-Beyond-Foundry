@@ -19,20 +19,20 @@ class SheetStub {
   _processFormData(event, form, formData) { return structuredClone(formData.object); }
 }
 globalThis.foundry = {
-  documents: { Actor: ActorStub },
+  documents: { Actor: ActorStub, Combatant: class {} },
   abstract: { TypeDataModel: class { async _preCreate() {} } },
   data: { fields: {} },
   applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ActorSheetV2: SheetStub } },
   utils: { getProperty, setProperty, hasProperty: (object, path) => getProperty(object, path) !== undefined }
 };
-globalThis.Hooks = { once() {}, call() { return true; } };
+globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
 
 function actor() {
   const actor = new CharacterActor();
   actor.type = "character";
-  actor.system = { health: { value: 41, max: 60 }, ap: { value: 4, max: 15 }, reactions: { value: 0, max: 1 } };
+  actor.system = { health: { value: 41, max: 60 }, ap: { value: 4, max: 15 }, reactions: { value: 0, max: 1 }, wonder: { value: 0, max: 2 } };
   actor.clone = data => ({ system: { health: { max: coreNumbers({
     level: data.system?.level ?? 5,
     stats: data.system?.stats ?? { vit: { value: 12 } },
@@ -74,12 +74,13 @@ test("full sheet submission does not turn a VIT change into healing or refill sp
   const sheet = new CharacterSheet();
   sheet.actor = actor();
   const result = sheet._processFormData(null, null, { object: {
-    healthCurrent: "41", system: { stats: { vit: { value: 16 } }, ap: { value: "4" }, reactions: { value: "0" } }
+    healthCurrent: "41", system: { stats: { vit: { value: 16 } }, ap: { value: "4" }, reactions: { value: "0" }, wonder: { value: "0" } }
   } });
   assert.equal(result.healthCurrent, undefined);
   assert.equal(result.system.health?.damage, undefined);
   assert.equal(result.system.ap.value, undefined);
   assert.equal(result.system.reactions.value, undefined);
+  assert.equal(result.system.wonder.value, undefined);
   assert.equal(result.system.stats.vit.value, 16);
 });
 

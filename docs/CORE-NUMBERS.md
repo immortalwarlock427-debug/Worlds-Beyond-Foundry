@@ -1,6 +1,6 @@
 # Core numbers
 
-Roadmap step 1 adds current Health/AP/reactions, automatic maxima, hit die, Natural Evasion, Armor Rating and feet per AP. All maxima and derived numbers have manual overrides; clearing an override restores the rule. Armor contributions are entered manually until the equipment step. Automatic turn/rest resets, short-rest rolls, equipment penalties and token movement spending belong to later steps.
+Roadmap step 1 adds current Health/AP/reactions, automatic maxima, hit die, Natural Evasion, Armor Rating and feet per AP. All maxima and derived numbers have manual overrides; clearing an override restores the rule. Armor contributions are entered manually until the equipment step. Automatic turn resets, short-rest rolls, equipment penalties and token movement spending belong to later steps. The rolls step adds Long rest to refill Health, AP, reactions and Wonder.
 
 ## Rules checked
 
@@ -25,11 +25,13 @@ The hit-die lookup is ported from the website's [combat-core.js at f6cfc79](http
 
 ## Validation
 
+The user confirmed the installed core-numbers release works in Foundry on 2026-10-31 and authorized the rolls step. The detailed checklist below remains available for regression testing; that confirmation does not imply every listed scenario was individually verified.
+
 Automated: `node --test` covers the Notion chart, level/milestone boundaries, movement and AR floors, zero/blank overrides, Health increases/decreases, token corrections and full-form submissions. Adapter tests use lightweight Foundry stubs; they do not exercise the world server, canvas or actual ApplicationV2 lifecycle.
 
 Additional local checks used the installed Foundry **14.365** TypeDataModel/field classes for defaults, persisted versus derived fields, serialization/reload, prepared VIT changes and zero overrides. The actual Handlebars template compiled with representative sheet context. These checks did not launch or modify the installed world. Browser visual preview was unavailable because the browser tool blocked the local file URL.
 
-Still to check in Foundry after review/installation:
+In-world regression checklist:
 
 - [ ] Open an existing character and a new character; confirm no data is lost and defaults render.
 - [ ] At level 5/VIT 12, set Health to 41/60. Raise VIT to 16: expect 61/80; restore VIT: expect 41/60. Reload and repeat using a temporary VIT Active Effect.
@@ -37,5 +39,3 @@ Still to check in Foundry after review/installation:
 - [ ] Correct Health below zero and above max on the sheet and token HUD; check AP/reactions likewise. Changing unrelated fields must not heal or refill pools.
 - [ ] Confirm Health/AP bars on new tokens and select them on an existing token. Check linked and unlinked tokens, saving and reloading, and updates visible to another connected player.
 - [ ] Check the sheet at 320/390 px and desktop width: no horizontal overflow, reachable controls, scrolling and focus. Check observer/read-only views and stat click-to-roll.
-
-Do not advance the roadmap past this step until the sheet has been checked in Foundry.

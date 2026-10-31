@@ -1,6 +1,9 @@
 import { STATS, MILESTONE_SCORES, statModifier, milestonesReached, formatModifier } from "./stats.mjs";
 import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./core-numbers.mjs";
 import { CharacterActor } from "./character-actor.mjs";
+import { CharacterCombatant } from "./character-combatant.mjs";
+import { wonderPool } from "./rolls.mjs";
+import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -34,6 +37,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       }),
       ap: pool(),
       reactions: pool(),
+      wonder: pool(),
       bonuses: new SchemaField({ armor: number(), evasion: number() }),
       overrides: new SchemaField({
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
@@ -67,6 +71,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.ap.value = numberOr(this.ap.value, this.ap.max);
     this.reactions.max = this.core.reactionsMax;
     this.reactions.value = numberOr(this.reactions.value, this.reactions.max);
+    Object.assign(this.wonder, wonderPool(this.stats.fth.value, this.wonder));
   }
 
   async _preCreate(data, options, user) {
@@ -91,6 +96,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     form: { submitOnChange: true },
     actions: {
       rollStat: CharacterSheet.#onRollStat,
+      longRest: CharacterSheet.#onLongRest,
       pickPortrait: CharacterSheet.#onPickPortrait
     }
   };
@@ -123,8 +129,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       resources: [
         { key: "health", label: "Health", inputName: "healthCurrent", ...system.health },
         { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },
-        { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions }
+        { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions },
+        { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder }
       ],
+      defyFate: system.stats.fth.value >= 21,
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
@@ -143,8 +151,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const current = data.healthCurrent;
     delete data.healthCurrent;
     // A full sheet submission includes unchanged trackers. Do not turn an unrelated
-    // stat edit into healing or refill AP/reactions just by submitting the form.
-    for (const key of ["ap", "reactions"]) {
+    // stat edit into healing or refill a spent pool just by submitting the form.
+    for (const key of ["ap", "reactions", "wonder"]) {
       if (data.system?.[key] && numberOr(data.system[key].value, null) === this.actor.system[key].value) {
         delete data.system[key].value;
       }
@@ -157,14 +165,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   static async #onRollStat(event, target) {
-    const def = STATS.find(s => s.key === target.dataset.stat);
-    if (!def) return;
-    const mod = this.actor.system.stats[def.key].mod;
-    const roll = new foundry.dice.Roll("1d20 + @mod", { mod });
-    await roll.toMessage({
-      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor: this.actor }),
-      flavor: `${def.label} check`
-    });
+    try { return await promptStatCheck(this.actor, target.dataset.stat); }
+    catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onLongRest() {
+    if (!this.isEditable) return;
+    try { return await longRest(this.actor); }
+    catch (error) { ui.notifications.error(error.message); }
   }
 
   static async #onPickPortrait(event, target) {
@@ -185,6 +193,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
 Hooks.once("init", () => {
   CONFIG.Actor.documentClass = CharacterActor;
+  CONFIG.Combatant.documentClass = CharacterCombatant;
   CONFIG.Actor.dataModels.character = CharacterData;
   CONFIG.Actor.trackableAttributes = {
     character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
@@ -201,3 +210,7 @@ Hooks.once("init", () => {
     label: "Worlds Beyond Character Sheet"
   });
 });
+
+Hooks.on("renderChatMessageHTML", decorateRollMessage);
+Hooks.on("updateActor", refreshWonderControls);
+Hooks.on("createChatMessage", refreshWonderControls);
