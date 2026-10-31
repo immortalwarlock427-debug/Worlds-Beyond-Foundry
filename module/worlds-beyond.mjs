@@ -1,22 +1,46 @@
 import { STATS, MILESTONE_SCORES, statModifier, milestonesReached, formatModifier } from "./stats.mjs";
+import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./core-numbers.mjs";
+import { CharacterActor } from "./character-actor.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
-const { NumberField, SchemaField } = foundry.data.fields;
+const { NumberField, SchemaField, StringField } = foundry.data.fields;
 
 /* -------------------------------------------- */
 /*  Data model                                  */
 /* -------------------------------------------- */
 
-class CharacterData extends foundry.abstract.TypeDataModel {
+export class CharacterData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
+    const number = (initial = 0, options = {}) => new NumberField({ required: true, nullable: false, initial, ...options });
+    const override = () => number(null, { nullable: true });
+    const pool = () => new SchemaField({
+      value: override(),
+      maxOverride: override(),
+      max: number(0, { persisted: false })
+    });
     const stat = () => new SchemaField({
       value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 })
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
-      stats: new SchemaField(Object.fromEntries(STATS.map(s => [s.key, stat()])))
+      stats: new SchemaField(Object.fromEntries(STATS.map(s => [s.key, stat()]))),
+      health: new SchemaField({
+        damage: number(),
+        maxOverride: override(),
+        value: number(0, { persisted: false }),
+        max: number(0, { persisted: false })
+      }),
+      ap: pool(),
+      reactions: pool(),
+      bonuses: new SchemaField({ armor: number(), evasion: number() }),
+      overrides: new SchemaField({
+        hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
+        evasion: override(),
+        armorRating: override(),
+        movement: override()
+      })
     };
   }
 
@@ -26,6 +50,32 @@ class CharacterData extends foundry.abstract.TypeDataModel {
       stat.mod = statModifier(key, stat.value);
       stat.milestones = milestonesReached(stat.value);
     }
+    this.core = coreNumbers({
+      level: this.level,
+      stats: this.stats,
+      bonuses: this.bonuses,
+      overrides: {
+        ...this.overrides,
+        healthMax: this.health.maxOverride,
+        apMax: this.ap.maxOverride,
+        reactionsMax: this.reactions.maxOverride
+      }
+    });
+    this.health.max = this.core.healthMax;
+    this.health.value = healthFromDamage(this.health.max, this.health.damage);
+    this.ap.max = this.core.apMax;
+    this.ap.value = numberOr(this.ap.value, this.ap.max);
+    this.reactions.max = this.core.reactionsMax;
+    this.reactions.value = numberOr(this.reactions.value, this.reactions.max);
+  }
+
+  async _preCreate(data, options, user) {
+    if (await super._preCreate(data, options, user) === false) return false;
+    const defaults = {};
+    // Honor supplied token settings, including an explicitly cleared bar.
+    if (!foundry.utils.hasProperty(data, "prototypeToken.bar1.attribute")) defaults["prototypeToken.bar1.attribute"] = "health";
+    if (!foundry.utils.hasProperty(data, "prototypeToken.bar2.attribute")) defaults["prototypeToken.bar2.attribute"] = "ap";
+    this.parent.updateSource(defaults);
   }
 }
 
@@ -33,10 +83,10 @@ class CharacterData extends foundry.abstract.TypeDataModel {
 /*  Character sheet                             */
 /* -------------------------------------------- */
 
-class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
+export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet"],
-    position: { width: 680, height: "auto" },
+    position: { width: 720, height: "auto" },
     window: { resizable: true },
     form: { submitOnChange: true },
     actions: {
@@ -46,7 +96,7 @@ class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   };
 
   static PARTS = {
-    sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs` }
+    sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [""] }
   };
 
   async _prepareContext(options) {
@@ -70,11 +120,40 @@ class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       actor: this.actor,
       system,
       editable: this.isEditable,
+      resources: [
+        { key: "health", label: "Health", inputName: "healthCurrent", ...system.health },
+        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },
+        { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions }
+      ],
+      coreDetails: [
+        { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
+        { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
+        { key: "armorRating", label: "Armor Rating", value: system.core.armorRating, type: "number" },
+        { key: "movement", label: "Movement / AP", value: system.core.movement, unit: "ft", type: "number" }
+      ].map(detail => ({ ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key] })),
       groups: [
         { title: "Physical", rows: rows.filter(r => r.group === "physical") },
         { title: "Mental", rows: rows.filter(r => r.group === "mental") }
       ]
     });
+  }
+
+  _processFormData(event, form, formData) {
+    const data = super._processFormData(event, form, formData);
+    const current = data.healthCurrent;
+    delete data.healthCurrent;
+    // A full sheet submission includes unchanged trackers. Do not turn an unrelated
+    // stat edit into healing or refill AP/reactions just by submitting the form.
+    for (const key of ["ap", "reactions"]) {
+      if (data.system?.[key] && numberOr(data.system[key].value, null) === this.actor.system[key].value) {
+        delete data.system[key].value;
+      }
+    }
+    if (current !== undefined && numberOr(current, null) !== this.actor.system.health.value) {
+      const maximum = this.actor.clone(data).system.health.max;
+      foundry.utils.setProperty(data, "system.health.damage", damageFromHealth(maximum, numberOr(current, maximum)));
+    }
+    return data;
   }
 
   static async #onRollStat(event, target) {
@@ -83,7 +162,7 @@ class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const mod = this.actor.system.stats[def.key].mod;
     const roll = new foundry.dice.Roll("1d20 + @mod", { mod });
     await roll.toMessage({
-      speaker: ChatMessage.implementation.getSpeaker({ actor: this.actor }),
+      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor: this.actor }),
       flavor: `${def.label} check`
     });
   }
@@ -105,7 +184,11 @@ class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 /* -------------------------------------------- */
 
 Hooks.once("init", () => {
+  CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Actor.dataModels.character = CharacterData;
+  CONFIG.Actor.trackableAttributes = {
+    character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
+  };
 
   // Initiative is d20 + Wisdom modifier.
   CONFIG.Combat.initiative = { formula: "1d20 + @stats.wis.mod", decimals: 0 };

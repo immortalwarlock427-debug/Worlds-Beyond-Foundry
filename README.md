@@ -9,6 +9,9 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - Milestone diamonds light up at 21 and 28.
 - Clicking a stat's abbreviation rolls d20 + its modifier to chat.
 - Initiative is d20 + Wisdom modifier.
+- Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
+- Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
+- The sheet includes a narrow layout and touch-sized controls. This core-numbers release still needs in-world desktop/phone validation; see [the checklist](docs/CORE-NUMBERS.md).
 
 ## Installing
 
@@ -18,10 +21,13 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 
 - `system.json`: the manifest
 - `module/stats.mjs`: stat list and modifier math (no Foundry code, so it can be tested on its own)
+- `module/core-numbers.mjs`: Health, hit dice, AP, reactions, defenses and movement math
+- `module/character-actor.mjs`: editable token bars, including Health corrections
 - `module/worlds-beyond.mjs`: data model, character sheet and registration
 - `templates/character-sheet.hbs`: sheet markup
 - `styles/worlds-beyond.css`: sheet styles
-- `tests/`: tests for the stat math
+- `tests/`: stat/core-number rules and sheet/token adapter tests (`node --test`)
 - `docs/ROADMAP.md`: what gets built next, in order
+- `docs/CORE-NUMBERS.md`: rule sources, data behavior and Foundry validation checklist
 
 Keep the folder layout shallow. Claude can copy files up to about 6 folders below the system folder into Foundry.
