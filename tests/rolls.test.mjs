@@ -39,20 +39,20 @@ test("Defy Fate changes only checks/saves at current FTH 21; initiative always r
 test("readable results separate the kept die, original bonus and total", () => {
   const roll = { total: 13, dice: [{ faces: 20, results: [{ result: 3, active: false, discarded: true }, { result: 9, active: true }] }] };
   assert.deepEqual(describeD20Roll(roll, "advantage"), {
-    equation: "9 + 4 bonus = 13", diceText: "Rolled 3 and 9 · kept 9 (higher)", diceLabel: "2d20 · keep highest"
+    equation: "9 + 4 = 13", diceText: "Rolled 3 and 9 · kept 9 (higher)", diceLabel: "2d20 · keep highest"
   });
   roll.total = 7;
   roll.dice[0].results = [{ result: 3, active: true }, { result: 9, active: false, discarded: true }];
-  assert.equal(describeD20Roll(roll, "disadvantage").equation, "3 + 4 bonus = 7");
+  assert.equal(describeD20Roll(roll, "disadvantage").equation, "3 + 4 = 7");
   assert.equal(describeD20Roll(roll, "disadvantage").diceText, "Rolled 3 and 9 · kept 3 (lower)");
 });
 
 test("readable results handle ties, negative/zero modifiers and unevaluated dice", () => {
   const roll = { total: 5, dice: [{ faces: 20, results: [{ result: 7, active: true }, { result: 7, active: false }] }] };
-  assert.equal(describeD20Roll(roll, "advantage").equation, "7 − 2 penalty = 5");
+  assert.equal(describeD20Roll(roll, "advantage").equation, "7 − 2 = 5");
   roll.total = 7;
   roll.dice[0].results.pop();
-  assert.equal(describeD20Roll(roll).equation, "7 + 0 bonus = 7");
+  assert.equal(describeD20Roll(roll).equation, "7 + 0 = 7");
   assert.equal(describeD20Roll(roll).diceText, "Rolled 7 on the d20");
   assert.equal(describeD20Roll({ dice: [{ faces: 20, results: [] }] }), null);
 });

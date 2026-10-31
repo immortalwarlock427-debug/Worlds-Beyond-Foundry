@@ -3,7 +3,7 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { promptStatCheck, restoreWonder, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
+import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -96,7 +96,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     form: { submitOnChange: true },
     actions: {
       rollStat: CharacterSheet.#onRollStat,
-      restoreWonder: CharacterSheet.#onRestoreWonder,
+      longRest: CharacterSheet.#onLongRest,
       pickPortrait: CharacterSheet.#onPickPortrait
     }
   };
@@ -169,9 +169,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     catch (error) { ui.notifications.error(error.message); }
   }
 
-  static async #onRestoreWonder() {
+  static async #onLongRest() {
     if (!this.isEditable) return;
-    try { return await restoreWonder(this.actor); }
+    try { return await longRest(this.actor); }
     catch (error) { ui.notifications.error(error.message); }
   }
 

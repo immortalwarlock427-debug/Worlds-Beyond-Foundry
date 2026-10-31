@@ -32,10 +32,9 @@ export function describeD20Roll(roll, mode = "normal") {
   const dieTotal = kept.reduce((sum, result) => sum + result.result, 0);
   const bonus = roll.total - dieTotal;
   const sign = bonus < 0 ? "−" : "+";
-  const label = bonus < 0 ? "penalty" : "bonus";
   const choice = mode === "advantage" ? " (higher)" : mode === "disadvantage" ? " (lower)" : "";
   return {
-    equation: `${dieTotal} ${sign} ${Math.abs(bonus)} ${label} = ${roll.total}`,
+    equation: `${dieTotal} ${sign} ${Math.abs(bonus)} = ${roll.total}`,
     diceText: results.length > 1
       ? `Rolled ${results.map(result => result.result).join(" and ")} · kept ${dieTotal}${choice}`
       : `Rolled ${dieTotal} on the d20`,

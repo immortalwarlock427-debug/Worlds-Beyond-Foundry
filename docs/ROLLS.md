@@ -1,6 +1,6 @@
 # Rolls and Wonder
 
-Roadmap step 2 adds check/save choices, advantage/disadvantage, readable chat cards, Wonder spending and a Wonder-only long-rest refill. It does not add attack automation or a general rest system.
+Roadmap step 2 adds check/save choices, advantage/disadvantage, readable chat cards, Wonder spending and a Long rest action. It does not add attack automation.
 
 ## Rules and sources
 
@@ -14,12 +14,14 @@ The website's [js/app.js](https://github.com/immortalwarlock427-debug/Worlds-Bey
 
 ## Behavior and data
 
+- **Long rest** restores all currently implemented resource pools: Health, AP, reactions and Wonder. As clarified by the user, this is a full refill, not a Wonder-only action. It sets Health damage to zero and the other pools to `null` (full at their current maximum), preserving maximum overrides, stats and used-result history. Resources introduced in later roadmap steps must join this action.
+
 - Existing character fields are unchanged. New `system.wonder.value` starts at `null` (full), `maxOverride` at `null` (automatic), and `max` is derived and not persisted. Old characters acquire defaults on load. A spent value, including zero, survives unrelated edits and reloads. Blank current/refill restores full; blank max override restores the rule. Manual corrections remain unrestricted, including negative or above-max values.
 - Click a stat abbreviation, choose check/save and dice, then Roll. Closing the dialog does nothing. Public, GM, blind and self roll modes use Foundry v14's `messageMode` API.
-- Visible cards show the kept die, original bonus/penalty and total (for example, `9 + 4 bonus = 13`). Advantage/disadvantage list both dice and the kept higher/lower result. The underlying Foundry formula still uses `kh1` (keep highest one) or `kl1` (keep lowest one), but card rendering replaces that notation with readable text. Existing system cards also get this display when rendered again; hidden results are untouched.
+- Visible cards show the kept die, original bonus/penalty and total (for example, `9 + 4 = 13`). Advantage/disadvantage list both dice and the kept higher/lower result. The underlying Foundry formula still uses `kh1` (keep highest one) or `kl1` (keep lowest one), but card rendering replaces that notation with readable text. Existing system cards also get this display when rendered again; hidden results are untouched.
 - Use Wonder from a supported chat card. It posts a new result without editing the original; the new result replaces the old for play. Rerolls keep the original formula/modifier and exact whisper/blind audience. Defy Fate retains the original dice as context and clearly marks the declared success.
 - Native combat-tracker initiative rolls carry their combat/combatant identity. Wonder updates that combatant's initiative after posting. If it no longer exists or the tracker update fails, the new total remains in chat with a warning to apply it manually. Linked and unlinked token speakers resolve through Foundry's speaker lookup.
-- Only an actor owner who can see a result gets the action. At the user's request, spending now requires at least one current use and each result may use Wonder only once. The new reroll is independently eligible. Buttons show `Wonder used` or `No Wonder uses left` and refresh on actor/chat updates. Manual pool corrections remain editable; negative values left from the previous release are not silently changed. Restore Wonder or correct that value before using it again.
+- Only an actor owner who can see a result gets the action. At the user's request, spending now requires at least one current use and each result may use Wonder only once. The new reroll is independently eligible. Buttons show `Wonder used` or `No Wonder uses left` and refresh on actor/chat updates. Manual pool corrections remain editable; negative values left from the previous release are not silently changed. Take a long rest or correct that value before using Wonder again.
 - `flags.worlds-beyond.wonderUsed.<messageId>` records consumed results on the speaker actor alongside the pool decrement. This survives reloads, refills and deletion of the replacement chat message, and does not require the player to edit a GM-authored initiative message. Existing reroll messages' `previousMessageId` links also identify already-used older results. Deleted pre-fix history cannot be reconstructed.
 - Local actions for one actor are serialized. Simultaneous changes from separate clients are not a server-side transaction and can still require manual correction; this is not an anti-cheat system.
 - Failed roll/card preparation spends nothing. If posting fails after spending, refund the use and clear its consumed flag. If that refund fails, tell the player to restore one use manually and make a new roll because the original remains marked used.
@@ -34,8 +36,8 @@ Additional local checks used the installed Foundry **14.365** TypeDataModel/fiel
 In-world checklist before moving to equipment:
 
 - [ ] Restart Foundry, refresh player browsers, and open an existing character. Confirm existing stats, Health and pools remain intact; inspect desktop and phone widths.
-- [ ] Roll a normal check, an advantage check and a disadvantage save. Confirm die + bonus = total and both advantage/disadvantage dice with the kept value. Expand dice details and confirm native tooltips still work. Cancel the dialog and confirm no new message.
-- [ ] Set FTH 18: expect 2 Wonder uses. Use Wonder, check the new result and decrement, change an unrelated stat and reload. Restore Wonder: expect 2, with Health/AP/reactions unchanged. Check current/max manual overrides including zero and clearing.
+- [ ] Roll a normal check, an advantage check and a disadvantage save. Confirm die + = total and both advantage/disadvantage dice with the kept value. Expand dice details and confirm native tooltips still work. Cancel the dialog and confirm no new message.
+- [ ] Set FTH 18: expect 2 Wonder uses. Use Wonder, check the new result and decrement, change an unrelated stat and reload. Long rest: expect 2 Wonder uses and Health/AP/reactions restored to their maximums. Check current/max manual overrides including zero and clearing; maximum overrides and used-result history must remain intact.
 - [ ] Use Wonder on result A: A must show `Wonder used`. Use Wonder on its new result B: B becomes used and result C appears. At zero, C must show `No Wonder uses left`. Refill: only C becomes usable; A/B remain used after reload. Repeat on a GM-rolled initiative message as the owning player.
 - [ ] Set FTH 21: use Wonder on a failed check/save and confirm declared success without another dice roll. Initiative must still reroll.
 - [ ] Roll initiative from the combat tracker, use Wonder and confirm its total updates. Repeat with linked and unlinked tokens; confirm their own pools change. If combat is deleted, the new result should warn that it needs manual application.

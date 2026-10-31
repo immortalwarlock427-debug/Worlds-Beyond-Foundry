@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { promptStatCheck, rollStatCheck, useWonder, restoreWonder, decorateRollMessage, refreshWonderControls } from "../module/roll-actions.mjs";
+import { promptStatCheck, rollStatCheck, useWonder, longRest, decorateRollMessage, refreshWonderControls } from "../module/roll-actions.mjs";
 
 function fixture({ faith = 18, value = 2, kind = "check", mode = "normal", blind = false, whisper = [] } = {}) {
   const calls = { rolls: [], messages: [], updates: [], cards: [], warnings: [], initiative: [] };
@@ -177,8 +177,11 @@ test("rapid repeated clicks spend once and refill does not unlock the used resul
   assert.match(results[1].reason.message, /already used/);
   assert.equal(f.actor.system.wonder.value, 0);
   assert.equal(f.calls.messages.length, 1);
-  await restoreWonder(f.actor);
-  assert.deepEqual(f.calls.updates.at(-1), { "system.wonder.value": null });
+  await longRest(f.actor);
+  assert.deepEqual(f.calls.updates.at(-1), {
+    "system.health.damage": 0, "system.ap.value": null,
+    "system.reactions.value": null, "system.wonder.value": null
+  });
   assert.equal(f.actor.system.wonder.value, 2);
   await assert.rejects(useWonder(f.message), /already used/);
 });
@@ -193,11 +196,32 @@ test("Wonder follows the new result, stops at zero and keeps used history after 
   assert.equal(f.calls.messages.length, 2);
   f.actor.flags = JSON.parse(JSON.stringify(f.actor.flags));
   game.messages.delete(first.id);
-  await restoreWonder(f.actor);
+  await longRest(f.actor);
   await assert.rejects(useWonder(f.message), /already used/);
   await assert.rejects(useWonder(first), /already used/);
   await useWonder(second);
   assert.equal(f.actor.system.wonder.value, 1);
+});
+
+test("long rest restores all current pools together without changing overrides or used-roll history", async () => {
+  const f = fixture();
+  f.actor.flags.wonderUsed.original = true;
+  f.actor.system.health = { damage: 12, maxOverride: 80 };
+  f.actor.system.ap = { value: 2, maxOverride: 0 };
+  f.actor.system.reactions = { value: -1, maxOverride: 3 };
+  const before = structuredClone(f.actor.system);
+  await longRest(f.actor);
+  assert.deepEqual(f.calls.updates, [{
+    "system.health.damage": 0, "system.ap.value": null,
+    "system.reactions.value": null, "system.wonder.value": null
+  }]);
+  assert.equal(f.actor.flags.wonderUsed.original, true);
+  assert.equal(f.actor.system.health.maxOverride, before.health.maxOverride);
+  assert.equal(f.actor.system.ap.maxOverride, 0);
+  assert.equal(f.actor.system.reactions.maxOverride, 3);
+  f.actor.isOwner = false;
+  await longRest(f.actor);
+  assert.equal(f.calls.updates.length, 1);
 });
 
 test("zero, negative and fractional uses cannot pay for Wonder", async () => {
@@ -267,7 +291,7 @@ test("chat presents readable dice and keeps mounted Wonder controls current afte
     querySelectorAll: () => [tooltip]
   };
   decorateRollMessage(f.message, html);
-  assert.equal(formula.textContent, "9 + 4 bonus = 13");
+  assert.equal(formula.textContent, "9 + 4 = 13");
   assert.equal(elements[0].textContent, "Rolled 3 and 9 · kept 9 (higher)");
   assert.equal(tooltip.textContent, "2d20 · keep highest");
   assert.equal(mounted[0].disabled, false);
@@ -279,7 +303,7 @@ test("chat presents readable dice and keeps mounted Wonder controls current afte
   assert.equal(mounted[0].disabled, true);
   assert.equal(childButton.textContent, "No Wonder uses left");
   assert.equal(childButton.disabled, true);
-  await restoreWonder(f.actor);
+  await longRest(f.actor);
   refreshWonderControls();
   assert.equal(mounted[0].disabled, true);
   assert.equal(childButton.textContent, "Use Wonder");

@@ -12,6 +12,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - Initiative is d20 + Wisdom modifier.
 - Wonder has an editable current pool and maximum override, plus a long-rest refill button. Use it from check/save and combat-tracker initiative messages. At FTH 21, Defy Fate declares a failed check/save successful; initiative still rerolls.
 - Wonder requires one available use. Each result can use Wonder once; the new reroll can use it again. Used results stay disabled after refills and reloads.
+- **Long rest** restores all current resource pools (Health, AP, reactions and Wonder) to their maximums, including manual maximum overrides.
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
 - The sheet includes a narrow layout and touch-sized controls. The user confirmed core numbers working in Foundry; the new rolls/Wonder flow awaits [in-world validation](docs/ROLLS.md).

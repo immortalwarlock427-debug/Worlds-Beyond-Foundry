@@ -68,7 +68,7 @@ function wonderUsed(actor, message) {
 
 function requireWonder(actor, message) {
   if (wonderUsed(actor, message)) throw new Error("Wonder was already used on this result. Use its new result instead.");
-  if (!(actor.system.wonder.value >= 1)) throw new Error("No Wonder uses left. Restore Wonder after a long rest or correct the pool on your sheet.");
+  if (!(actor.system.wonder.value >= 1)) throw new Error("No Wonder uses left. Take a long rest or correct the pool on your sheet.");
 }
 
 // Serialize local clicks for the same actor so rapid use/refill actions cannot lose a spend.
@@ -81,9 +81,14 @@ function actorOperation(actor, operation) {
   });
 }
 
-export async function restoreWonder(actor) {
+export async function longRest(actor) {
   if (!actor.isOwner) return;
-  return actorOperation(actor, () => actor.update({ "system.wonder.value": null }));
+  return actorOperation(actor, () => actor.update({
+    "system.health.damage": 0,
+    "system.ap.value": null,
+    "system.reactions.value": null,
+    "system.wonder.value": null
+  }));
 }
 
 export async function useWonder(message) {

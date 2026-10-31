@@ -1,6 +1,6 @@
 # Core numbers
 
-Roadmap step 1 adds current Health/AP/reactions, automatic maxima, hit die, Natural Evasion, Armor Rating and feet per AP. All maxima and derived numbers have manual overrides; clearing an override restores the rule. Armor contributions are entered manually until the equipment step. Automatic turn/rest resets, short-rest rolls, equipment penalties and token movement spending belong to later steps.
+Roadmap step 1 adds current Health/AP/reactions, automatic maxima, hit die, Natural Evasion, Armor Rating and feet per AP. All maxima and derived numbers have manual overrides; clearing an override restores the rule. Armor contributions are entered manually until the equipment step. Automatic turn resets, short-rest rolls, equipment penalties and token movement spending belong to later steps. The rolls step adds Long rest to refill Health, AP, reactions and Wonder.
 
 ## Rules checked
 
