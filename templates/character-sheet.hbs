@@ -43,7 +43,7 @@
       <strong class="wb-core-value">{{detail.value}} <small>{{detail.unit}}</small></strong>
       <label class="wb-override-label">
         <span>Override</span>
-        <input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="{{detail.automatic}}" step="any" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}>
+        <input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="any" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}>
       </label>
     </div>
     {{/each}}
@@ -97,7 +97,7 @@
     <div class="wb-inventory">
       <p class="wb-inventory-total {{#if carrying.over}}is-over{{/if}}"><strong>{{carrying.used}} / {{carrying.capacity}}</strong> inventory slots{{#if carrying.over}} · over by {{carrying.over}}{{/if}}</p>
       <label class="wb-equipment-check"><input type="checkbox" name="system.inventory.backpack" {{#if system.inventory.backpack}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Backpack (+6 slots)</label>
-      <label class="wb-override-label"><span>Slots override</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="{{carrying.automatic}}" step="any" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Slots override</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="any" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
     </div>
     <p class="wb-core-hint">You have 10 + STR modifier slots. Worn armor and weapons or shields in hand take none. Drop items here from the Items directory, or add your own. Each leg-guard item is a complete pair.</p>
     <ul class="wb-equipment-list">

@@ -261,7 +261,7 @@
   border: 1px solid var(--wb-rule);
   border-radius: 3px;
 }
-.worlds-beyond .wb-body input::placeholder { color: var(--wb-muted); opacity: 1; }
+.worlds-beyond .wb-body input::placeholder { color: var(--wb-muted); opacity: 0.55; font-style: italic; }
 .worlds-beyond .wb-armor-bonuses {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
