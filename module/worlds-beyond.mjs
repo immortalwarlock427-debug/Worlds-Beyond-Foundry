@@ -3,7 +3,7 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { EquipmentData, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
+import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -212,7 +212,7 @@ Hooks.once("init", () => {
   CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Combatant.documentClass = CharacterCombatant;
   CONFIG.Actor.dataModels.character = CharacterData;
-  for (const type of Object.keys(EQUIPMENT_TYPES)) CONFIG.Item.dataModels[type] = EquipmentData;
+  Object.assign(CONFIG.Item.dataModels, EQUIPMENT_MODELS);
   foundry.documents.collections.Items.registerSheet(SYSTEM_ID, EquipmentSheet, {
     types: Object.keys(EQUIPMENT_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
   });
