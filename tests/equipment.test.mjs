@@ -21,7 +21,7 @@ test("equipment summaries support all new types and preserve legacy gear", () =>
     { id: "d", name: "Old gear", type: "gear", system: {} }
   ]);
   assert.equal(rows[0].quantity, 0);
-  assert.equal(rows[0].detail, "1d8 · Slashing · Balanced · Versatile · Quickdraw · Range 20/40 ft");
+  assert.equal(rows[0].detail, "1d8 · Slashing · Balanced (melee) · Versatile · Quickdraw · Range 20/40 ft");
   assert.match(rows[1].detail, /Leg guards \(pair\)/);
   assert.equal(rows[1].equipped, true);
   assert.equal(rows[2].detail, "AR 1 · Block 1d10");
@@ -64,10 +64,12 @@ test("each equipment model exposes only its common and type-specific fields", ()
     for (const key of ["description", "quantity", "slots", "cost", "equipped"]) assert.ok(key in schema);
   }
   for (const key of ["armorRating", "armorType", "piece", "evasionBonus", "blockDie"]) assert.equal(key in weapon, false);
-  for (const key of ["family", "damage", "range", "loading", "properties", "signature", "blockDie"]) assert.equal(key in armor, false);
-  for (const key of ["family", "damage", "range", "loading", "properties", "signature", "piece", "armorType", "evasionBonus"]) assert.equal(key in shield, false);
+  for (const key of ["family", "ranged", "damage", "range", "loading", "properties", "signature", "blockDie"]) assert.equal(key in armor, false);
+  for (const key of ["family", "ranged", "damage", "range", "loading", "properties", "signature", "piece", "armorType", "evasionBonus"]) assert.equal(key in shield, false);
   assert.equal(weapon.family.options.initial, "balanced");
-  assert.deepEqual(Object.keys(weapon.family.options.choices), ["balanced", "heavy", "finesse", "paragon"]);
+  assert.deepEqual(Object.keys(weapon.family.options.choices), ["balanced", "heavy", "finesse", "paragon", "none"]);
+  assert.ok(weapon.ranged instanceof BooleanField);
+  assert.equal(weapon.ranged.options.initial, false);
   assert.deepEqual(Object.keys(weapon.range.fields), ["normal", "long"]);
   assert.equal(weapon.range.fields.normal.options.initial, 0);
   assert.ok(weapon.range.fields.normal instanceof NumberField);
@@ -91,7 +93,7 @@ test("Notion property and signature keys are boolean flags, separate from family
 test("weapon sheet choices preserve the family and checked/unchecked property state", async () => {
   const sheet = new EquipmentSheet();
   sheet.isEditable = true;
-  for (const family of ["balanced", "heavy", "finesse", "paragon"]) {
+  for (const family of ["balanced", "heavy", "finesse", "paragon", "none"]) {
     sheet.item = { type: "weapon", system: { family, properties: { light: true, twoHanded: false }, signature: { silent: true, loud: false } } };
     const context = await sheet._prepareContext({});
     assert.deepEqual(context.weaponFamilies.filter(choice => choice.selected).map(choice => choice.value), [family]);
@@ -100,4 +102,26 @@ test("weapon sheet choices preserve the family and checked/unchecked property st
     assert.equal(context.signatureProperties.find(choice => choice.key === "silent").checked, true);
     assert.equal(context.signatureProperties.find(choice => choice.key === "loud").checked, false);
   }
+});
+
+test("Notion ranged, ranged Paragon and melee Thrown examples remain distinct in equipment data", () => {
+  const ordinary = ["Shortbow", "Longbow", "Hand Crossbow", "Light Crossbow", "Crossbow", "Revolver", "Sling", "Blowgun", "Dart", "Net"];
+  const examples = [
+    ...ordinary.map(name => ({ name, family: "none", ranged: true, properties: { thrown: ["Dart", "Net"].includes(name) } })),
+    ...["Warbow", "Arbalest"].map(name => ({ name, family: "paragon", ranged: true, properties: {} })),
+    { name: "Chakram", family: "finesse", ranged: false, properties: { thrown: true } },
+    { name: "Dagger", family: "balanced", ranged: false, properties: { thrown: true } }
+  ];
+  const rows = equipmentRows(examples.map(({ name, ...system }) => ({ id: name, name, type: "weapon", system })));
+  for (const row of rows.slice(0, ordinary.length)) {
+    assert.match(row.detail, /Ranged/);
+    assert.doesNotMatch(row.detail, /Balanced|Finesse|Paragon/);
+  }
+  for (const row of rows.slice(ordinary.length, ordinary.length + 2)) assert.match(row.detail, /Ranged · Paragon/);
+  assert.equal(rows.at(-2).detail, "Finesse · Thrown");
+  assert.equal(rows.at(-1).detail, "Balanced (melee) · Thrown");
+  const rangedWithZeroRange = equipmentRows([{ id: "custom", name: "Custom", type: "weapon", system: { family: "none", ranged: true, range: { normal: 0, long: 0 } } }])[0];
+  assert.equal(rangedWithZeroRange.detail, "Ranged");
+  const meleeWithRange = equipmentRows([{ id: "melee", name: "Custom", type: "weapon", system: { family: "finesse", ranged: false, range: { normal: 30, long: 60 } } }])[0];
+  assert.doesNotMatch(meleeWithRange.detail, /Ranged/);
 });

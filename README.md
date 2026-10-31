@@ -14,7 +14,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - Wonder requires one available use. Each result can use Wonder once; the new reroll can use it again. Used results stay disabled after refills and reloads.
 - **Long rest** restores all current resource pools (Health, AP, reactions and Wonder) to their maximums, including manual maximum overrides.
 - Weapon, armor and shield records with editable sheets and a character equipment list (add/edit/equip/remove and native drops). Armor contributions remain manual; see [scope and checklist](docs/EQUIPMENT.md).
-- Each equipment type has its own data model. Weapons use a family dropdown, property/signature checkboxes, numeric normal/long ranges and numeric loading, ready for later attack automation.
+- Each equipment type has its own data model. Weapons use a family dropdown, an independent Ranged weapon flag, property/signature checkboxes, numeric normal/long ranges and numeric loading. Standard ranged weapons use no special family, ranged Paragon keeps Paragon, and Thrown stays separate.
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
 - The sheet includes a narrow layout and touch-sized controls. The user tested core numbers and rolls/Wonder; equipment awaits [in-world validation](docs/EQUIPMENT.md).

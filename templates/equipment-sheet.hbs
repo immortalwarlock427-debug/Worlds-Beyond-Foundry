@@ -12,6 +12,7 @@
   {{#if weapon}}
   <div class="wb-equipment-fields">
     <label>Weapon family<select name="system.family" {{#unless editable}}disabled{{/unless}}>{{#each weaponFamilies}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label class="wb-equipment-check"><input type="checkbox" name="system.ranged" {{#if system.ranged}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Ranged weapon</label>
     <label>Base damage<input type="text" name="system.damage" value="{{system.damage}}" placeholder="1d8" {{#unless editable}}disabled{{/unless}}></label>
     <label>Versatile damage<input type="text" name="system.versatileDamage" value="{{system.versatileDamage}}" placeholder="1d10" {{#unless editable}}disabled{{/unless}}></label>
     <label>Damage type<input type="text" name="system.damageType" value="{{system.damageType}}" {{#unless editable}}disabled{{/unless}}></label>
@@ -25,6 +26,7 @@
   <fieldset><legend>Signature properties</legend><div class="wb-equipment-fields">
     {{#each signatureProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.signature.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
   </div></fieldset>
+  <p class="wb-core-hint">Balanced is melee-only. For an ordinary ranged weapon, select None (standard ranged) and check Ranged weapon. Warbow and Arbalest use Paragon + Ranged weapon. Thrown is separate; throwing does not replace a melee weapon's family.</p>
   {{/if}}
   {{#if armor}}
   <div class="wb-equipment-fields">

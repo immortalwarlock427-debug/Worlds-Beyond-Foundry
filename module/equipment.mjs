@@ -5,7 +5,7 @@ export const ARMOR_PIECES = {
   chest: "Chest", pants: "Pants", arms: "Arm guards", legs: "Leg guards (pair)", helmet: "Helmet"
 };
 
-export const WEAPON_FAMILIES = Object.freeze({ balanced: "Balanced", heavy: "Heavy", finesse: "Finesse", paragon: "Paragon" });
+export const WEAPON_FAMILIES = Object.freeze({ balanced: "Balanced (melee)", heavy: "Heavy", finesse: "Finesse", paragon: "Paragon", none: "None (standard ranged)" });
 export const WEAPON_PROPERTIES = Object.freeze({
   light: "Light", twoHanded: "Two-handed", versatile: "Versatile", strapped: "Strapped",
   reach: "Reach", mount: "Mount", thrown: "Thrown"
@@ -36,6 +36,7 @@ export class WeaponData extends EquipmentData {
     return {
       ...super.defineSchema(),
       family: text("balanced", { choices: WEAPON_FAMILIES, blank: false }),
+      ranged: new foundry.data.fields.BooleanField({ required: true, nullable: false, initial: false }),
       damage: text(), versatileDamage: text(), damageType: text(),
       properties: flags(WEAPON_PROPERTIES), signature: flags(SIGNATURE_PROPERTIES),
       range: new foundry.data.fields.SchemaField({ normal: number(), long: number() }),
@@ -90,7 +91,8 @@ export function equipmentRows(items) {
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
     detail: item.type === "weapon" ? [item.system.damage, item.system.damageType,
-      WEAPON_FAMILIES[item.system.family],
+      item.system.ranged ? "Ranged" : "",
+      item.system.family !== "none" ? WEAPON_FAMILIES[item.system.family] : "",
       ...Object.entries(WEAPON_PROPERTIES).filter(([key]) => item.system.properties?.[key]).map(([, label]) => label),
       ...Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => item.system.signature?.[key]).map(([, label]) => label),
       item.system.loading ? `Loading (${item.system.loading})` : "",
