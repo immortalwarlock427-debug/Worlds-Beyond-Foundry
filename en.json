@@ -1,6 +1,6 @@
 {
   "TYPES": {
     "Actor": { "character": "Character" },
-    "Item": { "weapon": "Weapon", "armor": "Armor", "shield": "Shield", "gear": "Gear" }
+    "Item": { "weapon": "Weapon", "armor": "Armor", "shield": "Shield", "consumable": "Consumable", "misc": "Miscellaneous", "gear": "Gear" }
   }
 }

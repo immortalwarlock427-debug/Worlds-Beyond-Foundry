@@ -11,7 +11,7 @@ globalThis.foundry = {
   abstract: { TypeDataModel: class {} },
   applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class { async _prepareContext() { return {}; } } } }
 };
-const { equipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
+const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
 
 test("equipment summaries support all new types and preserve legacy gear", () => {
   const rows = equipmentRows([
@@ -124,4 +124,65 @@ test("Notion ranged, ranged Paragon and melee Thrown examples remain distinct in
   assert.equal(rangedWithZeroRange.detail, "Ranged");
   const meleeWithRange = equipmentRows([{ id: "melee", name: "Custom", type: "weapon", system: { family: "finesse", ranged: false, range: { normal: 30, long: 60 } } }])[0];
   assert.doesNotMatch(meleeWithRange.detail, /Ranged/);
+});
+
+test("Two-handed weapons default to 2 slots and toggling only moves an unedited slot size", async () => {
+  const get = (object, path) => path.split(".").reduce((value, key) => value?.[key], object);
+  const has = (object, path) => get(object, path) !== undefined;
+  const set = (object, path, value) => { const keys = path.split("."); const last = keys.pop(); keys.reduce((o, k) => (o[k] ??= {}), object)[last] = value; };
+  foundry.utils = { getProperty: get, hasProperty: has, setProperty: set };
+
+  const created = Object.assign(Object.create(WeaponData.prototype), { parent: { updateSource(data) { this.data = data; } } });
+  await created._preCreate({ system: { properties: { twoHanded: true } } });
+  assert.deepEqual(created.parent.data, { "system.slots": 2 });
+
+  const weapon = Object.assign(Object.create(WeaponData.prototype), { slots: 1, properties: { twoHanded: false } });
+  const on = { system: { properties: { twoHanded: true } } };
+  await weapon._preUpdate(on);
+  assert.equal(on.system.slots, 2);
+
+  // A full sheet submission repeats the unchanged slot size alongside the toggle.
+  const form = Object.assign(Object.create(WeaponData.prototype), { slots: 1, properties: { twoHanded: false } });
+  const full = { system: { slots: 1, properties: { twoHanded: true } } };
+  await form._preUpdate(full);
+  assert.equal(full.system.slots, 2);
+  const back = Object.assign(Object.create(WeaponData.prototype), { slots: 2, properties: { twoHanded: true } });
+  const off = { system: { slots: 2, properties: { twoHanded: false } } };
+  await back._preUpdate(off);
+  assert.equal(off.system.slots, 1);
+  // Unrelated submissions with Two-handed unchanged leave slots alone.
+  const same = { system: { slots: 1, properties: { twoHanded: false } } };
+  await form._preUpdate(same);
+  assert.equal(same.system.slots, 1);
+  // Typing a new slot size in the same submission wins.
+  const typed = { system: { slots: 4, properties: { twoHanded: true } } };
+  await form._preUpdate(typed);
+  assert.equal(typed.system.slots, 4);
+
+  const edited = Object.assign(Object.create(WeaponData.prototype), { slots: 3, properties: { twoHanded: false } });
+  const keep = { system: { properties: { twoHanded: true } } };
+  await edited._preUpdate(keep);
+  assert.equal(keep.system.slots, undefined);
+});
+
+test("consumable and miscellaneous types have their own models, rows and creation", async () => {
+  const consumable = ConsumableData.defineSchema();
+  assert.equal(consumable.perSlot.options.initial, 5);
+  assert.ok(consumable.healingDice && consumable.kind);
+  assert.equal(consumable.equipped, undefined);
+  assert.equal(MiscData.defineSchema().equipped, undefined);
+  assert.equal(ITEM_TYPES.misc, "Miscellaneous");
+  const [potion, rope] = equipmentRows([
+    { id: "p", name: "Potion", type: "consumable", system: { kind: "potion", healingDice: "2d4+2", perSlot: 5, quantity: 3 } },
+    { id: "r", name: "Rope", type: "misc", system: { perSlot: 1, quantity: 1 } }
+  ], { p: 1, r: 1 });
+  assert.equal(potion.detail, "Potion · Heals 2d4+2 · 5 per slot");
+  assert.equal(potion.canUse, true);
+  assert.equal(potion.canEquip, false);
+  assert.equal(rope.canUse, false);
+  assert.equal(rope.slots, 1);
+  const created = [];
+  const actor = { isOwner: true, async createEmbeddedDocuments(type, data) { created.push(data[0]); return [{ sheet: { render() {} } }]; } };
+  await createEquipment(actor, "misc");
+  assert.deepEqual(created, [{ name: "New miscellaneous", type: "misc" }]);
 });

@@ -3,9 +3,9 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { wornEquipment } from "./equipment-core.mjs";
+import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
-import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
+import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -44,12 +44,14 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       reactions: pool(),
       wonder: pool(),
       bonuses: new SchemaField({ armor: number(), evasion: number() }),
+      inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
       overrides: new SchemaField({
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
         evasion: override(),
         armorRating: override(),
         movement: override(),
-        armorAgilityPenalty: override()
+        armorAgilityPenalty: override(),
+        inventorySlots: override()
       })
     };
   }
@@ -83,6 +85,12 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.reactions.max = this.core.reactionsMax;
     this.reactions.value = numberOr(this.reactions.value, this.reactions.max);
     Object.assign(this.wonder, wonderPool(this.stats.fth.value, this.wonder));
+    const items = this.parent?.items ?? [];
+    this.carrying = inventory({
+      items, strengthMod: this.stats.str.mod,
+      backpack: this.inventory.backpack, capacityOverride: this.overrides.inventorySlots
+    });
+    this.block = blockDice({ level: this.level, items });
   }
 
   async _preCreate(data, options, user) {
@@ -152,7 +160,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ],
       defyFate: system.stats.fth.value >= 21,
       worn: system.equipment,
-      equipment: equipmentRows(this.actor.items ?? []),
+      equipment: equipmentRows(this.actor.items ?? [], system.carrying?.perItem),
+      carrying: system.carrying,
+      block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
@@ -217,6 +227,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "create") return await createEquipment(this.actor, target.dataset.type);
       if (operation === "edit") return item?.sheet.render({ force: true });
       if (operation === "toggle") return await toggleEquipment(this.actor, item?.id);
+      if (operation === "use") return await useConsumable(this.actor, item?.id);
       if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
       })) return await item.delete();
@@ -245,7 +256,7 @@ Hooks.once("init", () => {
   CONFIG.Actor.dataModels.character = CharacterData;
   Object.assign(CONFIG.Item.dataModels, EQUIPMENT_MODELS);
   foundry.documents.collections.Items.registerSheet(SYSTEM_ID, EquipmentSheet, {
-    types: Object.keys(EQUIPMENT_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
+    types: Object.keys(ITEM_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
   });
   CONFIG.Actor.trackableAttributes = {
     character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
@@ -264,5 +275,6 @@ Hooks.once("init", () => {
 });
 
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
+Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);
