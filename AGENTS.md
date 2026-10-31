@@ -37,6 +37,6 @@ The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separa
 
 ## Installing into Foundry
 
-The user's Foundry runs from `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond`. It is a plain copy, not a git clone. After a PR is merged, the merged `main` gets copied there. Never install an unmerged branch over it unless the user asks to test that branch.
+The user's Foundry runs from `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond`. It is a plain copy, not a git clone.
 
-Back up and verify the existing system before any authorized installation. Preserve unrelated files and never touch world/actor data or program binaries. Install merged main only unless the user explicitly asks to test a branch; the latest user instruction supersedes earlier blanket permission for Codex PR installations. Verify installed files and report the version and backup location.
+The user's latest explicit preference is to install the exact tested commit whenever Codex opens or updates a PR, so they can test before merging. This authorizes Codex branch installation and supersedes the earlier merged-main-only preference. First back up and verify the current system, preserve unrelated files, and never touch world/actor data or program binaries. Verify installed files against that commit and report the PR/version and backup location. Ask the user to restart Foundry and refresh player browsers. The user tests and merges; never merge automatically.
