@@ -1,0 +1,40 @@
+<div class="wb-body">
+  <header class="wb-header">
+    <button type="button" class="wb-portrait" data-action="pickPortrait" data-tooltip="Change portrait" {{#unless editable}}disabled{{/unless}}>
+      <img src="{{actor.img}}" alt="{{actor.name}}">
+    </button>
+    <div class="wb-identity">
+      <span class="wb-eyebrow">Character</span>
+      <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
+    </div>
+    <label class="wb-level">
+      <span class="wb-eyebrow">Level</span>
+      <input type="number" name="system.level" value="{{system.level}}" min="1" step="1" {{#unless editable}}disabled{{/unless}}>
+    </label>
+  </header>
+
+  <section class="wb-stats">
+    {{#each groups as |group|}}
+    <div class="wb-group">
+      <h2 class="wb-group-title">{{group.title}}</h2>
+      <ol class="wb-stat-list">
+        {{#each group.rows as |stat|}}
+        <li class="wb-stat">
+          <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="Roll {{stat.label}}: d20 {{stat.modLabel}}">{{stat.abbr}}</button>
+          <span class="wb-label">{{stat.label}}</span>
+          <input class="wb-score" type="number" name="system.stats.{{stat.key}}.value" value="{{stat.value}}" min="0" step="1" aria-label="{{stat.label}} score" {{#unless @root.editable}}disabled{{/unless}}>
+          <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
+          <span class="wb-pips">
+            {{#each stat.pips as |pip|}}
+            <span class="wb-pip {{#if pip.lit}}is-lit{{/if}}" data-tooltip="{{pip.score}}: {{pip.name}}"></span>
+            {{/each}}
+          </span>
+        </li>
+        {{/each}}
+      </ol>
+    </div>
+    {{/each}}
+  </section>
+
+  <p class="wb-hint">Click a stat's abbreviation to roll d20 + its modifier. The diamonds light up at 21 and 28.</p>
+</div>

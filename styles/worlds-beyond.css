@@ -1,0 +1,205 @@
+@import url("https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya+Sans+SC:wght@500;700&family=Marcellus+SC&display=swap");
+
+/* Worlds Beyond character sheet. Colors and fonts match the Worlds Beyond website's dark theme. */
+.worlds-beyond.wb-sheet {
+  --wb-bg: #0D111E;
+  --wb-sheet: #141A2B;
+  --wb-field: #1A2136;
+  --wb-ink: #E7E4D8;
+  --wb-muted: #959CB2;
+  --wb-rule: #2C3452;
+  --wb-track: #232B44;
+  --wb-brass: #D6A85C;
+  --wb-brass-soft: rgba(214, 168, 92, 0.14);
+  --wb-verdigris: #5DB6AA;
+  --wb-blood: #DE6C63;
+  --wb-font-display: "Marcellus SC", "Trajan Pro", "Palatino Linotype", Georgia, serif;
+  --wb-font-body: "Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  --wb-font-label: "Alegreya Sans SC", "Alegreya Sans", "Gill Sans", system-ui, sans-serif;
+  min-width: 420px;
+  border: 1px solid var(--wb-rule);
+}
+
+.worlds-beyond.wb-sheet .window-header {
+  background: var(--wb-bg);
+  border-bottom: 1px solid var(--wb-rule);
+  color: var(--wb-ink);
+  font-family: var(--wb-font-label);
+  letter-spacing: 0.08em;
+}
+
+.worlds-beyond.wb-sheet .window-content {
+  background: var(--wb-sheet);
+  color: var(--wb-ink);
+  font-family: var(--wb-font-body);
+  font-size: 15px;
+  padding: 0;
+}
+
+.worlds-beyond .wb-body {
+  display: grid;
+  gap: 22px;
+  padding: 22px 24px 18px;
+}
+
+/* inputs */
+.worlds-beyond .wb-body input {
+  font: inherit;
+  color: var(--wb-ink);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  height: auto;
+  padding: 0;
+}
+.worlds-beyond .wb-body input[type="number"] { appearance: textfield; -moz-appearance: textfield; text-align: center; }
+.worlds-beyond .wb-body input[type="number"]::-webkit-outer-spin-button,
+.worlds-beyond .wb-body input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.worlds-beyond .wb-body input:focus-visible { background: var(--wb-brass-soft); box-shadow: 0 2px 0 0 var(--wb-brass); }
+.worlds-beyond .wb-body input:disabled { color: var(--wb-ink); }
+
+.worlds-beyond .wb-eyebrow {
+  display: block;
+  font-family: var(--wb-font-label);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--wb-brass);
+}
+
+/* header */
+.worlds-beyond .wb-header {
+  display: grid;
+  grid-template-columns: 76px 1fr auto;
+  gap: 18px;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--wb-rule);
+}
+.worlds-beyond .wb-portrait {
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border: 1px solid var(--wb-brass);
+  border-radius: 50%;
+  background: var(--wb-field);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px var(--wb-sheet), 0 0 0 5px var(--wb-rule);
+}
+.worlds-beyond .wb-portrait:disabled { cursor: default; }
+.worlds-beyond .wb-portrait img { width: 100%; height: 100%; object-fit: cover; border: none; }
+.worlds-beyond .wb-identity { min-width: 0; }
+.worlds-beyond .wb-body .wb-name {
+  width: 100%;
+  font-family: var(--wb-font-display);
+  font-size: 28px;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+.worlds-beyond .wb-level {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 64px;
+  padding: 8px 6px 6px;
+  border: 1px solid var(--wb-rule);
+  border-radius: 4px;
+  background: var(--wb-field);
+}
+.worlds-beyond .wb-body .wb-level input {
+  width: 100%;
+  font-family: var(--wb-font-display);
+  font-size: 24px;
+}
+
+/* stats */
+.worlds-beyond .wb-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 18px 26px;
+}
+.worlds-beyond .wb-group-title {
+  margin: 0 0 6px;
+  padding: 0 0 6px;
+  border-bottom: 1px solid var(--wb-rule);
+  font-family: var(--wb-font-label);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--wb-muted);
+}
+.worlds-beyond .wb-stat-list { list-style: none; margin: 0; padding: 0; }
+.worlds-beyond .wb-stat {
+  display: grid;
+  grid-template-columns: 52px 1fr 48px 46px 30px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--wb-track);
+}
+.worlds-beyond .wb-stat:last-child { border-bottom: none; }
+
+.worlds-beyond .wb-abbr {
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  font-family: var(--wb-font-label);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: var(--wb-brass);
+  background: var(--wb-brass-soft);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.worlds-beyond .wb-abbr:hover { border-color: var(--wb-brass); background: rgba(214, 168, 92, 0.22); }
+.worlds-beyond .wb-abbr:focus-visible { outline: 2px solid var(--wb-brass); outline-offset: 2px; }
+
+.worlds-beyond .wb-label { font-size: 15px; color: var(--wb-ink); }
+
+.worlds-beyond .wb-body .wb-score {
+  width: 100%;
+  height: 34px;
+  font-family: var(--wb-font-display);
+  font-size: 21px;
+  background: var(--wb-field);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+}
+
+.worlds-beyond .wb-mod {
+  font-family: var(--wb-font-display);
+  font-size: 19px;
+  text-align: center;
+  color: var(--wb-verdigris);
+  font-variant-numeric: tabular-nums;
+}
+.worlds-beyond .wb-mod.is-negative { color: var(--wb-blood); }
+
+.worlds-beyond .wb-pips { display: flex; gap: 6px; justify-content: flex-end; }
+.worlds-beyond .wb-pip {
+  width: 9px;
+  height: 9px;
+  transform: rotate(45deg);
+  border: 1px solid var(--wb-rule);
+  background: transparent;
+}
+.worlds-beyond .wb-pip.is-lit {
+  border-color: var(--wb-brass);
+  background: var(--wb-brass);
+  box-shadow: 0 0 6px rgba(214, 168, 92, 0.55);
+}
+
+.worlds-beyond .wb-hint {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--wb-rule);
+  font-size: 13px;
+  color: var(--wb-muted);
+}
