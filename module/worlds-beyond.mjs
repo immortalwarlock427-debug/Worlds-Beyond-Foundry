@@ -3,13 +3,15 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
+import { wornEquipment } from "./equipment-core.mjs";
+import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
-const { NumberField, SchemaField, StringField } = foundry.data.fields;
+const { NumberField, SchemaField, StringField, BooleanField } = foundry.data.fields;
 
 /* -------------------------------------------- */
 /*  Data model                                  */
@@ -25,7 +27,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       max: number(0, { persisted: false })
     });
     const stat = () => new SchemaField({
-      value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 })
+      value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 }),
+      manual: new BooleanField({ initial: false }),
+      resetValue: override()
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
@@ -44,21 +48,27 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
         evasion: override(),
         armorRating: override(),
-        movement: override()
+        movement: override(),
+        armorAgilityPenalty: override()
       })
     };
   }
 
   prepareDerivedData() {
+    this.equipment = wornEquipment({
+      items: this.parent?.items ?? [], agility: this.stats.agl.value, strength: this.stats.str.value,
+      penaltyOverride: this.overrides.armorAgilityPenalty
+    });
     for (const { key } of STATS) {
       const stat = this.stats[key];
-      stat.mod = statModifier(key, stat.value);
-      stat.milestones = milestonesReached(stat.value);
+      stat.effective = key === "agl" ? this.equipment.effectiveAgility : stat.value;
+      stat.mod = statModifier(key, stat.effective);
+      stat.milestones = milestonesReached(stat.effective);
     }
     this.core = coreNumbers({
       level: this.level,
-      stats: this.stats,
-      bonuses: this.bonuses,
+      stats: { ...this.stats, agl: { value: this.equipment.effectiveAgility } },
+      bonuses: { armor: this.equipment.armor + this.bonuses.armor, evasion: this.equipment.evasion + this.bonuses.evasion },
       overrides: {
         ...this.overrides,
         healthMax: this.health.maxOverride,
@@ -110,11 +120,17 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const system = this.actor.system;
+    const source = system.toObject();
     const rows = STATS.map(def => {
       const stat = system.stats[def.key];
+      const baseValue = source.stats[def.key].value;
+      const value = stat.effective ?? stat.value;
       return {
         ...def,
-        value: stat.value,
+        value, baseValue,
+        defaultValue: source.stats[def.key].resetValue ?? (source.stats[def.key].manual ? 12 : baseValue),
+        adjusted: value !== baseValue,
+        manual: !!source.stats[def.key].manual,
         modLabel: formatModifier(stat.mod),
         negative: stat.mod < 0,
         pips: def.milestones.map((name, i) => ({
@@ -135,6 +151,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder }
       ],
       defyFate: system.stats.fth.value >= 21,
+      worn: system.equipment,
       equipment: equipmentRows(this.actor.items ?? []),
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
@@ -151,6 +168,15 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _processFormData(event, form, formData) {
     const data = super._processFormData(event, form, formData);
+    delete data.statScores;
+    for (const [key, value] of editedStatInputs(form)) {
+      if (!STATS.some(stat => stat.key === key) || (value !== null && !Number.isFinite(value))) continue;
+      const source = this.actor.system.toObject().stats[key];
+      const resetValue = source.resetValue ?? (source.manual ? 12 : source.value);
+      foundry.utils.setProperty(data, `system.stats.${key}.value`, value === null ? resetValue : value);
+      foundry.utils.setProperty(data, `system.stats.${key}.manual`, value !== null);
+      foundry.utils.setProperty(data, `system.stats.${key}.resetValue`, value === null ? null : resetValue);
+    }
     const current = data.healthCurrent;
     delete data.healthCurrent;
     // A full sheet submission includes unchanged trackers. Do not turn an unrelated
@@ -165,6 +191,11 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       foundry.utils.setProperty(data, "system.health.damage", damageFromHealth(maximum, numberOr(current, maximum)));
     }
     return data;
+  }
+
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
 
   static async #onRollStat(event, target) {

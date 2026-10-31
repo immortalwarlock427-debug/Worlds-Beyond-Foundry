@@ -186,6 +186,9 @@
   font-variant-numeric: tabular-nums;
 }
 .worlds-beyond .wb-mod.is-negative { color: var(--wb-blood); }
+.worlds-beyond .wb-body .wb-score.is-manual { color: var(--wb-brass); }
+.worlds-beyond .wb-body .wb-score.is-adjusted { color: var(--wb-verdigris); }
+.worlds-beyond .wb-body .wb-score.is-manual.is-adjusted { color: #B99AE8; }
 
 .worlds-beyond .wb-pips { display: flex; gap: 6px; justify-content: flex-end; }
 .worlds-beyond .wb-pip {
@@ -340,3 +343,4 @@
 .worlds-beyond .wb-equipment-form textarea { width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--wb-rule); border-radius: 4px; color: var(--wb-ink); background: var(--wb-field); font: inherit; }
 .worlds-beyond .wb-equipment-form .wb-equipment-check { display: flex; align-items: center; min-height: 44px; }
 .worlds-beyond .wb-equipment-form textarea { resize: vertical; }
+.worlds-beyond .wb-armor-bonuses > p { grid-column: 1 / -1; margin: 4px 0; overflow-wrap: anywhere; }

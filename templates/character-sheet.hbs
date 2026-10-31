@@ -50,11 +50,17 @@
   </section>
 
   <fieldset class="wb-armor-bonuses">
-    <legend>Armor contributions</legend>
-    <label><span>Armor Rating from armor</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label><span>Evasion from light armor</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <legend>Worn armor and corrections</legend>
+    <p>Armor type: {{worn.type}} · Armor AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · Light armor NE +{{worn.evasion}}</p>
+    <label><span>Extra AR correction (added to items)</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label><span>Extra Evasion correction (added to items)</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <p>Effective AGL {{worn.effectiveAgility}} · Armor penalty {{worn.agilityPenalty}} · Movement costs {{worn.squareCost}} ft per square ({{worn.difficultSquareCost}} ft in difficult terrain).</p>
+    <label><span>Armor AGL penalty override (blank = auto)</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    {{#if worn.heavyDisadvantage}}<p>Heavy armor with STR below 21: attacks, Dodges and AGL saves have disadvantage. Choose disadvantage when rolling an AGL save.</p>{{/if}}
+    {{#each worn.blockDice}}<p>Shield Block die: {{this}}</p>{{/each}}
+    {{#each worn.duplicatePieces}}<p>Multiple equipped {{this}} records: their contributions are added. Review equipped items or use a correction if needed.</p>{{/each}}
   </fieldset>
-  <p class="wb-core-hint">Clear an override to use the rules. Enter armor contributions here until equipment is added. Health follows changes to its maximum; current pools remain editable.</p>
+  <p class="wb-core-hint">Equipped armor and shields now contribute automatically. Clear old manual armor totals to avoid counting them twice; the correction fields above add to equipped items. Final core-number overrides still replace the complete result. AGL score stays editable; modifiers, milestones, reactions and movement use effective AGL.</p>
 
   <section class="wb-stats">
     {{#each groups as |group|}}
@@ -65,7 +71,7 @@
         <li class="wb-stat">
           <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage">{{stat.abbr}}</button>
           <span class="wb-label">{{stat.label}}</span>
-          <input class="wb-score" type="number" name="system.stats.{{stat.key}}.value" value="{{stat.value}}" min="0" step="1" aria-label="{{stat.label}} score" {{#unless @root.editable}}disabled{{/unless}}>
+          <input class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}" type="number" name="statScores.{{stat.key}}" data-stat-score="{{stat.key}}" data-base="{{stat.baseValue}}" data-default="{{stat.defaultValue}}" data-effective="{{stat.value}}" data-manual="{{stat.manual}}" value="{{stat.value}}" step="1" aria-label="{{stat.label}} score; edit base score" data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score. Clear to reset the manual edit; effects still apply." {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
           <span class="wb-pips">
             {{#each stat.pips as |pip|}}
@@ -86,7 +92,7 @@
       <button type="button" data-action="equipment" data-operation="create" data-type="armor" {{#unless editable}}disabled{{/unless}}>Add armor</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="shield" {{#unless editable}}disabled{{/unless}}>Add shield</button>
     </div>
-    <p class="wb-core-hint">Drop items here from the Items directory, or add your own. Equipping records what you wear or wield; enter armor contributions above until equipment calculations are added.</p>
+    <p class="wb-core-hint">Drop items here from the Items directory, or add your own. Equipped armor and shields update defenses automatically. Each leg-guard item represents a complete pair; armor quantity does not multiply worn contributions.</p>
     <ul class="wb-equipment-list">
       {{#each equipment}}
       <li data-item-id="{{id}}">

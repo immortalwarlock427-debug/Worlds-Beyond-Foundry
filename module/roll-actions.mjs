@@ -14,7 +14,7 @@ export async function promptStatCheck(actor, statKey) {
     classes: [SYSTEM_ID, "wb-roll-dialog"],
     position: { width: 360 },
     window: { title: `${stat.label} roll` },
-    content: await renderTemplate("check-dialog", { label: stat.label }),
+    content: await renderTemplate("check-dialog", { label: stat.label, heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage }),
     ok: { label: "Roll" },
     rejectClose: false
   });
