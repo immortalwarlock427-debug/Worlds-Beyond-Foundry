@@ -117,11 +117,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const system = this.actor.system;
+    const source = system.toObject();
     const rows = STATS.map(def => {
       const stat = system.stats[def.key];
+      const baseValue = source.stats[def.key].value;
+      const value = stat.effective ?? stat.value;
       return {
         ...def,
-        value: stat.value,
+        value, baseValue,
+        adjusted: value !== baseValue,
+        increased: value > baseValue,
         modLabel: formatModifier(stat.mod),
         negative: stat.mod < 0,
         pips: def.milestones.map((name, i) => ({

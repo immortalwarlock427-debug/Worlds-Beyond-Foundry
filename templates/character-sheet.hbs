@@ -71,7 +71,16 @@
         <li class="wb-stat">
           <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage">{{stat.abbr}}</button>
           <span class="wb-label">{{stat.label}}</span>
-          <input class="wb-score" type="number" name="system.stats.{{stat.key}}.value" value="{{stat.value}}" min="0" step="1" aria-label="{{stat.label}} score" {{#unless @root.editable}}disabled{{/unless}}>
+          <div class="wb-score-cell">
+            {{#if stat.adjusted}}
+            <span class="wb-effective-score {{#if stat.increased}}is-increased{{else}}is-reduced{{/if}}" aria-label="Effective {{stat.label}} {{stat.value}}; base {{stat.baseValue}}">{{stat.value}}<small>Effective</small></span>
+            <label class="wb-base-score">Base
+              <input class="wb-score" type="number" name="system.stats.{{stat.key}}.value" value="{{stat.baseValue}}" min="0" step="1" aria-label="Base {{stat.label}} score" {{#unless @root.editable}}disabled{{/unless}}>
+            </label>
+            {{else}}
+            <input class="wb-score" type="number" name="system.stats.{{stat.key}}.value" value="{{stat.baseValue}}" min="0" step="1" aria-label="{{stat.label}} score" {{#unless @root.editable}}disabled{{/unless}}>
+            {{/if}}
+          </div>
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
           <span class="wb-pips">
             {{#each stat.pips as |pip|}}

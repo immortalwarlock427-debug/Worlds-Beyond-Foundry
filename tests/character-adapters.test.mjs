@@ -16,6 +16,7 @@ class ActorStub {
   async modifyTokenAttribute(...args) { this.fallback = args; return this; }
 }
 class SheetStub {
+  async _prepareContext() { return {}; }
   _processFormData(event, form, formData) { return structuredClone(formData.object); }
 }
 globalThis.foundry = {
@@ -28,6 +29,31 @@ globalThis.foundry = {
 globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
+
+test("sheet shows effective stats and colors changes while editing only persisted base scores", async () => {
+  const stats = Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0, milestones: 0 }]));
+  const source = structuredClone(stats);
+  stats.agl.effective = 9; stats.agl.mod = -1;
+  stats.vit.value = 15; stats.vit.effective = 15; stats.vit.mod = 1;
+  const sheet = new CharacterSheet();
+  sheet.actor = { items: [], system: { stats, toObject: () => ({ stats: source }), health: {}, ap: {}, reactions: {}, wonder: {}, core: { automatic: {} }, overrides: {} } };
+  sheet.isEditable = true;
+  const context = await sheet._prepareContext({});
+  const rows = context.groups.flatMap(group => group.rows);
+  const agl = rows.find(row => row.key === "agl");
+  assert.equal(agl.value, 9);
+  assert.equal(agl.baseValue, 12);
+  assert.equal(agl.adjusted, true);
+  assert.equal(agl.increased, false);
+  assert.equal(agl.modLabel, "−1");
+  const vit = rows.find(row => row.key === "vit");
+  assert.equal(vit.value, 15);
+  assert.equal(vit.baseValue, 12);
+  assert.equal(vit.increased, true);
+  assert.equal(rows.find(row => row.key === "str").adjusted, false);
+  assert.equal(source.agl.value, 12);
+  assert.equal(source.vit.value, 12);
+});
 
 function actor() {
   const actor = new CharacterActor();
