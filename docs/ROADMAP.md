@@ -28,7 +28,7 @@ Website features map to Foundry like this:
 
 1. **Core numbers.** Health (VIT × level from current VIT), hit die from the VIT row, AP (15, +2 every 5 levels), reactions (1, +1 at AGL 21 and 28), Natural Evasion (12 + AGL mod + light-armor bonus), Armor Rating (VIT mod + armor), movement per AP (5 ft + 5 ft per AGL mod), with manual overrides. Health and AP as token bars. Build the sheet with a narrow phone layout from the start.
 2. **Rolls.** Checks with advantage/disadvantage, Wonder rerolls (FTH mod per long rest) and clean chat cards.
-3. **Equipment.** Weapon, armor and shield item types with their properties. Worn slots (armor by piece: chest, pants, arm guards, leg guards as a pair, helmet). Armor sets AR, Evasion bonus and the heavy-armor AGL penalty. Inventory slots (10 + STR mod, backpack adds more). The full weapon list from Notion's Weapons Explained page. **Settle the compendium question below first.**
+3. **Equipment.** Weapon, armor and shield item types with their properties. Worn slots (armor by piece: chest, pants, arm guards, leg guards as a pair, helmet). Armor sets AR, Evasion bonus and the heavy-armor AGL penalty. Inventory slots (10 + STR mod, backpack adds more). The full weapon list from Notion's Weapons Explained page. The weapon list can ship as a compendium pack.
 4. **Attacks and damage.** Attack vs Natural Evasion, damage dice scaling at levels 5/10/15/20, Finesse/Paragon crit range 18–20, Heavy and Paragon double modifiers, two-handed hits halving AR, Block dice. Signature properties start as descriptive text and get automated one at a time.
 5. **Combat flow.** AP and reactions reset at turn start through combat hooks. Block, Dodge, Parry and opportunity attacks as reactions. Command passing AP to an ally.
 6. **Mana, holy power and custom resources.** Max = INT or FTH × (level + 2) from the current stat. Custom pools with current/max, regeneration and long-rest refill.
@@ -38,5 +38,5 @@ Website features map to Foundry like this:
 
 ## Open questions
 
-- **Compendiums vs the folder-depth limit.** Foundry stores compendium packs in nested folders (`packs/<name>/…`). Claude currently can't copy files that deep into the user's Foundry install. Options: connect the Foundry system folder itself to Claude so the depth counts from there, keep item data in a flat file with a button that builds the compendium inside Foundry, or make the Foundry folder a git clone updated with `git pull`. Decide before step 3.
+- **Compendiums and folder depth — resolved.** The user connected the system folder itself to Claude, so nesting is counted from `worlds-beyond\` and compendium packs (`packs/<name>/…`) can be copied into Foundry. Packs can live in the repo as normal.
 - **Phones.** The table plays in person with each player on a phone. Foundry runs in a phone browser, but its interface is cramped. Sheets need a narrow layout. The canvas will stay clunky on phones.

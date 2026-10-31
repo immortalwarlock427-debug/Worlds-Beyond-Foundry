@@ -23,7 +23,7 @@ The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separa
 - **Never change the system id `worlds-beyond`.** Worlds are tied to it, and renaming it breaks them.
 - Data model changes affect actors that already exist. Prefer adding fields with sensible `initial` values. Renaming or removing a field needs a migration, so ask the user first.
 - Bump `version` in `system.json` with each merged release.
-- **Keep folders one level deep** (`module/`, `templates/`, `styles/`, `tests/`). Claude copies files into the user's Foundry folder, and it can't reach files nested deeper than that.
+- Keep the folder layout shallow (`module/`, `templates/`, `styles/`, `tests/`, `docs/`, `packs/<name>/`). Claude copies files into the user's Foundry folder and can reach up to about 6 folders below the system folder.
 - No build step. Foundry loads the files in this repository as they are.
 - Rules math lives in Foundry-free modules (like `module/stats.mjs`) so it can be tested with `node --test`. Sheets and Foundry hooks import from them and don't repeat the math.
 - Scope all CSS under `.worlds-beyond` so it can't restyle Foundry's own windows or other systems.
