@@ -6,7 +6,7 @@ function fixture(base = "21", effective = "23") {
   const listeners = {};
   const classes = new Set(["is-adjusted"]);
   const input = {
-    value: effective, dataset: { statScore: "agl", base, effective },
+    value: effective, dataset: { statScore: "agl", base, effective, default: base },
     classList: { add: key => classes.add(key), remove: key => classes.delete(key), toggle: (key, on) => on ? classes.add(key) : classes.delete(key) },
     addEventListener: (event, listener) => { (listeners[event] ??= []).push(listener); }
   };
@@ -41,7 +41,7 @@ test("editing base 21 to 22 with a +2 effect displays 24 and records only the ba
   assert.equal(f.classes.has("is-adjusted"), true);
 });
 
-test("penalties use the same adjusted state; zero remains editable; blanks do not overwrite scores", () => {
+test("penalties use the same adjusted state; zero remains editable; clearing resets the manual edit", () => {
   const f = fixture("12", "9");
   f.fire("focus");
   f.input.value = "0";
@@ -52,9 +52,11 @@ test("penalties use the same adjusted state; zero remains editable; blanks do no
   f.fire("focus");
   f.input.value = "";
   f.fire("input");
-  assert.deepEqual(editedStatInputs(f.form), []);
+  assert.deepEqual(editedStatInputs(f.form), [["agl", null]]);
   f.fire("blur");
   assert.equal(f.input.value, "9");
+  assert.equal(f.classes.has("is-manual"), false);
+  assert.equal(f.classes.has("is-adjusted"), true);
 });
 
 test("binding again does not duplicate handlers and no-change edits do not persist", () => {
@@ -63,4 +65,17 @@ test("binding again does not duplicate handlers and no-change edits do not persi
   f.fire("focus");
   f.fire("input");
   assert.deepEqual(editedStatInputs(f.form), []);
+});
+
+
+test("clearing a saved manual score restores its original base plus the active adjustment", () => {
+  const f = fixture("22", "24");
+  f.input.dataset.default = "21";
+  f.input.dataset.manual = "true";
+  f.classes.add("is-manual");
+  f.fire("focus"); f.input.value = ""; f.fire("input"); f.fire("blur");
+  assert.equal(f.input.value, "23");
+  assert.deepEqual(editedStatInputs(f.form), [["agl", null]]);
+  assert.equal(f.classes.has("is-adjusted"), true);
+  assert.equal(f.classes.has("is-manual"), false);
 });

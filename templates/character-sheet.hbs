@@ -71,7 +71,7 @@
         <li class="wb-stat">
           <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage">{{stat.abbr}}</button>
           <span class="wb-label">{{stat.label}}</span>
-          <input class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}" type="number" name="statScores.{{stat.key}}" data-stat-score="{{stat.key}}" data-base="{{stat.baseValue}}" data-effective="{{stat.value}}" data-manual="{{stat.manual}}" value="{{stat.value}}" step="1" aria-label="{{stat.label}} score; edit base score" data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score." {{#unless @root.editable}}disabled{{/unless}}>
+          <input class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}" type="number" name="statScores.{{stat.key}}" data-stat-score="{{stat.key}}" data-base="{{stat.baseValue}}" data-default="{{stat.defaultValue}}" data-effective="{{stat.value}}" data-manual="{{stat.manual}}" value="{{stat.value}}" step="1" aria-label="{{stat.label}} score; edit base score" data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score. Clear to reset the manual edit; effects still apply." {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
           <span class="wb-pips">
             {{#each stat.pips as |pip|}}

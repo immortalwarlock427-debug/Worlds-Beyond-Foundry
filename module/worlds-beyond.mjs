@@ -28,7 +28,8 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     });
     const stat = () => new SchemaField({
       value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 }),
-      manual: new BooleanField({ initial: false })
+      manual: new BooleanField({ initial: false }),
+      resetValue: override()
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
@@ -127,6 +128,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       return {
         ...def,
         value, baseValue,
+        defaultValue: source.stats[def.key].resetValue ?? (source.stats[def.key].manual ? 12 : baseValue),
         adjusted: value !== baseValue,
         manual: !!source.stats[def.key].manual,
         modLabel: formatModifier(stat.mod),
@@ -168,9 +170,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const data = super._processFormData(event, form, formData);
     delete data.statScores;
     for (const [key, value] of editedStatInputs(form)) {
-      if (!STATS.some(stat => stat.key === key) || !Number.isFinite(value)) continue;
-      foundry.utils.setProperty(data, `system.stats.${key}.value`, value);
-      foundry.utils.setProperty(data, `system.stats.${key}.manual`, true);
+      if (!STATS.some(stat => stat.key === key) || (value !== null && !Number.isFinite(value))) continue;
+      const source = this.actor.system.toObject().stats[key];
+      const resetValue = source.resetValue ?? (source.manual ? 12 : source.value);
+      foundry.utils.setProperty(data, `system.stats.${key}.value`, value === null ? resetValue : value);
+      foundry.utils.setProperty(data, `system.stats.${key}.manual`, value !== null);
+      foundry.utils.setProperty(data, `system.stats.${key}.resetValue`, value === null ? null : resetValue);
     }
     const current = data.healthCurrent;
     delete data.healthCurrent;

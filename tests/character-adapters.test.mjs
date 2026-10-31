@@ -126,11 +126,12 @@ test("simultaneous max and current Health corrections use the new maximum, inclu
 test("form submission saves deliberate base edits and never saves displayed effect scores", () => {
   const sheet = new CharacterSheet();
   sheet.actor = actor();
+  sheet.actor.system.toObject = () => ({ stats: { agl: { value: 21, manual: false, resetValue: null } } });
   const input = { dataset: { statScore: "agl", base: "21", pendingBase: "22" } };
   const form = { querySelectorAll: () => [input] };
   const data = sheet._processFormData(null, form, { object: { statScores: { agl: 24 } } });
   assert.equal(data.statScores, undefined);
-  assert.deepEqual(data.system.stats.agl, { value: 22, manual: true });
+  assert.deepEqual(data.system.stats.agl, { value: 22, manual: true, resetValue: 21 });
   delete input.dataset.pendingBase;
   const untouched = sheet._processFormData(null, form, { object: { statScores: { agl: 23 } } });
   assert.equal(untouched.statScores, undefined);
@@ -145,4 +146,21 @@ test("new actors get Health/AP token defaults while imported bar settings are pr
   assert.deepEqual(changes.pop(), { "prototypeToken.bar1.attribute": "health", "prototypeToken.bar2.attribute": "ap" });
   await model._preCreate({ prototypeToken: { bar1: { attribute: null }, bar2: { attribute: "reactions" } } }, {}, {});
   assert.deepEqual(changes.pop(), {});
+});
+
+
+test("repeated edits retain the original reset score; clearing restores it without writing effects", () => {
+  const sheet = new CharacterSheet(); sheet.actor = actor();
+  const source = { value: 22, manual: true, resetValue: 21 };
+  sheet.actor.system.toObject = () => ({ stats: { agl: source } });
+  const input = { dataset: { statScore: "agl", base: "22", pendingBase: "25" } };
+  const form = { querySelectorAll: () => [input] };
+  let result = sheet._processFormData(null, form, { object: { statScores: { agl: 27 } } });
+  assert.deepEqual(result.system.stats.agl, { value: 25, manual: true, resetValue: 21 });
+  input.dataset.pendingBase = "";
+  result = sheet._processFormData(null, form, { object: { statScores: { agl: "" } } });
+  assert.deepEqual(result.system.stats.agl, { value: 21, manual: false, resetValue: null });
+  source.resetValue = null;
+  result = sheet._processFormData(null, form, { object: {} });
+  assert.equal(result.system.stats.agl.value, 12);
 });
