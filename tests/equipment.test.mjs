@@ -141,6 +141,24 @@ test("Two-handed weapons default to 2 slots and toggling only moves an unedited 
   await weapon._preUpdate(on);
   assert.equal(on.system.slots, 2);
 
+  // A full sheet submission repeats the unchanged slot size alongside the toggle.
+  const form = Object.assign(Object.create(WeaponData.prototype), { slots: 1, properties: { twoHanded: false } });
+  const full = { system: { slots: 1, properties: { twoHanded: true } } };
+  await form._preUpdate(full);
+  assert.equal(full.system.slots, 2);
+  const back = Object.assign(Object.create(WeaponData.prototype), { slots: 2, properties: { twoHanded: true } });
+  const off = { system: { slots: 2, properties: { twoHanded: false } } };
+  await back._preUpdate(off);
+  assert.equal(off.system.slots, 1);
+  // Unrelated submissions with Two-handed unchanged leave slots alone.
+  const same = { system: { slots: 1, properties: { twoHanded: false } } };
+  await form._preUpdate(same);
+  assert.equal(same.system.slots, 1);
+  // Typing a new slot size in the same submission wins.
+  const typed = { system: { slots: 4, properties: { twoHanded: true } } };
+  await form._preUpdate(typed);
+  assert.equal(typed.system.slots, 4);
+
   const edited = Object.assign(Object.create(WeaponData.prototype), { slots: 3, properties: { twoHanded: false } });
   const keep = { system: { properties: { twoHanded: true } } };
   await edited._preUpdate(keep);

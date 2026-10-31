@@ -58,8 +58,11 @@ export class WeaponData extends EquipmentData {
   // changed the slot size themselves (it no longer matches the old default).
   async _preUpdate(changes, options, user) {
     if (await super._preUpdate?.(changes, options, user) === false) return false;
+    // Sheets submit every field, so compare against saved values rather than presence.
     const twoHanded = foundry.utils.getProperty(changes, "system.properties.twoHanded");
-    if (twoHanded === undefined || foundry.utils.hasProperty(changes, "system.slots")) return;
+    if (twoHanded === undefined || !!twoHanded === !!this.properties?.twoHanded) return;
+    const slots = foundry.utils.getProperty(changes, "system.slots");
+    if (slots !== undefined && Number(slots) !== this.slots) return;
     if (this.slots === defaultSlots("weapon", this)) {
       foundry.utils.setProperty(changes, "system.slots", defaultSlots("weapon", { properties: { twoHanded } }));
     }
