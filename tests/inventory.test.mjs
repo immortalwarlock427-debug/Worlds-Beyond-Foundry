@@ -69,3 +69,27 @@ test("Block dice gain a die every 5 levels and the largest equipped shield sets 
   assert.equal(blockDice({ level: 5, items: [wood] }).fromShield, true);
   assert.equal(blockDice({ level: 1, items: [stowed] }).fromShield, false);
 });
+
+import { consumableUse, healedDamage } from "../module/equipment-core.mjs";
+
+test("using a consumable spends one and refuses when none remain", () => {
+  assert.deepEqual(consumableUse(3), { ok: true, quantity: 2 });
+  assert.deepEqual(consumableUse(1), { ok: true, quantity: 0 });
+  assert.equal(consumableUse(0).ok, false);
+  assert.equal(consumableUse("x").ok, false);
+});
+
+test("consumable healing stops at full Health and leaves corrections above maximum alone", () => {
+  assert.equal(healedDamage(10, 4), 6);
+  assert.equal(healedDamage(3, 8), 0);
+  assert.equal(healedDamage(0, 5), 0);
+  assert.equal(healedDamage(-4, 5), -4);
+  assert.equal(healedDamage(10, -3), 10);
+});
+
+test("consumables and miscellaneous items use inventory slots and never count as worn", () => {
+  const potions = { id: "p", type: "consumable", system: { quantity: 6, slots: 1, perSlot: 5, equipped: true } };
+  const rope = { id: "r", type: "misc", system: { quantity: 1, slots: 1, perSlot: 1 } };
+  assert.equal(carriedSlots(potions), 2);
+  assert.equal(inventory({ items: [potions, rope] }).used, 3);
+});

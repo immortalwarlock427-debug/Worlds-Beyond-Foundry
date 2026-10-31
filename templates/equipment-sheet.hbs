@@ -8,7 +8,7 @@
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
-    <label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>
+    {{#if equippable}}<label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>{{/if}}
   </div>
   {{#if weapon}}
   <div class="wb-equipment-fields">
@@ -37,6 +37,12 @@
     <label>Natural Evasion bonus<input type="number" name="system.evasionBonus" value="{{system.evasionBonus}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
+  {{#if consumable}}
+  <div class="wb-equipment-fields">
+    <label>Kind<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each consumableKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Healing dice<input type="text" name="system.healingDice" value="{{system.healingDice}}" placeholder="2d6+2" {{#unless editable}}disabled{{/unless}}></label>
+  </div>
+  {{/if}}
   {{#if shield}}
   <div class="wb-equipment-fields">
     <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
@@ -44,5 +50,6 @@
   </div>
   {{/if}}
   <label>Description and rules<textarea name="system.description" rows="5" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
-  <p class="wb-core-hint">Equipped armor and shields contribute to character defenses. Leg guards represent a complete pair; worn contributions count once per record, regardless of quantity. Weapon attacks are added in a later step.</p>
+  {{#if equippable}}<p class="wb-core-hint">Equipped armor and shields contribute to character defenses. Leg guards represent a complete pair; worn contributions count once per record, regardless of quantity. Weapon attacks are added in a later step.</p>{{/if}}
+  {{#if consumable}}<p class="wb-core-hint">Use one from the character sheet. Potions and ammunition stack 5 to a slot. Healing dice are rolled on use and applied from the chat card.</p>{{/if}}
 </div>

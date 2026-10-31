@@ -5,7 +5,7 @@ import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
-import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
+import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -227,6 +227,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "create") return await createEquipment(this.actor, target.dataset.type);
       if (operation === "edit") return item?.sheet.render({ force: true });
       if (operation === "toggle") return await toggleEquipment(this.actor, item?.id);
+      if (operation === "use") return await useConsumable(this.actor, item?.id);
       if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
       })) return await item.delete();
@@ -255,7 +256,7 @@ Hooks.once("init", () => {
   CONFIG.Actor.dataModels.character = CharacterData;
   Object.assign(CONFIG.Item.dataModels, EQUIPMENT_MODELS);
   foundry.documents.collections.Items.registerSheet(SYSTEM_ID, EquipmentSheet, {
-    types: Object.keys(EQUIPMENT_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
+    types: Object.keys(ITEM_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
   });
   CONFIG.Actor.trackableAttributes = {
     character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
@@ -274,5 +275,6 @@ Hooks.once("init", () => {
 });
 
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
+Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);

@@ -68,3 +68,19 @@ export function blockDice({ level = 1, items = [] } = {}) {
   const size = faces.length ? Math.max(...faces) : 4;
   return { count, size, formula: `${count}d${size}`, fromShield: faces.length > 0, nextLevel: count * 5 };
 }
+
+// Consumables, ported from the website's UseConsumable command.
+export function consumableUse(quantity) {
+  const count = Number(quantity);
+  if (!Number.isFinite(count)) return { ok: false, message: "Set a quantity before using this consumable." };
+  if (count < 1) return { ok: false, message: "None of this consumable remain. Correct the quantity when you restock." };
+  return { ok: true, quantity: count - 1 };
+}
+
+// Healing lowers stored damage but never past full Health. Health already
+// corrected above maximum (negative damage) is left as the player set it.
+export function healedDamage(damage, amount) {
+  const current = numberOr(damage, 0);
+  if (current <= 0) return current;
+  return Math.max(0, current - Math.max(0, numberOr(amount, 0)));
+}

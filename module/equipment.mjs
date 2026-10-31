@@ -1,7 +1,10 @@
-import { defaultSlots } from "./equipment-core.mjs";
+import { defaultSlots, consumableUse, healedDamage } from "./equipment-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
+// Equippable types; ITEM_TYPES adds carried-only items.
 export const EQUIPMENT_TYPES = Object.freeze({ weapon: "Weapon", armor: "Armor", shield: "Shield" });
+export const ITEM_TYPES = Object.freeze({ ...EQUIPMENT_TYPES, consumable: "Consumable", misc: "Miscellaneous" });
+export const CONSUMABLE_KINDS = Object.freeze({ potion: "Potion", ammunition: "Ammunition", other: "Other" });
 export const ARMOR_TYPES = { light: "Light", medium: "Medium", heavy: "Heavy" };
 export const ARMOR_PIECES = {
   chest: "Chest", pants: "Pants", arms: "Arm guards", legs: "Leg guards (pair)", helmet: "Helmet"
@@ -24,14 +27,30 @@ const flags = keys => new foundry.data.fields.SchemaField(Object.fromEntries(
   Object.keys(keys).map(key => [key, new foundry.data.fields.BooleanField({ required: true, nullable: false, initial: false })])
 ));
 
-class EquipmentData extends foundry.abstract.TypeDataModel {
+class CarriedData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    return { description: text(), quantity: number(1), slots: number(1), perSlot: number(1), cost: text() };
+  }
+}
+
+class EquipmentData extends CarriedData {
+  static defineSchema() {
+    return { ...super.defineSchema(), equipped: new foundry.data.fields.BooleanField({ initial: false }) };
+  }
+}
+
+// Ammunition and potions stack 5 to a slot.
+export class ConsumableData extends CarriedData {
   static defineSchema() {
     return {
-      description: text(), quantity: number(1), slots: number(1), perSlot: number(1), cost: text(),
-      equipped: new foundry.data.fields.BooleanField({ initial: false })
+      ...super.defineSchema(), perSlot: number(5),
+      kind: text("potion", { choices: CONSUMABLE_KINDS, blank: false }),
+      healingDice: text()
     };
   }
 }
+
+export class MiscData extends CarriedData {}
 
 export class WeaponData extends EquipmentData {
   static defineSchema() {
@@ -84,7 +103,7 @@ export class ShieldData extends EquipmentData {
   }
 }
 
-export const EQUIPMENT_MODELS = Object.freeze({ weapon: WeaponData, armor: ArmorData, shield: ShieldData });
+export const EQUIPMENT_MODELS = Object.freeze({ weapon: WeaponData, armor: ArmorData, shield: ShieldData, consumable: ConsumableData, misc: MiscData });
 
 export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
   static DEFAULT_OPTIONS = {
@@ -98,8 +117,10 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
   async _prepareContext(options) {
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: this.item.system, editable: this.isEditable,
-      typeLabel: EQUIPMENT_TYPES[this.item.type],
+      typeLabel: ITEM_TYPES[this.item.type],
       weapon: this.item.type === "weapon", armor: this.item.type === "armor", shield: this.item.type === "shield",
+      consumable: this.item.type === "consumable", equippable: Object.hasOwn(EQUIPMENT_TYPES, this.item.type),
+      consumableKinds: Object.entries(CONSUMABLE_KINDS).map(([value, label]) => ({ value, label, selected: value === this.item.system.kind })),
       weaponFamilies: Object.entries(WEAPON_FAMILIES).map(([value, label]) => ({ value, label, selected: value === this.item.system.family })),
       weaponProperties: Object.entries(WEAPON_PROPERTIES).map(([key, label]) => ({ key, label, checked: !!this.item.system.properties?.[key] })),
       signatureProperties: Object.entries(SIGNATURE_PROPERTIES).map(([key, label]) => ({ key, label, checked: !!this.item.system.signature?.[key] })),
@@ -111,7 +132,8 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 
 export function equipmentRows(items, slotsUsed = {}) {
   return Array.from(items).map(item => ({
-    id: item.id, name: item.name, typeLabel: EQUIPMENT_TYPES[item.type] ?? "Gear",
+    id: item.id, name: item.name, typeLabel: ITEM_TYPES[item.type] ?? "Gear",
+    canUse: item.type === "consumable",
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
@@ -124,13 +146,16 @@ export function equipmentRows(items, slotsUsed = {}) {
       item.system.range?.normal || item.system.range?.long ? `Range ${item.system.range.normal}/${item.system.range.long} ft` : ""
     ].filter(Boolean).join(" · ")
       : item.type === "armor" ? `${ARMOR_TYPES[item.system.armorType] ?? item.system.armorType} · ${ARMOR_PIECES[item.system.piece] ?? item.system.piece} · AR ${item.system.armorRating} · NE +${item.system.evasionBonus}`
-        : item.type === "shield" ? `AR ${item.system.armorRating} · Block ${item.system.blockDie}` : ""
+        : item.type === "shield" ? `AR ${item.system.armorRating} · Block ${item.system.blockDie}`
+          : item.type === "consumable" ? [CONSUMABLE_KINDS[item.system.kind] ?? item.system.kind,
+            item.system.healingDice ? `Heals ${item.system.healingDice}` : "", `${item.system.perSlot} per slot`].filter(Boolean).join(" · ")
+            : item.type === "misc" && item.system.perSlot > 1 ? `${item.system.perSlot} per slot` : ""
   }));
 }
 
 export async function createEquipment(actor, type) {
-  if (!actor.isOwner || !Object.hasOwn(EQUIPMENT_TYPES, type)) return;
-  const [item] = await actor.createEmbeddedDocuments("Item", [{ name: `New ${EQUIPMENT_TYPES[type].toLowerCase()}`, type }]);
+  if (!actor.isOwner || !Object.hasOwn(ITEM_TYPES, type)) return;
+  const [item] = await actor.createEmbeddedDocuments("Item", [{ name: `New ${ITEM_TYPES[type].toLowerCase()}`, type }]);
   item?.sheet.render({ force: true });
   return item;
 }
@@ -139,4 +164,60 @@ export async function toggleEquipment(actor, id) {
   const item = actor.items.get(id);
   if (!actor.isOwner || !item || !Object.hasOwn(EQUIPMENT_TYPES, item.type)) return;
   return item.update({ "system.equipped": !item.system.equipped });
+}
+
+const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+
+// Spend one consumable and post a card. Healing dice are rolled, and the card
+// offers to apply them so the player confirms before Health changes.
+export async function useConsumable(actor, id) {
+  const item = actor.items.get(id);
+  if (!actor.isOwner || item?.type !== "consumable") return;
+  const use = consumableUse(item.system.quantity);
+  if (!use.ok) throw new Error(use.message);
+  const formula = String(item.system.healingDice ?? "").trim();
+  let roll = null;
+  if (formula) {
+    if (!foundry.dice.Roll.validate(formula)) throw new Error("Enter complete healing dice such as 2d6+2, or leave healing blank.");
+    roll = await new foundry.dice.Roll(formula).evaluate();
+  }
+  await item.update({ "system.quantity": use.quantity });
+  const amount = roll ? Math.max(0, roll.total) : 0;
+  const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
+    + (item.system.description ? `<p>${escapeHTML(item.system.description)}</p>` : "")
+    + `<p>One used, ${use.quantity} left.${roll ? ` Healing: ${amount}.` : " Apply any effects at the table."}</p>`
+    + (roll ? await roll.render() : "") + "</div>";
+  return foundry.documents.ChatMessage.implementation.create({
+    speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+    content, rolls: roll ? [roll] : [],
+    flags: { [SYSTEM_ID]: { consumable: { actorUuid: actor.uuid, amount, applied: false } } }
+  });
+}
+
+export async function applyConsumableHealing(message) {
+  const data = message.getFlag(SYSTEM_ID, "consumable");
+  if (!data || data.applied || !(data.amount > 0)) return;
+  const actor = await foundry.utils.fromUuid(data.actorUuid);
+  if (!actor?.isOwner) return;
+  await message.setFlag(SYSTEM_ID, "consumable", { ...data, applied: true });
+  await actor.update({ "system.health.damage": healedDamage(actor.system.health.damage, data.amount) });
+}
+
+export function decorateConsumableMessage(message, html) {
+  const data = message.getFlag?.(SYSTEM_ID, "consumable");
+  if (!data || !(data.amount > 0)) return;
+  const actor = foundry.utils.fromUuidSync(data.actorUuid);
+  const content = html.querySelector(".wb-consumable-card");
+  if (!actor?.isOwner || !content || content.querySelector(".wb-consumable-heal")) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "wb-consumable-heal";
+  button.disabled = !!data.applied;
+  button.textContent = data.applied ? `Healed ${data.amount}` : `Apply ${data.amount} healing to me`;
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try { await applyConsumableHealing(message); }
+    catch (error) { button.disabled = false; ui.notifications.error(error.message); }
+  });
+  content.append(button);
 }

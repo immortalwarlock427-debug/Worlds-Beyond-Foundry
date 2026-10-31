@@ -91,6 +91,8 @@
       <button type="button" data-action="equipment" data-operation="create" data-type="weapon" {{#unless editable}}disabled{{/unless}}>Add weapon</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="armor" {{#unless editable}}disabled{{/unless}}>Add armor</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="shield" {{#unless editable}}disabled{{/unless}}>Add shield</button>
+      <button type="button" data-action="equipment" data-operation="create" data-type="consumable" {{#unless editable}}disabled{{/unless}}>Add consumable</button>
+      <button type="button" data-action="equipment" data-operation="create" data-type="misc" {{#unless editable}}disabled{{/unless}}>Add miscellaneous</button>
     </div>
     <div class="wb-inventory">
       <p class="wb-inventory-total {{#if carrying.over}}is-over{{/if}}"><strong>{{carrying.used}} / {{carrying.capacity}}</strong> inventory slots{{#if carrying.over}} · over by {{carrying.over}}{{/if}}</p>
@@ -105,6 +107,7 @@
         <span>{{typeLabel}} · Qty {{quantity}} · {{#if equipped}}{{#if slots}}{{slots}} slots for extras{{else}}worn or in hand{{/if}}{{else}}{{slots}} slots{{/if}}</span>
         <p>{{detail}}</p>
         <div class="wb-equipment-actions">
+          {{#if canUse}}<button type="button" data-action="equipment" data-operation="use" {{#unless @root.editable}}disabled{{/unless}}>Use one</button>{{/if}}
           {{#if canEquip}}<button type="button" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if equipped}}Equipped{{else}}Equip{{/if}}</button>{{/if}}
           <button type="button" data-action="equipment" data-operation="delete" {{#unless @root.editable}}disabled{{/unless}}>Remove</button>
         </div>

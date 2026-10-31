@@ -11,7 +11,7 @@ globalThis.foundry = {
   abstract: { TypeDataModel: class {} },
   applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class { async _prepareContext() { return {}; } } } }
 };
-const { equipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
+const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
 
 test("equipment summaries support all new types and preserve legacy gear", () => {
   const rows = equipmentRows([
@@ -163,4 +163,26 @@ test("Two-handed weapons default to 2 slots and toggling only moves an unedited 
   const keep = { system: { properties: { twoHanded: true } } };
   await edited._preUpdate(keep);
   assert.equal(keep.system.slots, undefined);
+});
+
+test("consumable and miscellaneous types have their own models, rows and creation", async () => {
+  const consumable = ConsumableData.defineSchema();
+  assert.equal(consumable.perSlot.options.initial, 5);
+  assert.ok(consumable.healingDice && consumable.kind);
+  assert.equal(consumable.equipped, undefined);
+  assert.equal(MiscData.defineSchema().equipped, undefined);
+  assert.equal(ITEM_TYPES.misc, "Miscellaneous");
+  const [potion, rope] = equipmentRows([
+    { id: "p", name: "Potion", type: "consumable", system: { kind: "potion", healingDice: "2d4+2", perSlot: 5, quantity: 3 } },
+    { id: "r", name: "Rope", type: "misc", system: { perSlot: 1, quantity: 1 } }
+  ], { p: 1, r: 1 });
+  assert.equal(potion.detail, "Potion · Heals 2d4+2 · 5 per slot");
+  assert.equal(potion.canUse, true);
+  assert.equal(potion.canEquip, false);
+  assert.equal(rope.canUse, false);
+  assert.equal(rope.slots, 1);
+  const created = [];
+  const actor = { isOwner: true, async createEmbeddedDocuments(type, data) { created.push(data[0]); return [{ sheet: { render() {} } }]; } };
+  await createEquipment(actor, "misc");
+  assert.deepEqual(created, [{ name: "New miscellaneous", type: "misc" }]);
 });

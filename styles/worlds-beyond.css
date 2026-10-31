@@ -348,3 +348,4 @@
 .worlds-beyond .wb-inventory-total { margin: 0; }
 .worlds-beyond .wb-inventory-total.is-over strong { color: #E07A6B; }
 .worlds-beyond .wb-inventory .wb-equipment-check { display: flex; align-items: center; gap: 6px; min-height: 44px; }
+.worlds-beyond .wb-consumable-heal { width: 100%; min-height: 36px; margin-top: 6px; }
