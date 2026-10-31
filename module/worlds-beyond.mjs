@@ -3,7 +3,7 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { promptStatCheck, restoreWonder, decorateRollMessage } from "./roll-actions.mjs";
+import { promptStatCheck, restoreWonder, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -212,3 +212,5 @@ Hooks.once("init", () => {
 });
 
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
+Hooks.on("updateActor", refreshWonderControls);
+Hooks.on("createChatMessage", refreshWonderControls);

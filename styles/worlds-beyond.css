@@ -321,3 +321,6 @@
 .worlds-beyond .wb-roll-note { margin: 10px 0 0; color: #959CB2; font-size: 14px; }
 .worlds-beyond .wb-roll-success { padding: 8px; border: 1px solid #5DB6AA; color: #5DB6AA; font-weight: bold; }
 .worlds-beyond .wb-wonder-action { min-height: 44px; height: auto; margin-top: 8px; background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond .wb-wonder-action:disabled { opacity: 0.65; cursor: default; }
+.worlds-beyond .wb-dice-results { margin: 8px 0; color: #E7E4D8; font-size: 14px; text-align: center; }
+.worlds-beyond.wb-chat-message .dice-formula { white-space: normal; overflow-wrap: anywhere; }

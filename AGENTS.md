@@ -5,6 +5,7 @@ For Claude, Codex and other assistants. This repository is the Worlds Beyond hom
 The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separate project. Its rules code (for example `js/combat-core.js`) can be ported here, but don't edit that repository from this one.
 
 - **Trust-based character sheet:** players may customize and correct values. Don't add anti-cheat or unsolicited gameplay restrictions.
+- **Requested Wonder behavior:** using Wonder requires at least one current use and consumes each roll result only once. Its new reroll result may use Wonder again. Keep the sheet's manual pool corrections editable.
 - Reflect the actual rules in Notion. Critically evaluate changes and explain contradictions and consequences. Use 1.5× or 150% notation.
 - Build in small steps: get one part of the sheet working and looking right in Foundry before adding the next.
 - Use the GitHub noreply email for commits (`314470577+immortalwarlock427-debug@users.noreply.github.com`). Pushes with a private email are rejected.

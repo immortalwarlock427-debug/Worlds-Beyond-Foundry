@@ -1,5 +1,5 @@
 import { STATS } from "./stats.mjs";
-import { checkMode, wonderAction } from "./rolls.mjs";
+import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -57,6 +57,20 @@ function speakerActor(message) {
   return foundry.documents.ChatMessage.implementation.getSpeakerActor(message.speaker);
 }
 
+function wonderUsed(actor, message) {
+  if (actor.getFlag(SYSTEM_ID, "wonderUsed")?.[message.id]) return true;
+  // Also recognize rerolls posted before per-result tracking was added.
+  return game.messages.contents.some(candidate => {
+    const context = rollContext(candidate);
+    return context?.actorUuid === actor.uuid && context.previousMessageId === message.id;
+  });
+}
+
+function requireWonder(actor, message) {
+  if (wonderUsed(actor, message)) throw new Error("Wonder was already used on this result. Use its new result instead.");
+  if (!(actor.system.wonder.value >= 1)) throw new Error("No Wonder uses left. Restore Wonder after a long rest or correct the pool on your sheet.");
+}
+
 // Serialize local clicks for the same actor so rapid use/refill actions cannot lose a spend.
 function actorOperation(actor, operation) {
   const previous = actorOperations.get(actor.uuid) ?? Promise.resolve();
@@ -81,6 +95,7 @@ export async function useWonder(message) {
     if (!context || context.actorUuid !== actor.uuid || context.success || !original?.dice.some(die => die.faces === 20)) return;
     const action = wonderAction(context.kind, actor.system.stats.fth.value);
     if (!action) return;
+    requireWonder(actor, message);
 
     // Clone the original evaluated formula/data, not today's stat modifier or roll mode.
     const success = action === "success";
@@ -92,7 +107,13 @@ export async function useWonder(message) {
       : `Wonder reroll; previous total ${original.total}. The new result replaces it. 1 Wonder use spent.`;
     const content = await rollCard(roll, nextContext, { note, success });
     // Prepare the dice and content before spending; no pool changes on a failed roll/render.
-    const saved = await actor.update({ "system.wonder.value": actor.system.wonder.value - 1 });
+    requireWonder(actor, message);
+    // Actor flags work even when this player's initiative message was posted by the GM.
+    // Persist the consumed result and the spend together, before allowing another local click.
+    const saved = await actor.update({
+      "system.wonder.value": actor.system.wonder.value - 1,
+      [`flags.${SYSTEM_ID}.wonderUsed.${message.id}`]: true
+    });
     if (!saved) throw new Error("Wonder was not spent; no result was posted.");
     let result;
     try {
@@ -106,8 +127,11 @@ export async function useWonder(message) {
       if (!result) throw new Error("The Wonder result was not posted.");
     } catch (error) {
       // Keep manual changes made in the meantime; refund only this use.
-      const refunded = await actor.update({ "system.wonder.value": actor.system.wonder.value + 1 }).catch(() => null);
-      if (!refunded) throw new Error("The result was not posted. Restore 1 Wonder use on the sheet.", { cause: error });
+      const refunded = await actor.update({
+        "system.wonder.value": actor.system.wonder.value + 1,
+        [`flags.${SYSTEM_ID}.wonderUsed.-=${message.id}`]: null
+      }).catch(() => null);
+      if (!refunded) throw new Error("The result was not posted. Restore 1 Wonder use on the sheet and make a new roll; this result is still marked used.", { cause: error });
       throw error;
     }
 
@@ -129,6 +153,19 @@ export function decorateRollMessage(message, html) {
   const original = message.rolls?.[0];
   if (!original?.dice.some(die => die.faces === 20)) return;
   html.classList.add(SYSTEM_ID, "wb-chat-message");
+  const breakdown = describeD20Roll(original, context.mode);
+  const formula = html.querySelector(".dice-formula");
+  if (breakdown && formula) {
+    formula.textContent = breakdown.equation;
+    let details = html.querySelector(".wb-dice-results");
+    if (!details) {
+      details = document.createElement("p");
+      details.className = "wb-dice-results";
+      formula.after(details);
+    }
+    details.textContent = breakdown.diceText;
+    for (const label of html.querySelectorAll(".dice-tooltip .part-formula")) label.textContent = breakdown.diceLabel;
+  }
   const actor = speakerActor(message);
   if (!actor?.isOwner || actor.type !== "character" || actor.uuid !== context.actorUuid || context.success
     || !wonderAction(context.kind, actor.system.stats.fth.value)) return;
@@ -137,13 +174,37 @@ export function decorateRollMessage(message, html) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "wb-wonder-action";
-  button.textContent = "Use Wonder";
+  button.dataset.messageId = message.id;
   button.title = "Spend 1 Wonder use. At FTH 21, declare a failed check/save successful; initiative still rerolls. Uses can be corrected on the sheet.";
   button.addEventListener("click", async () => {
+    button.dataset.busy = "true";
     button.disabled = true;
     try { await useWonder(message); }
     catch (error) { ui.notifications.error(error.message); }
-    finally { button.disabled = false; }
+    finally {
+      delete button.dataset.busy;
+      refreshWonderControls();
+    }
   });
+  updateWonderButton(button, message);
   content.append(button);
+}
+
+function updateWonderButton(button, message) {
+  const actor = speakerActor(message);
+  const visible = message.isContentVisible && actor?.isOwner;
+  button.hidden = !visible;
+  if (!visible) return;
+  const used = wonderUsed(actor, message);
+  const empty = !(actor.system.wonder.value >= 1);
+  button.disabled = used || empty || button.dataset.busy === "true";
+  button.textContent = used ? "Wonder used" : empty ? "No Wonder uses left" : "Use Wonder";
+}
+
+// Refresh every mounted copy (chat, notifications and popouts) after spending/refilling.
+export function refreshWonderControls() {
+  for (const button of document.querySelectorAll(".wb-wonder-action[data-message-id]")) {
+    const message = game.messages.get(button.dataset.messageId);
+    if (message) updateWonderButton(button, message);
+  }
 }

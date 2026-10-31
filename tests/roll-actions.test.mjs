@@ -1,21 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { promptStatCheck, rollStatCheck, useWonder, restoreWonder, decorateRollMessage } from "../module/roll-actions.mjs";
+import { promptStatCheck, rollStatCheck, useWonder, restoreWonder, decorateRollMessage, refreshWonderControls } from "../module/roll-actions.mjs";
 
 function fixture({ faith = 18, value = 2, kind = "check", mode = "normal", blind = false, whisper = [] } = {}) {
   const calls = { rolls: [], messages: [], updates: [], cards: [], warnings: [], initiative: [] };
   const actor = {
     uuid: "Actor.hero", type: "character", isOwner: true,
+    flags: { wonderUsed: {} },
+    getFlag(scope, key) { return this.flags[key]; },
     system: { stats: { str: { mod: 3 }, fth: { value: faith } }, wonder: { value, max: 2 } },
     async update(data) {
       calls.updates.push(data);
       this.system.wonder.value = data["system.wonder.value"] ?? this.system.wonder.max;
+      for (const [key, value] of Object.entries(data)) {
+        const prefix = "flags.worlds-beyond.wonderUsed.";
+        if (!key.startsWith(prefix)) continue;
+        const id = key.slice(prefix.length);
+        if (id.startsWith("-=")) delete this.flags.wonderUsed[id.slice(2)];
+        else this.flags.wonderUsed[id] = value;
+      }
       return this;
     }
   };
   class Roll {
-    constructor(formula, data = {}) { this.formula = formula; this.data = { ...data }; this.dice = [{ faces: 20 }]; this.options = {}; }
-    async evaluate(options) { calls.rolls.push({ formula: this.formula, data: this.data, options }); this.total = 10 + (this.data.mod ?? 0); return this; }
+    constructor(formula, data = {}) { this.formula = formula; this.data = { ...data }; this.dice = [{ faces: 20, results: [{ result: 4, active: true }] }]; this.options = {}; }
+    async evaluate(options) { calls.rolls.push({ formula: this.formula, data: this.data, options }); this.dice[0].results = [{ result: 10, active: true }]; this.total = 10 + (this.data.mod ?? 0); return this; }
     clone() { return new Roll(this.formula, this.data); }
     async render() { return `<div class="dice-roll">${this.total}</div>`; }
     async toMessage(data, options) { calls.messages.push({ ...data, options, rolls: [this] }); return data; }
@@ -28,7 +37,9 @@ function fixture({ faith = 18, value = 2, kind = "check", mode = "normal", blind
     id: "original", speaker: { actor: "hero" }, rolls: [original], whisper, blind, isContentVisible: true,
     getFlag: () => context
   };
-  globalThis.game = { user: { id: "player" }, settings: { get: () => "public" }, combats: new Map() };
+  const messages = new Map([[message.id, message]]);
+  Object.defineProperty(messages, "contents", { get: () => [...messages.values()] });
+  globalThis.game = { user: { id: "player" }, settings: { get: () => "public" }, combats: new Map(), messages };
   globalThis.ui = { notifications: { warn: text => calls.warnings.push(text) } };
   globalThis.foundry = {
     dice: { Roll },
@@ -39,7 +50,12 @@ function fixture({ faith = 18, value = 2, kind = "check", mode = "normal", blind
     documents: { ChatMessage: { implementation: {
       getSpeaker: () => message.speaker,
       getSpeakerActor: () => actor,
-      async create(data) { calls.messages.push(data); return { id: "new", ...data }; }
+      async create(data) {
+        calls.messages.push(data);
+        const created = { id: `new${calls.messages.length}`, isContentVisible: true, ...data, getFlag: (scope, key) => data.flags?.[scope]?.[key] };
+        messages.set(created.id, created);
+        return created;
+      }
     } } }
   };
   return { actor, message, context, original, calls, Roll };
@@ -153,20 +169,124 @@ test("failed refund tells the player exactly how to correct the Wonder pool", as
   }
 });
 
-test("rapid local uses serialize, including zero, and long-rest refill restores only Wonder", async () => {
+test("rapid repeated clicks spend once and refill does not unlock the used result", async () => {
   const f = fixture({ value: 1 });
-  await Promise.all([useWonder(f.message), useWonder(f.message)]);
-  assert.equal(f.actor.system.wonder.value, -1);
-  assert.equal(f.calls.messages.length, 2);
+  const results = await Promise.allSettled([useWonder(f.message), useWonder(f.message)]);
+  assert.equal(results[0].status, "fulfilled");
+  assert.equal(results[1].status, "rejected");
+  assert.match(results[1].reason.message, /already used/);
+  assert.equal(f.actor.system.wonder.value, 0);
+  assert.equal(f.calls.messages.length, 1);
   await restoreWonder(f.actor);
   assert.deepEqual(f.calls.updates.at(-1), { "system.wonder.value": null });
   assert.equal(f.actor.system.wonder.value, 2);
+  await assert.rejects(useWonder(f.message), /already used/);
+});
+
+test("Wonder follows the new result, stops at zero and keeps used history after reload or child deletion", async () => {
+  const f = fixture();
+  const first = await useWonder(f.message);
+  const second = await useWonder(first);
+  assert.equal(f.actor.system.wonder.value, 0);
+  await assert.rejects(useWonder(second), /No Wonder uses/);
+  assert.equal(f.calls.rolls.length, 2);
+  assert.equal(f.calls.messages.length, 2);
+  f.actor.flags = JSON.parse(JSON.stringify(f.actor.flags));
+  game.messages.delete(first.id);
+  await restoreWonder(f.actor);
+  await assert.rejects(useWonder(f.message), /already used/);
+  await assert.rejects(useWonder(first), /already used/);
+  await useWonder(second);
+  assert.equal(f.actor.system.wonder.value, 1);
+});
+
+test("zero, negative and fractional uses cannot pay for Wonder", async () => {
+  for (const value of [0, -2, 0.5]) {
+    const f = fixture({ value });
+    await assert.rejects(useWonder(f.message), /No Wonder uses/);
+    assert.equal(f.calls.rolls.length, 0);
+    assert.equal(f.calls.updates.length, 0);
+    assert.equal(f.calls.messages.length, 0);
+    assert.equal(f.actor.system.wonder.value, value);
+  }
+});
+
+test("a legacy reroll marks its original result used without modifying that chat message", async () => {
+  const f = fixture();
+  game.messages.set("old-reroll", { getFlag: () => ({ ...f.context, previousMessageId: "original" }) });
+  await assert.rejects(useWonder(f.message), /already used/);
+  assert.equal(f.calls.updates.length, 0);
+});
+
+test("two different results competing locally for one use cannot spend below zero", async () => {
+  const f = fixture({ value: 1 });
+  const second = { ...f.message, id: "other" };
+  const results = await Promise.allSettled([useWonder(f.message), useWonder(second)]);
+  assert.equal(results[0].status, "fulfilled");
+  assert.equal(results[1].status, "rejected");
+  assert.equal(f.actor.system.wonder.value, 0);
+  assert.equal(f.calls.messages.length, 1);
+});
+
+test("failed chat posting restores the original result's eligibility as well as its use", async () => {
+  const f = fixture();
+  const create = foundry.documents.ChatMessage.implementation.create;
+  foundry.documents.ChatMessage.implementation.create = async () => { throw new Error("offline"); };
+  await assert.rejects(useWonder(f.message), /offline/);
+  assert.equal(f.actor.flags.wonderUsed.original, undefined);
+  foundry.documents.ChatMessage.implementation.create = create;
+  await useWonder(f.message);
+  assert.equal(f.actor.system.wonder.value, 1);
 });
 
 test("hidden chat content is not decorated or given a Wonder control", () => {
   const f = fixture();
   f.message.isContentVisible = false;
   decorateRollMessage(f.message, { classList: { add() { throw new Error("Hidden content was decorated"); } } });
+});
+
+test("chat presents readable dice and keeps mounted Wonder controls current after spending/refill", async () => {
+  const f = fixture({ value: 1, mode: "advantage" });
+  f.original.total = 13;
+  f.original.dice[0].results = [{ result: 3, active: false }, { result: 9, active: true }];
+  const mounted = [];
+  const elements = [];
+  globalThis.document = {
+    createElement() { return { dataset: {}, addEventListener() {} }; },
+    querySelectorAll() { return mounted; }
+  };
+  const formula = { textContent: "2d20kh1 + 4", after: node => elements.push(node) };
+  const tooltip = { textContent: "2d20kh1" };
+  const content = {
+    querySelector: () => mounted[0],
+    append: node => mounted.push(node)
+  };
+  const html = {
+    classList: { add() {} },
+    querySelector: selector => ({ ".dice-formula": formula, ".message-content": content, ".wb-dice-results": elements[0] })[selector],
+    querySelectorAll: () => [tooltip]
+  };
+  decorateRollMessage(f.message, html);
+  assert.equal(formula.textContent, "9 + 4 bonus = 13");
+  assert.equal(elements[0].textContent, "Rolled 3 and 9 · kept 9 (higher)");
+  assert.equal(tooltip.textContent, "2d20 · keep highest");
+  assert.equal(mounted[0].disabled, false);
+  const child = await useWonder(f.message);
+  const childButton = { dataset: { messageId: child.id } };
+  mounted.push(childButton);
+  refreshWonderControls();
+  assert.equal(mounted[0].textContent, "Wonder used");
+  assert.equal(mounted[0].disabled, true);
+  assert.equal(childButton.textContent, "No Wonder uses left");
+  assert.equal(childButton.disabled, true);
+  await restoreWonder(f.actor);
+  refreshWonderControls();
+  assert.equal(mounted[0].disabled, true);
+  assert.equal(childButton.textContent, "Use Wonder");
+  assert.equal(childButton.disabled, false);
+  decorateRollMessage(f.message, html);
+  assert.equal(elements.length, 1);
+  assert.equal(mounted.length, 2);
 });
 
 test("combat initiative retains Foundry's roll and records exact combatant context", async () => {
