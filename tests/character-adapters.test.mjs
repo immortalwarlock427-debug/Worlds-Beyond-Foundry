@@ -44,12 +44,13 @@ test("sheet shows effective stats and colors changes while editing only persiste
   assert.equal(agl.value, 9);
   assert.equal(agl.baseValue, 12);
   assert.equal(agl.adjusted, true);
-  assert.equal(agl.increased, false);
+  assert.equal(agl.manual, false);
   assert.equal(agl.modLabel, "−1");
   const vit = rows.find(row => row.key === "vit");
   assert.equal(vit.value, 15);
   assert.equal(vit.baseValue, 12);
-  assert.equal(vit.increased, true);
+  assert.equal(vit.adjusted, true);
+  assert.equal(vit.manual, false);
   assert.equal(rows.find(row => row.key === "str").adjusted, false);
   assert.equal(source.agl.value, 12);
   assert.equal(source.vit.value, 12);
@@ -120,6 +121,20 @@ test("simultaneous max and current Health corrections use the new maximum, inclu
   assert.equal(result.system.ap.value, 0);
   const cleared = sheet._processFormData(null, null, { object: { healthCurrent: "" } });
   assert.equal(cleared.system.health.damage, 0);
+});
+
+test("form submission saves deliberate base edits and never saves displayed effect scores", () => {
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
+  const input = { dataset: { statScore: "agl", base: "21", pendingBase: "22" } };
+  const form = { querySelectorAll: () => [input] };
+  const data = sheet._processFormData(null, form, { object: { statScores: { agl: 24 } } });
+  assert.equal(data.statScores, undefined);
+  assert.deepEqual(data.system.stats.agl, { value: 22, manual: true });
+  delete input.dataset.pendingBase;
+  const untouched = sheet._processFormData(null, form, { object: { statScores: { agl: 23 } } });
+  assert.equal(untouched.statScores, undefined);
+  assert.equal(untouched.system, undefined);
 });
 
 test("new actors get Health/AP token defaults while imported bar settings are preserved", async () => {

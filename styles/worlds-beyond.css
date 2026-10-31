@@ -186,13 +186,9 @@
   font-variant-numeric: tabular-nums;
 }
 .worlds-beyond .wb-mod.is-negative { color: var(--wb-blood); }
-.worlds-beyond .wb-score-cell { min-width: 0; text-align: center; }
-.worlds-beyond .wb-effective-score { display: grid; font: 21px var(--wb-font-display); font-variant-numeric: tabular-nums; }
-.worlds-beyond .wb-effective-score small { font: 10px var(--wb-font-body); }
-.worlds-beyond .wb-effective-score.is-increased { color: var(--wb-verdigris); }
-.worlds-beyond .wb-effective-score.is-reduced { color: var(--wb-blood); }
-.worlds-beyond .wb-base-score { display: grid; margin-top: 5px; font: 11px var(--wb-font-body); color: var(--wb-muted); }
-.worlds-beyond .wb-body .wb-base-score .wb-score { font-size: 16px; }
+.worlds-beyond .wb-body .wb-score.is-manual { color: var(--wb-brass); }
+.worlds-beyond .wb-body .wb-score.is-adjusted { color: var(--wb-verdigris); }
+.worlds-beyond .wb-body .wb-score.is-manual.is-adjusted { color: #B99AE8; }
 
 .worlds-beyond .wb-pips { display: flex; gap: 6px; justify-content: flex-end; }
 .worlds-beyond .wb-pip {

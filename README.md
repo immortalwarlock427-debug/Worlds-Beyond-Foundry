@@ -6,7 +6,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 
 - A **character** actor with a level and the eight stats: Strength, Dexterity, Vitality, Agility, Intelligence, Wisdom, Charisma and Faith.
 - Modifiers are calculated from the score. Strength and Dexterity use (score − 12) ÷ 2, rounded down. The other six move 1 per 3 points away from 12.
-- Milestone diamonds light up at 21 and 28. Modified stats display their effective score in teal (increased) or red (reduced), with the editable base score underneath.
+- Milestone diamonds light up at 21 and 28. Stat fields show the effective score and reveal the base while editing, matching the website. Automatic changes are teal, manual edits gold, and combined manual/automatic changes purple.
 - Clicking a stat's abbreviation opens a check/save dialog with normal, advantage or disadvantage dice and posts a chat card.
 - Cards show the die result + bonus = total. Advantage/disadvantage show both dice and which one was kept, instead of raw keep-highest/lowest formula notation.
 - Initiative is d20 + Wisdom modifier.

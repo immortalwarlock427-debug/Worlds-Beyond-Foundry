@@ -4,13 +4,14 @@ import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { wornEquipment } from "./equipment-core.mjs";
+import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
-const { NumberField, SchemaField, StringField } = foundry.data.fields;
+const { NumberField, SchemaField, StringField, BooleanField } = foundry.data.fields;
 
 /* -------------------------------------------- */
 /*  Data model                                  */
@@ -26,7 +27,8 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       max: number(0, { persisted: false })
     });
     const stat = () => new SchemaField({
-      value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 })
+      value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 }),
+      manual: new BooleanField({ initial: false })
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
@@ -126,7 +128,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         ...def,
         value, baseValue,
         adjusted: value !== baseValue,
-        increased: value > baseValue,
+        manual: !!source.stats[def.key].manual,
         modLabel: formatModifier(stat.mod),
         negative: stat.mod < 0,
         pips: def.milestones.map((name, i) => ({
@@ -164,6 +166,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _processFormData(event, form, formData) {
     const data = super._processFormData(event, form, formData);
+    delete data.statScores;
+    for (const [key, value] of editedStatInputs(form)) {
+      if (!STATS.some(stat => stat.key === key) || !Number.isFinite(value)) continue;
+      foundry.utils.setProperty(data, `system.stats.${key}.value`, value);
+      foundry.utils.setProperty(data, `system.stats.${key}.manual`, true);
+    }
     const current = data.healthCurrent;
     delete data.healthCurrent;
     // A full sheet submission includes unchanged trackers. Do not turn an unrelated
@@ -178,6 +186,11 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       foundry.utils.setProperty(data, "system.health.damage", damageFromHealth(maximum, numberOr(current, maximum)));
     }
     return data;
+  }
+
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
 
   static async #onRollStat(event, target) {
