@@ -22,5 +22,6 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 - `templates/character-sheet.hbs`: sheet markup
 - `styles/worlds-beyond.css`: sheet styles
 - `tests/`: tests for the stat math
+- `docs/ROADMAP.md`: what gets built next, in order
 
 Keep folders one level deep. Files nested deeper can't be copied into Foundry from Claude's side.

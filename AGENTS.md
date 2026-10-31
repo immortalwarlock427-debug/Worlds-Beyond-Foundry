@@ -1,6 +1,6 @@
 # Working on Worlds Beyond for Foundry
 
-For Claude, Codex and other assistants. This repository is the Worlds Beyond homebrew as a **Foundry VTT v14 game system**. Read `README.md` first. Full gameplay rules live in Notion → D&D > Game Systems. Weavecasting is separate.
+For Claude, Codex and other assistants. This repository is the Worlds Beyond homebrew as a **Foundry VTT v14 game system**. Read `README.md` and `docs/ROADMAP.md` first. Work on the roadmap in order unless the user says otherwise. Full gameplay rules live in Notion → D&D > Game Systems. Weavecasting is separate.
 
 The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separate project. Its rules code (for example `js/combat-core.js`) can be ported here, but don't edit that repository from this one.
 
