@@ -125,3 +125,24 @@ test("Notion ranged, ranged Paragon and melee Thrown examples remain distinct in
   const meleeWithRange = equipmentRows([{ id: "melee", name: "Custom", type: "weapon", system: { family: "finesse", ranged: false, range: { normal: 30, long: 60 } } }])[0];
   assert.doesNotMatch(meleeWithRange.detail, /Ranged/);
 });
+
+test("Two-handed weapons default to 2 slots and toggling only moves an unedited slot size", async () => {
+  const get = (object, path) => path.split(".").reduce((value, key) => value?.[key], object);
+  const has = (object, path) => get(object, path) !== undefined;
+  const set = (object, path, value) => { const keys = path.split("."); const last = keys.pop(); keys.reduce((o, k) => (o[k] ??= {}), object)[last] = value; };
+  foundry.utils = { getProperty: get, hasProperty: has, setProperty: set };
+
+  const created = Object.assign(Object.create(WeaponData.prototype), { parent: { updateSource(data) { this.data = data; } } });
+  await created._preCreate({ system: { properties: { twoHanded: true } } });
+  assert.deepEqual(created.parent.data, { "system.slots": 2 });
+
+  const weapon = Object.assign(Object.create(WeaponData.prototype), { slots: 1, properties: { twoHanded: false } });
+  const on = { system: { properties: { twoHanded: true } } };
+  await weapon._preUpdate(on);
+  assert.equal(on.system.slots, 2);
+
+  const edited = Object.assign(Object.create(WeaponData.prototype), { slots: 3, properties: { twoHanded: false } });
+  const keep = { system: { properties: { twoHanded: true } } };
+  await edited._preUpdate(keep);
+  assert.equal(keep.system.slots, undefined);
+});

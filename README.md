@@ -15,6 +15,8 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - **Long rest** restores all current resource pools (Health, AP, reactions and Wonder) to their maximums, including manual maximum overrides.
 - Weapon, armor and shield records with editable sheets and a character equipment list (add/edit/equip/remove and native drops). Equipped armor/shields contribute to defenses and effective AGL; see [calculation scope and checklist](docs/ARMOR-CALCULATIONS.md).
 - Each equipment type has its own data model. Weapons use a family dropdown, an independent Ranged weapon flag, property/signature checkboxes, numeric normal/long ranges and numeric loading. Standard ranged weapons use no special family, ranged Paragon keeps Paragon, and Thrown stays separate.
+- Inventory slots: 10 + STR modifier, +6 with a backpack, with an override. Shields and Two-handed weapons take 2 slots, stackable items set how many fit in a slot, and worn or held equipment takes none. Going over capacity is shown, never blocked. See [inventory](docs/INVENTORY.md).
+- Block dice scale with level (1d4, 2d4 at 5th and so on), and the largest equipped shield sets the die size.
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
 - The sheet includes a narrow layout and touch-sized controls. The user tested core numbers and rolls/Wonder; equipment awaits [in-world validation](docs/EQUIPMENT.md).
@@ -41,5 +43,6 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 - `docs/ROADMAP.md`: what gets built next, in order
 - `docs/CORE-NUMBERS.md`: rule sources, data behavior and Foundry validation checklist
 - `docs/ROLLS.md`: roll/Wonder sources, data behavior and Foundry validation checklist
+- `docs/INVENTORY.md`: inventory and Block dice rules, data changes and Foundry validation checklist
 
 Keep the folder layout shallow. Claude can copy files up to about 6 folders below the system folder into Foundry.

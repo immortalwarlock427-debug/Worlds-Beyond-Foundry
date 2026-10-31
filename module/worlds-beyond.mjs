@@ -3,7 +3,7 @@ import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./cor
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { wornEquipment } from "./equipment-core.mjs";
+import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, EQUIPMENT_TYPES, equipmentRows, createEquipment, toggleEquipment } from "./equipment.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
@@ -44,12 +44,14 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       reactions: pool(),
       wonder: pool(),
       bonuses: new SchemaField({ armor: number(), evasion: number() }),
+      inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
       overrides: new SchemaField({
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
         evasion: override(),
         armorRating: override(),
         movement: override(),
-        armorAgilityPenalty: override()
+        armorAgilityPenalty: override(),
+        inventorySlots: override()
       })
     };
   }
@@ -83,6 +85,12 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.reactions.max = this.core.reactionsMax;
     this.reactions.value = numberOr(this.reactions.value, this.reactions.max);
     Object.assign(this.wonder, wonderPool(this.stats.fth.value, this.wonder));
+    const items = this.parent?.items ?? [];
+    this.carrying = inventory({
+      items, strengthMod: this.stats.str.mod,
+      backpack: this.inventory.backpack, capacityOverride: this.overrides.inventorySlots
+    });
+    this.block = blockDice({ level: this.level, items });
   }
 
   async _preCreate(data, options, user) {
@@ -152,7 +160,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ],
       defyFate: system.stats.fth.value >= 21,
       worn: system.equipment,
-      equipment: equipmentRows(this.actor.items ?? []),
+      equipment: equipmentRows(this.actor.items ?? [], system.carrying?.perItem),
+      carrying: system.carrying,
+      block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },

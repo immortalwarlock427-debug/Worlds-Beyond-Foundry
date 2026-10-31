@@ -1,3 +1,5 @@
+import { defaultSlots } from "./equipment-core.mjs";
+
 const SYSTEM_ID = "worlds-beyond";
 export const EQUIPMENT_TYPES = Object.freeze({ weapon: "Weapon", armor: "Armor", shield: "Shield" });
 export const ARMOR_TYPES = { light: "Light", medium: "Medium", heavy: "Heavy" };
@@ -25,7 +27,7 @@ const flags = keys => new foundry.data.fields.SchemaField(Object.fromEntries(
 class EquipmentData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     return {
-      description: text(), quantity: number(1), slots: number(1), cost: text(),
+      description: text(), quantity: number(1), slots: number(1), perSlot: number(1), cost: text(),
       equipped: new foundry.data.fields.BooleanField({ initial: false })
     };
   }
@@ -43,6 +45,25 @@ export class WeaponData extends EquipmentData {
       loading: number()
     };
   }
+
+  // A new Two-handed weapon takes 2 slots unless its data already says otherwise.
+  async _preCreate(data, options, user) {
+    if (await super._preCreate?.(data, options, user) === false) return false;
+    if (!foundry.utils.hasProperty(data, "system.slots") && data.system?.properties?.twoHanded) {
+      this.parent.updateSource({ "system.slots": 2 });
+    }
+  }
+
+  // Toggling Two-handed moves the slot size between 1 and 2, unless the player
+  // changed the slot size themselves (it no longer matches the old default).
+  async _preUpdate(changes, options, user) {
+    if (await super._preUpdate?.(changes, options, user) === false) return false;
+    const twoHanded = foundry.utils.getProperty(changes, "system.properties.twoHanded");
+    if (twoHanded === undefined || foundry.utils.hasProperty(changes, "system.slots")) return;
+    if (this.slots === defaultSlots("weapon", this)) {
+      foundry.utils.setProperty(changes, "system.slots", defaultSlots("weapon", { properties: { twoHanded } }));
+    }
+  }
 }
 
 export class ArmorData extends EquipmentData {
@@ -56,7 +77,7 @@ export class ArmorData extends EquipmentData {
 
 export class ShieldData extends EquipmentData {
   static defineSchema() {
-    return { ...super.defineSchema(), armorRating: number(), blockDie: text("1d6") };
+    return { ...super.defineSchema(), slots: number(2), armorRating: number(), blockDie: text("1d6") };
   }
 }
 
@@ -85,10 +106,11 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
   }
 }
 
-export function equipmentRows(items) {
+export function equipmentRows(items, slotsUsed = {}) {
   return Array.from(items).map(item => ({
     id: item.id, name: item.name, typeLabel: EQUIPMENT_TYPES[item.type] ?? "Gear",
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
+    slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
     detail: item.type === "weapon" ? [item.system.damage, item.system.damageType,
       item.system.ranged ? "Ranged" : "",

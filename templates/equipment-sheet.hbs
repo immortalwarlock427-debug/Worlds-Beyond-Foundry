@@ -6,6 +6,7 @@
   <div class="wb-equipment-fields">
     <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
     <label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>
   </div>

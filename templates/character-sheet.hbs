@@ -57,7 +57,7 @@
     <p>Effective AGL {{worn.effectiveAgility}} · Armor penalty {{worn.agilityPenalty}} · Movement costs {{worn.squareCost}} ft per square ({{worn.difficultSquareCost}} ft in difficult terrain).</p>
     <label><span>Armor AGL penalty override (blank = auto)</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     {{#if worn.heavyDisadvantage}}<p>Heavy armor with STR below 21: attacks, Dodges and AGL saves have disadvantage. Choose disadvantage when rolling an AGL save.</p>{{/if}}
-    {{#each worn.blockDice}}<p>Shield Block die: {{this}}</p>{{/each}}
+    <p>Block: {{block.formula}} {{block.strMod}} STR{{#unless block.fromShield}} (no shield equipped){{/unless}}. You need arm guards, a weapon or a shield to Block.</p>
     {{#each worn.duplicatePieces}}<p>Multiple equipped {{this}} records: their contributions are added. Review equipped items or use a correction if needed.</p>{{/each}}
   </fieldset>
   <p class="wb-core-hint">Equipped armor and shields now contribute automatically. Clear old manual armor totals to avoid counting them twice; the correction fields above add to equipped items. Final core-number overrides still replace the complete result. AGL score stays editable; modifiers, milestones, reactions and movement use effective AGL.</p>
@@ -92,12 +92,17 @@
       <button type="button" data-action="equipment" data-operation="create" data-type="armor" {{#unless editable}}disabled{{/unless}}>Add armor</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="shield" {{#unless editable}}disabled{{/unless}}>Add shield</button>
     </div>
-    <p class="wb-core-hint">Drop items here from the Items directory, or add your own. Equipped armor and shields update defenses automatically. Each leg-guard item represents a complete pair; armor quantity does not multiply worn contributions.</p>
+    <div class="wb-inventory">
+      <p class="wb-inventory-total {{#if carrying.over}}is-over{{/if}}"><strong>{{carrying.used}} / {{carrying.capacity}}</strong> inventory slots{{#if carrying.over}} · over by {{carrying.over}}{{/if}}</p>
+      <label class="wb-equipment-check"><input type="checkbox" name="system.inventory.backpack" {{#if system.inventory.backpack}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Backpack (+6 slots)</label>
+      <label class="wb-override-label"><span>Slots override</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="{{carrying.automatic}}" step="any" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
+    </div>
+    <p class="wb-core-hint">You have 10 + STR modifier slots. Worn armor and weapons or shields in hand take none. Drop items here from the Items directory, or add your own. Each leg-guard item is a complete pair.</p>
     <ul class="wb-equipment-list">
       {{#each equipment}}
       <li data-item-id="{{id}}">
         <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit">{{name}}</button>
-        <span>{{typeLabel}} · Qty {{quantity}}</span>
+        <span>{{typeLabel}} · Qty {{quantity}} · {{#if equipped}}{{#if slots}}{{slots}} slots for extras{{else}}worn or in hand{{/if}}{{else}}{{slots}} slots{{/if}}</span>
         <p>{{detail}}</p>
         <div class="wb-equipment-actions">
           {{#if canEquip}}<button type="button" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if equipped}}Equipped{{else}}Equip{{/if}}</button>{{/if}}
