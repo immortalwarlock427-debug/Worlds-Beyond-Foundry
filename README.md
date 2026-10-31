@@ -24,4 +24,4 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 - `tests/`: tests for the stat math
 - `docs/ROADMAP.md`: what gets built next, in order
 
-Keep folders one level deep. Files nested deeper can't be copied into Foundry from Claude's side.
+Keep the folder layout shallow. Claude can copy files up to about 6 folders below the system folder into Foundry.
