@@ -134,6 +134,7 @@ export function equipmentRows(items, slotsUsed = {}) {
   return Array.from(items).map(item => ({
     id: item.id, name: item.name, typeLabel: ITEM_TYPES[item.type] ?? "Gear",
     canUse: item.type === "consumable",
+    canAttack: item.type === "weapon" && !!item.system.equipped,
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),

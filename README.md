@@ -18,6 +18,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - Inventory slots: 10 + STR modifier, +6 with a backpack, with an override. Shields and Two-handed weapons take 2 slots, stackable items set how many fit in a slot, and worn or held equipment takes none. Going over capacity is shown, never blocked. See [inventory](docs/INVENTORY.md).
 - Consumable items (potions, ammunition, other) with optional healing dice and a Use one button, and Miscellaneous items for carried gear.
 - A **Worlds Beyond Catalog** compendium with every weapon, armor piece and shield from Notion. The GM is offered the import on first load and can refresh it from Configure Settings. See [catalog](docs/CATALOG.md).
+- **Weapon attacks:** an Attack button on equipped weapons rolls d20 + the right stat against a targeted token's Natural Evasion, spends AP (10 − modifier, minimum 5), flags automatic disadvantage and crits, then rolls level-scaled damage with double modifiers, charges and Armor Rating notes. See [attacks](docs/ATTACKS.md).
 - Block dice scale with level (1d4, 2d4 at 5th and so on), and the largest equipped shield sets the die size.
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
@@ -38,6 +39,8 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 - `module/character-combatant.mjs`: initiative context for Wonder
 - `module/equipment-core.mjs`: Foundry-free worn armor/shield totals and effective AGL
 - `module/equipment.mjs`: item data models, sheets and character controls
+- `module/attacks.mjs`: Foundry-free attack, crit, damage-scaling and Armor Rating rules
+- `module/attack-actions.mjs`: attack dialog and attack/damage chat cards
 - `module/catalog.mjs`: Foundry-free weapon/armor/shield tables transcribed from Notion
 - `module/catalog-import.mjs`: GM import of the catalog into a world compendium
 - `module/worlds-beyond.mjs`: data model, character sheet and registration

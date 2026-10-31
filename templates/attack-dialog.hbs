@@ -1,0 +1,23 @@
+<div class="wb-check-options">
+  {{#if reasons.length}}<p>Disadvantage: {{#each reasons}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}.</p>{{/if}}
+  {{#if modes.[1]}}<label><span>Attack</span>
+    <select name="mode">{{#each modes}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
+  </label>{{/if}}
+  {{#if stats.[1]}}<label><span>Attack with</span>
+    <select name="stat">{{#each stats}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+  </label>{{/if}}
+  {{#if versatile}}<label><span>Grip</span>
+    <select name="grip"><option value="one">One hand · {{damage}}</option><option value="two">Two hands · {{versatileDamage}} (counts as Two-handed)</option></select>
+  </label>{{/if}}
+  {{#if canRange}}<label class="wb-check-toggle"><input type="checkbox" name="longRange"> Past normal range (disadvantage)</label>{{/if}}
+  {{#if mount}}<label class="wb-check-toggle"><input type="checkbox" name="mounted"> Mounted</label>
+  <label><span>Feet moved in a straight line this turn</span><input type="number" name="mountedFeet" value="0" min="0" step="5"></label>{{/if}}
+  <label class="wb-check-toggle"><input type="checkbox" name="spendAp" checked> Spend AP ({{apLeft}} left)</label>
+  {{#if target}}<p>Target: {{target.name}} · Natural Evasion {{target.evasion}}</p>{{else}}<p>No target selected. Target a token to check the hit automatically.</p>{{/if}}
+  <fieldset>
+    <legend>Dice</legend>
+    <label><input type="radio" name="rollMode" value="normal" {{#unless reasons.length}}checked{{/unless}}> Normal · 1d20</label>
+    <label><input type="radio" name="rollMode" value="advantage"> Advantage · keep the higher d20</label>
+    <label><input type="radio" name="rollMode" value="disadvantage" {{#if reasons.length}}checked{{/if}}> Disadvantage · keep the lower d20</label>
+  </fieldset>
+</div>
