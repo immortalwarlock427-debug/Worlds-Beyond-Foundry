@@ -6,6 +6,7 @@ import { wonderPool } from "./rolls.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
+import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -262,6 +263,10 @@ Hooks.once("init", () => {
     character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
   };
 
+  registerCatalogSetting();
+  registerCatalogMenu();
+  game.worldsBeyond = { importCatalog };
+
   // Initiative is d20 + Wisdom modifier.
   CONFIG.Combat.initiative = { formula: "1d20 + @stats.wis.mod", decimals: 0 };
 
@@ -274,6 +279,7 @@ Hooks.once("init", () => {
   });
 });
 
+Hooks.once("ready", offerCatalogImport);
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
 Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("updateActor", refreshWonderControls);

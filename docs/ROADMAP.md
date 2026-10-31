@@ -29,7 +29,7 @@ Website features map to Foundry like this:
 
 ## Next
 
-3. **Equipment — inventory implemented, awaiting validation.** Item records (PR #6) and worn armor/shield calculations (PR #7) are merged. Inventory capacity, backpack, stacking, Consumable and Miscellaneous items and level-scaled Block dice are in the [inventory checklist](INVENTORY.md). Remaining part: the full Notion weapon/armor catalog as a compendium.
+3. **Equipment — catalog implemented, awaiting validation.** Item records (PR #6), worn armor (PR #7) and inventory/consumables (PR #8) are merged. The Notion weapon, armor and shield tables now import into a world compendium; see the [catalog checklist](CATALOG.md). This finishes step 3 once validated.
 4. **Attacks and damage.** Attack vs Natural Evasion, damage dice scaling at levels 5/10/15/20, Finesse/Paragon crit range 18–20, Heavy and Paragon double modifiers, two-handed hits halving AR, Block dice. Signature properties start as descriptive text and get automated one at a time.
 5. **Combat flow.** AP and reactions reset at turn start through combat hooks. Block, Dodge, Parry and opportunity attacks as reactions. Command passing AP to an ally.
 6. **Mana, holy power and custom resources.** Max = INT or FTH × (level + 2) from the current stat. Custom pools with current/max, regeneration and long-rest refill.
