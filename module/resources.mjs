@@ -9,37 +9,39 @@ export const RESOURCE_DISPLAYS = Object.freeze({ number: "Points", percent: "Per
 
 // Persist expenditure, not a prepared total. Max changes therefore change current
 // by the same amount, without writes on render/reload or erasing manual corrections.
-export function resourcePool(max, spent = 0) {
+export function resourcePool(max, spent = 0, minimum = 0) {
   max = Math.max(0, numberOr(max, 0));
-  return { max, value: max - numberOr(spent, 0) };
+  return { min: numberOr(minimum, 0), max, value: max - numberOr(spent, 0) };
 }
 
 export function magicPool(level, score, data = {}) {
   const automatic = Math.max(0, numberOr(score, 12) * (numberOr(level, 1) + 2) + numberOr(data.bonus, 0));
-  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent), automatic };
+  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic };
 }
 
 export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   const stat = data.scaleStat && STATS.find(stat => stat.key === data.scaleStat);
-  const max = stat ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
+  const automatic = stat ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
     : numberOr(data.baseMax, 100) + numberOr(data.bonus, 0);
-  return resourcePool(max, data.spent);
+  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic: Math.max(0, automatic) };
 }
 
 export function resourcePresentation(pool) {
   const percent = pool.display === "percent";
-  const percentUnavailable = percent && !(pool.max > 0);
+  const minimum = numberOr(pool.min, 0);
+  const range = pool.max - minimum;
+  const percentUnavailable = percent && !(range > 0);
   // Round only presentation. An unchanged whole-sheet submission preserves the
   // exact point balance instead of saving a rounded percentage back into it.
-  const inputValue = percent && !percentUnavailable ? Math.round(pool.value / pool.max * 10000) / 100 : pool.value;
-  const meterPercent = pool.max > 0 ? Math.max(0, Math.min(100, pool.value / pool.max * 100)) : 0;
+  const inputValue = percent && !percentUnavailable ? Math.round((pool.value - minimum) / range * 10000) / 100 : pool.value;
+  const meterPercent = range > 0 ? Math.max(0, Math.min(100, (pool.value - minimum) / range * 100)) : 0;
   return { percent, percentUnavailable, inputValue, meterPercent };
 }
 
-export function resourceInputPoints(pool, input, maximum = pool.max) {
+export function resourceInputPoints(pool, input, maximum = pool.max, minimum = numberOr(pool.min, 0)) {
   const number = numberOr(input, null);
   if (number === null) return null;
-  return pool.display === "percent" && pool.max > 0 ? number / 100 * maximum : number;
+  return pool.display === "percent" && pool.max > numberOr(pool.min, 0) ? minimum + number / 100 * (maximum - minimum) : number;
 }
 
 export function poolSpentForCurrent(max, current) {
@@ -55,7 +57,7 @@ export function adjustedResourceSpent(pool, action, amount = 1) {
   if (!["spend", "restore", "recover"].includes(action)) throw new Error("Choose a resource action.");
   const spent = pool.max - pool.value;
   if (action === "spend") {
-    if (pool.value < amount) throw new Error("Not enough resource points. Correct Current on the sheet if needed.");
+    if (amount > 0 && pool.value - amount < numberOr(pool.min, 0)) throw new Error(`Not enough resource points: spending would go below the minimum (${numberOr(pool.min, 0)}). Correct Current or Minimum on the sheet if needed.`);
     return spent + amount;
   }
   return pool.value >= pool.max ? spent : Math.max(0, spent - amount);

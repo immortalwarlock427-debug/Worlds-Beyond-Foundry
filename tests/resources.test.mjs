@@ -124,7 +124,7 @@ test("custom scaling supports all eight current stats with the single standard f
     const source = { baseMax: 77, scaleStat, bonus: 2, spent: 10 };
     const before = structuredClone(source);
     const system = { level: 4, stats: { [scaleStat]: { value: 18, effective: 21 } } };
-    assert.deepEqual(customPool(source, system), { max: 128, value: 118 });
+    assert.deepEqual(customPool(source, system), { min: 0, max: 128, value: 118, automatic: 128 });
     system.level = 8; assert.equal(customPool(source, system).max, 212);
     assert.equal(customPool({ ...source, scaleStat: "" }, system).max, 79);
     assert.deepEqual(source, before);
@@ -170,4 +170,91 @@ test("percentage mode leaves action amounts in points for custom and built-in po
   await resourceAction(f.actor, id, "spend", 5); assert.equal(f.actor.system.customResources[id].value, 75);
   await resourceAction(f.actor, "mana", "spend", 5); assert.equal(f.actor.system.mana.value, 48);
   const edit = { resourceValues: { mana: 50 } }; resourceFormUpdates(f.actor, edit); assert.equal(edit.system.mana.spent, 31.5);
+});
+
+test("custom final maximum overrides replace scaled or manual totals and all bonuses; clearing restores the source", () => {
+  const system = { level: 4, stats: { vit: { effective: 21 } } };
+  for (const scaleStat of ["", "vit"]) {
+    const source = { scaleStat, baseMax: 77, bonus: 23, spent: 10 };
+    const before = structuredClone(source);
+    for (const maxOverride of [0, 40, 200]) {
+      const pool = customPool({ ...source, maxOverride }, system);
+      assert.equal(pool.max, maxOverride);
+      assert.equal(pool.value, maxOverride - 10);
+    }
+    for (const maxOverride of [null, ""]) assert.equal(customPool({ ...source, maxOverride }, system).max, scaleStat ? 149 : 100);
+    assert.deepEqual(source, before);
+  }
+});
+
+test("minimum overrides support negative and positive spending floors without clamping manual corrections", () => {
+  const pool = customPool({ baseMax: 100, minOverride: -20, spent: 100 });
+  assert.equal(pool.min, -20); assert.equal(pool.value, 0);
+  assert.equal(adjustedResourceSpent(pool, "spend", 5), 105);
+  assert.equal(adjustedResourceSpent(pool, "spend", 20), 120);
+  assert.throws(() => adjustedResourceSpent(pool, "spend", 21), /minimum \(-20\)/);
+  assert.equal(magicPool(1, 12, { minOverride: -20 }).min, -20);
+  assert.equal(customPool({ minOverride: "" }).min, 0);
+  const positive = customPool({ baseMax: 100, minOverride: 10, spent: 85 });
+  assert.equal(adjustedResourceSpent(positive, "spend", 5), 90);
+  assert.throws(() => adjustedResourceSpent(positive, "spend", 6), /minimum \(10\)/);
+  const correction = customPool({ baseMax: 100, minOverride: -20, spent: 130 });
+  assert.equal(correction.value, -30);
+  assert.equal(adjustedResourceSpent(correction, "spend", 0), 130);
+  assert.equal(adjustedResourceSpent(correction, "restore", 5), 125);
+  assert.equal(adjustedResourceSpent(correction, "fill"), 0);
+});
+
+test("minimum-aware actions use final overrides, stop at the floor and keep restore/fill capped", async () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id];
+  Object.assign(pool, { scaleStat: "int", maxOverride: 40, minOverride: -20, spent: 40, display: "percent" }); f.actor.prepare();
+  await resourceAction(f.actor, id, "spend", 5); assert.equal(pool.value, -5);
+  await resourceAction(f.actor, id, "spend", 15); assert.equal(pool.value, -20);
+  await assert.rejects(resourceAction(f.actor, id, "spend", 1), /minimum/);
+  await resourceAction(f.actor, id, "restore", 100); assert.equal(pool.value, 40);
+  pool.spent = 45; f.actor.prepare();
+  await resourceAction(f.actor, id, "recover"); assert.equal(pool.value, 0);
+  await resourceAction(f.actor, id, "fill"); assert.equal(pool.value, 40);
+  Object.assign(f.actor.system.mana, { maxOverride: 40, minOverride: -20, spent: 40 }); f.actor.prepare();
+  await resourceAction(f.actor, "mana", "spend", 20); assert.equal(f.actor.system.mana.value, -20);
+  await assert.rejects(resourceAction(f.actor, "mana", "spend", 1), /minimum/);
+});
+
+test("percentage display spans minimum to maximum, including a negative minimum and zero maximum", () => {
+  for (const [value, percent] of [[-20, 0], [40, 50], [100, 100], [-32, -10], [112, 110]]) {
+    const presentation = resourcePresentation({ min: -20, max: 100, value, display: "percent" });
+    assert.equal(presentation.inputValue, percent);
+    assert.equal(presentation.meterPercent, Math.max(0, Math.min(100, percent)));
+  }
+  assert.equal(resourcePresentation({ min: -20, max: 0, value: -10, display: "percent" }).inputValue, 50);
+  for (const min of [100, 101]) {
+    const presentation = resourcePresentation({ min, max: 100, value: 35, display: "percent" });
+    assert.equal(presentation.percentUnavailable, true); assert.equal(presentation.inputValue, 35); assert.equal(presentation.meterPercent, 0);
+  }
+});
+
+test("range changes preserve expenditure while deliberate percentages use revised limits", () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id];
+  Object.assign(pool, { baseMax: 100, minOverride: -20, display: "percent", spent: 60 }); f.actor.prepare();
+  const unchanged = { resourceValues: { [id]: 50 }, system: { customResources: { [id]: { maxOverride: 200, minOverride: -40 } } } };
+  resourceFormUpdates(f.actor, unchanged); assert.equal(unchanged.system.customResources[id].spent, undefined);
+  const edit = { resourceValues: { [id]: 25 }, system: { customResources: { [id]: { maxOverride: 200, minOverride: -40 } } } };
+  resourceFormUpdates(f.actor, edit); assert.equal(edit.system.customResources[id].spent, 180, "25% of -40..200 is 20 points");
+  const manual = { resourceValues: { [id]: -50 }, system: { customResources: { [id]: { display: "number" } } } };
+  pool.display = "number";
+  resourceFormUpdates(f.actor, manual); assert.equal(manual.system.customResources[id].spent, 150);
+  const zeroRange = { resourceValues: { [id]: 3 } };
+  Object.assign(pool, { minOverride: 100, display: "percent" }); f.actor.prepare();
+  resourceFormUpdates(f.actor, zeroRange); assert.equal(zeroRange.system.customResources[id].spent, 97);
+});
+
+test("clearing limits or changing modes never resets the stored manual maximum or spent points", async () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id];
+  Object.assign(pool, { maxOverride: 40, minOverride: -20, scaleStat: "int" }); f.actor.prepare();
+  const edit = { resourceValues: { [id]: 20 }, system: { customResources: { [id]: { maxOverride: null, minOverride: null, scaleStat: "" } } } };
+  resourceFormUpdates(f.actor, edit); assert.equal(edit.system.customResources[id].spent, undefined);
+  Object.assign(pool, edit.system.customResources[id]); f.actor.prepare();
+  assert.equal(pool.baseMax, 100); assert.equal(pool.max, 100); assert.equal(pool.min, 0); assert.equal(pool.value, 80);
+  Object.assign(pool, { maxOverride: 40, minOverride: -20, spent: 60 }); f.actor.prepare();
+  await longRest(f.actor); assert.equal(pool.max, 40); assert.equal(pool.min, -20); assert.equal(pool.value, 40);
 });

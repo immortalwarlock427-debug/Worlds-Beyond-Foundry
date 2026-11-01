@@ -20,7 +20,7 @@ export function resourceFormUpdates(actor, data) {
     if (current !== "" && current != null && !Number.isFinite(Number(current))) throw new Error("Enter a numeric resource total.");
     revised ??= actor.clone(data).system;
     const next = Object.hasOwn(MAGIC_RESOURCES, key) ? revised[key] : revised.customResources[key];
-    foundry.utils.setProperty(data, `${path}.spent`, poolSpentForCurrent(next.max, resourceInputPoints(pool, current, next.max)));
+    foundry.utils.setProperty(data, `${path}.spent`, poolSpentForCurrent(next.max, resourceInputPoints(pool, current, next.max, next.min)));
   }
   return data;
 }

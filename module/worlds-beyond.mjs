@@ -50,11 +50,12 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     });
     const resource = () => ({
       spent: number(), bonus: number(), amount: number(1, { min: 0 }),
+      maxOverride: number(null, { nullable: true, min: 0 }), minOverride: override(),
       display: new StringField({ required: true, nullable: false, blank: false, initial: "number", choices: RESOURCE_DISPLAYS }),
-      value: number(0, { persisted: false }), max: number(0, { persisted: false })
+      value: number(0, { persisted: false }), max: number(0, { persisted: false }), min: number(0, { persisted: false })
     });
     const magicResource = () => new SchemaField({
-      ...resource(), enabled: new BooleanField({ initial: false }), maxOverride: number(null, { nullable: true, min: 0 })
+      ...resource(), enabled: new BooleanField({ initial: false })
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
