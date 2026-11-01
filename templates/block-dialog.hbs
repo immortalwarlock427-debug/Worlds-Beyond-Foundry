@@ -1,7 +1,10 @@
 <div class="wb-check-options">
-  <p>Block dice + Strength modifier ({{modifier}}). Use arm guards, a held weapon or a shield. Blocking for an ally requires a shield and reach within 1 AP of movement.</p>
+  <p class="wb-dialog-meta">STR mod {{modifier}} · 1 reaction</p>
   <label>Roll formula<input type="text" name="formula" value="{{formula}}" aria-label="Block roll formula"></label>
-  <p>@mod is your STR modifier. Adjust the formula for special items or abilities, including rare-metal multipliers.</p>
   <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>
-  <p>A Block costs no AP. Use it once per incoming attack; other reaction types can still be used if you have reactions left.</p>
+  <details class="wb-disclosure wb-help"><summary>How Block works</summary>
+    <p>Roll Block dice + STR, then subtract the total from damage left after Resistance and Armor Rating. Apply Health changes manually. A full Block also stops effects that need to cut into you; Overwhelming Force may keep damage at half.</p>
+    <p>Use arm guards, a held weapon or a shield. Blocking for an ally needs a shield and reach within 1 AP of movement. Use Block once per incoming attack; other defenses may use another reaction. No AP cost.</p>
+    <p>@mod is your STR modifier. Edit the formula for special items, rare-metal multipliers or Fast Roll. Untick spending for practice.</p>
+  </details>
 </div>

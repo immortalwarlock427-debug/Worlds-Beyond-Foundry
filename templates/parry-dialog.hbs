@@ -1,17 +1,21 @@
 <div class="wb-check-options">
-  <p>d20 + Dexterity modifier ({{modifier}}). Beat the attack total to negate its damage and non-magical effects; a tie fails. A natural 20 attack can still be parried.</p>
-  {{#unless unlocked}}<p>Parry unlocks at DEX 21. It is not currently reached; use a practice roll or confirm an ability/correction that grants it.</p>{{/unless}}
-  {{#unless armed}}<p>Parry requires a weapon or shield in hand. None is marked equipped; check your equipment or use a manual correction.</p>{{/unless}}
-  <label>Incoming attack total<input type="number" name="target" step="any" placeholder="Optional · compare manually"></label>
+  <p class="wb-dialog-meta">DEX mod {{modifier}} · 1 reaction · once per round</p>
+  {{#unless unlocked}}<p class="wb-warning">DEX 21 not reached.</p>{{/unless}}
+  {{#unless armed}}<p class="wb-warning">No weapon or shield equipped.</p>{{/unless}}
+  <label>Attack total<input type="number" name="target" step="any" placeholder="Optional"></label>
   <label class="wb-check-toggle"><input type="checkbox" name="ally"> Protect an ally</label>
-  <label class="wb-check-toggle"><input type="checkbox" name="overwhelmingForce"> Attacker has Overwhelming Force (STR 28)</label>
-  <fieldset>
+  <label class="wb-check-toggle" data-tooltip="Attacker's STR 28 milestone: damage cannot fall below half"><input type="checkbox" name="overwhelmingForce"> Overwhelming Force</label>
+  <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
-    <label><input type="radio" name="mode" value="normal" checked> Normal · 1d20</label>
-    <label><input type="radio" name="mode" value="advantage"> Advantage · keep the higher d20</label>
-    <label><input type="radio" name="mode" value="disadvantage"> Disadvantage · keep the lower d20</label>
+    <label><input type="radio" name="mode" value="normal" checked> Normal</label>
+    <label data-tooltip="Roll two d20s; keep the higher"><input type="radio" name="mode" value="advantage"> Advantage</label>
+    <label data-tooltip="Roll two d20s; keep the lower"><input type="radio" name="mode" value="disadvantage"> Disadvantage</label>
   </fieldset>
-  {{#if used}}<p>Parry already used in round {{round}}. Roll without spending for practice, or choose Reset Parry use for a correction. Resetting does not refund a reaction.</p>{{else}}{{#if combatId}}<p>Parry is ready for round {{round}}.</p>{{/if}}{{/if}}
-  <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left){{#if combatId}} and mark Parry used this round{{/if}}</label>
-  <p>No AP cost. Once each round, parry a physical melee or ranged attack you can see. To protect someone within 1 AP of movement, move in front of the attack. Distance, movement and Health changes stay manual. Rolls without spending are practice rolls.</p>
+  {{#if used}}<p class="wb-warning">Used in round {{round}} · reset to correct.</p>{{else}}{{#if combatId}}<p class="wb-dialog-meta">Ready · round {{round}}</p>{{/if}}{{/if}}
+  <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>
+  <details class="wb-disclosure wb-help"><summary>How Parry works</summary>
+    <p>Roll d20 + DEX. Beat the attack total to negate damage and non-magical effects; a tie fails. Natural 20 attacks can be parried. Overwhelming Force keeps damage at half or more.</p>
+    <p>Requires DEX 21 and a held weapon or shield. Use once per round against a physical melee or ranged attack you can see. To protect an ally within 1 AP of movement, move in front of the attack. Requirements remain correctable for abilities and equipment.</p>
+    <p>Spending a reaction also marks this round's Parry use. Reset Parry use clears the mark without refunding a reaction. Unticked spending makes a practice roll. No AP cost. Movement, Health and effect removal stay manual; Wonder is available from the chat card.</p>
+  </details>
 </div>
