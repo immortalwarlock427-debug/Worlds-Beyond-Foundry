@@ -30,11 +30,24 @@ Website features map to Foundry like this:
 
 ## Next
 
+### Current priority: finish the character sheet
+
+The user paused combat development on 2026-11-01. Finish the sheet before returning to the numbered combat tasks below:
+
+1. **Mana, holy power and custom resources — implemented, awaiting validation.** See [RESOURCES.md](RESOURCES.md). Recovery is manual; no new turn automation is introduced.
+2. **Ability records on the sheet.** Descriptions, costs, uses and cooldowns; executing combat actions follows later.
+3. **Effects and forms.** Toggle bonuses/forms and make the sources of stat/resource changes clear.
+4. **Milestone details.** Full rules and unlock state, with any remaining sheet-only passive calculations.
+5. **Character details and notes.** Proposed background, appearance, backstory and general notes fields.
+6. **Organization and validation.** Character/Equipment/Abilities/Notes tabs, phone layout, save/reload and existing-character checks.
+
+### Deferred combat work and wider roadmap
+
 3. **Equipment — catalog implemented, awaiting validation.** Item records (PR #6), worn armor (PR #7) and inventory/consumables (PR #8) are merged. The Notion weapon, armor and shield tables now import into a world compendium; see the [catalog checklist](CATALOG.md). This finishes step 3 once validated.
 4. **Attacks and damage — implemented, awaiting validation.** Single and two-weapon attacks, damage scaling, Loading/reload and the capped AP costs are in [ATTACKS.md](ATTACKS.md). Signature properties stay reminders and get automated one at a time alongside later steps. Original scope: Attack vs Natural Evasion, damage dice scaling at levels 5/10/15/20, Finesse/Paragon crit range 18–20, Heavy and Paragon double modifiers, two-handed hits halving AR, Block dice. Signature properties start as descriptive text and get automated one at a time.
 5. **Combat flow — linked defenses implemented, awaiting validation.** Shared chat theming and grouped equipment rows are implemented; see [VISUAL-POLISH.md](VISUAL-POLISH.md). Attack cards now open linked Block/Dodge/Parry dialogs with per-hand use tracking and correction resets; see [LINKED-DEFENSES.md](LINKED-DEFENSES.md). Health adjustments remain manual. Remaining small steps: opportunity attacks as reactions, Command passing AP to an ally, and potion AP integration.
    The user's token-click attack and hand-equipment request takes priority before the remaining combat actions; implemented in [TOKEN-ATTACKS.md](TOKEN-ATTACKS.md), awaiting in-world validation.
-6. **Mana, holy power and custom resources.** Max = INT or FTH × (level + 2) from the current stat. Custom pools with current/max, regeneration and long-rest refill.
+6. **Mana, holy power and custom resources — implemented for sheet use, awaiting validation.** Max = INT or FTH × (level + 2) from the current stat. Custom pools have current/max, manual recovery and optional long-rest refill. Turn-based regeneration remains deferred with combat work.
 7. **Abilities, forms and milestones.** Ability items with AP/resource costs, stat AP discounts (floor at half, rounded up), uses, cooldowns and durations. Forms as switchable effect sets. Milestone actions. Likely several PRs.
 8. **AP movement on the map.** Moving a token spends AP at the character's movement rate using Foundry's token movement. Difficult terrain costs double.
 9. **Statuses.** Once the status rules (bleeding, burning, unconscious, exhaustion) are settled in Notion.

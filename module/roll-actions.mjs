@@ -2,6 +2,8 @@ import { STATS } from "./stats.mjs";
 import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
 import { dodgeOutcome, parryOutcome } from "./defenses.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
+import { resourceRestUpdates } from "./resources.mjs";
+import { queuedAction } from "./action-support.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -94,12 +96,13 @@ function actorOperation(actor, operation) {
 
 export async function longRest(actor) {
   if (!actor.isOwner) return;
-  return actorOperation(actor, () => actor.update({
+  return actorOperation(actor, () => queuedAction(actor.uuid, () => actor.update({
     "system.health.damage": 0,
     "system.ap.value": null,
     "system.reactions.value": null,
-    "system.wonder.value": null
-  }));
+    "system.wonder.value": null,
+    ...resourceRestUpdates(actor.system)
+  })));
 }
 
 export async function useWonder(message) {

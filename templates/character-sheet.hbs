@@ -31,6 +31,49 @@
     <button type="button" data-action="longRest" data-tooltip="Restore all resources to maximum" {{#unless editable}}disabled{{/unless}}>Long rest</button>
   </div>
 
+  <section class="wb-extra-resources" aria-label="Magic and custom resources">
+    <div class="wb-section-heading">
+      <h2 class="wb-section-title">Resources</h2>
+      <details class="wb-resource-management wb-disclosure" data-sync="resource-management"><summary>Manage</summary>
+        <div class="wb-resource-management-fields">
+          <label class="wb-equipment-check"><input type="checkbox" name="system.mana.enabled" {{#if manaEnabled}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Show mana</label>
+          <label class="wb-equipment-check"><input type="checkbox" name="system.holyPower.enabled" {{#if holyPowerEnabled}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Show holy power</label>
+          <button type="button" data-action="resource" data-operation="add" {{#unless editable}}disabled{{/unless}}>Add resource</button>
+        </div>
+      </details>
+    </div>
+    <div class="wb-extra-resource-grid">
+      {{#each resourcePools}}
+      <article class="wb-pool-card wb-pool-{{#if custom}}custom{{else}}{{key}}{{/if}}" data-resource-key="{{key}}">
+        <header class="wb-pool-heading"><h3>{{label}}</h3>
+          {{#if custom}}<button type="button" class="wb-item-remove" data-action="resource" data-operation="remove" aria-label="Remove {{label}}" data-tooltip="Remove resource" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
+        </header>
+        <label class="wb-resource-values"><input type="number" name="resourceValues.{{key}}" value="{{value}}" step="any" aria-label="Current {{label}}" {{#unless @root.editable}}disabled{{/unless}}><span class="wb-resource-max">/ {{max}}</span></label>
+        <div class="wb-pool-actions">
+          <input type="number" name="{{path}}.amount" value="{{amount}}" min="0" step="any" data-resource-amount aria-label="Amount to spend or restore for {{label}}" {{#unless @root.editable}}disabled{{/unless}}>
+          <button type="button" data-action="resource" data-operation="spend" {{#unless @root.editable}}disabled{{/unless}}>Spend</button>
+          <button type="button" data-action="resource" data-operation="restore" {{#unless @root.editable}}disabled{{/unless}}>Restore</button>
+          <button type="button" data-action="resource" data-operation="fill" {{#unless @root.editable}}disabled{{/unless}}>Fill</button>
+        </div>
+        {{#if custom}}{{#if regen}}<button type="button" class="wb-pool-recover" data-action="resource" data-operation="recover" data-tooltip="Apply this pool's recovery amount once; turn automation is not enabled" {{#unless @root.editable}}disabled{{/unless}}>Recover +{{regen}}</button>{{/if}}{{/if}}
+        <details class="wb-disclosure wb-pool-settings" data-sync="pool-{{key}}"><summary>Settings</summary>
+          <div class="wb-pool-settings-grid">
+            {{#if custom}}
+              <label>Name<input type="text" name="{{path}}.name" value="{{name}}" {{#unless @root.editable}}disabled{{/unless}}></label>
+              <label>Base maximum<input type="number" name="{{path}}.baseMax" value="{{baseMax}}" min="0" step="any" {{#unless @root.editable}}disabled{{/unless}}></label>
+              <label>Recovery amount<input type="number" name="{{path}}.regen" value="{{regen}}" min="0" step="any" {{#unless @root.editable}}disabled{{/unless}}></label>
+              <label class="wb-equipment-check"><input type="checkbox" name="{{path}}.refillOnRest" {{#if refillOnRest}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Fill on long rest</label>
+            {{else}}
+              <label data-tooltip="Clear to use the current stat and level">Maximum override<input type="number" name="{{path}}.maxOverride" value="{{maxOverride}}" placeholder="Auto {{automatic}}" min="0" step="any" {{#unless @root.editable}}disabled{{/unless}}></label>
+            {{/if}}
+            <label data-tooltip="Adds to the automatic or base maximum; a final override takes priority">Extra maximum<input type="number" name="{{path}}.bonus" value="{{bonus}}" step="any" {{#unless @root.editable}}disabled{{/unless}}></label>
+          </div>
+        </details>
+      </article>
+      {{/each}}
+    </div>
+  </section>
+
   <section class="wb-core" aria-label="Core numbers">
     {{#each coreDetails as |detail|}}
     <div class="wb-core-detail">
@@ -139,7 +182,8 @@
   <details class="wb-disclosure wb-help" data-sync="sheet-help"><summary>Rules &amp; help</summary>
     <h3>Stats &amp; resources</h3>
     <p>Click a stat abbreviation for a check or save. Diamonds mark 21 and 28. A stat shows its effective score; select it to edit the base, including earned stat points. Level-up points keep the normal base color. Gear or effects use teal, manual edits gold, and both together purple. Clear a manual edit to restore its remembered base; earned points and active effects still apply.</p>
-    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Each result may use Wonder once; its new result replaces it and may use Wonder again. Long rest refills Health, AP, reactions and Wonder.</p>
+    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Each result may use Wonder once; its new result replaces it and may use Wonder again. Long rest refills Health, AP, reactions, Wonder, mana and holy power, plus custom pools set to refill.</p>
+    <p>Show mana or holy power under Resources → Manage. Their maxima use current INT or FTH × (level + 2). Current totals follow maximum changes while preserving points spent. Resource Settings hold manual maximums and bonuses. Clearing Current fills that pool. Custom recovery is applied once with Recover; no turn automation is enabled. Hiding a magic pool preserves its balance, and long rest still refills it.</p>
     <h3>Armor &amp; defenses</h3>
     <p>Armor: {{worn.type}} · worn AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · light armor Evasion +{{worn.evasion}}. Effective AGL {{worn.effectiveAgility}}, armor penalty {{worn.agilityPenalty}}. A square costs {{worn.squareCost}} ft, or {{worn.difficultSquareCost}} ft in difficult terrain.</p>
     <p>Block uses {{block.formula}} {{block.strMod}} STR; another die at level {{block.nextLevel}}. Use arm guards, a weapon or a shield. Dodge uses AGL; Parry uses DEX and normally needs DEX 21 plus held equipment. Each dialog has its own rules section. Apply Health changes manually.</p>
