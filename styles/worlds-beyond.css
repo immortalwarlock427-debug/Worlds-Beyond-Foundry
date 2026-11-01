@@ -302,9 +302,15 @@
 }
 
 /* Roll dialogs and chat cards share the sheet's palette without styling other systems. */
-.worlds-beyond.wb-roll-dialog { min-width: min(300px, 100vw); max-width: 100vw; }
+.worlds-beyond.wb-roll-dialog { min-width: min(300px, 100vw); max-width: 100vw; max-height: min(820px, calc(100dvh - 32px)); }
 .worlds-beyond.wb-roll-dialog .window-header { background: #0D111E; color: #E7E4D8; }
-.worlds-beyond.wb-roll-dialog .window-content { background: #141A2B; color: #E7E4D8; }
+.worlds-beyond.wb-roll-dialog .window-content { min-height: 0; overflow: hidden; background: #141A2B; color: #E7E4D8; }
+/* DialogV2 nests its form and content inside the window. Each flex ancestor
+   must shrink so long instructions scroll above the persistent action footer. */
+.worlds-beyond.wb-roll-dialog .window-content > .dialog-form { flex: 1 1 auto; min-height: 0; }
+.worlds-beyond.wb-roll-dialog .dialog-form > .dialog-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+.worlds-beyond.wb-roll-dialog .dialog-form > .form-footer { flex: 0 0 auto; }
+.worlds-beyond.wb-roll-dialog .wb-check-options > p { margin: 0; }
 .worlds-beyond .wb-check-options { display: grid; gap: 16px; font-family: "Alegreya Sans", sans-serif; }
 .worlds-beyond .wb-check-options > label { display: grid; gap: 8px; }
 .worlds-beyond .wb-check-options select { min-height: 44px; background: #1A2136; color: #E7E4D8; }

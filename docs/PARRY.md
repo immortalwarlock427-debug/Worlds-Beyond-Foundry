@@ -1,6 +1,6 @@
 # Parry reaction
 
-The user confirmed Dodge works before authorizing this next part of roadmap step 5. Version 0.13.0 adds Parry. Health changes and association with incoming attack cards remain manual.
+The user confirmed Dodge works before authorizing this next part of roadmap step 5. Version 0.13.1 adds Parry and keeps long roll dialogs scrollable above visible action buttons. Health changes and association with incoming attack cards remain manual.
 
 ## Sources and rule choices
 
@@ -35,7 +35,7 @@ No live world, actual dialog reset button, token movement, sockets or phone layo
 
 Test before merging:
 
-1. Restart Foundry and refresh player browsers. At DEX 21, equip a weapon or shield and open Parry. Check the DEX modifier and spending default. Below DEX 21 or without held gear, check warnings and unspent practice defaults.
+1. Restart Foundry and refresh player browsers. Open Parry and check Roll Parry remains visible while the instructions scroll, including in a shorter window. At DEX 21, equip a weapon or shield and check the DEX modifier and spending default. Below DEX 21 or without held gear, check warnings and unspent practice defaults.
 2. Enter an attack total; Parry must beat it, including when that attack rolled a natural 20. Try a tie, a blank target and normal/advantage/disadvantage.
 3. In combat, spend one reaction. Confirm AP/Health/Wonder stay unchanged. A second spent Parry in that round should report it was used. Advancing only a turn keeps it used; advancing the round makes it available, provided reactions remain.
 4. Open a used Parry dialog and select Reset Parry use. Confirm it rolls nothing and does not refund a reaction; reopen and check availability. Try practice rolls without spending.
