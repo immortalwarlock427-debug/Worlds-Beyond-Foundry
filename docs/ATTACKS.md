@@ -1,6 +1,6 @@
 # Weapon attacks and damage
 
-Roadmap step 4, version 0.9.0. Rules checked against Notion [Weapons Explained](https://www.notion.so/351c72092efb81608515cad619890c48), [Defenses](https://www.notion.so/406c72092efb81088e3be6e9d3b2c44d) and [Action Points](https://www.notion.so/406c72092efb81a491b3e7dc50e9ba73) on 2026-10-31, and the website's `combat-core.js` (`attackApCost`, `attackHits`, `criticalTotal`).
+Roadmap step 4, version 0.9.1. Rules checked against Notion [Weapons Explained](https://www.notion.so/351c72092efb81608515cad619890c48), [Defenses](https://www.notion.so/406c72092efb81088e3be6e9d3b2c44d) and [Action Points](https://www.notion.so/406c72092efb81a491b3e7dc50e9ba73) on 2026-10-31, and the website's `combat-core.js` (`attackApCost`, `attackHits`, `criticalTotal`).
 
 ## Flow
 
@@ -15,7 +15,7 @@ Roadmap step 4, version 0.9.0. Rules checked against Notion [Weapons Explained](
 - Spend AP starts ticked only when the character is in a started combat; outside combat actions are free. With too little AP the attack is refused and nothing is spent; untick Spend AP to roll anyway.
 - Two weapons: with a Light weapon equipped in each hand, the dialog offers **Both**. Each weapon rolls to hit for one attack's AP (the main weapon's cost). The off-hand hit deals half its damage, rounded down, with no modifier and no charge bonus. Each hand has its own damage button. Off-hand uses the same stat when its weapon allows it, otherwise its own.
 - Loading: weapons with Loading track shots (blank = full). Each attack fires one; an empty weapon refuses to attack. **Reload** refills it for 5 AP minus DEX (3–7) in combat, free outside. Ammunition isn't spent, because Notion doesn't say attacks use it up.
-- Automatic disadvantage: Heavy without 21 STR, Finesse without 21 DEX, Paragon without both, Mount while not mounted, past normal range, heavy armor without 21 STR. The dialog pre-selects disadvantage and lists the reasons. The player can still change the dice, and the card says if a listed disadvantage wasn't used.
+- Automatic disadvantage: Heavy without 21 STR, Finesse without 21 DEX, Paragon without both, Mount while not mounted, past normal range, heavy armor without 21 STR. The dialog lists the reasons and pre-selects disadvantage, updating as Past normal range, Mounted or the attack mode change (0.9.1, after the user found the range box seemed to do nothing). The player can still change the dice, and the card says if a listed disadvantage wasn't used.
 - Hit: total meets or beats Natural Evasion. A natural 20 always hits and crits. Finesse and Paragon also crit on a natural 18 or 19 that hits.
 - Damage: the listed dice are rolled 1×/2×/3×/4×/5× at levels 1/5/10/15/20, with the modifier added once. Heavy and Paragon add double. Versatile in two hands uses the bracket damage and counts as Two-handed. Mount adds +1 per 10 ft charged, up to the attack modifier.
 - Critical: maximum of the scaled dice + modifier, plus the dice rolled again (Notion: 2d10 + 6 → 26 + 2d10).
@@ -27,7 +27,6 @@ Roadmap step 4, version 0.9.0. Rules checked against Notion [Weapons Explained](
 - Automating signature properties one at a time. They print as reminders on the damage card.
 - Fast Roll. Foundry rolls every die anyway.
 - Unarmed attacks.
-- The Mounted checkbox doesn't change the pre-selected disadvantage. Switch to Normal when charging mounted.
 
 ## Validation
 
