@@ -51,6 +51,13 @@
     {{#each worn.duplicatePieces}}<p class="wb-warning">Multiple {{this}} equipped · review contributions.</p>{{/each}}
   </section>
 
+  <div class="wb-section-heading wb-stat-heading">
+    <h2 class="wb-section-title">Attributes</h2>
+    <div class="wb-stat-tools">
+      <button type="button" data-action="statSetup" data-mode="generation" data-tooltip="Roll 2d6 + 1d12 or type scores, then assign them" {{#unless editable}}disabled{{/unless}}>Roll &amp; assign</button>
+      <button type="button" data-action="statSetup" data-mode="advancement" data-tooltip="4 points at levels 4, 8, 12, 16 and 19; at most 2 in one stat per award" {{#unless editable}}disabled{{/unless}}>Stat points{{#if unspentStatPoints}} <span class="wb-badge">{{unspentStatPoints}} left</span>{{/if}}</button>
+    </div>
+  </div>
   <section class="wb-stats">
     {{#each groups as |group|}}
     <div class="wb-group">

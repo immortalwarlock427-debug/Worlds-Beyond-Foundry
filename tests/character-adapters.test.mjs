@@ -30,6 +30,26 @@ globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
 
+test("stat awards prepare from stored bases without accumulating or rewriting reset history", () => {
+  const source = { level: 8, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: true, resetValue: 18 }])),
+    advancement: { level4: { str: 2, dex: 2 }, level8: { str: 2, vit: 2 } } };
+  const original = structuredClone(source);
+  const model = new CharacterData();
+  model.stats = structuredClone(source.stats);
+  model.toObject = () => structuredClone(source);
+  model.prepareBaseData();
+  assert.equal(model.stats.str.value, 23);
+  assert.equal(model.stats.dex.value, 21);
+  model.prepareBaseData();
+  assert.equal(model.stats.str.value, 23);
+  source.level = 4;
+  model.prepareBaseData();
+  assert.equal(model.stats.str.value, 21);
+  assert.equal(model.stats.vit.value, 19);
+  assert.deepEqual(source.stats, original.stats);
+  assert.deepEqual(source.advancement, original.advancement);
+});
+
 test("sheet shows effective stats and colors changes while editing only persisted base scores", async () => {
   const stats = Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0, milestones: 0 }]));
   const source = structuredClone(stats);

@@ -1,0 +1,56 @@
+<div class="wb-setup-body">
+  {{#if generation}}
+  <div class="wb-setup-toolbar">
+    <span class="wb-eyebrow">2d6 + 1d12 · eight scores</span>
+    <div class="wb-setup-actions">
+      <button type="button" data-action="setup" data-operation="roll-one" {{#if full}}disabled{{/if}} {{#unless editable}}disabled{{/unless}}>Roll one</button>
+      <button type="button" data-action="setup" data-operation="roll-all" {{#unless editable}}disabled{{/unless}}>{{#if full}}Reroll eight{{else}}{{#if filled}}Roll remaining{{else}}Roll eight{{/if}}{{/if}}</button>
+      <button type="button" data-action="setup" data-operation="clear" {{#unless editable}}disabled{{/unless}}>Clear</button>
+    </div>
+  </div>
+  <p class="wb-setup-summary">Roll or type scores, then choose where each goes.</p>
+  <ol class="wb-score-results">
+    {{#each rows}}
+    <li>
+      <span class="wb-result-number">{{number}}</span>
+      <input type="number" data-result-score="{{index}}" value="{{score}}" placeholder="—" min="0" step="1" inputmode="numeric" aria-label="Score for result {{number}}" {{#unless @root.editable}}disabled{{/unless}}>
+      <select data-result-stat="{{index}}" aria-label="Assign result {{number}} to stat" {{#unless @root.editable}}disabled{{/unless}}>{{#each choices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      <span class="wb-score-breakdown" data-result-details="{{index}}">{{#if hasScore}}{{#if dice}}{{dice}}{{else}}Typed score{{/if}}{{#if increase}}<small>With stat points: {{preview}} (+{{increase}})</small>{{/if}}{{else}}Not rolled{{/if}}</span>
+    </li>
+    {{/each}}
+  </ol>
+  <details class="wb-disclosure wb-help"><summary>Assignment help</summary>
+    <p>Changing a destination swaps it with the other result. Equal totals are still separate results. Blank results leave that stat unchanged. Apply replaces the selected base scores and clears their manual edits; stat point increases, gear and effects still add afterward.</p>
+    <p>This is a draft until Apply. Closing discards it. Scores you type here become new bases; use the character sheet for temporary manual corrections. Notion's normal range is 3–28; manual exceptions stay available.</p>
+  </details>
+  {{else}}
+  {{#if award}}
+  <nav class="wb-award-tabs" aria-label="Stat point award">
+    {{#each awards}}<button type="button" data-action="setup" data-operation="level" data-level="{{level}}" aria-pressed="{{selected}}" {{#unless @root.editable}}disabled{{/unless}}>Level {{level}} <small>{{remaining}} left</small></button>{{/each}}
+  </nav>
+  <div class="wb-setup-toolbar"><strong class="wb-setup-summary">Level {{award.level}} · {{award.remaining}} of 4 points left</strong><button type="button" data-action="setup" data-operation="reset" {{#unless editable}}disabled{{/unless}}>Reset award</button></div>
+  <ol class="wb-point-results">
+    {{#each stats}}
+    <li>
+      <span class="wb-point-name">{{abbr}} <small>{{label}}</small></span>
+      <span class="wb-point-score" data-tooltip="Base {{base}} plus all earned stat increases. Gear and effects apply afterward.">{{total}}</span>
+      <div class="wb-point-stepper">
+        <button type="button" data-action="setup" data-operation="remove" data-stat="{{key}}" aria-label="Remove one {{label}} point" {{#unless canRemove}}disabled{{/unless}} {{#unless @root.editable}}disabled{{/unless}}>−</button>
+        <span aria-label="{{points}} of 2 points in {{label}}">{{points}} / 2</span>
+        <button type="button" data-action="setup" data-operation="add" data-stat="{{key}}" aria-label="Add one {{label}} point" {{#unless canAdd}}disabled{{/unless}} {{#unless @root.editable}}disabled{{/unless}}>+</button>
+      </div>
+    </li>
+    {{/each}}
+  </ol>
+  {{else}}<p class="wb-setup-summary">Your first 4 stat points arrive at level {{nextAward}}.</p>{{/if}}
+  <details class="wb-disclosure wb-help"><summary>Stat point rules &amp; existing characters</summary>
+    <p>Levels 4, 8, 12, 16 and 19 each grant 4 points. Each award can put at most 2 in one stat, up to a natural score of 28. You may leave points unspent and return later. Gear and manual corrections remain editable separately.</p>
+    <p>These points add to the base score. Clearing a manual stat edit restores its remembered base and keeps earned points and effects. Lowering your level suspends later awards; raising it again restores their saved choices.</p>
+    <p>Existing scores are kept. If you already added level-up points by hand, correct the base before recording those points here to avoid counting them twice.</p>
+  </details>
+  {{/if}}
+  <footer class="wb-setup-footer">
+    <button type="button" data-action="setup" data-operation="cancel" {{#if busy}}disabled{{/if}}>Cancel</button>
+    <button type="button" class="wb-primary" data-action="setup" data-operation="apply" {{#if generation}}{{#unless canApply}}disabled{{/unless}}{{else}}{{#unless editable}}disabled{{/unless}}{{/if}}>{{#if busy}}Working…{{else}}{{#if generation}}Apply {{filled}} scores{{else}}Save stat points{{/if}}{{/if}}</button>
+  </footer>
+</div>

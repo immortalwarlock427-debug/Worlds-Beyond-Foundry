@@ -6,6 +6,8 @@ import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
+import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
+import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { decorateSystemMessage } from "./chat-style.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
@@ -39,6 +41,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
       stats: new SchemaField(Object.fromEntries(STATS.map(s => [s.key, stat()]))),
+      advancement: new SchemaField(Object.fromEntries(STAT_AWARD_LEVELS.map(level => [
+        `level${level}`, new SchemaField(Object.fromEntries(STATS.map(s => [s.key, number(0, { integer: true, min: 0, max: 2 })])))
+      ]))),
       health: new SchemaField({
         damage: number(),
         maxOverride: override(),
@@ -59,6 +64,14 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         inventorySlots: override()
       })
     };
+  }
+
+  prepareBaseData() {
+    // Permanent increases join the base before Foundry applies Active Effects.
+    // Only the allocation is persisted, never the augmented value.
+    const source = this.toObject();
+    const increases = statIncreases(source.level, source.advancement);
+    for (const { key } of STATS) this.stats[key].value = source.stats[key].value + increases[key];
   }
 
   prepareDerivedData() {
@@ -120,6 +133,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     form: { submitOnChange: true },
     actions: {
       rollStat: CharacterSheet.#onRollStat,
+      statSetup: CharacterSheet.#onStatSetup,
       longRest: CharacterSheet.#onLongRest,
       block: CharacterSheet.#onBlock,
       dodge: CharacterSheet.#onDodge,
@@ -161,6 +175,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       actor: this.actor,
       system,
       editable: this.isEditable,
+      unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
       hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
         || Object.values(system.overrides ?? {}).some(value => value != null && value !== "")
         || !!system.bonuses?.armor || !!system.bonuses?.evasion,
@@ -224,6 +239,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onRollStat(event, target) {
     try { return await promptStatCheck(this.actor, target.dataset.stat); }
+    catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onStatSetup(event, target) {
+    if (!this.isEditable) return;
+    try { return await openStatSetup(this.actor, target.dataset.mode); }
     catch (error) { ui.notifications.error(error.message); }
   }
 

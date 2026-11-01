@@ -5,6 +5,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 ## What's in it so far
 
 - A **character** actor with a level and the eight stats: Strength, Dexterity, Vitality, Agility, Intelligence, Wisdom, Charisma and Faith.
+- **Roll & assign** generates eight 2d6 + 1d12 scores or accepts typed scores, with swappable destinations and an explicit Apply. **Stat points** tracks 4-point awards at levels 4/8/12/16/19, at most 2 per stat per award, separately from bases and gear. See [stat setup](docs/STAT-SETUP.md).
 - Modifiers are calculated from the score. Strength and Dexterity use (score − 12) ÷ 2, rounded down. The other six move 1 per 3 points away from 12.
 - Milestone diamonds light up at 21 and 28. Stat fields show the effective score and reveal the base while editing, matching the website. Automatic changes are teal, manual edits gold, and combined manual/automatic changes purple. Clearing a stat restores its remembered pre-edit base while keeping automatic adjustments (older edits without reset history use default 12).
 - Clicking a stat's abbreviation opens a check/save dialog with normal, advantage or disadvantage dice and posts a chat card.

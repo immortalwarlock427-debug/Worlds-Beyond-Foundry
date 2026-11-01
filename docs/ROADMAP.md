@@ -23,6 +23,7 @@ Website features map to Foundry like this:
 ## Done
 
 - **Stats.** Character actor with level and the 8 stats, modifiers per the Notion chart, milestone diamonds at 21/28, click-to-roll d20 + modifier, d20 + WIS initiative.
+- **Stat setup — implemented, awaiting validation.** User-requested stat generation/typed assignments and separate 4-point awards at levels 4/8/12/16/19, at most 2 per stat per award. This takes priority over the next combat-flow step. See [stat setup and validation](STAT-SETUP.md).
 - **Core numbers.** Health, hit die, AP, reactions, Natural Evasion, Armor Rating, movement per AP, manual overrides and Health/AP token bars. The user confirmed the installed release works in Foundry on 2026-10-31 and authorized the next step. See [rules and regression checklist](CORE-NUMBERS.md).
 
 - **Rolls.** Checks/saves, advantage/disadvantage, readable chat cards, Wonder and long rest. The user tested the installed release and merged PR #5 before requesting equipment.
