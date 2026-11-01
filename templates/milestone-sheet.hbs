@@ -1,0 +1,27 @@
+<div class="wb-body wb-milestone-reference">
+  <header class="wb-section-heading"><div><span class="wb-eyebrow">Stat milestones</span><p class="wb-hint">{{unlocked}} / {{total}} unlocked</p></div>
+    <label>Show<select data-milestone-filter aria-label="Show milestones for stat">{{#each choices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+  </header>
+  {{#each groups}}
+  <section class="wb-milestone-group" aria-label="{{label}} milestones">
+    <h2 class="wb-section-title">{{label}} <span class="wb-milestone-score">{{score}} {{abbr}}</span></h2>
+    {{#each rows}}
+    <details class="wb-disclosure wb-milestone-detail {{#if unlocked}}is-unlocked{{/if}}" data-milestone-id="{{id}}" data-sync="milestone-{{id}}" {{#if focused}}open{{/if}}>
+      <summary><span class="wb-milestone-title"><span class="wb-milestone-gem" aria-hidden="true">◆</span> {{threshold}} · {{name}}</span><span class="wb-milestone-state">{{status}} <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span></summary>
+      <p class="wb-milestone-summary">{{summary}}</p>
+      <p class="wb-milestone-timing">{{timing}}</p>
+      {{#if preview}}<p class="wb-milestone-preview">{{preview}}</p>{{/if}}
+      {{#each paragraphs}}<p class="wb-milestone-rule">{{this}}</p>{{/each}}
+      {{#if outside}}<p>{{outside}}</p>{{/if}}
+      <p><a href="{{source}}" target="_blank" rel="noopener noreferrer">Notion rule <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></p>
+    </details>
+    {{/each}}
+  </section>
+  {{/each}}
+  <details class="wb-disclosure wb-help" data-sync="milestone-help"><summary>Milestone rules &amp; sheet support</summary>
+    <p>Milestones use your current score, including earned stat points, gear, effects and armor penalties. Reaching 21 or 28 unlocks the milestone; dropping below loses it again.</p>
+    <p>Outside combat, once-per-combat abilities are usable once per long rest. Once-per-round abilities are usable a number of times equal to that stat's modifier, regained on a long rest. A stat ability's saving throw DC is 12 + its modifier unless stated otherwise.</p>
+    <p>Adamantine Body, AGL's reaction maxima and Defy Fate already feed the existing sheet controls. Final manual overrides take priority. Other entries are rules and previews: resolve their actions, costs, uses and conditions manually. This reference does not spend points, grant vision or apply statuses.</p>
+  </details>
+  <button type="button" class="wb-reference-close" data-action="closeReference">Close</button>
+</div>

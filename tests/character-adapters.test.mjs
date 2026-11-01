@@ -17,6 +17,7 @@ class ActorStub {
 }
 class SheetStub {
   async _prepareContext() { return {}; }
+  async _onRender() {}
   _processFormData(event, form, formData) { return structuredClone(formData.object); }
 }
 globalThis.foundry = {
@@ -231,6 +232,16 @@ test("form submission saves deliberate base edits and never saves displayed effe
   const untouched = sheet._processFormData(null, form, { object: { statScores: { agl: 23 } } });
   assert.equal(untouched.statScores, undefined);
   assert.equal(untouched.system, undefined);
+});
+
+test("read-only actor sheets keep milestone reference buttons usable without enabling edits", async () => {
+  const sheet = new CharacterSheet(); sheet.isEditable = false;
+  const reference = { disabled: true }, correction = { disabled: true };
+  sheet.element = { querySelectorAll: selector => {
+    assert.equal(selector, '[data-action="milestones"]'); return [reference];
+  } };
+  await sheet._onRender({}, {});
+  assert.equal(reference.disabled, false); assert.equal(correction.disabled, true);
 });
 
 test("new actors get Health/AP token defaults while imported bar settings are preserved", async () => {
