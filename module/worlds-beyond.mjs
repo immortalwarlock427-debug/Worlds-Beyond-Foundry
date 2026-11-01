@@ -9,7 +9,7 @@ import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
-import { promptBlock, promptDodge, decorateReactionMessage } from "./reaction-actions.mjs";
+import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -122,6 +122,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       longRest: CharacterSheet.#onLongRest,
       block: CharacterSheet.#onBlock,
       dodge: CharacterSheet.#onDodge,
+      parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait
     }
@@ -170,6 +171,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       carrying: system.carrying,
       block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
       dodgeMod: formatModifier(system.stats.agl?.mod ?? 0),
+      parryMod: formatModifier(system.stats.dex?.mod ?? 0),
       coreDetails: [
         { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
@@ -263,6 +265,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onDodge() {
     if (!this.isEditable) return;
     try { return await promptDodge(this.actor); }
+    catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onParry() {
+    if (!this.isEditable) return;
+    try { return await promptParry(this.actor); }
     catch (error) { ui.notifications.error(error.message); }
   }
 }

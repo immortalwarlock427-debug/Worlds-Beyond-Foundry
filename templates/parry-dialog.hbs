@@ -1,0 +1,17 @@
+<div class="wb-check-options">
+  <p>d20 + Dexterity modifier ({{modifier}}). Beat the attack total to negate its damage and non-magical effects; a tie fails. A natural 20 attack can still be parried.</p>
+  {{#unless unlocked}}<p>Parry unlocks at DEX 21. It is not currently reached; use a practice roll or confirm an ability/correction that grants it.</p>{{/unless}}
+  {{#unless armed}}<p>Parry requires a weapon or shield in hand. None is marked equipped; check your equipment or use a manual correction.</p>{{/unless}}
+  <label>Incoming attack total<input type="number" name="target" step="any" placeholder="Optional · compare manually"></label>
+  <label class="wb-check-toggle"><input type="checkbox" name="ally"> Protect an ally</label>
+  <label class="wb-check-toggle"><input type="checkbox" name="overwhelmingForce"> Attacker has Overwhelming Force (STR 28)</label>
+  <fieldset>
+    <legend>Dice</legend>
+    <label><input type="radio" name="mode" value="normal" checked> Normal · 1d20</label>
+    <label><input type="radio" name="mode" value="advantage"> Advantage · keep the higher d20</label>
+    <label><input type="radio" name="mode" value="disadvantage"> Disadvantage · keep the lower d20</label>
+  </fieldset>
+  {{#if used}}<p>Parry already used in round {{round}}. Roll without spending for practice, or choose Reset Parry use for a correction. Resetting does not refund a reaction.</p>{{else}}{{#if combatId}}<p>Parry is ready for round {{round}}.</p>{{/if}}{{/if}}
+  <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left){{#if combatId}} and mark Parry used this round{{/if}}</label>
+  <p>No AP cost. Once each round, parry a physical melee or ranged attack you can see. To protect someone within 1 AP of movement, move in front of the attack. Distance, movement and Health changes stay manual. Rolls without spending are practice rolls.</p>
+</div>

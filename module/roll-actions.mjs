@@ -1,6 +1,6 @@
 import { STATS } from "./stats.mjs";
 import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
-import { dodgeOutcome } from "./defenses.mjs";
+import { dodgeOutcome, parryOutcome } from "./defenses.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -45,6 +45,9 @@ export async function rollCard(roll, context, { note = "", success = false } = {
     ...context.defense, ...dodgeOutcome(context.defense, roll.total, success),
     hasTarget: context.defense.target !== null, reroll: !!context.previousMessageId,
     overriddenDisadvantage: context.defense.heavyArmor && context.mode !== "disadvantage"
+  } : context.defense?.type === "parry" ? {
+    ...context.defense, ...parryOutcome(context.defense, roll.total, success),
+    parry: true, hasTarget: context.defense.target !== null, reroll: !!context.previousMessageId
   } : null;
   return renderTemplate("roll-card", {
     label: context.label,

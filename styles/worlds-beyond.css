@@ -345,7 +345,8 @@
 .worlds-beyond .wb-equipment-form textarea { resize: vertical; }
 .worlds-beyond .wb-armor-bonuses > p { grid-column: 1 / -1; margin: 4px 0; overflow-wrap: anywhere; }
 .worlds-beyond .wb-block-action,
-.worlds-beyond .wb-dodge-action { grid-column: 1 / -1; min-height: 44px; height: auto; background: var(--wb-brass-soft); color: var(--wb-brass); border: 1px solid var(--wb-rule); }
+.worlds-beyond .wb-dodge-action,
+.worlds-beyond .wb-parry-action { grid-column: 1 / -1; min-height: 44px; height: auto; background: var(--wb-brass-soft); color: var(--wb-brass); border: 1px solid var(--wb-rule); }
 .worlds-beyond .wb-check-options input[type="number"] { min-height: 44px; }
 .worlds-beyond .wb-check-options input[type="text"] { min-height: 44px; }
 .worlds-beyond .wb-inventory { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0 0; }
