@@ -1,22 +1,22 @@
 # Equipment artwork
 
-Version 0.17.0 assigns a unique image path to every one of the 70 catalog entries: **63 stock matches and 7 named placeholders awaiting custom art**. Copies of the same item intentionally use the same artwork. Custom/non-catalog items and consumable categories keep their existing fallback behavior.
+Version 0.17.1 assigns a unique image path to every one of the 70 catalog entries: **63 stock matches and 7 user-supplied illustrations**. Copies of the same item intentionally use the same artwork. Custom/non-catalog items and consumable categories keep their existing fallback behavior.
 
-## Artwork requested
+## User-supplied artwork
 
-These stock-library gaps use labelled navy/brass SVG placeholders instead of depicting the wrong weapon or shield:
+The user supplied these seven AI-created PNG illustrations on 2026-11-01. They are copied unchanged into `icons/`; no cropping, resizing or regeneration was applied.
 
-| Item | Image needed |
+| Item | Source filename → installed filename |
 | --- | --- |
-| Chakram | Circular throwing blade with an open center. |
-| Rapier | Slim thrusting blade with a swept or cup hand guard. |
-| Urumi | Flexible metal ribbon sword. |
-| Lance | Long mounted lance with a protective hand guard. |
-| Blowgun | Slender hollow blowpipe, optionally with a small dart. |
-| Chain Shield | The intended chain-shield design, with visible chain construction. |
-| Scale Shield | Shield faced with overlapping scales. |
+| Chakram | Ornate Golden Steel Chakram.png → chakram.png |
+| Rapier | Ornate Golden-Hilted Rapier.png → rapier.png |
+| Urumi | Ornate Ribbon Blade in Motion.png → urumi.png |
+| Lance | Ornate Silver and Gold Fantasy Lance.png → lance.png |
+| Blowgun | Ornate Blowgun and Crimson Darts.png → blowgun.png |
+| Chain Shield | Weathered Viking Chainmail Shield.png → chain-shield.png |
+| Scale Shield | de4fbd0c-8d26-4013-a7e8-19e57f08deef.png → scale-shield.png |
 
-Square PNG or WebP artwork, ideally 512×512 or larger, with a centered object and space around its edges will work well. A dark or transparent background fits the existing icons. No artwork is generated for these seven items; the user offered to provide it.
+All seven former SVG placeholders remain available for compatibility with saved URLs. Matching named catalog items resolve those old placeholder paths to the new PNGs in the views below. There are no remaining artwork requests.
 
 ## Source and selection
 
@@ -26,7 +26,7 @@ Related weapons no longer share one automatic image: four crossbow variants, thr
 
 ## Existing items and custom images
 
-`itemIcon` resolves an empty/generic image or the exact former automatic default for the same named catalog item to its new artwork. A different saved image is preserved, including a user-selected stock image. Renamed/non-catalog items with explicit images are preserved. An intentional choice identical to that item's old automatic default cannot be distinguished from the old default and receives the new display image.
+`itemIcon` resolves an empty/generic image, the exact former automatic default, or the matching old placeholder for the same named catalog item to its new artwork. A different saved image is preserved, including a user-selected stock image. Renamed/non-catalog items with explicit images are preserved. An intentional choice identical to that item's old automatic default or placeholder cannot be distinguished from the old default and receives the new display image.
 
 Character inventory rows, item-editor previews, the native Items directory and Item compendium contents use the resolver. Native directory hooks change thumbnails only; they do not restyle Foundry's sidebar or update documents/index entries. The image-path field still represents the saved image. Other modules or native art popouts that read the saved `img` directly can show the original until the user explicitly changes it.
 
@@ -34,7 +34,7 @@ New catalog imports use the new image paths. `CATALOG_VERSION` stays unchanged s
 
 ## Checks
 
-- `node --test` verifies all 70 paths are unique, exactly seven labelled gaps, appropriate stock categories, old-default recognition, custom stock/file preservation, renamed items and display-only world/compendium updates.
+- `node --test` verifies all 70 paths are unique, exactly seven supplied PNGs, appropriate stock categories, old-default/placeholder recognition, custom stock/file preservation, renamed items and display-only world/compendium updates.
 - Local checks verify every referenced asset exists, the 42 prior strict form/template cases and populated inventory rows still pass, and all 16 stat-setup contexts remain compatible.
-- Selected assets were visually reviewed across the full catalog, including distinct crossbows, armor weights, proper fan/chain-sickle/punch-dagger and explicit gaps.
+- Selected stock assets were visually reviewed across the full catalog. The seven supplied illustrations fill the remaining gaps; their copied files are hash-verified against the originals.
 - The PR records live Foundry checks and remaining limits. Restart Foundry and refresh player browsers; compare the native Items directory, compendium contents, inventory rows and editor previews. Confirm custom art remains chosen and gameplay values are unchanged. Native art popouts and third-party item browsers are outside this display pass.
