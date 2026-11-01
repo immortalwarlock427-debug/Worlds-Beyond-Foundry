@@ -4,6 +4,7 @@ import { checkMode, describeD20Roll } from "./rolls.mjs";
 import { SIGNATURE_TEXT } from "./catalog.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
+import { requireWeaponReady } from "./loadout.mjs";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
   attackOutcome, damagePlan, effectiveArmor, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
@@ -14,12 +15,15 @@ const MODE_LABELS = { melee: "Melee", thrown: "Thrown (uses DEX)", ranged: "Rang
 const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const statLabel = key => STATS.find(stat => stat.key === key)?.label ?? key;
 
-function currentTarget() {
-  const token = game.user.targets?.first?.() ?? Array.from(game.user.targets ?? [])[0];
+export function targetFromToken(token) {
   const actor = token?.actor;
   if (!actor) return null;
   return { name: token.name ?? actor.name, actorUuid: actor.uuid, tokenUuid: token.document?.uuid ?? null,
     evasion: actor.system?.core?.evasion ?? null, armor: actor.system?.core?.armorRating ?? null };
+}
+
+function currentTarget() {
+  return targetFromToken(game.user.targets?.first?.() ?? Array.from(game.user.targets ?? [])[0]);
 }
 
 // Actions cost AP during a started combat the actor is part of. Outside combat they're free.
@@ -41,13 +45,13 @@ function scores(actor) {
   return Object.fromEntries(STATS.map(({ key }) => [key, actor.system.stats[key].effective ?? actor.system.stats[key].value]));
 }
 
-export async function promptAttack(actor, itemId) {
+export async function promptAttack(actor, itemId, target = currentTarget()) {
   const weapon = actor.items.get(itemId);
   if (!actor.isOwner || weapon?.type !== "weapon") return;
+  requireWeaponReady(actor, weapon);
   const modes = attackModes(weapon);
   const choices = [...new Set(modes.flatMap(mode => attackStatChoices(weapon, mode)))];
   const best = choices.reduce((a, b) => actor.system.stats[b].mod > actor.system.stats[a].mod ? b : a);
-  const target = currentTarget();
   const reasons = attackDisadvantages({ weapon, scores: scores(actor), heavyArmor: !!actor.system.equipment?.heavyDisadvantage });
   const partners = dualWieldPartners(weapon, actor.items);
   const shots = shotsLeft(weapon);
@@ -104,6 +108,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
   const messageMode = game.settings.get("core", "messageMode");
   return queuedAction(actor.uuid, () => reversibleAction(async change => {
     const mode = options.mode ?? "melee";
+    requireWeaponReady(actor, weapon, options.grip);
     const offWeapon = options.hands ? actor.items.get(options.hands) : null;
     const weapons = [weapon, ...(offWeapon && dualWieldPartners(weapon, actor.items).includes(offWeapon) ? [offWeapon] : [])];
     const hands = weapons.map((item, index) => {

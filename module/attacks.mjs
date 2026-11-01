@@ -1,6 +1,7 @@
 // Foundry-free weapon attack and damage rules. Sources: Notion "Weapons Explained",
 // "Defenses" and "Action Points" (checked 2026-10-31), and the website's combat-core.js.
 import { statModifier } from "./stats.mjs";
+import { heldWeapon, itemList } from "./loadout.mjs";
 
 const MILESTONE = 21;
 
@@ -41,9 +42,9 @@ export function attackApCost(modifier) {
 // Notion's two-weapon fighting: a Light weapon in each hand lets you attack with
 // both for one attack's AP. Returns the other equipped Light weapons.
 export function dualWieldPartners(weapon, items = []) {
-  const light = item => item.type === "weapon" && item.system?.equipped && item.system.properties?.light;
+  const light = item => heldWeapon(item) && item.system?.equipped && item.system.properties?.light && !item.system.properties?.twoHanded;
   if (!light(weapon)) return [];
-  return Array.from(items).filter(item => item.id !== weapon.id && light(item));
+  return itemList(items).filter(item => item.id !== weapon.id && light(item));
 }
 
 // Shots left before reloading; null means fully loaded.

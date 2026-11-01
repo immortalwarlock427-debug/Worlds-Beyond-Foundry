@@ -14,6 +14,8 @@ import { decorateEquipmentDirectory } from "./item-artwork.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
 import { decorateAttackDefenses } from "./attack-defense.mjs";
+import { registerEquipmentItem } from "./equipment-item.mjs";
+import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
@@ -316,6 +318,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 /* -------------------------------------------- */
 
 Hooks.once("init", () => {
+  registerEquipmentItem();
+  registerTokenAttacks();
   CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Combatant.documentClass = CharacterCombatant;
   CONFIG.Actor.dataModels.character = CharacterData;
