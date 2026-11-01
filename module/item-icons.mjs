@@ -1,4 +1,5 @@
-// Stock assets bundled with Foundry 14.365. Artwork only; no equipment rules.
+// Stock assets bundled with Foundry 14.365 and user-supplied artwork.
+// Artwork only; no equipment rules.
 // Recognize only the old automatic icon for the same named catalog item.
 // Other saved artwork (including user-selected stock art) remains untouched.
 const legacyWeaponIcons = {};
@@ -31,19 +32,18 @@ assign(["Hand Crossbow", "Light Crossbow", "Crossbow", "Arbalest"], "weapons/cro
 assign(["Revolver", "Gun"], "weapons/guns/pistol-revolver-steel.webp");
 assign(["Net"], "tools/fishing/net-simple-tan.webp");
 
-const placeholder = name => `systems/worlds-beyond/icons/${name}.svg`;
-export const ARTWORK_NEEDED = Object.freeze({
-  Chakram: "A circular throwing blade with an open center.",
-  Rapier: "A slim thrusting blade with a swept or cup hand guard.",
-  Urumi: "A flexible metal ribbon sword, not a leather whip.",
-  Lance: "A long mounted lance with a protective hand guard.",
-  Blowgun: "A slender hollow blowpipe with a small dart.",
-  "Chain Shield": "A shield faced with interlinked chain-mail rings.",
-  "Scale Shield": "A shield faced with overlapping metal scales."
+export const CUSTOM_ARTWORK = Object.freeze({
+  Chakram: "systems/worlds-beyond/icons/chakram.png",
+  Rapier: "systems/worlds-beyond/icons/rapier.png",
+  Urumi: "systems/worlds-beyond/icons/urumi.png",
+  Lance: "systems/worlds-beyond/icons/lance.png",
+  Blowgun: "systems/worlds-beyond/icons/blowgun.png",
+  "Chain Shield": "systems/worlds-beyond/icons/chain-shield.png",
+  "Scale Shield": "systems/worlds-beyond/icons/scale-shield.png"
 });
 const weaponIcons = {
   Battleaxe: "weapons/axes/axe-battle-simple.webp",
-  Chakram: placeholder("chakram"),
+  Chakram: CUSTOM_ARTWORK.Chakram,
   Dagger: "weapons/daggers/dagger-black.webp",
   Flail: "weapons/maces/flail-ball-grey.webp",
   "Flanged Mace": "weapons/maces/mace-flanged-steel-grey.webp",
@@ -58,13 +58,13 @@ const weaponIcons = {
   "Main-gauche": "weapons/daggers/dagger-straight-thin-black.webp",
   Morningstar: "weapons/maces/mace-round-spiked-grey.webp",
   Quarterstaff: "weapons/staves/staff-simple-brown.webp",
-  Rapier: placeholder("rapier"),
+  Rapier: CUSTOM_ARTWORK.Rapier,
   Scimitar: "weapons/swords/scimitar-blue.webp",
   Shortsword: "weapons/swords/shortsword-broad-engraved.webp",
   Sickle: "weapons/sickles/hand-sickle.webp",
   Spear: "weapons/polearms/spear-simple-engraved.webp",
   Trident: "weapons/polearms/trident-curved-steel.webp",
-  Urumi: placeholder("urumi"),
+  Urumi: CUSTOM_ARTWORK.Urumi,
   "War Axe": "weapons/axes/axe-battle-heavy-black.webp",
   "War Pick": "weapons/axes/axe-pick-white.webp",
   Whip: "weapons/misc/whip-leather.webp",
@@ -73,14 +73,14 @@ const weaponIcons = {
   Greatclub: "weapons/clubs/club-heavy-barbed-brown.webp",
   Greatsword: "weapons/swords/greatsword-crossguard-steel.webp",
   Halberd: "weapons/polearms/halberd-worn-steel.webp",
-  Lance: placeholder("lance"),
+  Lance: CUSTOM_ARTWORK.Lance,
   Maul: "weapons/hammers/hammer-double-sledge-engraved.webp",
   Naginata: "weapons/polearms/glaive-simple.webp",
   Pike: "weapons/polearms/pike-flared-brown.webp",
   "War Scythe": "weapons/sickles/scythe-curved-steel.webp",
   Warhammer: "weapons/hammers/hammer-war-spiked-simple.webp",
   "Zweihänder": "weapons/swords/greatsword-flamberge.webp",
-  Blowgun: placeholder("blowgun"),
+  Blowgun: CUSTOM_ARTWORK.Blowgun,
   Dart: "weapons/thrown/dart-feathered.webp",
   Sling: "weapons/slings/sling-leather.webp",
   Shortbow: "weapons/bows/shortbow-recurve-leather.webp",
@@ -113,8 +113,8 @@ const armorIcons = {
 };
 const shieldIcons = {
   "Wooden Shield": "equipment/shield/shield-round-boss-wood-brown.webp",
-  "Chain Shield": placeholder("chain-shield"),
-  "Scale Shield": placeholder("scale-shield"),
+  "Chain Shield": CUSTOM_ARTWORK["Chain Shield"],
+  "Scale Shield": CUSTOM_ARTWORK["Scale Shield"],
   "Plate Shield": "equipment/shield/heater-steel-grey.webp"
 };
 const iconPath = path => path.startsWith("systems/") ? path : `icons/${path}`;
@@ -137,9 +137,11 @@ export function stockItemIcon({ type, name, system = {} }) {
 
 const generic = new Set(["icons/svg/item-bag.svg", "icons/svg/sword.svg", "icons/svg/target.svg", "icons/svg/statue.svg", "icons/svg/shield.svg"]);
 export function itemIcon(item) {
+  const priorPlaceholder = ((item.type === "weapon" && weaponIcons[item.name])
+    || (item.type === "shield" && shieldIcons[item.name])) && CUSTOM_ARTWORK[item.name]?.replace(/\.png$/, ".svg");
   const legacy = item.type === "weapon" ? legacyWeaponIcons[item.name]
     : item.type === "armor" && armorIcons[item.name] ? `icons/${pieces[armorIcons[item.name][0]]}`
       : item.type === "shield" && shieldIcons[item.name] ? item.name === "Wooden Shield"
         ? "icons/equipment/shield/shield-round-boss-wood-brown.webp" : "icons/equipment/shield/buckler-iron-cross-gray.webp" : null;
-  return item.img && !generic.has(item.img) && item.img !== legacy ? item.img : stockItemIcon(item);
+  return item.img && !generic.has(item.img) && item.img !== legacy && item.img !== priorPlaceholder ? item.img : stockItemIcon(item);
 }

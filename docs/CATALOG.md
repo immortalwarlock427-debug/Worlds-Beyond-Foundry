@@ -10,7 +10,7 @@ Last equipment part, version 0.7.0. Transcribed from Notion [Weapons Explained](
 
 Each weapon's description holds the Notion text of its signature properties until they're automated in step 4. Classifications follow the contract in [EQUIPMENT.md](EQUIPMENT.md): Paragon weapons use `family: paragon` (Warbow and Arbalest also `ranged`), ordinary ranged weapons use `family: none` + `ranged`, and Chakram, Dagger, Javelin etc. stay melee with Thrown. Two-handed weapons and shields take 2 slots.
 
-Every catalog entry now has distinct artwork: 63 fitting stock images and seven labelled requests for custom art. Existing automatic icons update in the normal sheet/directory views without resetting catalog data; custom images are preserved. See [artwork sources, missing images and display scope](EQUIPMENT-ART.md).
+Every catalog entry now has distinct artwork: 63 fitting stock images and seven user-supplied illustrations. Existing automatic icons and matching placeholders update in the normal sheet/directory views without resetting catalog data; custom images are preserved. See [artwork sources and display scope](EQUIPMENT-ART.md).
 
 ## How it gets into Foundry
 
