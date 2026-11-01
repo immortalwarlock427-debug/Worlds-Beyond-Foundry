@@ -308,6 +308,19 @@
 .worlds-beyond .wb-milestone-detail .wb-milestone-summary { color: var(--wb-ink); }
 .worlds-beyond .wb-milestone-detail .wb-milestone-timing { color: var(--wb-brass); }
 .worlds-beyond .wb-reference-close { min-height: 44px; background: var(--wb-bg); color: var(--wb-brass); border: 1px solid var(--wb-rule); border-radius: 4px; }
+.worlds-beyond .wb-details-summary { color: var(--wb-muted); font-size: 13px; overflow-wrap: anywhere; }
+.worlds-beyond .wb-character-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
+.worlds-beyond .wb-character-detail { min-width: 0; }
+.worlds-beyond .wb-character-detail-wide { grid-column: 1 / -1; }
+.worlds-beyond .wb-character-detail label { display: flex; flex-direction: column; gap: 8px; }
+.worlds-beyond .wb-character-detail h3 { margin: 0 0 8px; }
+.worlds-beyond .wb-character-detail input,
+.worlds-beyond .wb-character-detail textarea { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--wb-rule); border-radius: 4px; background: var(--wb-bg); color: var(--wb-ink); font: inherit; }
+.worlds-beyond .wb-character-detail input { min-height: 44px; }
+.worlds-beyond .wb-character-detail textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+.worlds-beyond .wb-character-detail-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.worlds-beyond .wb-character-detail input:focus-visible,
+.worlds-beyond .wb-character-detail textarea:focus-visible { outline: 2px solid var(--wb-brass); outline-offset: 1px; }
 .worlds-beyond .wb-core-value {
   display: block;
   margin: 8px 0;

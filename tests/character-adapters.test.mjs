@@ -244,6 +244,19 @@ test("read-only actor sheets keep milestone reference buttons usable without ena
   assert.equal(reference.disabled, false); assert.equal(correction.disabled, true);
 });
 
+test("narrative edits preserve literal text and spacing while unrelated saves omit unchanged details", () => {
+  const sheet = new CharacterSheet(); sheet.actor = actor();
+  const original = { class: "Mage", race: "Human", background: "  From home  ", appearance: "", backstory: "First line\n\nSecond line", notes: "Mana 120.4; 1.5×" };
+  sheet.actor.system.toObject = () => ({ details: structuredClone(original) });
+  const untouched = sheet._processFormData(null, null, { object: { name: "Renamed", system: { details: structuredClone(original) } } });
+  assert.deepEqual(untouched.system.details, {});
+  const literal = "  </textarea><script>literal</script>\n\nKeep 120.4 and 1.5×  ";
+  const edited = sheet._processFormData(null, null, { object: { system: { details: { ...original, notes: literal, class: "", backstory: "" } } } });
+  assert.deepEqual(edited.system.details, { notes: literal, class: "", backstory: "" });
+  assert.equal(edited.system.health, undefined); assert.equal(edited.system.stats, undefined);
+  assert.equal(original.notes, "Mana 120.4; 1.5×");
+});
+
 test("new actors get Health/AP token defaults while imported bar settings are preserved", async () => {
   const changes = [];
   const model = new CharacterData();

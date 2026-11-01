@@ -33,6 +33,14 @@ const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 const { NumberField, SchemaField, StringField, BooleanField, TypedObjectField } = foundry.data.fields;
+const CHARACTER_DETAILS = [
+  { key: "class", label: "Class", placeholder: "Class or path" },
+  { key: "race", label: "Race", placeholder: "Race or ancestry" },
+  { key: "background", label: "Background", rows: 3, placeholder: "Origins, occupation or upbringing" },
+  { key: "appearance", label: "Appearance", rows: 3, placeholder: "Features, clothing and distinguishing details" },
+  { key: "backstory", label: "Backstory", rows: 6, wide: true, placeholder: "Where you came from, what changed and what you want" },
+  { key: "notes", label: "Notes", rows: 6, wide: true, placeholder: "Session notes, connections, languages and reminders" }
+];
 
 /* -------------------------------------------- */
 /*  Data model                                  */
@@ -66,6 +74,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
+      details: new SchemaField(Object.fromEntries(CHARACTER_DETAILS.map(({ key }) => [key,
+        new StringField({ required: true, nullable: false, blank: true, trim: false, initial: "" })
+      ]))),
       stats: new SchemaField(Object.fromEntries(STATS.map(s => [s.key, stat()]))),
       advancement: new SchemaField(Object.fromEntries(STAT_AWARD_LEVELS.map(level => [
         `level${level}`, new SchemaField(Object.fromEntries(STATS.map(s => [s.key, number(0, { integer: true, min: 0, max: 2 })])))
@@ -224,6 +235,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
+      characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
+      characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
       system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
       resourcePools: resourceEntries(system).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
       effectGroups: effects.groups, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
@@ -264,6 +277,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   _processFormData(event, form, formData) {
     const systemSource = this.actor.system.toObject?.();
     const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    // Unrelated sheet saves must not resubmit stored narrative text.
+    for (const { key } of CHARACTER_DETAILS) {
+      if (data.system?.details?.[key] === systemSource?.details?.[key]) delete data.system?.details?.[key];
+    }
     delete data.statScores;
     const increases = statIncreases(this.actor.system.level, systemSource?.advancement);
     for (const [key, value] of editedStatInputs(form)) {

@@ -218,6 +218,24 @@
     </section>
     {{else}}<p class="wb-empty">Drop an item here or choose Add item.</p>{{/each}}
   </section>
+  <details class="wb-disclosure wb-character-details" data-sync="character-details">
+    <summary>Character details &amp; notes{{#if characterDetailsSummary}} <span class="wb-details-summary">· {{characterDetailsSummary}}</span>{{/if}}</summary>
+    <div class="wb-character-details-grid">
+      {{#each characterDetails}}
+      <div class="wb-character-detail {{#if wide}}wb-character-detail-wide{{/if}}">
+        {{#if @root.editable}}
+        <label><span class="wb-eyebrow">{{label}}</span>
+          {{#if rows}}<textarea name="system.details.{{key}}" rows="{{rows}}" placeholder="{{placeholder}}">{{value}}</textarea>
+          {{else}}<input type="text" name="system.details.{{key}}" value="{{value}}" placeholder="{{placeholder}}">{{/if}}
+        </label>
+        {{else}}
+        <h3 class="wb-eyebrow">{{label}}</h3>
+        {{#if value}}<div class="wb-character-detail-text">{{value}}</div>{{else}}<p class="wb-empty">Not entered</p>{{/if}}
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </details>
   <details class="wb-disclosure wb-adjustments" data-sync="adjustments">
     <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
     <div class="wb-adjust-grid">
