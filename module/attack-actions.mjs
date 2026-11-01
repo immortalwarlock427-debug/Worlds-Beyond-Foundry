@@ -3,6 +3,7 @@ import { STATS, formatModifier } from "./stats.mjs";
 import { checkMode, describeD20Roll } from "./rolls.mjs";
 import { SIGNATURE_TEXT } from "./catalog.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
+import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
   attackOutcome, damagePlan, effectiveArmor, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
@@ -64,7 +65,7 @@ export async function promptAttack(actor, itemId) {
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
     window: { title: `${weapon.name} attack` }, content, ok: { label: "Attack" }, rejectClose: false,
-    render: (event, dialog) => bindAttackDialog(dialog.element, actor, weapon)
+    render: (event, dialog) => { bindAttackDialog(dialog.element, actor, weapon); fitDialogDisclosures(dialog); }
   });
   if (!form) return;
   return rollAttack(actor, weapon, { ...form, mode: form.mode ?? modes[0], stat: form.stat ?? best }, target);
