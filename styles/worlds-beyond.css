@@ -349,3 +349,8 @@
 .worlds-beyond .wb-inventory-total.is-over strong { color: #E07A6B; }
 .worlds-beyond .wb-inventory .wb-equipment-check { display: flex; align-items: center; gap: 6px; min-height: 44px; }
 .worlds-beyond .wb-consumable-heal { width: 100%; min-height: 36px; margin-top: 6px; }
+.worlds-beyond .wb-damage-action { width: 100%; min-height: 44px; margin-top: 8px; background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond .wb-damage-action:disabled { color: #959CB2; border-color: #2C3452; }
+.worlds-beyond .wb-attack-card p { margin: 4px 0; }
+.worlds-beyond .wb-check-toggle { display: flex; align-items: center; gap: 6px; }
+.worlds-beyond .wb-equipment .wb-attack-button { border-color: var(--wb-brass); }

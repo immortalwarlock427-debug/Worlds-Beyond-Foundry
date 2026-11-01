@@ -99,7 +99,7 @@
       <label class="wb-equipment-check"><input type="checkbox" name="system.inventory.backpack" {{#if system.inventory.backpack}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Backpack (+6 slots)</label>
       <label class="wb-override-label"><span>Slots override</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="any" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
     </div>
-    <p class="wb-core-hint">You have 10 + STR modifier slots. Worn armor and weapons or shields in hand take none. Drop items here from the Items directory, or add your own. Each leg-guard item is a complete pair.</p>
+    <p class="wb-core-hint">You have 10 + STR modifier slots. Worn armor and weapons or shields in hand take none. Drop items here from the Items directory, or add your own. Each leg-guard item is a complete pair. Equip a weapon to attack with it.</p>
     <ul class="wb-equipment-list">
       {{#each equipment}}
       <li data-item-id="{{id}}">
@@ -107,6 +107,7 @@
         <span>{{typeLabel}} · Qty {{quantity}} · {{#if equipped}}{{#if slots}}{{slots}} slots for extras{{else}}worn or in hand{{/if}}{{else}}{{slots}} slots{{/if}}</span>
         <p>{{detail}}</p>
         <div class="wb-equipment-actions">
+          {{#if canAttack}}<button type="button" class="wb-attack-button" data-action="equipment" data-operation="attack" {{#unless @root.editable}}disabled{{/unless}}>Attack</button>{{/if}}
           {{#if canUse}}<button type="button" data-action="equipment" data-operation="use" {{#unless @root.editable}}disabled{{/unless}}>Use one</button>{{/if}}
           {{#if canEquip}}<button type="button" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if equipped}}Equipped{{else}}Equip{{/if}}</button>{{/if}}
           <button type="button" data-action="equipment" data-operation="delete" {{#unless @root.editable}}disabled{{/unless}}>Remove</button>
