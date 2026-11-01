@@ -50,6 +50,10 @@ test("equipment summaries support all new types and preserve legacy gear", () =>
   assert.equal(rows[3].quantity, 1);
 });
 
+test("ability records appear only in their own list rather than as carried gear", () => {
+  assert.deepEqual(equipmentRows([{ id: "ability", type: "ability", system: {} }]), []);
+});
+
 test("creation embeds an item on the correct actor and opens its sheet", async () => {
   const calls = [];
   const item = { sheet: { render: options => calls.push(options) } };

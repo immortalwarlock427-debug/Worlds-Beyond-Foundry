@@ -29,6 +29,7 @@ globalThis.foundry = {
 globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
+const { createAbility } = await import("../module/abilities.mjs");
 
 test("stat awards prepare from stored bases without accumulating or rewriting reset history", () => {
   const source = { level: 8, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: true, resetValue: 18 }])),
@@ -175,6 +176,33 @@ test("whole displayed Health and AP preserve hidden fractions; deliberate numeri
   assert.equal(untouched.system.health?.damage, undefined); assert.equal(untouched.system.ap.value, undefined);
   const edited = sheet._processFormData(null, form, { object: { healthCurrent: 119.9, system: { ap: { value: 3.9 } } } });
   assert.equal(edited.system.health.damage, sheet.actor.clone(edited).system.health.max - 119); assert.equal(edited.system.ap.value, 3);
+});
+
+test("creating an ability uses native embedded Items and never changes actor resources", async () => {
+  const calls = [];
+  const record = { sheet: { render: options => calls.push(options) } };
+  const owner = { type: "character", isOwner: true, createEmbeddedDocuments: async (...args) => { calls.push(args); return [record]; } };
+  assert.equal(await createAbility(owner), record);
+  assert.deepEqual(calls[0], ["Item", [{ name: "New ability", type: "ability", img: "icons/svg/book.svg" }]]);
+  assert.deepEqual(calls[1], { force: true });
+  owner.isOwner = false; await createAbility(owner); assert.equal(calls.length, 2);
+});
+
+test("ability controls allow read-only viewing and require permission plus confirmation for deletion", async () => {
+  const calls = [], sheet = new CharacterSheet(); let confirm = false;
+  const oldDialog = foundry.applications.api.DialogV2;
+  foundry.applications.api.DialogV2 = { confirm: async () => { calls.push("confirm"); return confirm; } };
+  sheet.actor = { items: new Map([["a", { type: "ability", sheet: { render: () => calls.push("view") }, delete: async () => calls.push("delete") }]]) };
+  const target = operation => ({ dataset: { operation }, closest: () => ({ dataset: { abilityId: "a" } }) });
+  const action = CharacterSheet.DEFAULT_OPTIONS.actions.ability;
+  try {
+    sheet.isEditable = false;
+    await action.call(sheet, null, target("edit")); await action.call(sheet, null, target("delete"));
+    assert.deepEqual(calls, ["view"]);
+    sheet.isEditable = true;
+    await action.call(sheet, null, target("delete")); assert.deepEqual(calls, ["view", "confirm"]);
+    confirm = true; await action.call(sheet, null, target("delete")); assert.deepEqual(calls, ["view", "confirm", "confirm", "delete"]);
+  } finally { foundry.applications.api.DialogV2 = oldDialog; }
 });
 
 test("form submission saves deliberate base edits and never saves displayed effect scores", () => {

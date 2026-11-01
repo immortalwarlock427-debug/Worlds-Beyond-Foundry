@@ -35,7 +35,7 @@ Website features map to Foundry like this:
 The user paused combat development on 2026-11-01. Finish the sheet before returning to the numbered combat tasks below:
 
 1. **Mana, holy power and custom resources — base pools user-validated; refinements awaiting validation.** See [RESOURCES.md](RESOURCES.md). Custom pools offer any-stat scaling; all optional pools have points/percentage display, final maximum overrides and minimum spending floors. [Whole-number controls/display](NUMBER-DISPLAY.md) preserve internal fractional balances. Recovery is manual; no new turn automation is introduced.
-2. **Ability records on the sheet.** Descriptions, costs, uses and cooldowns; executing combat actions follows later.
+2. **Ability records on the sheet — implemented, awaiting validation.** Native Ability Items, grouped rows, descriptions, AP previews/resource cost records, manual uses/cooldowns, duration and notes. See [ABILITIES.md](ABILITIES.md). Executing combat actions follows later.
 3. **Effects and forms.** Toggle bonuses/forms and make the sources of stat/resource changes clear.
 4. **Milestone details.** Full rules and unlock state, with any remaining sheet-only passive calculations.
 5. **Character details and notes.** Proposed background, appearance, backstory and general notes fields.
@@ -48,7 +48,7 @@ The user paused combat development on 2026-11-01. Finish the sheet before return
 5. **Combat flow — linked defenses implemented, awaiting validation.** Shared chat theming and grouped equipment rows are implemented; see [VISUAL-POLISH.md](VISUAL-POLISH.md). Attack cards now open linked Block/Dodge/Parry dialogs with per-hand use tracking and correction resets; see [LINKED-DEFENSES.md](LINKED-DEFENSES.md). Health adjustments remain manual. Remaining small steps: opportunity attacks as reactions, Command passing AP to an ally, and potion AP integration.
    The user's token-click attack and hand-equipment request takes priority before the remaining combat actions; implemented in [TOKEN-ATTACKS.md](TOKEN-ATTACKS.md), awaiting in-world validation.
 6. **Mana, holy power and custom resources — implemented for sheet use, awaiting validation.** Max = INT or FTH × (level + 2) from the current stat. Custom pools have current/max, manual recovery and optional long-rest refill. Turn-based regeneration remains deferred with combat work.
-7. **Abilities, forms and milestones.** Ability items with AP/resource costs, stat AP discounts (floor at half, rounded up), uses, cooldowns and durations. Forms as switchable effect sets. Milestone actions. Likely several PRs.
+7. **Abilities, forms and milestones.** Ability records and cost previews are implemented for sheet use; payments, casting, timer/recovery automation and effects remain. Stat AP discounts cap changes at half the base cost rounded down in either direction. Forms as switchable effect sets. Milestone actions. After the sheet is mostly finished, revisit a simple area/damage ability creator and optional Sequencer/JB2A visuals, plus module integrations. Likely several PRs.
 8. **AP movement on the map.** Moving a token spends AP at the character's movement rate using Foundry's token movement. Difficult terrain costs double.
 9. **Statuses.** Once the status rules (bleeding, burning, unconscious, exhaustion) are settled in Notion.
 
