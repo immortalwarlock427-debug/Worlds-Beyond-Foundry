@@ -38,7 +38,7 @@ The user paused combat development on 2026-11-01. Finish the sheet before return
 2. **Ability records on the sheet — user-validated.** Native Ability Items, grouped rows, descriptions, AP previews/resource cost records, manual uses/cooldowns, duration and notes. See [ABILITIES.md](ABILITIES.md). Executing combat actions follows later.
 3. **Effects and forms — implemented, awaiting validation.** Native Active Effects, independent toggles and one selected form, with stat/defense/movement/resource-maximum bonuses and source labels. Base scores and expenditure are preserved. See [EFFECTS-FORMS.md](EFFECTS-FORMS.md). Portrait/loadout switching, entry costs and automatic timers remain deferred.
 4. **Milestone details — implemented, awaiting validation.** All 16 Notion rules, current effective-score unlock states and current-value previews in an expandable reference opened from the diamonds or Attributes toolbar. Existing Adamantine Body/reaction/Defy Fate passives verified; actions and usage remain manual. See [MILESTONES.md](MILESTONES.md).
-5. **Character details and notes.** Proposed background, appearance, backstory and general notes fields.
+5. **Character details and notes — implemented, awaiting validation.** Collapsible Class/Race, Background, Appearance, Backstory and Notes fields, with plain-text editing and readable observer output. Six blank-default fields leave existing actors and rules data intact. See [CHARACTER-DETAILS.md](CHARACTER-DETAILS.md).
 6. **Organization and validation.** Character/Equipment/Abilities/Notes tabs, phone layout, save/reload and existing-character checks.
 
 ### Deferred combat work and wider roadmap
