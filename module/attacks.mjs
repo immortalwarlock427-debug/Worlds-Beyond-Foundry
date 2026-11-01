@@ -7,8 +7,8 @@ const MILESTONE = 21;
 // Which stats a weapon may attack with, for the chosen attack mode.
 export function attackStatChoices(weapon, mode = "melee") {
   const system = weapon.system ?? weapon;
-  if (system.family === "paragon") return ["str", "dex"];
   if (mode === "thrown") return ["dex"];
+  if (system.family === "paragon") return ["str", "dex"];
   if (system.family === "heavy") return ["str"];
   if (system.family === "finesse") return ["dex"];
   if (system.ranged || system.family === "none") return ["dex"];

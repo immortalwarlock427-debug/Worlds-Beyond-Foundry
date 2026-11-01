@@ -1,5 +1,6 @@
 import { defaultSlots, consumableUse, healedDamage } from "./equipment-core.mjs";
 import { shotsLeft } from "./attacks.mjs";
+import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -177,39 +178,50 @@ const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, character =>
 // Spend one consumable and post a card. Healing dice are rolled, and the card
 // offers to apply them so the player confirms before Health changes.
 export async function useConsumable(actor, id) {
-  const item = actor.items.get(id);
-  if (!actor.isOwner || item?.type !== "consumable") return;
-  const use = consumableUse(item.system.quantity);
-  if (!use.ok) throw new Error(use.message);
-  const formula = String(item.system.healingDice ?? "").trim();
-  let roll = null;
-  if (formula) {
-    if (!foundry.dice.Roll.validate(formula)) throw new Error("Enter complete healing dice such as 2d6+2, or leave healing blank.");
-    roll = await new foundry.dice.Roll(formula).evaluate();
-  }
-  await item.update({ "system.quantity": use.quantity });
-  const amount = roll ? Math.max(0, roll.total) : 0;
-  const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
-    + (item.system.description ? `<p>${escapeHTML(item.system.description)}</p>` : "")
-    + `<p>One used, ${use.quantity} left.${roll ? ` Healing: ${amount}.` : " Apply any effects at the table."}</p>`
-    + (roll ? await roll.render() : "") + "</div>";
-  return foundry.documents.ChatMessage.implementation.create({
-    speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-    content, rolls: roll ? [roll] : [],
-    flags: { [SYSTEM_ID]: { consumable: { actorUuid: actor.uuid, amount, applied: false } } }
-  });
+  const messageMode = game.settings.get("core", "messageMode");
+  return queuedAction(actor.uuid, () => reversibleAction(async change => {
+    const item = actor.items.get(id);
+    if (!actor.isOwner || item?.type !== "consumable") return;
+    const use = consumableUse(item.system.quantity);
+    if (!use.ok) throw new Error(use.message);
+    const formula = String(item.system.healingDice ?? "").trim();
+    let roll = null;
+    if (formula) {
+      if (!foundry.dice.Roll.validate(formula)) throw new Error("Enter complete healing dice such as 2d6+2, or leave healing blank.");
+      roll = await new foundry.dice.Roll(formula).evaluate({ allowInteractive: messageMode !== "blind" });
+    }
+    const amount = roll ? Math.max(0, roll.total) : 0;
+    const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
+      + (item.system.description ? `<p>${escapeHTML(item.system.description)}</p>` : "")
+      + `<p>One used, ${use.quantity} left.${roll ? ` Healing: ${amount}.` : " Apply any effects at the table."}</p>`
+      + (roll ? await roll.render() : "") + "</div>";
+    await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));
+    return createActionMessage({
+      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+      content, rolls: roll ? [roll] : [],
+      flags: { [SYSTEM_ID]: { consumable: { actorUuid: actor.uuid, amount, applied: false } } }
+    }, { messageMode });
+  }));
 }
 
 export async function applyConsumableHealing(message) {
-  const data = message.getFlag(SYSTEM_ID, "consumable");
-  if (!data || data.applied || !(data.amount > 0)) return;
-  const actor = await foundry.utils.fromUuid(data.actorUuid);
+  if (!message.isContentVisible) return;
+  const context = message.getFlag(SYSTEM_ID, "consumable");
+  if (!context) return;
+  const actor = await foundry.utils.fromUuid(context.actorUuid);
   if (!actor?.isOwner) return;
-  await message.setFlag(SYSTEM_ID, "consumable", { ...data, applied: true });
-  await actor.update({ "system.health.damage": healedDamage(actor.system.health.damage, data.amount) });
+  return queuedAction(actor.uuid, () => reversibleAction(async change => {
+      const data = structuredClone(message.getFlag(SYSTEM_ID, "consumable"));
+      if (!data || data.applied || !(data.amount > 0)) return;
+      await change(() => message.setFlag(SYSTEM_ID, "consumable", { ...data, applied: true }), () => message.setFlag(SYSTEM_ID, "consumable", data));
+      const updated = await actor.update({ "system.health.damage": healedDamage(actor.system.health.damage, data.amount) });
+      if (!updated) throw new Error("Healing update was cancelled.");
+      return updated;
+  }));
 }
 
 export function decorateConsumableMessage(message, html) {
+  if (!message.isContentVisible) return;
   const data = message.getFlag?.(SYSTEM_ID, "consumable");
   if (!data || !(data.amount > 0)) return;
   const actor = foundry.utils.fromUuidSync(data.actorUuid);
