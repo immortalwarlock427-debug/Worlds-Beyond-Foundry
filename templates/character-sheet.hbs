@@ -23,17 +23,12 @@
           <span class="wb-resource-max" aria-label="Maximum {{resource.label}}">/ {{resource.max}}</span>
         </span>
       </label>
-      <label class="wb-override-label">
-        <span>Max override</span>
-        <input type="number" name="system.{{resource.key}}.maxOverride" value="{{resource.maxOverride}}" placeholder="Auto" step="any" aria-label="{{resource.label}} maximum override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}>
-      </label>
     </div>
     {{/each}}
   </section>
 
   <div class="wb-wonder-rest">
-    <p>{{#if defyFate}}Defy Fate: use Wonder on a failed check or save to declare a success. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20 roll. Uses equal your FTH modifier and return on a long rest.{{/if}}</p>
-    <button type="button" data-action="longRest" {{#unless editable}}disabled{{/unless}}>Long rest</button>
+    <button type="button" data-action="longRest" data-tooltip="Restore all resources to maximum" {{#unless editable}}disabled{{/unless}}>Long rest</button>
   </div>
 
   <section class="wb-core" aria-label="Core numbers">
@@ -41,29 +36,20 @@
     <div class="wb-core-detail">
       <span class="wb-eyebrow">{{detail.label}}</span>
       <strong class="wb-core-value">{{detail.value}} <small>{{detail.unit}}</small></strong>
-      <label class="wb-override-label">
-        <span>Override</span>
-        <input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="any" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}>
-      </label>
     </div>
     {{/each}}
   </section>
 
-  <fieldset class="wb-armor-bonuses">
-    <legend>Worn armor and corrections</legend>
-    <p>Armor type: {{worn.type}} · Armor AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · Light armor NE +{{worn.evasion}}</p>
-    <label><span>Extra AR correction (added to items)</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label><span>Extra Evasion correction (added to items)</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <p>Effective AGL {{worn.effectiveAgility}} · Armor penalty {{worn.agilityPenalty}} · Movement costs {{worn.squareCost}} ft per square ({{worn.difficultSquareCost}} ft in difficult terrain).</p>
-    <label><span>Armor AGL penalty override (blank = auto)</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    {{#if worn.heavyDisadvantage}}<p>Heavy armor with STR below 21: attacks, Dodges and AGL saves have disadvantage. Choose disadvantage when rolling an AGL save.</p>{{/if}}
-    <p>Block: {{block.formula}} {{block.strMod}} STR{{#unless block.fromShield}} (no shield equipped){{/unless}}. Another Block die at level {{block.nextLevel}}. You need arm guards, a weapon or a shield to Block.</p>
-    <button type="button" class="wb-block-action" data-action="block" {{#unless editable}}disabled{{/unless}}>Block · {{block.formula}} {{block.strMod}}</button>
-    <button type="button" class="wb-dodge-action" data-action="dodge" {{#unless editable}}disabled{{/unless}}>Dodge · d20 {{dodgeMod}}</button>
-    <button type="button" class="wb-parry-action" data-action="parry" {{#unless editable}}disabled{{/unless}}>Parry · d20 {{parryMod}} · DEX 21 milestone</button>
-    {{#each worn.duplicatePieces}}<p>Multiple equipped {{this}} records: their contributions are added. Review equipped items or use a correction if needed.</p>{{/each}}
-  </fieldset>
-  <p class="wb-core-hint">Equipped armor and shields now contribute automatically. Clear old manual armor totals to avoid counting them twice; the correction fields above add to equipped items. Final core-number overrides still replace the complete result. AGL score stays editable; modifiers, milestones, reactions and movement use effective AGL.</p>
+  <section class="wb-defenses" aria-label="Defenses">
+    <h2 class="wb-section-title">Defenses <span>1 reaction</span></h2>
+    <div class="wb-defense-actions">
+      <button type="button" class="wb-block-action" data-action="block" data-tooltip="Reduce incoming damage" {{#unless editable}}disabled{{/unless}}>Block <small>{{block.formula}} {{block.strMod}}</small></button>
+      <button type="button" class="wb-dodge-action" data-action="dodge" data-tooltip="Avoid an attack or make an area save" {{#unless editable}}disabled{{/unless}}>Dodge <small>d20 {{dodgeMod}}</small></button>
+      <button type="button" class="wb-parry-action" data-action="parry" data-tooltip="DEX 21 · once per round" {{#unless editable}}disabled{{/unless}}>Parry <small>d20 {{parryMod}}</small></button>
+    </div>
+    {{#if worn.heavyDisadvantage}}<p class="wb-warning">Heavy armor: attacks, Dodge and AGL saves have disadvantage.</p>{{/if}}
+    {{#each worn.duplicatePieces}}<p class="wb-warning">Multiple {{this}} equipped · review contributions.</p>{{/each}}
+  </section>
 
   <section class="wb-stats">
     {{#each groups as |group|}}
@@ -89,26 +75,24 @@
   </section>
 
   <section class="wb-equipment" aria-label="Equipment">
-    <h2>Equipment</h2>
-    <div class="wb-equipment-actions">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Equipment</h2>
+    <details class="wb-add-equipment" data-sync="add-equipment"><summary>Add item</summary><div class="wb-equipment-actions">
       <button type="button" data-action="equipment" data-operation="create" data-type="weapon" {{#unless editable}}disabled{{/unless}}>Add weapon</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="armor" {{#unless editable}}disabled{{/unless}}>Add armor</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="shield" {{#unless editable}}disabled{{/unless}}>Add shield</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="consumable" {{#unless editable}}disabled{{/unless}}>Add consumable</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="misc" {{#unless editable}}disabled{{/unless}}>Add miscellaneous</button>
-    </div>
+    </div></details></div>
     <div class="wb-inventory">
       <p class="wb-inventory-total {{#if carrying.over}}is-over{{/if}}"><strong>{{carrying.used}} / {{carrying.capacity}}</strong> inventory slots{{#if carrying.over}} · over by {{carrying.over}}{{/if}}</p>
-      <label class="wb-equipment-check"><input type="checkbox" name="system.inventory.backpack" {{#if system.inventory.backpack}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Backpack (+6 slots)</label>
-      <label class="wb-override-label"><span>Slots override</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="any" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-equipment-check"><input type="checkbox" name="system.inventory.backpack" {{#if system.inventory.backpack}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Backpack</label>
     </div>
-    <p class="wb-core-hint">You have 10 + STR modifier slots. Worn armor and weapons or shields in hand take none. Drop items here from the Items directory, or add your own. Each leg-guard item is a complete pair. Equip a weapon to attack with it.</p>
     <ul class="wb-equipment-list">
       {{#each equipment}}
       <li data-item-id="{{id}}">
         <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit">{{name}}</button>
         <span>{{typeLabel}} · Qty {{quantity}} · {{#if equipped}}{{#if slots}}{{slots}} slots for extras{{else}}worn or in hand{{/if}}{{else}}{{slots}} slots{{/if}}</span>
-        <p>{{detail}}</p>
+        {{#if detail}}<details class="wb-item-details" data-sync="item-{{id}}"><summary>Details</summary><p>{{detail}}</p></details>{{/if}}
         <div class="wb-equipment-actions">
           {{#if canAttack}}<button type="button" class="wb-attack-button" data-action="equipment" data-operation="attack" {{#unless @root.editable}}disabled{{/unless}}>Attack</button>{{/if}}
           {{#if canReload}}<button type="button" data-action="equipment" data-operation="reload" {{#unless @root.editable}}disabled{{/unless}}>Reload</button>{{/if}}
@@ -117,8 +101,33 @@
           <button type="button" data-action="equipment" data-operation="delete" {{#unless @root.editable}}disabled{{/unless}}>Remove</button>
         </div>
       </li>
-      {{else}}<li>No equipment yet.</li>{{/each}}
+      {{else}}<li class="wb-empty">Drop an item here or choose Add item.</li>{{/each}}
     </ul>
   </section>
-  <p class="wb-hint">Click a stat for a check or save with normal dice, advantage or disadvantage. Use Wonder from its chat card. The diamonds light up at 21 and 28.</p>
+  <details class="wb-disclosure wb-adjustments" data-sync="adjustments">
+    <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
+    <div class="wb-adjust-grid">
+      {{#each resources as |resource|}}
+      <label class="wb-override-label"><span>{{resource.label}} maximum</span><input type="number" name="system.{{resource.key}}.maxOverride" value="{{resource.maxOverride}}" placeholder="Auto" step="any" aria-label="{{resource.label}} maximum override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
+      {{/each}}
+      {{#each coreDetails as |detail|}}
+      <label class="wb-override-label"><span>{{detail.label}}</span><input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="any" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
+      {{/each}}
+      <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Armor AGL penalty</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Inventory slots</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="any" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
+    </div>
+    <p>Clear an override to use the automatic value. Extra AR and Evasion add to equipped items; final overrides replace the total.</p>
+  </details>
+  <details class="wb-disclosure wb-help" data-sync="sheet-help"><summary>Rules &amp; help</summary>
+    <h3>Stats &amp; resources</h3>
+    <p>Click a stat abbreviation for a check or save. Diamonds mark 21 and 28. A stat shows its effective score; select it to edit the base. Teal means adjusted, gold means manually edited, and purple means both. Clear a manual edit to restore its remembered base; active effects still apply.</p>
+    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Long rest refills Health, AP, reactions and Wonder.</p>
+    <h3>Armor &amp; defenses</h3>
+    <p>Armor: {{worn.type}} · worn AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · light armor Evasion +{{worn.evasion}}. Effective AGL {{worn.effectiveAgility}}, armor penalty {{worn.agilityPenalty}}. A square costs {{worn.squareCost}} ft, or {{worn.difficultSquareCost}} ft in difficult terrain.</p>
+    <p>Block uses {{block.formula}} {{block.strMod}} STR; another die at level {{block.nextLevel}}. Use arm guards, a weapon or a shield. Dodge uses AGL; Parry uses DEX and normally needs DEX 21 plus held equipment. Each dialog has its own rules section. Apply Health changes manually.</p>
+    <h3>Equipment</h3>
+    <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
+  </details>
 </div>

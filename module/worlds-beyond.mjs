@@ -159,6 +159,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       actor: this.actor,
       system,
       editable: this.isEditable,
+      hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
+        || Object.values(system.overrides ?? {}).some(value => value != null && value !== "")
+        || !!system.bonuses?.armor || !!system.bonuses?.evasion,
       resources: [
         { key: "health", label: "Health", inputName: "healthCurrent", ...system.health },
         { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },

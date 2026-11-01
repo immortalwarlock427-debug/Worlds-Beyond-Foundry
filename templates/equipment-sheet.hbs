@@ -2,7 +2,7 @@
   <header><span class="wb-eyebrow">{{typeLabel}}</span>
     <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Item name" {{#unless editable}}disabled{{/unless}}>
   </header>
-  <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
+  <details class="wb-disclosure" data-sync="item-image"><summary>Image</summary><label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label></details>
   <div class="wb-equipment-fields">
     <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
@@ -22,13 +22,12 @@
     <label>Loading (shots; 0 for none)<input type="number" name="system.loading" value="{{system.loading}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Shots loaded (blank = full)<input type="number" name="system.shots" value="{{system.shots}}" min="0" step="1" placeholder="Full" {{#unless editable}}disabled{{/unless}}></label>
   </div>
-  <fieldset><legend>Properties</legend><div class="wb-equipment-fields">
+  <details class="wb-disclosure" data-sync="weapon-properties"><summary>Properties <span class="wb-summary-value">{{propertySummary}}</span></summary><div class="wb-equipment-fields">
     {{#each weaponProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.properties.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
-  </div></fieldset>
-  <fieldset><legend>Signature properties</legend><div class="wb-equipment-fields">
+  </div></details>
+  <details class="wb-disclosure" data-sync="weapon-signatures"><summary>Signature properties <span class="wb-summary-value">{{signatureSummary}}</span></summary><div class="wb-equipment-fields">
     {{#each signatureProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.signature.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
-  </div></fieldset>
-  <p class="wb-core-hint">Balanced is melee-only. For an ordinary ranged weapon, select None (standard ranged) and check Ranged weapon. Warbow and Arbalest use Paragon + Ranged weapon. Thrown is separate; throwing does not replace a melee weapon's family.</p>
+  </div></details>
   {{/if}}
   {{#if armor}}
   <div class="wb-equipment-fields">
@@ -50,7 +49,11 @@
     <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
-  <label>Description and rules<textarea name="system.description" rows="5" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
-  {{#if equippable}}<p class="wb-core-hint">Equipped armor and shields contribute to character defenses. Leg guards represent a complete pair; worn contributions count once per record, regardless of quantity. Weapon attacks are added in a later step.</p>{{/if}}
-  {{#if consumable}}<p class="wb-core-hint">Use one from the character sheet. Potions and ammunition stack 5 to a slot. Healing dice are rolled on use and applied from the chat card.</p>{{/if}}
+  <details class="wb-disclosure" data-sync="item-description"><summary>Description</summary><label>Description and rules<textarea name="system.description" rows="5" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label></details>
+  <details class="wb-disclosure wb-help" data-sync="item-help"><summary>Equipment help</summary>
+    {{#if weapon}}<p>Balanced is melee-only. Standard ranged weapons use None + Ranged weapon; Warbow and Arbalest use Paragon + Ranged weapon. Thrown is separate and keeps the weapon's melee family. Loading 0 means no loading limit; blank shots means full.</p>{{/if}}
+    {{#if equippable}}<p>Equip armor and shields to add their defenses. Each leg-guard item is a complete pair; worn contributions count once per record, regardless of quantity. Equip weapons to attack from the character sheet.</p>{{/if}}
+    <p>Items per slot controls stacking. Potions and ammunition normally stack five to a slot. Quantity, slots and contributions stay editable.</p>
+    {{#if consumable}}<p>Use one from the character sheet. Healing dice roll on use; apply healing from the chat card.</p>{{/if}}
+  </details>
 </div>

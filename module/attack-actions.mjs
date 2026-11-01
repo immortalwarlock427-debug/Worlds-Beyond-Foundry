@@ -133,12 +133,12 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           : `Misses ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`;
       const lines = [
         `${hands.length > 1 ? (hand.hand === "main" ? "Main hand · " : "Off hand · ") : ""}${MODE_LABELS[mode]} attack with ${statLabel(hand.stat)} (${formatModifier(hand.mod)}) · ${checkMode(rollMode).label}`,
-        breakdown ? `${breakdown.equation} · ${breakdown.diceText}` : `Total ${roll.total}`,
         result,
         reasons.length ? `Disadvantage applies: ${reasons.join("; ")}.${rollMode === "disadvantage" ? "" : " This roll did not use it."}` : ""
       ].filter(Boolean);
       sections.push(`<section class="wb-attack-hand" data-hand="${sections.length}">${hands.length > 1 ? `<h4>${escapeHTML(hand.item.name)}</h4>` : ""}`
-        + lines.map(line => `<p>${line}</p>`).join("") + await roll.render() + "</section>");
+        + lines.map(line => `<p>${line}</p>`).join("") + await roll.render()
+        + (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "") + "</section>");
       rolls.push(roll);
     }
     if (options.spendAp) await change(
@@ -153,12 +153,12 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       );
     }
     const footer = [
-      hands.length > 1 ? "Attacking with both weapons: one attack's AP. The off-hand hit deals half damage, rounded down, with no modifier." : "",
       options.spendAp ? `${cost} AP spent.` : "",
       ...hands.filter(({ item }) => shotsLeft(item) !== null).map(({ item }) => `${escapeHTML(item.name)}: ${shotsLeft(item)} of ${item.system.loading} shots left.`)
     ].filter(Boolean);
     const content = `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(hands.map(({ item }) => item.name).join(" + "))}</h3>`
-      + sections.join("") + footer.map(line => `<p>${line}</p>`).join("") + "</div>";
+      + sections.join("") + footer.map(line => `<p>${line}</p>`).join("")
+      + (hands.length > 1 ? '<details class="wb-disclosure wb-help"><summary>Two-weapon rules</summary><p>One attack’s AP for both weapons. The off-hand hit deals half damage, rounded down, with no modifier.</p></details>' : "") + "</div>";
     return createActionMessage({
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
       content, rolls,
@@ -231,7 +231,9 @@ export async function rollDamage(message, index, critical) {
       if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));
     }
     const content = `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(weapon.name)} damage</h3>`
-      + lines.map(line => `<p>${line}</p>`).join("") + await roll.render() + "</div>";
+      + `<p class="wb-result">${lines[0]}</p>` + await roll.render()
+      + '<details class="wb-disclosure wb-help"><summary>Damage breakdown</summary>'
+      + lines.slice(1).map(line => `<p>${line}</p>`).join("") + "</details></div>";
     await change(() => message.setFlag(SYSTEM_ID, "attack", { ...data, hands: updated }), () => message.setFlag(SYSTEM_ID, "attack", data));
     return createActionMessage({
       speaker: message.speaker, content, rolls: [roll], whisper: [...message.whisper], blind: message.blind
@@ -251,9 +253,8 @@ function plainD20Formulas(message, card) {
     if (!roll?.dice?.some(die => die.faces === 20)) return;
     const breakdown = describeD20Roll(roll, d20Mode(roll.formula));
     if (!breakdown) return;
-    const bonus = roll.total - roll.dice[0].total;
     const formula = section.querySelector(".dice-formula");
-    if (formula) formula.textContent = `${breakdown.diceLabel} ${bonus < 0 ? "−" : "+"} ${Math.abs(bonus)}`;
+    if (formula) formula.textContent = breakdown.equation;
     for (const label of section.querySelectorAll(".dice-tooltip .part-formula")) label.textContent = breakdown.diceLabel;
   });
 }
