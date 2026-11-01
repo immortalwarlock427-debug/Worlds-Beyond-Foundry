@@ -48,7 +48,7 @@
         <header class="wb-pool-heading"><h3>{{label}}</h3>
           {{#if custom}}<button type="button" class="wb-item-remove" data-action="resource" data-operation="remove" aria-label="Remove {{label}}" data-tooltip="Remove resource" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
         </header>
-        <div class="wb-resource-values" data-tooltip="{{value}} / {{max}} points · Minimum {{min}}">
+        <div class="wb-resource-values {{#if percent}}wb-percent-values{{/if}}" data-tooltip="{{value}} / {{max}} points · Minimum {{min}}">
           {{#if percentUnavailable}}<strong class="wb-percent-unavailable">—%</strong>
           {{else}}<input type="number" name="resourceValues.{{key}}" value="{{inputValue}}" step="1" aria-label="Current {{label}}{{#if percent}} percentage{{/if}}" {{#unless @root.editable}}disabled{{/unless}}><span class="wb-resource-max">{{#if percent}}%{{else}}/ {{max}}{{/if}}</span>{{/if}}
         </div>
