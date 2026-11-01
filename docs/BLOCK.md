@@ -15,8 +15,8 @@ This is the first defense interaction in roadmap step 5. The user confirmed star
 - **Spend 1 reaction** defaults on when this actor is in a started combat, including an unlinked token's own actor. Otherwise it defaults off. Checked spending requires one available reaction; players can correct the pool or untick it to roll without spending. Block spends no AP.
 - The chat card contains a native Foundry roll and whether a reaction was spent. It respects public, GM, blind and self visibility. Blind rolls disable interactive dice.
 - Dice and rendering failures do not spend reactions. A failed chat post refunds a spent reaction. A failed refund explicitly asks for manual correction. Actions share the existing local actor queue with attacks, reloads and consumables.
-- Equipment eligibility, ally distance and once-per-incoming-attack use are reminders at this stage. There is no incoming attack association or Health automation yet. Apply Resistance first, then Armor Rating, then subtract Block from the remaining damage. Fully blocking the remainder also stops effects that require cutting into the defender. Account for Overwhelming Force's half-damage floor when applicable.
-- No actor/item data fields were added, renamed or removed. New chat messages record the actor, reaction kind and spending choice in a system flag. Dodge, Parry and opportunity attacks follow in later small steps.
+- Equipment eligibility and ally distance remain reminders. Version 0.18.0 adds [linked weapon attack cards](LINKED-DEFENSES.md), including spent Block use per incoming hand; standalone sheet rolls retain manual association. Apply Resistance first, then Armor Rating, then subtract Block from the remaining damage and change Health manually. Fully blocking the remainder also stops effects that require cutting into the defender. Account for Overwhelming Force's half-damage floor when applicable.
+- No actor/item schema fields changed. Chat messages record the actor, reaction kind and spending choice in a system flag; linked messages also retain incoming context. Linked spending uses the additive actor flag documented above.
 
 ## Validation
 

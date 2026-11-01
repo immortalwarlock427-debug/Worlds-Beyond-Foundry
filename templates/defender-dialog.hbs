@@ -1,0 +1,4 @@
+<div class="wb-check-options">
+  <p class="wb-dialog-meta">{{incoming.weaponName}} · attack {{incoming.total}}{{#if incoming.targetName}} → {{incoming.targetName}}{{/if}}</p>
+  <label>Defending character<select name="actorUuid">{{#each actors}}<option value="{{uuid}}">{{name}}{{#if token}} (token){{/if}}</option>{{/each}}</select></label>
+</div>

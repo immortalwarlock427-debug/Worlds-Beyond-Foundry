@@ -1,4 +1,8 @@
 <div class="wb-check-options">
+  {{#if incoming}}<p class="wb-dialog-meta">{{incoming.weaponName}} · attack {{incoming.total}}{{#if incoming.targetName}} → {{incoming.targetName}}{{/if}}</p>
+    <label class="wb-check-toggle"><input type="checkbox" name="ally" {{#if ally}}checked{{/if}}> Protect an ally (shield required)</label>
+  {{/if}}
+  {{#if linkedUsed}}<p class="wb-warning">Block already used against this attack · reset to correct.</p>{{/if}}
   <p class="wb-dialog-meta">STR mod {{modifier}} · 1 reaction</p>
   <label>Roll formula<input type="text" name="formula" value="{{formula}}" aria-label="Block roll formula"></label>
   <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>

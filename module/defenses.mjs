@@ -32,3 +32,20 @@ export function parryOutcome(context = {}, total, forcedSuccess = false) {
   if (result.success && context.overwhelmingForce) result.damageMultiplier = 0.5;
   return result;
 }
+
+// Each hand is a separate incoming attack. Critical range is not natural-20 status.
+export function incomingWeaponAttack(data, rolls, index = 0) {
+  if (!Number.isInteger(index) || index < 0) return null;
+  const hands = Array.isArray(data?.hands) ? data.hands : data ? [data] : [];
+  const hand = hands[index];
+  if (!hand || hand.hit === false) return null;
+  const roll = rolls?.[index];
+  const total = hand.total ?? roll?.total;
+  const natural = hand.natural ?? roll?.dice?.find(die => die.faces === 20)?.total;
+  if (!Number.isFinite(total) || !Number.isFinite(natural)) return null;
+  return {
+    total, natural20: natural === 20, overwhelmingForce: !!data.overwhelmingForce,
+    weaponName: hand.name ?? "Weapon attack", attackerName: data.attackerName ?? "Attack",
+    targetName: data.target?.name ?? "", targetActorUuid: data.target?.actorUuid ?? null
+  };
+}
