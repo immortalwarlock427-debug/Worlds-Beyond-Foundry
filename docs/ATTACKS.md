@@ -1,6 +1,6 @@
 # Weapon attacks and damage
 
-Roadmap step 4, version 0.9.1. Rules checked against Notion [Weapons Explained](https://www.notion.so/351c72092efb81608515cad619890c48), [Defenses](https://www.notion.so/406c72092efb81088e3be6e9d3b2c44d) and [Action Points](https://www.notion.so/406c72092efb81a491b3e7dc50e9ba73) on 2026-10-31, and the website's `combat-core.js` (`attackApCost`, `attackHits`, `criticalTotal`).
+Roadmap step 4; reviewed action handling in version 0.9.2. Rules checked against Notion [Weapons Explained](https://www.notion.so/351c72092efb81608515cad619890c48), [Defenses](https://www.notion.so/406c72092efb81088e3be6e9d3b2c44d) and [Action Points](https://www.notion.so/406c72092efb81a491b3e7dc50e9ba73) on 2026-10-31, and the website's `combat-core.js` (`attackApCost`, `attackHits`, `criticalTotal`).
 
 ## Flow
 
@@ -27,6 +27,8 @@ Roadmap step 4, version 0.9.1. Rules checked against Notion [Weapons Explained](
 - Automating signature properties one at a time. They print as reminders on the damage card.
 - Fast Roll. Foundry rolls every die anyway.
 - Unarmed attacks.
+
+Visibility, resource recovery and retry handling were reviewed and corrected in [ACTION-REVIEW.md](ACTION-REVIEW.md).
 
 ## Validation
 
