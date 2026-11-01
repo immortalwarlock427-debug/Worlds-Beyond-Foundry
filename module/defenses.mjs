@@ -15,3 +15,20 @@ export function dodgeOutcome({ area = false, target = null } = {}, total, forced
   const success = !!forcedSuccess || (area ? total >= target : total > target);
   return { resolved: true, success, damageMultiplier: success ? (area ? 0.5 : 0) : 1 };
 }
+
+export function parryReadiness({ dexterity = 12, items = [] } = {}) {
+  return {
+    unlocked: dexterity >= 21,
+    armed: Array.from(items).some(item => ["weapon", "shield"].includes(item.type) && item.system?.equipped)
+  };
+}
+
+export function parryContext({ target = null, ally = false, overwhelmingForce = false } = {}) {
+  return { type: "parry", target: dodgeContext({ target }).target, ally: !!ally, overwhelmingForce: !!overwhelmingForce };
+}
+
+export function parryOutcome(context = {}, total, forcedSuccess = false) {
+  const result = dodgeOutcome({ target: context.target ?? null }, total, forcedSuccess);
+  if (result.success && context.overwhelmingForce) result.damageMultiplier = 0.5;
+  return result;
+}

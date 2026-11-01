@@ -3,6 +3,17 @@
   {{#if success}}<p class="wb-roll-success">Success · Defy Fate</p>{{/if}}
   {{{rollHTML}}}
   {{#if defense}}
+    {{#if defense.parry}}
+      {{#if defense.hasTarget}}<p>Against attack total {{defense.target}}.</p>{{/if}}
+      {{#if defense.resolved}}
+        {{#if defense.success}}
+          <p class="wb-roll-success">Parried · negate non-magical effects. {{#if defense.overwhelmingForce}}Overwhelming Force keeps damage at half or more.{{else}}No damage.{{/if}}</p>
+        {{else}}<p>Hit · Parry must beat the attack total. A tie fails.</p>{{/if}}
+      {{else}}<p>Beat the attack total to negate its damage and non-magical effects. A tie fails.{{#if defense.overwhelmingForce}} Overwhelming Force keeps damage at half or more.{{/if}}</p>{{/if}}
+      <p class="wb-roll-note">{{#if defense.reroll}}Original Parry: {{/if}}{{#if defense.spent}}1 reaction spent{{#if defense.combatId}} · Parry used for round {{defense.round}}{{/if}}.{{else}}Practice roll · no reaction or round use spent.{{/if}}{{#if defense.reroll}} Wonder spends no additional reaction or Parry use.{{/if}} Apply Health changes manually.</p>
+      {{#unless defense.unlocked}}<p class="wb-roll-note">Parry normally requires DEX 21. Check your ability or manual correction.</p>{{/unless}}
+      {{#unless defense.armed}}<p class="wb-roll-note">Parry normally requires a held weapon or shield. Check your equipment or manual correction.</p>{{/unless}}
+    {{else}}
     {{#if defense.hasTarget}}<p>Against {{#if defense.area}}area save DC{{else}}attack total{{/if}} {{defense.target}}.</p>{{/if}}
     {{#if defense.resolved}}
       {{#if defense.success}}
@@ -15,6 +26,7 @@
     {{/if}}
     <p class="wb-roll-note">{{#if defense.reroll}}Original Dodge: {{/if}}{{#if defense.spent}}1 reaction spent.{{else}}No reaction spent.{{/if}}{{#if defense.reroll}} Wonder spends no additional reaction.{{/if}} Apply Health changes manually.</p>
     {{#if defense.overriddenDisadvantage}}<p class="wb-roll-note">Heavy armor without 21 STR gives disadvantage; different dice were chosen.</p>{{/if}}
+    {{/if}}
   {{/if}}
   {{#if note}}<p class="wb-roll-note">{{note}}</p>{{/if}}
 </article>

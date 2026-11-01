@@ -21,7 +21,7 @@ export async function reversibleAction(operation) {
       try { if (!await restore()) incomplete = true; }
       catch { incomplete = true; }
     }
-    if (incomplete) throw new Error(`${error.message} Recovery also failed; check AP, reactions, shots, item quantity and the card's used state manually.`, { cause: error });
+    if (incomplete) throw new Error(`${error.message} Recovery also failed; check AP, reactions, shots, item quantity, Parry use and the card's used state manually.`, { cause: error });
     throw error;
   }
 }

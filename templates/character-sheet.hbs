@@ -60,6 +60,7 @@
     <p>Block: {{block.formula}} {{block.strMod}} STR{{#unless block.fromShield}} (no shield equipped){{/unless}}. Another Block die at level {{block.nextLevel}}. You need arm guards, a weapon or a shield to Block.</p>
     <button type="button" class="wb-block-action" data-action="block" {{#unless editable}}disabled{{/unless}}>Block · {{block.formula}} {{block.strMod}}</button>
     <button type="button" class="wb-dodge-action" data-action="dodge" {{#unless editable}}disabled{{/unless}}>Dodge · d20 {{dodgeMod}}</button>
+    <button type="button" class="wb-parry-action" data-action="parry" {{#unless editable}}disabled{{/unless}}>Parry · d20 {{parryMod}} · DEX 21 milestone</button>
     {{#each worn.duplicatePieces}}<p>Multiple equipped {{this}} records: their contributions are added. Review equipped items or use a correction if needed.</p>{{/each}}
   </fieldset>
   <p class="wb-core-hint">Equipped armor and shields now contribute automatically. Clear old manual armor totals to avoid counting them twice; the correction fields above add to equipped items. Final core-number overrides still replace the complete result. AGL score stays editable; modifiers, milestones, reactions and movement use effective AGL.</p>
