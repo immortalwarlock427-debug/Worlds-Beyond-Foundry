@@ -139,7 +139,7 @@ test("scaled pool actions use the same stat-derived maximum as the sheet", async
 });
 
 test("percentage presentation handles rounded totals, zero maxima and manual under/over-cap corrections", () => {
-  assert.equal(resourcePresentation({ display: "percent", max: 3, value: 1 }).inputValue, 33.33);
+  assert.equal(resourcePresentation({ display: "percent", max: 3, value: 1 }).inputValue, 33);
   assert.equal(resourcePresentation({ display: "percent", max: 100, value: 125 }).inputValue, 125);
   assert.equal(resourcePresentation({ display: "percent", max: 100, value: 125 }).meterPercent, 100);
   assert.equal(resourcePresentation({ display: "percent", max: 100, value: -5 }).meterPercent, 0);
@@ -257,4 +257,17 @@ test("clearing limits or changing modes never resets the stored manual maximum o
   assert.equal(pool.baseMax, 100); assert.equal(pool.max, 100); assert.equal(pool.min, 0); assert.equal(pool.value, 80);
   Object.assign(pool, { maxOverride: 40, minOverride: -20, spent: 60 }); f.actor.prepare();
   await longRest(f.actor); assert.equal(pool.max, 40); assert.equal(pool.min, -20); assert.equal(pool.value, 40);
+});
+
+test("whole point/percent displays survive unrelated saves without erasing fractional resource balances", async () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id];
+  pool.baseMax = 125; pool.spent = 4.6; f.actor.prepare();
+  const untouched = { resourceValues: { [id]: 120 }, system: { customResources: { [id]: { name: "Blood" } } } };
+  resourceFormUpdates(f.actor, untouched); assert.equal(untouched.system.customResources[id].spent, undefined); assert.equal(pool.spent, 4.6);
+  const typed = { resourceValues: { [id]: 119.9 } };
+  resourceFormUpdates(f.actor, typed); assert.equal(typed.system.customResources[id].spent, 6);
+  const percent = { resourceValues: { [id]: 96 }, system: { customResources: { [id]: { name: "Blood" } } } };
+  pool.display = "percent"; resourceFormUpdates(f.actor, percent); assert.equal(percent.system.customResources[id].spent, undefined);
+  await resourceAction(f.actor, id, "spend", "2.9"); assert.ok(Math.abs(pool.spent - 6.6) < 1e-10);
+  await resourceAction(f.actor, id, "spend", 0.5); assert.ok(Math.abs(pool.spent - 7.1) < 1e-10, "internal numeric costs retain fractions");
 });

@@ -9,6 +9,7 @@ import { addResource, resourceAction, resourceFormUpdates } from "./resource-act
 import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
+import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
@@ -208,7 +209,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
-      system,
+      system: wholeDisplay({ ...system }),
       resourcePools: resourceEntries(system),
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
       editable: this.isEditable,
@@ -216,16 +217,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
         || Object.values(system.overrides ?? {}).some(value => value != null && value !== "")
         || !!system.bonuses?.armor || !!system.bonuses?.evasion,
-      resources: [
+      resources: wholeDisplay([
         { key: "health", label: "Health", inputName: "healthCurrent", ...system.health },
         { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },
         { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions },
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder }
-      ],
+      ]),
       defyFate: system.stats.fth.value >= 21,
-      worn: system.equipment,
-      equipment, equipmentGroups: groupEquipmentRows(equipment),
-      carrying: system.carrying,
+      worn: wholeDisplay(system.equipment),
+      equipment: wholeDisplay(equipment), equipmentGroups: wholeDisplay(groupEquipmentRows(equipment)),
+      carrying: wholeDisplay(system.carrying),
       block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
       dodgeMod: formatModifier(system.stats.agl?.mod ?? 0),
       parryMod: formatModifier(system.stats.dex?.mod ?? 0),
@@ -234,16 +235,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
         { key: "armorRating", label: "Armor Rating", value: system.core.armorRating, type: "number" },
         { key: "movement", label: "Movement / AP", value: system.core.movement, unit: "ft", type: "number" }
-      ].map(detail => ({ ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key] })),
-      groups: [
+      ].map(detail => wholeDisplay({ ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key] })),
+      groups: wholeDisplay([
         { title: "Physical", rows: rows.filter(r => r.group === "physical") },
         { title: "Mental", rows: rows.filter(r => r.group === "mental") }
-      ]
+      ])
     });
   }
 
   _processFormData(event, form, formData) {
-    const data = super._processFormData(event, form, formData);
+    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: this.actor.system });
     delete data.statScores;
     const systemSource = this.actor.system.toObject?.();
     const increases = statIncreases(this.actor.system.level, systemSource?.advancement);
@@ -260,11 +261,11 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     // A full sheet submission includes unchanged trackers. Do not turn an unrelated
     // stat edit into healing or refill a spent pool just by submitting the form.
     for (const key of ["ap", "reactions", "wonder"]) {
-      if (data.system?.[key] && numberOr(data.system[key].value, null) === this.actor.system[key].value) {
+      if (data.system?.[key] && numberOr(data.system[key].value, null) === wholeNumber(this.actor.system[key].value)) {
         delete data.system[key].value;
       }
     }
-    if (current !== undefined && numberOr(current, null) !== this.actor.system.health.value) {
+    if (current !== undefined && numberOr(current, null) !== wholeNumber(this.actor.system.health.value)) {
       const maximum = this.actor.clone(data).system.health.max;
       foundry.utils.setProperty(data, "system.health.damage", damageFromHealth(maximum, numberOr(current, maximum)));
     }
@@ -273,6 +274,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
+    if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
 

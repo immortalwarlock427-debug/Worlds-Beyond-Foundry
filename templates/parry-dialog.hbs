@@ -4,7 +4,7 @@
   <p class="wb-dialog-meta">DEX mod {{modifier}} · 1 reaction · once per round</p>
   {{#unless unlocked}}<p class="wb-warning">DEX 21 not reached.</p>{{/unless}}
   {{#unless armed}}<p class="wb-warning">No weapon or shield equipped.</p>{{/unless}}
-  <label>Attack total<input type="number" name="target" step="any" placeholder="Optional"{{#if incoming}} value="{{incoming.total}}"{{/if}}></label>
+  <label>Attack total<input type="number" name="target" step="1" placeholder="Optional"{{#if incoming}} value="{{incoming.total}}"{{/if}}></label>
   <label class="wb-check-toggle"><input type="checkbox" name="ally" {{#if ally}}checked{{/if}}> Protect an ally</label>
   <label class="wb-check-toggle" data-tooltip="Attacker's STR 28 milestone: damage cannot fall below half"><input type="checkbox" name="overwhelmingForce" {{#if incoming}}{{#if incoming.overwhelmingForce}}checked{{/if}}{{/if}}> Overwhelming Force</label>
   <fieldset class="wb-dice-choices">

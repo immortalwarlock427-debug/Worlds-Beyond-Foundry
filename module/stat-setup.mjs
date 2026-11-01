@@ -1,6 +1,7 @@
 import { STATS } from "./stats.mjs";
 import { STAT_ROLL_FORMULA, STAT_AWARD_LEVELS, statAwards, statIncreases, validateStatAwards, assignStatResult, assignedStatUpdates } from "./stat-advancement.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
+import { wholeDisplay } from "./number-display.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -53,7 +54,7 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
     const awards = statAwards(this.source.level, this.advancement);
     const award = awards.find(row => row.level === this.selectedLevel);
     const filled = this.rows.filter(row => row.score !== null).length;
-    return Object.assign(context, {
+    return Object.assign(context, wholeDisplay({
       generation: this.mode === "generation", editable: this.actor.isOwner && !this.busy, busy: this.busy,
       filled, full: filled === 8, canApply: filled > 0 && !this.busy && this.actor.isOwner,
       awards: awards.map(row => ({ ...row, selected: row.level === this.selectedLevel })), award,
@@ -70,7 +71,7 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
           canAdd: !!award && award.remaining > 0 && points < 2 && total < 28,
           canRemove: points > 0 };
       })
-    });
+    }));
   }
 
   async _onRender(context, options) {
@@ -80,7 +81,7 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
       input.addEventListener("input", () => {
         if (!this.actor.isOwner || this.busy) return;
         const row = this.rows[Number(input.dataset.resultScore)];
-        row.score = input.value.trim() === "" ? null : Number(input.value);
+        row.score = input.value.trim() === "" ? null : Math.floor(Number(input.value));
         row.dice = "";
         // Keep the focused input and Apply button in place while typing.
         const increase = statIncreases(this.source.level, this.advancement)[row.stat];

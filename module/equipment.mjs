@@ -2,6 +2,7 @@ import { defaultSlots, consumableUse, healedDamage } from "./equipment-core.mjs"
 import { shotsLeft } from "./attacks.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { itemIcon } from "./item-icons.mjs";
+import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -121,7 +122,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 
   async _prepareContext(options) {
     return Object.assign(await super._prepareContext(options), {
-      item: this.item, system: this.item.system, editable: this.isEditable,
+      item: this.item, system: wholeDisplay({ ...this.item.system }), editable: this.isEditable,
       artwork: itemIcon(this.item),
       typeLabel: ITEM_TYPES[this.item.type],
       propertySummary: Object.entries(WEAPON_PROPERTIES).filter(([key]) => this.item.system.properties?.[key]).map(([, label]) => label).join(" · ") || "None",
@@ -136,10 +137,21 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
       armorPieces: Object.entries(ARMOR_PIECES).map(([value, label]) => ({ value, label, selected: value === this.item.system.piece }))
     });
   }
+
+  _processFormData(event, form, formData) {
+    return wholeFormUpdates(super._processFormData(event, form, formData), form, { system: this.item.system });
+  }
+
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (this.isEditable) bindWholeNumbers(this.element);
+  }
 }
 
 export function equipmentRows(items, slotsUsed = {}) {
-  return Array.from(items).map(item => ({
+  return Array.from(items).map(original => {
+    const item = { ...original, id: original.id, name: original.name, type: original.type, img: original.img, system: wholeDisplay({ ...original.system }) };
+    return ({
     id: item.id, name: item.name, type: item.type, typeLabel: ITEM_TYPES[item.type] ?? "Gear", img: itemIcon(item),
     equipIcon: item.type === "shield" ? "fa-shield-halved" : item.type === "armor" ? "fa-shirt" : "fa-hand",
     canUse: item.type === "consumable",
@@ -167,7 +179,8 @@ export function equipmentRows(items, slotsUsed = {}) {
           : item.type === "consumable" ? [CONSUMABLE_KINDS[item.system.kind] ?? item.system.kind,
             item.system.healingDice ? `Heals ${item.system.healingDice}` : "", `${item.system.perSlot} per slot`].filter(Boolean).join(" · ")
             : item.type === "misc" && item.system.perSlot > 1 ? `${item.system.perSlot} per slot` : ""
-  }));
+    });
+  });
 }
 
 export function groupEquipmentRows(rows) {
@@ -210,7 +223,7 @@ export async function useConsumable(actor, id) {
     const amount = roll ? Math.max(0, roll.total) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
       + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")
-      + `<p>One used, ${use.quantity} left.${roll ? ` Healing: ${amount}.` : " Apply any effects at the table."}</p>`
+      + `<p>One used, ${wholeNumber(use.quantity)} left.${roll ? ` Healing: ${wholeNumber(amount)}.` : " Apply any effects at the table."}</p>`
       + (roll ? await roll.render() : "") + "</div>";
     await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));
     return createActionMessage({
@@ -248,7 +261,7 @@ export function decorateConsumableMessage(message, html) {
   button.type = "button";
   button.className = "wb-consumable-heal";
   button.disabled = !!data.applied;
-  button.textContent = data.applied ? `Healed ${data.amount}` : `Apply ${data.amount} healing to me`;
+  button.textContent = data.applied ? `Healed ${wholeNumber(data.amount)}` : `Apply ${wholeNumber(data.amount)} healing to me`;
   button.addEventListener("click", async () => {
     button.disabled = true;
     try { await applyConsumableHealing(message); }

@@ -167,6 +167,16 @@ test("simultaneous max and current Health corrections use the new maximum, inclu
   assert.equal(cleared.system.health.damage, 0);
 });
 
+test("whole displayed Health and AP preserve hidden fractions; deliberate numeric edits floor", () => {
+  const sheet = new CharacterSheet(); sheet.actor = actor();
+  Object.assign(sheet.actor.system.health, { value: 120.4, max: 125 }); sheet.actor.system.ap.value = 4.9;
+  const form = { querySelectorAll: selector => selector.includes("data-stat-score") ? [] : ["healthCurrent", "system.ap.value"].map(name => ({ name })) };
+  const untouched = sheet._processFormData(null, form, { object: { name: "Renamed", healthCurrent: 120, system: { ap: { value: 4 } } } });
+  assert.equal(untouched.system.health?.damage, undefined); assert.equal(untouched.system.ap.value, undefined);
+  const edited = sheet._processFormData(null, form, { object: { healthCurrent: 119.9, system: { ap: { value: 3.9 } } } });
+  assert.equal(edited.system.health.damage, sheet.actor.clone(edited).system.health.max - 119); assert.equal(edited.system.ap.value, 3);
+});
+
 test("form submission saves deliberate base edits and never saves displayed effect scores", () => {
   const sheet = new CharacterSheet();
   sheet.actor = actor();

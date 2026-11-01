@@ -263,6 +263,12 @@
   text-align: left;
 }
 .worlds-beyond .wb-resource-max { color: var(--wb-muted); overflow-wrap: anywhere; }
+.worlds-beyond .wb-percent-values { gap: 2px; }
+.worlds-beyond .wb-body .wb-percent-values input {
+  flex: 0 1 4ch; width: 4ch; padding-inline: 0; text-align: right; appearance: textfield;
+}
+.worlds-beyond .wb-percent-values input::-webkit-inner-spin-button,
+.worlds-beyond .wb-percent-values input::-webkit-outer-spin-button { margin: 0; appearance: none; }
 .worlds-beyond .wb-core-value {
   display: block;
   margin: 8px 0;

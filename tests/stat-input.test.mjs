@@ -79,3 +79,8 @@ test("clearing a saved manual score restores its original base plus the active a
   assert.equal(f.classes.has("is-adjusted"), true);
   assert.equal(f.classes.has("is-manual"), false);
 });
+
+test("decimal stat edits floor the base before applying effects", () => {
+  const f = fixture(); f.fire("focus"); f.input.value = "22.9"; f.fire("input"); f.fire("blur");
+  assert.equal(f.input.value, "24"); assert.deepEqual(editedStatInputs(f.form), [["agl", 22]]);
+});

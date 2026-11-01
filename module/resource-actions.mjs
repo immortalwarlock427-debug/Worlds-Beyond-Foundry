@@ -12,7 +12,8 @@ export function resourceFormUpdates(actor, data) {
   delete data.resourceValues;
   if (!values) return data;
   let revised;
-  for (const [key, current] of Object.entries(values)) {
+  for (const [key, entered] of Object.entries(values)) {
+    const current = entered == null || entered === "" ? entered : Math.floor(Number(entered));
     const path = resourcePath(actor.system, key);
     const pool = Object.hasOwn(MAGIC_RESOURCES, key) ? actor.system[key] : actor.system.customResources[key];
     // A whole-sheet submit must not save a displayed total after changing its stat/max.
@@ -51,7 +52,9 @@ export async function resourceAction(actor, key, action, amount) {
       return result;
     }
     const pool = magic ? magicPool(actor.system.level, actor.system.stats[magic.stat].effective ?? actor.system.stats[magic.stat].value, data) : customPool(data, actor.system);
-    const spent = adjustedResourceSpent(pool, action, action === "recover" ? data.regen : amount ?? data.amount);
+    // DOM amounts are strings; internal numeric costs may retain fractional points.
+    const enteredAmount = typeof amount === "string" && amount.trim() !== "" ? Math.floor(Number(amount)) : amount ?? data.amount;
+    const spent = adjustedResourceSpent(pool, action, action === "recover" ? data.regen : enteredAmount);
     if (spent === data.spent) return;
     const result = await actor.update({ [`${path}.spent`]: spent });
     if (!result) throw new Error("The resource update was cancelled. Try again.");

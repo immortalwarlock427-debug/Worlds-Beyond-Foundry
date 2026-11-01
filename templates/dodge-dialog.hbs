@@ -3,7 +3,7 @@
   {{#if linkedUsed}}<p class="wb-warning">Dodge already used against this attack · reset to correct.</p>{{/if}}
   <p class="wb-dialog-meta">AGL mod {{modifier}} · 1 reaction</p>
   <label>Against<select name="against"><option value="attack">Direct attack</option><option value="area">Area save</option></select></label>
-  <label>Attack total / save DC<input type="number" name="target" step="any" placeholder="Optional"{{#if incoming}} value="{{incoming.total}}"{{/if}}></label>
+  <label>Attack total / save DC<input type="number" name="target" step="1" placeholder="Optional"{{#if incoming}} value="{{incoming.total}}"{{/if}}></label>
   <label class="wb-check-toggle" data-tooltip="A direct attack that rolled a natural 20 cannot be Dodged"><input type="checkbox" name="natural20" {{#if incoming}}{{#if incoming.natural20}}checked{{/if}}{{/if}}> Incoming natural 20</label>
   {{#if heavyArmor}}<p class="wb-warning">Heavy armor · disadvantage applies.</p>{{/if}}
   <fieldset class="wb-dice-choices">
