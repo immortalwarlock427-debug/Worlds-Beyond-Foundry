@@ -47,6 +47,26 @@
   min-width: 0;
 }
 
+/* Character navigation stays visible while each panel scrolls independently. */
+.worlds-beyond.wb-character-sheet { max-height: calc(100dvh - 24px); }
+.worlds-beyond.wb-character-sheet .window-content { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.worlds-beyond.wb-character-sheet .wb-body { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0; gap: 0; overflow: hidden; }
+.worlds-beyond.wb-character-sheet .wb-header { flex: 0 0 auto; margin: 18px 18px 0; }
+.worlds-beyond .wb-header-details { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--wb-muted); font-size: 13px; }
+.worlds-beyond .wb-sheet-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; flex: 0 0 auto; margin: 0; padding: 12px 18px; border: 0; border-bottom: 1px solid var(--wb-rule); }
+.worlds-beyond .wb-sheet-tabs > button { min-width: 0; min-height: 44px; margin: 0; padding: 8px 4px; color: var(--wb-muted); background: var(--wb-bg); border: 1px solid var(--wb-rule); border-radius: 4px; font: 15px var(--wb-font-label); box-shadow: none; }
+.worlds-beyond .wb-sheet-tabs > button.active { color: var(--wb-brass); background: var(--wb-brass-soft); border-color: var(--wb-brass); }
+.worlds-beyond .wb-sheet-tabs > button:hover { color: var(--wb-brass); border-color: var(--wb-brass); }
+.worlds-beyond .wb-sheet-tabs > button:focus-visible { outline: 2px solid var(--wb-brass); outline-offset: 1px; }
+.worlds-beyond .wb-sheet-panel { display: none; }
+.worlds-beyond .wb-sheet-panel.active { display: grid; align-content: start; flex: 1; min-height: 0; min-width: 0; gap: 16px; padding: 18px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+.worlds-beyond .wb-character-details > h2 { margin-top: 0; }
+@container (max-width: 450px) {
+  .worlds-beyond.wb-character-sheet .wb-header { margin: 14px 12px 0; }
+  .worlds-beyond .wb-sheet-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 12px; }
+  .worlds-beyond .wb-sheet-panel.active { padding: 14px 12px; }
+}
+
 /* inputs */
 .worlds-beyond .wb-body input {
   font: inherit;
