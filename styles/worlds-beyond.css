@@ -374,7 +374,7 @@
 .worlds-beyond .wb-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 10px; border: 0; font: 16px "Marcellus SC", serif; color: #D6A85C; }
 .worlds-beyond .wb-section-title > span { color: #959CB2; font: 13px "Alegreya Sans", sans-serif; }
 .worlds-beyond .wb-defense-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.worlds-beyond .wb-defense-actions > button { grid-column: auto; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px; font: 16px "Marcellus SC", serif; white-space: normal; }
+.worlds-beyond .wb-defense-actions > button { grid-column: auto; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px; background: #1A2136; color: #D6A85C; border: 1px solid #2C3452; font: 16px "Marcellus SC", serif; white-space: normal; }
 .worlds-beyond .wb-defense-actions small { color: #959CB2; font: 14px "Alegreya Sans", sans-serif; }
 .worlds-beyond .wb-warning { margin: 8px 0 0; padding: 6px 10px; border-left: 2px solid #D6A85C; color: #D6A85C; font-size: 13px; line-height: 1.4; }
 .worlds-beyond .wb-section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
@@ -461,7 +461,7 @@
 
 /* Scoped stock-control colors; Foundry's sidebar and canvas keep their theme. */
 .worlds-beyond.wb-sheet,
-.worlds-beyond.wb-roll-dialog { scrollbar-color: #8D713F #141A2B; --checkbox-background-color: #65708D; --checkbox-checked-color: #D6A85C; --checkbox-checkmark-color: #0D111E; --input-focus-outline-color: #D6A85C; }
+.worlds-beyond.wb-roll-dialog { --color-scrollbar: #8D713F; --color-scrollbar-track: #141A2B; scrollbar-color: #8D713F #141A2B; --checkbox-background-color: #65708D; --checkbox-checked-color: #D6A85C; --checkbox-checkmark-color: #0D111E; --input-focus-outline-color: #D6A85C; }
 .worlds-beyond.wb-sheet input[type="checkbox"],
 .worlds-beyond.wb-roll-dialog input[type="checkbox"],
 .worlds-beyond.wb-roll-dialog input[type="radio"] { --checkbox-background-color: #65708D; --checkbox-checked-color: #D6A85C; --checkbox-checkmark-color: #0D111E; }
