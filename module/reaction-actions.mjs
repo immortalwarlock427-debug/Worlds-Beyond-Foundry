@@ -5,10 +5,11 @@ import { checkMode } from "./rolls.mjs";
 import { dodgeContext, parryContext, parryReadiness } from "./defenses.mjs";
 import { rollCard } from "./roll-actions.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
+import { wholeDisplay } from "./number-display.mjs";
 import { linkedDefense, requireUnusedDefense, markLinkedDefense, linkedResetButtons } from "./attack-defense.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
-const template = (name, data) => foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/${name}.hbs`, data);
+const template = (name, data) => foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/${name}.hbs`, wholeDisplay(data));
 
 export function decorateReactionMessage(message, html) {
   if (!message.isContentVisible || message.getFlag?.(SYSTEM_ID, "reaction")?.kind !== "block") return;

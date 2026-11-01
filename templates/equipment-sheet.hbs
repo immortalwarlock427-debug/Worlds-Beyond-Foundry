@@ -3,7 +3,7 @@
     <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Item name" {{#unless editable}}disabled{{/unless}}>
   </div></header>
   <div class="wb-equipment-fields">
-    <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
     {{#if equippable}}<label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>{{/if}}
   </div>
   {{#if weapon}}
@@ -14,9 +14,9 @@
     <label>Damage type<input type="text" name="system.damageType" value="{{system.damageType}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   <details class="wb-disclosure" data-sync="weapon-range"><summary>Range &amp; loading</summary><div class="wb-equipment-fields">
-    <label>Normal range (ft)<input type="number" name="system.range.normal" value="{{system.range.normal}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Long range (ft)<input type="number" name="system.range.long" value="{{system.range.long}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Loading (shots; 0 for none)<input type="number" name="system.loading" value="{{system.loading}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Normal range (ft)<input type="number" name="system.range.normal" value="{{system.range.normal}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Long range (ft)<input type="number" name="system.range.long" value="{{system.range.long}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Loading (shots; 0 for none)<input type="number" name="system.loading" value="{{system.loading}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Shots loaded (blank = full)<input type="number" name="system.shots" value="{{system.shots}}" min="0" step="1" placeholder="Full" {{#unless editable}}disabled{{/unless}}></label>
   </div></details>
   <details class="wb-disclosure" data-sync="weapon-properties"><summary>Properties <span class="wb-summary-value">{{propertySummary}}</span></summary><div class="wb-equipment-fields">
@@ -30,8 +30,8 @@
   <div class="wb-equipment-fields">
     <label>Armor type<select name="system.armorType" {{#unless editable}}disabled{{/unless}}>{{#each armorTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
     <label>Worn piece<select name="system.piece" {{#unless editable}}disabled{{/unless}}>{{#each armorPieces}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Natural Evasion bonus<input type="number" name="system.evasionBonus" value="{{system.evasionBonus}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Natural Evasion bonus<input type="number" name="system.evasionBonus" value="{{system.evasionBonus}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
   {{#if consumable}}
@@ -42,12 +42,12 @@
   {{/if}}
   {{#if shield}}
   <div class="wb-equipment-fields">
-    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
   <details class="wb-disclosure" data-sync="item-carrying"><summary>Carrying &amp; cost</summary><div class="wb-equipment-fields">
-    <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
   </div></details>

@@ -4,6 +4,7 @@ import { checkMode, describeD20Roll } from "./rolls.mjs";
 import { SIGNATURE_TEXT } from "./catalog.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
+import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
@@ -55,7 +56,7 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
   const reasons = attackDisadvantages({ weapon, scores: scores(actor), heavyArmor: !!actor.system.equipment?.heavyDisadvantage });
   const partners = dualWieldPartners(weapon, actor.items);
   const shots = shotsLeft(weapon);
-  const content = await foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/attack-dialog.hbs`, {
+  const content = await foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/attack-dialog.hbs`, wholeDisplay({
     reasons, target, apLeft: actor.system.ap.value, spendAp: inCombat(actor),
     partners: partners.map(item => ({ id: item.id, name: item.name })),
     shots, loading: weapon.system.loading,
@@ -66,7 +67,7 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
     }),
     versatile: !!weapon.system.properties.versatile, damage: weapon.system.damage, versatileDamage: weapon.system.versatileDamage,
     canRange: modes.some(mode => mode !== "melee"), mount: !!weapon.system.properties.mount
-  });
+  }));
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
     window: { title: `${weapon.name} attack` }, content, ok: { label: "Attack" }, rejectClose: false,

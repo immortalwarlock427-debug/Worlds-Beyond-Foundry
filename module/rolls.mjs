@@ -1,6 +1,7 @@
 // Foundry-free roll rules; adapted from the website's rollD20/Wonder behavior.
 import { statModifier } from "./stats.mjs";
 import { numberOr } from "./core-numbers.mjs";
+import { wholeNumber } from "./number-display.mjs";
 
 export const CHECK_MODES = Object.freeze({
   normal: { label: "Normal", formula: "1d20 + @mod" },
@@ -34,7 +35,7 @@ export function describeD20Roll(roll, mode = "normal") {
   const sign = bonus < 0 ? "−" : "+";
   const choice = mode === "advantage" ? " (higher)" : mode === "disadvantage" ? " (lower)" : "";
   return {
-    equation: `${dieTotal} ${sign} ${Math.abs(bonus)} = ${roll.total}`,
+    equation: `${dieTotal} ${sign} ${Math.abs(wholeNumber(bonus))} = ${wholeNumber(roll.total)}`,
     diceText: results.length > 1
       ? `Rolled ${results.map(result => result.result).join(" and ")} · kept ${dieTotal}${choice}`
       : `Rolled ${dieTotal} on the d20`,

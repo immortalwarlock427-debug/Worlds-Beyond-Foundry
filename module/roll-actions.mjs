@@ -4,6 +4,7 @@ import { dodgeOutcome, parryOutcome } from "./defenses.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { resourceRestUpdates } from "./resources.mjs";
 import { queuedAction } from "./action-support.mjs";
+import { wholeNumber } from "./number-display.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -56,7 +57,7 @@ export async function rollCard(roll, context, { note = "", success = false } = {
   return renderTemplate("roll-card", {
     label: context.label,
     modeLabel: context.mode ? checkMode(context.mode).label : "Initiative",
-    note, success, defense,
+    note, success, defense: defense && { ...defense, target: wholeNumber(defense.target) },
     rollHTML: await roll.render()
   });
 }

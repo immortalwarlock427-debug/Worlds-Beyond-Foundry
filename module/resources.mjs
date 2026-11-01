@@ -1,6 +1,7 @@
 // Foundry-free resource math. Magic System uses current INT/FTH × (level + 2).
 import { numberOr } from "./core-numbers.mjs";
 import { STATS } from "./stats.mjs";
+import { wholeDisplay } from "./number-display.mjs";
 
 export const MAGIC_RESOURCES = Object.freeze({ mana: { label: "Mana", stat: "int" }, holyPower: { label: "Holy power", stat: "fth" } });
 export const customResourceId = id => /^[A-Za-z0-9]{16}$/.test(id);
@@ -31,16 +32,16 @@ export function resourcePresentation(pool) {
   const minimum = numberOr(pool.min, 0);
   const range = pool.max - minimum;
   const percentUnavailable = percent && !(range > 0);
-  // Round only presentation. An unchanged whole-sheet submission preserves the
-  // exact point balance instead of saving a rounded percentage back into it.
-  const inputValue = percent && !percentUnavailable ? Math.round((pool.value - minimum) / range * 10000) / 100 : pool.value;
+  // Floor only presentation. Unchanged forms retain the exact point balance.
+  const inputValue = Math.floor(percent && !percentUnavailable ? (pool.value - minimum) / range * 100 : pool.value);
   const meterPercent = range > 0 ? Math.max(0, Math.min(100, (pool.value - minimum) / range * 100)) : 0;
   return { percent, percentUnavailable, inputValue, meterPercent };
 }
 
 export function resourceInputPoints(pool, input, maximum = pool.max, minimum = numberOr(pool.min, 0)) {
-  const number = numberOr(input, null);
-  if (number === null) return null;
+  const parsed = numberOr(input, null);
+  if (parsed === null) return null;
+  const number = Math.floor(parsed);
   return pool.display === "percent" && pool.max > numberOr(pool.min, 0) ? minimum + number / 100 * (maximum - minimum) : number;
 }
 
@@ -71,7 +72,7 @@ export function resourceEntries(system) {
     key, label: data.name || "Resource", path: `system.customResources.${key}`, custom: true, ...data
   }));
   return [...magic, ...custom].map(pool => ({
-    ...pool, ...resourcePresentation(pool), scaled: !!pool.scaleStat,
+    ...wholeDisplay(pool), ...resourcePresentation(pool), scaled: !!pool.scaleStat,
     scalingChoices: Object.entries(RESOURCE_SCALING).map(([value, label]) => ({ value, label, selected: value === (pool.scaleStat ?? "") })),
     displayChoices: Object.entries(RESOURCE_DISPLAYS).map(([value, label]) => ({ value, label, selected: value === (pool.display ?? "number") }))
   }));
