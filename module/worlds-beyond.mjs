@@ -10,6 +10,8 @@ import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
+import { AbilityData, AbilitySheet, createAbility } from "./abilities.mjs";
+import { abilityGroups } from "./abilities-core.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
@@ -172,7 +174,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait,
-      resource: CharacterSheet.#onResource
+      resource: CharacterSheet.#onResource,
+      ability: CharacterSheet.#onAbility
     }
   };
 
@@ -211,6 +214,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       actor: this.actor,
       system: wholeDisplay({ ...system }),
       resourcePools: resourceEntries(system),
+      abilityGroups: abilityGroups(this.actor.items ?? [], system),
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
       editable: this.isEditable,
       unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
@@ -330,6 +334,20 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     } catch (error) { ui.notifications.error(error.message); }
   }
 
+  static async #onAbility(event, target) {
+    const operation = target.dataset.operation;
+    if (operation !== "edit" && !this.isEditable) return;
+    try {
+      if (operation === "create") return await createAbility(this.actor);
+      const item = this.actor.items.get(target.closest("[data-ability-id]")?.dataset.abilityId);
+      if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");
+      if (operation === "edit") return item.sheet.render({ force: true });
+      if (operation === "delete" && await foundry.applications.api.DialogV2.confirm({
+        window: { title: "Remove ability" }, content: "<p>Remove this ability and its trackers from this character?</p>", rejectClose: false
+      })) return await item.delete();
+    } catch (error) { ui.notifications.error(error.message); }
+  }
+
   static async #onPickPortrait(event, target) {
     if (!this.isEditable) return;
     const FilePicker = foundry.applications.apps.FilePicker.implementation;
@@ -371,6 +389,10 @@ Hooks.once("init", () => {
   CONFIG.Combatant.documentClass = CharacterCombatant;
   CONFIG.Actor.dataModels.character = CharacterData;
   Object.assign(CONFIG.Item.dataModels, EQUIPMENT_MODELS);
+  CONFIG.Item.dataModels.ability = AbilityData;
+  foundry.documents.collections.Items.registerSheet(SYSTEM_ID, AbilitySheet, {
+    types: ["ability"], makeDefault: true, label: "Worlds Beyond Ability"
+  });
   foundry.documents.collections.Items.registerSheet(SYSTEM_ID, EquipmentSheet, {
     types: Object.keys(ITEM_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
   });
