@@ -3,6 +3,7 @@
   {{#if success}}<p class="wb-roll-success">Success · Defy Fate</p>{{/if}}
   {{{rollHTML}}}
   {{#if defense}}
+    {{#if defense.incoming}}<p class="wb-roll-note">{{defense.incoming.attackerName}} · {{defense.incoming.weaponName}}{{#if defense.incoming.targetName}} → {{defense.incoming.targetName}}{{/if}}</p>{{/if}}
     {{#if defense.parry}}
       {{#if defense.hasTarget}}<p>Against attack total {{defense.target}}.</p>{{/if}}
       {{#if defense.resolved}}

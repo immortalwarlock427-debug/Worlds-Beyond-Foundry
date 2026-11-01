@@ -18,7 +18,8 @@ function currentTarget() {
   const token = game.user.targets?.first?.() ?? Array.from(game.user.targets ?? [])[0];
   const actor = token?.actor;
   if (!actor) return null;
-  return { name: token.name ?? actor.name, evasion: actor.system?.core?.evasion ?? null, armor: actor.system?.core?.armorRating ?? null };
+  return { name: token.name ?? actor.name, actorUuid: actor.uuid, tokenUuid: token.document?.uuid ?? null,
+    evasion: actor.system?.core?.evasion ?? null, armor: actor.system?.core?.armorRating ?? null };
 }
 
 // Actions cost AP during a started combat the actor is part of. Outside combat they're free.
@@ -126,6 +127,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       });
       const roll = await new foundry.dice.Roll(checkMode(rollMode).formula, { mod: hand.mod }).evaluate({ allowInteractive: messageMode !== "blind" });
       const natural = roll.dice[0]?.total;
+      Object.assign(hand, { total: roll.total, natural });
       Object.assign(hand, attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: critThreshold(hand.item) }));
       const breakdown = describeD20Roll(roll, rollMode);
       const result = hand.hit === null
@@ -164,10 +166,11 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
       content, rolls,
       flags: { [SYSTEM_ID]: { attack: {
-        actorUuid: actor.uuid, target, mounted: !!options.mounted, mountedFeet: Number(options.mountedFeet) || 0,
-        hands: hands.map(({ item, hand, stat, mod, hit, critical }) => ({
+        actorUuid: actor.uuid, attackerName: actor.name, target, overwhelmingForce: scores(actor).str >= 28,
+        mounted: !!options.mounted, mountedFeet: Number(options.mountedFeet) || 0,
+        hands: hands.map(({ item, hand, stat, mod, hit, critical, total, natural }) => ({
           hand, itemId: item.id, name: item.name, stat, mod, grip: hand === "main" ? options.grip ?? "one" : "one",
-          hit, critical, damageRolled: false
+          hit, critical, total, natural, damageRolled: false
         }))
       } } }
     }, { messageMode });

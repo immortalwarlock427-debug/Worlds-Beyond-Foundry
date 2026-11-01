@@ -1,6 +1,6 @@
 # Dodge reaction
 
-The user confirmed Block works before authorizing this next small part of roadmap step 5. Version 0.12.0 adds Dodge; Parry and incoming-attack association follow later.
+Version 0.12.0 added standalone Dodge. Version 0.18.0 also opens it from [linked attack cards](LINKED-DEFENSES.md).
 
 ## Sources
 
@@ -19,7 +19,7 @@ Read on 2026-11-01:
 - **Spend 1 reaction** defaults on for an actor in a started combat, otherwise off. It spends one current reaction and no AP. With no reactions available, correct the pool or explicitly untick spending. Health and Wonder remain unchanged by the initial Dodge. The shared local action queue prevents Dodge and Block from spending the same final reaction on one client.
 - Dice/template failures do not spend. A failed chat post refunds the spent reaction; failed recovery reports manual correction. Chat visibility uses Foundry's public/GM/blind/self modes, and blind dice disable interaction.
 - Dodge is a non-attack d20 check, or a save for an area attack, so its card supports **Wonder**. A reroll retains its original modifier, dice mode, target, direct/area choice and private audience, then recomputes the result. It spends Wonder without another reaction. At FTH 21, Defy Fate declares success, giving full avoidance for direct Dodge or half damage for an area save. A result uses Wonder once; its new reroll may use it again as before.
-- Apply Health changes manually. Select the incoming total/DC yourself; there is no connection to an attack chat card yet. Once-per-incoming-attack use, distances and effect eligibility remain manual. A failed Dodge can be followed by Block or Parry with another reaction. Overwhelming Force does not stop a successful direct Dodge, but may raise damage back to its floor after an area save and other mitigation.
+- Apply Health changes manually. Sheet-based Dodge accepts a manual total/DC; linked weapon cards prefill the total and track spent Dodge use per incoming hand. Distances and effect eligibility remain manual. A failed Dodge can be followed by Block or Parry with another reaction. Overwhelming Force does not stop a successful direct Dodge, but may raise damage back to its floor after an area save and other mitigation.
 - No actor/item data fields changed. New Dodge chat messages store their comparison context in the existing system check flag, allowing Wonder to retain it. Old check/save/initiative/Block cards retain their behavior.
 
 ## Validation

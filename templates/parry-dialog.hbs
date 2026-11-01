@@ -1,10 +1,12 @@
 <div class="wb-check-options">
+  {{#if incoming}}<p class="wb-dialog-meta">{{incoming.weaponName}} · attack {{incoming.total}}{{#if incoming.targetName}} → {{incoming.targetName}}{{/if}}</p>{{/if}}
+  {{#if linkedUsed}}<p class="wb-warning">Parry already used against this attack · reset to correct.</p>{{/if}}
   <p class="wb-dialog-meta">DEX mod {{modifier}} · 1 reaction · once per round</p>
   {{#unless unlocked}}<p class="wb-warning">DEX 21 not reached.</p>{{/unless}}
   {{#unless armed}}<p class="wb-warning">No weapon or shield equipped.</p>{{/unless}}
-  <label>Attack total<input type="number" name="target" step="any" placeholder="Optional"></label>
-  <label class="wb-check-toggle"><input type="checkbox" name="ally"> Protect an ally</label>
-  <label class="wb-check-toggle" data-tooltip="Attacker's STR 28 milestone: damage cannot fall below half"><input type="checkbox" name="overwhelmingForce"> Overwhelming Force</label>
+  <label>Attack total<input type="number" name="target" step="any" placeholder="Optional"{{#if incoming}} value="{{incoming.total}}"{{/if}}></label>
+  <label class="wb-check-toggle"><input type="checkbox" name="ally" {{#if ally}}checked{{/if}}> Protect an ally</label>
+  <label class="wb-check-toggle" data-tooltip="Attacker's STR 28 milestone: damage cannot fall below half"><input type="checkbox" name="overwhelmingForce" {{#if incoming}}{{#if incoming.overwhelmingForce}}checked{{/if}}{{/if}}> Overwhelming Force</label>
   <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
     <label><input type="radio" name="mode" value="normal" checked> Normal</label>

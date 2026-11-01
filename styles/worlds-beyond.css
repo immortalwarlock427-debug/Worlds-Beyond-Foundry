@@ -404,6 +404,9 @@
 .worlds-beyond .wb-equipment-list .wb-equipment-actions { margin-top: 8px; }
 .worlds-beyond .wb-empty { color: #959CB2; font-size: 14px; text-align: center; border-style: dashed !important; }
 .worlds-beyond .wb-dialog-meta { color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-defense-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.worlds-beyond .wb-defense-actions button { flex: 1; min-width: 72px; min-height: 44px; background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond .wb-defense-actions button:disabled { color: #959CB2; border-color: #2C3452; }
 .worlds-beyond.wb-roll-dialog .wb-check-options .wb-dice-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px; }
 .worlds-beyond.wb-roll-dialog .wb-dice-choices > label { flex-direction: column; justify-content: center; gap: 5px; padding: 6px 2px; min-width: 0; min-height: 54px; font-size: 12px; text-align: center; border: 1px solid transparent; border-radius: 4px; }
 .worlds-beyond.wb-roll-dialog .wb-dice-choices > label:has(input:checked) { background: rgba(214, 168, 92, 0.12); border-color: #D6A85C; }

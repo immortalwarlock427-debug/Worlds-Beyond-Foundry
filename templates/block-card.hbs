@@ -1,5 +1,6 @@
 <div class="worlds-beyond wb-roll-card wb-block-card">
-  <h3>Block</h3>
+  <h3>Block{{#if ally}} for an ally{{/if}}</h3>
+  {{#if incoming}}<p class="wb-roll-note">{{incoming.attackerName}} · {{incoming.weaponName}} · attack {{incoming.total}}{{#if incoming.targetName}} → {{incoming.targetName}}{{/if}}{{#if incoming.overwhelmingForce}} · Overwhelming Force{{/if}}</p>{{/if}}
   <p>{{#if spent}}1 reaction spent{{else}}No reaction spent{{/if}}.</p>
   {{{rollHTML}}}
   <details class="wb-disclosure wb-help"><summary>Apply Block</summary><p>Subtract this total from damage left after Resistance and Armor Rating, then change Health manually. Overwhelming Force may keep damage at half. A full Block also stops effects that need to cut into you.</p></details>

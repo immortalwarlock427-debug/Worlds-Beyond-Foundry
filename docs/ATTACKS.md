@@ -19,7 +19,7 @@ Roadmap step 4; reviewed action handling in version 0.9.2. Rules checked against
 - Hit: total meets or beats Natural Evasion. A natural 20 always hits and crits. Finesse and Paragon also crit on a natural 18 or 19 that hits.
 - Damage: the listed dice are rolled 1×/2×/3×/4×/5× at levels 1/5/10/15/20, with the modifier added once. Heavy and Paragon add double. Versatile in two hands uses the bracket damage and counts as Two-handed. Mount adds +1 per 10 ft charged, up to the attack modifier.
 - Critical: maximum of the scaled dice + modifier, plus the dice rolled again (Notion: 2d10 + 6 → 26 + 2d10).
-- Armor: with a target, the card shows how much of its Armor Rating counts. Two-handed hits ignore half, rounded down. Puncture ignores 2 more after halving. Overwhelming Force (STR 28) keeps damage at half or more. Dodge, Parry, Block and Resistance are step 5, so the card doesn't apply damage.
+- Armor: with a target, the card shows how much of its Armor Rating counts. Two-handed hits ignore half, rounded down. Puncture ignores 2 more after halving. Overwhelming Force (STR 28) keeps damage at half or more. [Linked defense controls](LINKED-DEFENSES.md) open Dodge, Parry and Block from the weapon attack; Resistance and Health changes remain manual.
 - Signature properties print their Notion text on the damage card as reminders.
 
 ## Not yet

@@ -13,6 +13,7 @@ import { decorateSystemMessage } from "./chat-style.mjs";
 import { decorateEquipmentDirectory } from "./item-artwork.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
+import { decorateAttackDefenses } from "./attack-defense.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
@@ -349,6 +350,7 @@ Hooks.on("renderChatMessageHTML", decorateSystemMessage);
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
 Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackMessage);
+Hooks.on("renderChatMessageHTML", decorateAttackDefenses);
 Hooks.on("renderChatMessageHTML", decorateReactionMessage);
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);
