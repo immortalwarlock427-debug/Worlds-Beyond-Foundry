@@ -122,6 +122,8 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: this.item.system, editable: this.isEditable,
       typeLabel: ITEM_TYPES[this.item.type],
+      propertySummary: Object.entries(WEAPON_PROPERTIES).filter(([key]) => this.item.system.properties?.[key]).map(([, label]) => label).join(" · ") || "None",
+      signatureSummary: Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => this.item.system.signature?.[key]).map(([, label]) => label).join(" · ") || "None",
       weapon: this.item.type === "weapon", armor: this.item.type === "armor", shield: this.item.type === "shield",
       consumable: this.item.type === "consumable", equippable: Object.hasOwn(EQUIPMENT_TYPES, this.item.type),
       consumableKinds: Object.entries(CONSUMABLE_KINDS).map(([value, label]) => ({ value, label, selected: value === this.item.system.kind })),
@@ -144,6 +146,10 @@ export function equipmentRows(items, slotsUsed = {}) {
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
+    brief: item.type === "weapon" ? [item.system.damage, item.system.damageType, item.system.loading ? `${shotsLeft(item)}/${item.system.loading} shots` : ""].filter(Boolean).join(" · ")
+      : item.type === "armor" ? `AR ${item.system.armorRating} · Evasion +${item.system.evasionBonus}`
+        : item.type === "shield" ? `Block ${item.system.blockDie} · AR ${item.system.armorRating}`
+          : item.type === "consumable" && item.system.healingDice ? `Healing ${item.system.healingDice}` : "",
     detail: item.type === "weapon" ? [item.system.damage, item.system.damageType,
       item.system.ranged ? "Ranged" : "",
       item.system.family !== "none" ? WEAPON_FAMILIES[item.system.family] : "",
@@ -192,7 +198,7 @@ export async function useConsumable(actor, id) {
     }
     const amount = roll ? Math.max(0, roll.total) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
-      + (item.system.description ? `<p>${escapeHTML(item.system.description)}</p>` : "")
+      + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")
       + `<p>One used, ${use.quantity} left.${roll ? ` Healing: ${amount}.` : " Apply any effects at the table."}</p>`
       + (roll ? await roll.render() : "") + "</div>";
     await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));

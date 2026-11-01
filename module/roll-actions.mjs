@@ -1,6 +1,7 @@
 import { STATS } from "./stats.mjs";
 import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
 import { dodgeOutcome, parryOutcome } from "./defenses.mjs";
+import { fitDialogDisclosures } from "./dialog-layout.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -17,6 +18,7 @@ export async function promptStatCheck(actor, statKey) {
     window: { title: `${stat.label} roll` },
     content: await renderTemplate("check-dialog", { label: stat.label, heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage }),
     ok: { label: "Roll" },
+    render: (event, dialog) => fitDialogDisclosures(dialog),
     rejectClose: false
   });
   if (!choices) return;
@@ -117,8 +119,8 @@ export async function useWonder(message) {
     if (!success) await roll.evaluate({ allowInteractive: !message.blind });
     const nextContext = { ...context, success, previousMessageId: message.id };
     const note = success
-      ? "Defy Fate: the player declares this failed check or save a success. 1 Wonder use spent."
-      : `Wonder reroll; previous total ${original.total}. The new result replaces it. 1 Wonder use spent.`;
+      ? "Defy Fate · 1 Wonder spent."
+      : `Wonder · previous total ${original.total} · 1 use spent.`;
     const content = await rollCard(roll, nextContext, { note, success });
     // Prepare the dice and content before spending; no pool changes on a failed roll/render.
     requireWonder(actor, message);
