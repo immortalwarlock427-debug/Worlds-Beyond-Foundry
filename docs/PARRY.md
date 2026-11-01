@@ -31,7 +31,7 @@ No actor/item schema fields were renamed, removed or added. New actor flag `flag
 
 Automated tests cover eligibility reminders, strict comparisons, manual/zero targets, Overwhelming Force, all dice/chat modes, round-versus-turn tracking, separate combats, reset without refund, failures and compensation, competing reaction spending, practice, permissions and Wonder/Defy Fate. Local smoke checks use Foundry 14.365's real data model and bundled Handlebars for editable/read-only controls, warnings, outcomes and ordinary Block/Dodge/check regressions.
 
-No live world, actual dialog reset button, token movement, sockets or phone layout was exercised. The local action queue does not coordinate separate clients. A Parry already being rolled keeps the round it started in if the tracker advances while dice are pending.
+Live Foundry verification reproduced the clipped action footer in 0.13.0, then confirmed 0.13.1 keeps Roll Parry visible while scrolling to the final instructions. No roll was submitted or resource changed during that layout check. The reset button, token movement, sockets and phone layout remain untested live. The local action queue does not coordinate separate clients. A Parry already being rolled keeps the round it started in if the tracker advances while dice are pending.
 
 Test before merging:
 
