@@ -477,8 +477,8 @@
 .worlds-beyond .wb-stat-heading { margin-bottom: -8px; flex-wrap: wrap; }
 .worlds-beyond .wb-stat-tools { display: flex; flex-wrap: wrap; gap: 6px; }
 .worlds-beyond .wb-stat-tools > button,
-.worlds-beyond.wb-stat-setup button { min-height: 44px; height: auto; padding: 6px 10px; background: #1A2136; border: 1px solid #2C3452; color: #D6A85C; font: 14px "Alegreya Sans", sans-serif; box-shadow: none; }
-.worlds-beyond.wb-stat-setup { max-height: min(820px, calc(100dvh - 24px)); }
+.worlds-beyond.wb-stat-setup .wb-setup-body button { min-height: 44px; height: auto; padding: 6px 10px; background: #1A2136; border: 1px solid #2C3452; color: #D6A85C; font: 14px "Alegreya Sans", sans-serif; box-shadow: none; }
+.worlds-beyond.wb-stat-setup { max-height: min(820px, calc(100dvh - 32px)); }
 .worlds-beyond .wb-setup-body { display: grid; gap: 12px; padding: 16px; min-width: 0; }
 .worlds-beyond .wb-setup-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .worlds-beyond .wb-setup-actions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -504,11 +504,11 @@
 .worlds-beyond .wb-point-stepper { display: flex; align-items: center; gap: 8px; }
 .worlds-beyond .wb-point-stepper > button { width: 44px; min-width: 44px; padding: 0; font-size: 22px; }
 .worlds-beyond .wb-point-stepper > span { min-width: 30px; color: #959CB2; text-align: center; font-size: 13px; }
-.worlds-beyond .wb-setup-footer { position: sticky; bottom: -16px; display: flex; justify-content: flex-end; gap: 8px; margin: 0 -16px -16px; padding: 12px 16px; background: #141A2B; border-top: 1px solid #2C3452; }
-.worlds-beyond.wb-stat-setup button:hover,
+.worlds-beyond .wb-setup-footer { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 8px; margin: 0 -16px -16px; padding: 12px 16px; background: #141A2B; border-top: 1px solid #2C3452; }
+.worlds-beyond.wb-stat-setup .wb-setup-body button:hover,
 .worlds-beyond .wb-stat-tools > button:hover { border-color: #D6A85C; }
-.worlds-beyond.wb-stat-setup button:disabled { opacity: 0.45; cursor: default; }
-.worlds-beyond.wb-stat-setup button:focus-visible,
+.worlds-beyond.wb-stat-setup .wb-setup-body button:disabled { opacity: 0.45; cursor: default; }
+.worlds-beyond.wb-stat-setup .wb-setup-body button:focus-visible,
 .worlds-beyond .wb-stat-tools > button:focus-visible { outline: 2px solid #D6A85C; outline-offset: 2px; }
 @container (max-width: 380px) {
   .worlds-beyond .wb-score-results > li { grid-template-columns: 14px 60px 72px minmax(0, 1fr); gap: 5px; }
