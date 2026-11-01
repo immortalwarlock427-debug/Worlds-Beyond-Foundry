@@ -2,5 +2,19 @@
   <header><h3>{{label}}</h3><span class="wb-roll-mode">{{modeLabel}}</span></header>
   {{#if success}}<p class="wb-roll-success">Success · Defy Fate</p>{{/if}}
   {{{rollHTML}}}
+  {{#if defense}}
+    {{#if defense.hasTarget}}<p>Against {{#if defense.area}}area save DC{{else}}attack total{{/if}} {{defense.target}}.</p>{{/if}}
+    {{#if defense.resolved}}
+      {{#if defense.success}}
+        <p class="wb-roll-success">{{#if defense.area}}Saved · halve damage before Resistance and Armor Rating.{{else}}Dodged · no damage.{{/if}}</p>
+      {{else}}
+        <p>{{#if defense.area}}Failed save · full damage before Resistance and Armor Rating.{{else}}Hit · Dodge must beat the attack total.{{/if}}</p>
+      {{/if}}
+    {{else}}
+      <p>{{#if defense.area}}Meet or beat the area save DC to halve damage before Resistance and Armor Rating.{{else}}Beat the attack total to avoid all damage. A tie fails.{{/if}}</p>
+    {{/if}}
+    <p class="wb-roll-note">{{#if defense.reroll}}Original Dodge: {{/if}}{{#if defense.spent}}1 reaction spent.{{else}}No reaction spent.{{/if}}{{#if defense.reroll}} Wonder spends no additional reaction.{{/if}} Apply Health changes manually.</p>
+    {{#if defense.overriddenDisadvantage}}<p class="wb-roll-note">Heavy armor without 21 STR gives disadvantage; different dice were chosen.</p>{{/if}}
+  {{/if}}
   {{#if note}}<p class="wb-roll-note">{{note}}</p>{{/if}}
 </article>
