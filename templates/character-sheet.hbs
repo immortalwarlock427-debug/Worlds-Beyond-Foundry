@@ -6,6 +6,7 @@
     <div class="wb-identity">
       <span class="wb-eyebrow">Character</span>
       <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
+      {{#if characterDetailsSummary}}<span class="wb-header-details" data-tooltip="{{characterDetailsSummary}}">{{characterDetailsSummary}}</span>{{/if}}
     </div>
     <label class="wb-level">
       <span class="wb-eyebrow">Level</span>
@@ -13,6 +14,12 @@
     </label>
   </header>
 
+  <nav class="tabs wb-sheet-tabs" aria-label="Character sheet sections">
+    {{#each tabs}}
+    <button type="button" class="{{cssClass}}" data-action="tab" data-group="{{group}}" data-tab="{{id}}" aria-pressed="{{active}}">{{label}}</button>
+    {{/each}}
+  </nav>
+  <section class="tab wb-sheet-panel {{tabs.character.cssClass}}" data-group="sheet" data-tab="character" aria-label="Character">
   <section class="wb-resources" aria-label="Resources">
     {{#each resources as |resource|}}
     <div class="wb-resource wb-resource-{{resource.key}}">
@@ -130,55 +137,35 @@
     {{/each}}
   </section>
 
-  <section class="wb-effects wb-equipment" aria-label="Effects and forms">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Effects &amp; forms</h2><div class="wb-equipment-actions">
-      {{#if hasForms}}<button type="button" data-action="effect" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base</button>{{/if}}
-      <button type="button" data-action="effect" data-operation="create" data-kind="effect" {{#unless editable}}disabled{{/unless}}>Add effect</button>
-      <button type="button" data-action="effect" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
-    </div></div>
-    {{#each effectGroups}}
-    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3><ul class="wb-equipment-list">
-      {{#each rows}}<li class="wb-equipment-row" data-effect-uuid="{{uuid}}">
-        <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
-        <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="effect" data-operation="edit" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
-          <span class="wb-item-title">{{name}} <span class="wb-quantity">{{state}}</span></span>
-          <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
-        </button></div>
-        <div class="wb-row-actions"><button type="button" class="wb-effect-toggle" data-action="effect" data-operation="toggle" aria-pressed="{{active}}" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if form}}{{#if active}}Active{{else}}Use{{/if}}{{else}}<i class="fa-solid fa-power-off" aria-hidden="true"></i>{{/if}}</button>
-          {{#if canRemove}}<button type="button" class="wb-item-remove" data-action="effect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
-        </div>
-      </li>{{/each}}
-    </ul></section>
-    {{else}}<p class="wb-empty">Add a bonus, penalty or form. Base scores stay unchanged.</p>{{/each}}
-  </section>
-
-  <section class="wb-abilities wb-equipment" aria-label="Abilities">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
-      <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+  <details class="wb-disclosure wb-adjustments" data-sync="adjustments">
+    <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
+    <div class="wb-adjust-grid">
+      {{#each resources as |resource|}}
+      <label class="wb-override-label"><span>{{resource.label}} maximum</span><input type="number" name="system.{{resource.key}}.maxOverride" value="{{resource.maxOverride}}" placeholder="Auto" step="1" aria-label="{{resource.label}} maximum override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
+      {{/each}}
+      {{#each coreDetails as |detail|}}
+      <label class="wb-override-label"><span>{{detail.label}}</span><input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="1" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
+      {{/each}}
+      <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input type="number" name="system.bonuses.movement" value="{{system.bonuses.movement}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Armor AGL penalty</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Inventory slots</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="1" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
     </div>
-    {{#each abilityGroups}}
-    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>
-      <ul class="wb-equipment-list">
-        {{#each rows}}
-        <li class="wb-equipment-row" data-ability-id="{{id}}">
-          <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
-          <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="ability" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
-            <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
-            <span class="wb-item-brief">{{summary}}</span>
-          </button></div>
-          <div class="wb-row-actions"><button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
-          {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>
-            {{#if description}}<p class="wb-ability-text">{{description}}</p>{{/if}}
-            {{#if duration}}<p>Duration: {{duration}}</p>{{/if}}{{#if recovery}}<p>Uses recover: {{recovery}}</p>{{/if}}
-            {{#if notes}}<p class="wb-ability-text">{{notes}}</p>{{/if}}
-          </details>{{/if}}
-        </li>
-        {{/each}}
-      </ul>
-    </section>
-    {{else}}<p class="wb-empty">Add an ability or drop one from the Items directory.</p>{{/each}}
+    <p>Clear an override to use the automatic value. Extra AR and Evasion add to equipped items; final overrides replace the total.</p>
+  </details>
+  <details class="wb-disclosure wb-help" data-sync="sheet-help"><summary>Rules &amp; help</summary>
+    <h3>Stats &amp; resources</h3>
+    <p>Click a stat abbreviation for a check or save. Diamonds mark 21 and 28. A stat shows its effective score; select it to edit the base, including earned stat points. Level-up points keep the normal base color. Gear or effects use teal, manual edits gold, and both together purple. Clear a manual edit to restore its remembered base; earned points and active effects still apply.</p>
+    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Each result may use Wonder once; its new result replaces it and may use Wonder again. Long rest refills Health, AP, reactions, Wonder, mana and holy power, plus custom pools set to refill.</p>
+    <p>Show mana or holy power under Resources → Manage. Their maxima use current INT or FTH × (level + 2). Custom resources can use any stat or a manual maximum. Settings → Maximum override sets the final cap; clearing it restores the selected source. Current totals follow maximum changes while preserving points spent. Clearing Current fills the pool. Recovery is manual, and hiding a magic pool preserves its balance.</p>
+    <p>Minimum override sets the empty bar and spending floor (normally 0); a negative minimum allows spending below zero. Manual Current corrections remain unrestricted. Percentage display runs from minimum (0%) to maximum (100%); action amounts always mean points. Entries and visible totals round down to whole numbers; fractional calculations stay in the background. Hover over the total for whole points and minimum. If maximum is not greater than minimum, percentage is unavailable and Settings keeps Current points editable.</p>
+    <h3>Armor &amp; defenses</h3>
+    <p>Armor: {{worn.type}} · worn AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · light armor Evasion +{{worn.evasion}}. Effective AGL {{worn.effectiveAgility}}, armor penalty {{worn.agilityPenalty}}. A square costs {{worn.squareCost}} ft, or {{worn.difficultSquareCost}} ft in difficult terrain.</p>
+    <p>Block uses {{block.formula}} {{block.strMod}} STR; another die at level {{block.nextLevel}}. Use arm guards, a weapon or a shield. Dodge uses AGL; Parry uses DEX and normally needs DEX 21 plus held equipment. Each dialog has its own rules section. Apply Health changes manually.</p>
+  </details>
   </section>
-
+  <section class="tab wb-sheet-panel {{tabs.equipment.cssClass}}" data-group="sheet" data-tab="equipment" aria-label="Equipment">
   <section class="wb-equipment" aria-label="Equipment">
     <div class="wb-section-heading"><h2 class="wb-section-title">Equipment</h2>
     <details class="wb-add-equipment" data-sync="add-equipment"><summary>Add item</summary><div class="wb-equipment-actions">
@@ -218,8 +205,65 @@
     </section>
     {{else}}<p class="wb-empty">Drop an item here or choose Add item.</p>{{/each}}
   </section>
-  <details class="wb-disclosure wb-character-details" data-sync="character-details">
-    <summary>Character details &amp; notes{{#if characterDetailsSummary}} <span class="wb-details-summary">· {{characterDetailsSummary}}</span>{{/if}}</summary>
+  <details class="wb-disclosure wb-help" data-sync="equipment-help"><summary>Equipment help</summary>
+    <h3>Equipment</h3>
+    <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
+  </details>
+  </section>
+  <section class="tab wb-sheet-panel {{tabs.abilities.cssClass}}" data-group="sheet" data-tab="abilities" aria-label="Abilities, effects and forms">
+  <section class="wb-abilities wb-equipment" aria-label="Abilities">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
+      <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+    </div>
+    {{#each abilityGroups}}
+    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>
+      <ul class="wb-equipment-list">
+        {{#each rows}}
+        <li class="wb-equipment-row" data-ability-id="{{id}}">
+          <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
+          <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="ability" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
+            <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
+            <span class="wb-item-brief">{{summary}}</span>
+          </button></div>
+          <div class="wb-row-actions"><button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
+          {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>
+            {{#if description}}<p class="wb-ability-text">{{description}}</p>{{/if}}
+            {{#if duration}}<p>Duration: {{duration}}</p>{{/if}}{{#if recovery}}<p>Uses recover: {{recovery}}</p>{{/if}}
+            {{#if notes}}<p class="wb-ability-text">{{notes}}</p>{{/if}}
+          </details>{{/if}}
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{else}}<p class="wb-empty">Add an ability or drop one from the Items directory.</p>{{/each}}
+  </section>
+
+  <section class="wb-effects wb-equipment" aria-label="Effects and forms">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Effects &amp; forms</h2><div class="wb-equipment-actions">
+      {{#if hasForms}}<button type="button" data-action="effect" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base</button>{{/if}}
+      <button type="button" data-action="effect" data-operation="create" data-kind="effect" {{#unless editable}}disabled{{/unless}}>Add effect</button>
+      <button type="button" data-action="effect" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
+    </div></div>
+    {{#each effectGroups}}
+    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3><ul class="wb-equipment-list">
+      {{#each rows}}<li class="wb-equipment-row" data-effect-uuid="{{uuid}}">
+        <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
+        <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="effect" data-operation="edit" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
+          <span class="wb-item-title">{{name}} <span class="wb-quantity">{{state}}</span></span>
+          <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
+        </button></div>
+        <div class="wb-row-actions"><button type="button" class="wb-effect-toggle" data-action="effect" data-operation="toggle" aria-pressed="{{active}}" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if form}}{{#if active}}Active{{else}}Use{{/if}}{{else}}<i class="fa-solid fa-power-off" aria-hidden="true"></i>{{/if}}</button>
+          {{#if canRemove}}<button type="button" class="wb-item-remove" data-action="effect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
+        </div>
+      </li>{{/each}}
+    </ul></section>
+    {{else}}<p class="wb-empty">Add a bonus, penalty or form. Base scores stay unchanged.</p>{{/each}}
+  </section>
+
+  </section>
+  <section class="tab wb-sheet-panel {{tabs.notes.cssClass}}" data-group="sheet" data-tab="notes" aria-label="Notes">
+  <section class="wb-character-details" aria-label="Character details and notes">
+    <h2 class="wb-section-title">Character details &amp; notes</h2>
     <div class="wb-character-details-grid">
       {{#each characterDetails}}
       <div class="wb-character-detail {{#if wide}}wb-character-detail-wide{{/if}}">
@@ -235,34 +279,6 @@
       </div>
       {{/each}}
     </div>
-  </details>
-  <details class="wb-disclosure wb-adjustments" data-sync="adjustments">
-    <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
-    <div class="wb-adjust-grid">
-      {{#each resources as |resource|}}
-      <label class="wb-override-label"><span>{{resource.label}} maximum</span><input type="number" name="system.{{resource.key}}.maxOverride" value="{{resource.maxOverride}}" placeholder="Auto" step="1" aria-label="{{resource.label}} maximum override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
-      {{/each}}
-      {{#each coreDetails as |detail|}}
-      <label class="wb-override-label"><span>{{detail.label}}</span><input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="1" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
-      {{/each}}
-      <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input type="number" name="system.bonuses.movement" value="{{system.bonuses.movement}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Armor AGL penalty</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Inventory slots</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="1" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
-    </div>
-    <p>Clear an override to use the automatic value. Extra AR and Evasion add to equipped items; final overrides replace the total.</p>
-  </details>
-  <details class="wb-disclosure wb-help" data-sync="sheet-help"><summary>Rules &amp; help</summary>
-    <h3>Stats &amp; resources</h3>
-    <p>Click a stat abbreviation for a check or save. Diamonds mark 21 and 28. A stat shows its effective score; select it to edit the base, including earned stat points. Level-up points keep the normal base color. Gear or effects use teal, manual edits gold, and both together purple. Clear a manual edit to restore its remembered base; earned points and active effects still apply.</p>
-    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Each result may use Wonder once; its new result replaces it and may use Wonder again. Long rest refills Health, AP, reactions, Wonder, mana and holy power, plus custom pools set to refill.</p>
-    <p>Show mana or holy power under Resources → Manage. Their maxima use current INT or FTH × (level + 2). Custom resources can use any stat or a manual maximum. Settings → Maximum override sets the final cap; clearing it restores the selected source. Current totals follow maximum changes while preserving points spent. Clearing Current fills the pool. Recovery is manual, and hiding a magic pool preserves its balance.</p>
-    <p>Minimum override sets the empty bar and spending floor (normally 0); a negative minimum allows spending below zero. Manual Current corrections remain unrestricted. Percentage display runs from minimum (0%) to maximum (100%); action amounts always mean points. Entries and visible totals round down to whole numbers; fractional calculations stay in the background. Hover over the total for whole points and minimum. If maximum is not greater than minimum, percentage is unavailable and Settings keeps Current points editable.</p>
-    <h3>Armor &amp; defenses</h3>
-    <p>Armor: {{worn.type}} · worn AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · light armor Evasion +{{worn.evasion}}. Effective AGL {{worn.effectiveAgility}}, armor penalty {{worn.agilityPenalty}}. A square costs {{worn.squareCost}} ft, or {{worn.difficultSquareCost}} ft in difficult terrain.</p>
-    <p>Block uses {{block.formula}} {{block.strMod}} STR; another die at level {{block.nextLevel}}. Use arm guards, a weapon or a shield. Dodge uses AGL; Parry uses DEX and normally needs DEX 21 plus held equipment. Each dialog has its own rules section. Apply Health changes manually.</p>
-    <h3>Equipment</h3>
-    <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
-  </details>
+  </section>
+  </section>
 </div>

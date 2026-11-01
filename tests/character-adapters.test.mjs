@@ -16,7 +16,13 @@ class ActorStub {
   async modifyTokenAttribute(...args) { this.fallback = args; return this; }
 }
 class SheetStub {
-  async _prepareContext() { return {}; }
+  tabGroups = Object.fromEntries(Object.entries(this.constructor.TABS ?? {}).map(([group, config]) => [group, config.initial]));
+  async _prepareContext() {
+    const entries = Object.entries(this.constructor.TABS ?? {});
+    if (entries.length !== 1) return {};
+    const [group, config] = entries[0];
+    return { tabs: Object.fromEntries(config.tabs.map(tab => [tab.id, { ...tab, group, active: this.tabGroups[group] === tab.id, cssClass: this.tabGroups[group] === tab.id ? "active" : "" }])) };
+  }
   async _onRender() {}
   _processFormData(event, form, formData) { return structuredClone(formData.object); }
 }
@@ -238,7 +244,7 @@ test("read-only actor sheets keep milestone reference buttons usable without ena
   const sheet = new CharacterSheet(); sheet.isEditable = false;
   const reference = { disabled: true }, correction = { disabled: true };
   sheet.element = { querySelectorAll: selector => {
-    assert.equal(selector, '[data-action="milestones"]'); return [reference];
+    assert.equal(selector, '[data-action="milestones"], .wb-sheet-tabs [data-action="tab"]'); return [reference];
   } };
   await sheet._onRender({}, {});
   assert.equal(reference.disabled, false); assert.equal(correction.disabled, true);
@@ -255,6 +261,26 @@ test("narrative edits preserve literal text and spacing while unrelated saves om
   assert.deepEqual(edited.system.details, { notes: literal, class: "", backstory: "" });
   assert.equal(edited.system.health, undefined); assert.equal(edited.system.stats, undefined);
   assert.equal(original.notes, "Mana 120.4; 1.5×");
+});
+
+test("native tab context keeps the selected view across actor refreshes for owners and observers", async () => {
+  const source = { stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12 }])) };
+  const system = { stats: Object.fromEntries(Object.entries(source.stats).map(([key, stat]) => [key, { ...stat, effective: 12, mod: 0, milestones: 0 }])),
+    toObject: () => structuredClone(source), health: {}, ap: {}, reactions: {}, wonder: {}, overrides: {}, core: { automatic: {} } };
+  for (const editable of [true, false]) {
+    const sheet = new CharacterSheet(); sheet.actor = { items: [], system }; sheet.isEditable = editable;
+    assert.equal((await sheet._prepareContext({})).tabs.character.active, true);
+    for (const tab of ["equipment", "abilities", "notes", "character"]) {
+      sheet.tabGroups.sheet = tab;
+      system.stats.str.effective = 21; system.stats.str.mod = 4;
+      const context = await sheet._prepareContext({});
+      assert.deepEqual(Object.keys(context.tabs), ["character", "equipment", "abilities", "notes"]);
+      assert.equal(Object.values(context.tabs).filter(row => row.active).length, 1);
+      assert.equal(context.tabs[tab].active, true);
+      assert.equal(context.groups[0].rows.find(row => row.key === "str").value, 21);
+      assert.equal(source.stats.str.value, 12);
+    }
+  }
 });
 
 test("new actors get Health/AP token defaults while imported bar settings are preserved", async () => {

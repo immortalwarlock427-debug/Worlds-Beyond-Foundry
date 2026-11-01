@@ -176,8 +176,8 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
 
 export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static DEFAULT_OPTIONS = {
-    classes: [SYSTEM_ID, "wb-sheet"],
-    position: { width: 720, height: "auto" },
+    classes: [SYSTEM_ID, "wb-sheet", "wb-character-sheet"],
+    position: { width: 720, height: 780 },
     window: { resizable: true },
     form: { submitOnChange: true },
     actions: {
@@ -197,7 +197,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   };
 
   static PARTS = {
-    sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [""] }
+    sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [
+      '.wb-sheet-panel[data-tab="character"]', '.wb-sheet-panel[data-tab="equipment"]',
+      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="notes"]'
+    ] }
+  };
+  static TABS = {
+    sheet: { initial: "character", tabs: [
+      { id: "character", label: "Character" }, { id: "equipment", label: "Equipment" },
+      { id: "abilities", label: "Abilities" }, { id: "notes", label: "Notes" }
+    ] }
   };
 
   async _prepareContext(options) {
@@ -311,7 +320,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await super._onRender(context, options);
     // Native read-only actor sheets disable form buttons; rule references are
     // still viewable and never submit a document update.
-    for (const button of this.element.querySelectorAll('[data-action="milestones"]')) button.disabled = false;
+    for (const button of this.element.querySelectorAll('[data-action="milestones"], .wb-sheet-tabs [data-action="tab"]')) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }

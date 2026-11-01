@@ -1,6 +1,6 @@
 # Character details and notes
 
-Open **Character details & notes** below Equipment. The section stays collapsed until opened, with entered Class/Race shown in its summary. It uses the same navy/brass palette as the rest of the sheet. Native disclosure synchronization keeps its open state during sheet refreshes.
+Open the **Notes** tab for Character details & notes. Fields are visible directly, with entered Class/Race shown beneath the name in the shared header. It uses the same navy/brass palette as the rest of the sheet. Native tab state keeps the selected view during sheet refreshes.
 
 - **Class** and **Race** are free text, matching the website's character identity fields.
 - **Background** and **Appearance** are shorter multiline fields.
@@ -16,7 +16,7 @@ Additive `system.details` SchemaField with six StringFields: `class`, `race`, `b
 
 Narrative controls use saved source values. Unchanged details are omitted from unrelated whole-sheet submissions, so changing a stat does not resubmit the stored story. Only changed narrative keys are submitted. Existing Health/resource handling still preserves damage/expenditure and hidden fractional balances.
 
-The website's current `index.html` identity and character-notes sections were consulted for labels, plain-text editing and multiline layout. The four narrative fields follow this repository's character-sheet roadmap. Class and Race are descriptive, with no new rules interpretation. Character/Equipment/Abilities/Notes tabs remain the next organization step.
+The website's current `index.html` identity and character-notes sections were consulted for labels, plain-text editing and multiline layout. The four narrative fields follow this repository's character-sheet roadmap. Class and Race are descriptive, with no new rules interpretation. See [sheet organization](SHEET-TABS.md) for tab behavior.
 
 ## Validation
 
@@ -30,4 +30,4 @@ Offline checks using installed v14.365 DataModel fields and strict Handlebars te
 - Rendering does not mutate stored data; unrelated saves omit unchanged details.
 - Narrative updates leave exact Health, AP and Mana balances unchanged. Prior interface/resource/ability/effect/milestone checks still pass.
 
-No live Foundry world or computer UI was used, following the user's preference to test the interface themselves. After restarting, check owner autosave on leaving fields, reopen/reload, empty-field clearing, a long multiline paste, summary updates, read-only viewing and narrow/phone layout. Also change a stat or spend a resource with the section closed and confirm the story stays intact.
+The user validated the initial fields. Following the tab organization, check owner autosave on leaving fields, tab switching, reopen/reload, empty-field clearing, a long multiline paste, header updates, read-only viewing and narrow/phone layout. Also change a stat or spend a resource on Character and confirm the story stays intact on Notes.
