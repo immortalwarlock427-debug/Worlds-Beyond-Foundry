@@ -109,3 +109,38 @@ test("failed or cancelled resource updates notify the GM without throwing out of
     assert.equal(f.actor.system.ap.value, 2);
   }
 });
+
+test("already-full combatants do not produce writes or false cancellation warnings on later rounds", async () => {
+  const f = fixture();
+  await start(f);
+  f.combat.previous = { round: 1, turn: 0 };
+  f.combat.current.round = 2; f.context.round = 2;
+  f.actor.update = async () => { throw new Error("An already-full actor should not be updated"); };
+  await start(f);
+  assert.equal(f.updates.length, 1);
+  assert.equal(f.errors.length, 0);
+});
+
+test("an empty update response is successful when the requested pools are already satisfied", async () => {
+  const f = fixture();
+  f.actor.update = async data => {
+    f.actor.system.ap.value = data["system.ap.value"];
+    f.actor.system.reactions.value = data["system.reactions.value"];
+    return undefined;
+  };
+  await start(f);
+  assert.equal(f.errors.length, 0);
+  assert.equal(f.actor.system.ap.value, 17);
+  assert.equal(f.actor.system.reactions.value, 2);
+});
+
+test("one full pool does not prevent the other from refilling", async () => {
+  for (const pool of ["ap", "reactions"]) {
+    const f = fixture(); f.actor.system[pool].value = f.actor.system[pool].max;
+    await start(f);
+    assert.equal(f.updates.length, 1);
+    assert.equal(f.actor.system.ap.value, 17);
+    assert.equal(f.actor.system.reactions.value, 2);
+    assert.equal(f.errors.length, 0);
+  }
+});

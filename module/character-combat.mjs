@@ -25,8 +25,11 @@ export async function refillTurnResources(combat, previous, current) {
       const ap = actor.system.ap.max;
       const reactions = actor.system.reactions.max;
       if (!Number.isFinite(ap) || !Number.isFinite(reactions)) throw new Error("Invalid resource maximum.");
+      const full = () => actor.system.ap.value === ap && actor.system.reactions.value === reactions;
+      if (full()) return;
       const updated = await actor.update({ "system.ap.value": ap, "system.reactions.value": reactions });
-      if (!updated) throw new Error("Resource update was cancelled.");
+      // Foundry may return undefined for an empty update diff, not only cancellation.
+      if (!updated && !full()) throw new Error("Resource update was cancelled.");
     } catch (error) {
       ui.notifications.error(`${actor.name}: AP/reactions could not be restored. Correct them on the sheet. ${error.message}`);
     }
