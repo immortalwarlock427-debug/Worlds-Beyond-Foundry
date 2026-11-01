@@ -92,6 +92,7 @@
       <li data-item-id="{{id}}">
         <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit">{{name}}</button>
         <span>{{typeLabel}} · Qty {{quantity}} · {{#if equipped}}{{#if slots}}{{slots}} slots for extras{{else}}worn or in hand{{/if}}{{else}}{{slots}} slots{{/if}}</span>
+        {{#if brief}}<p class="wb-item-brief">{{brief}}</p>{{/if}}
         {{#if detail}}<details class="wb-item-details" data-sync="item-{{id}}"><summary>Details</summary><p>{{detail}}</p></details>{{/if}}
         <div class="wb-equipment-actions">
           {{#if canAttack}}<button type="button" class="wb-attack-button" data-action="equipment" data-operation="attack" {{#unless @root.editable}}disabled{{/unless}}>Attack</button>{{/if}}
@@ -123,7 +124,7 @@
   <details class="wb-disclosure wb-help" data-sync="sheet-help"><summary>Rules &amp; help</summary>
     <h3>Stats &amp; resources</h3>
     <p>Click a stat abbreviation for a check or save. Diamonds mark 21 and 28. A stat shows its effective score; select it to edit the base. Teal means adjusted, gold means manually edited, and purple means both. Clear a manual edit to restore its remembered base; active effects still apply.</p>
-    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Long rest refills Health, AP, reactions and Wonder.</p>
+    <p>{{#if defyFate}}Defy Fate declares a failed check or save successful. Initiative still rerolls.{{else}}Wonder rerolls a non-attack d20. Uses equal your FTH modifier.{{/if}} Use Wonder from a roll's chat card. Each result may use Wonder once; its new result replaces it and may use Wonder again. Long rest refills Health, AP, reactions and Wonder.</p>
     <h3>Armor &amp; defenses</h3>
     <p>Armor: {{worn.type}} · worn AR {{worn.armorAR}} + shield AR {{worn.shieldAR}} · light armor Evasion +{{worn.evasion}}. Effective AGL {{worn.effectiveAgility}}, armor penalty {{worn.agilityPenalty}}. A square costs {{worn.squareCost}} ft, or {{worn.difficultSquareCost}} ft in difficult terrain.</p>
     <p>Block uses {{block.formula}} {{block.strMod}} STR; another die at level {{block.nextLevel}}. Use arm guards, a weapon or a shield. Dodge uses AGL; Parry uses DEX and normally needs DEX 21 plus held equipment. Each dialog has its own rules section. Apply Health changes manually.</p>

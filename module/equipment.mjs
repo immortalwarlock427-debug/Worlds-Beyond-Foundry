@@ -146,6 +146,10 @@ export function equipmentRows(items, slotsUsed = {}) {
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
+    brief: item.type === "weapon" ? [item.system.damage, item.system.damageType, item.system.loading ? `${shotsLeft(item)}/${item.system.loading} shots` : ""].filter(Boolean).join(" · ")
+      : item.type === "armor" ? `AR ${item.system.armorRating} · Evasion +${item.system.evasionBonus}`
+        : item.type === "shield" ? `Block ${item.system.blockDie} · AR ${item.system.armorRating}`
+          : item.type === "consumable" && item.system.healingDice ? `Healing ${item.system.healingDice}` : "",
     detail: item.type === "weapon" ? [item.system.damage, item.system.damageType,
       item.system.ranged ? "Ranged" : "",
       item.system.family !== "none" ? WEAPON_FAMILIES[item.system.family] : "",

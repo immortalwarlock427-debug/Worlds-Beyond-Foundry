@@ -396,7 +396,8 @@
 .worlds-beyond .wb-adjust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .worlds-beyond .wb-item-details > summary { min-height: 36px; padding: 8px 0; cursor: pointer; color: #959CB2; font-size: 13px; }
 .worlds-beyond .wb-item-details p { color: #959CB2; font-size: 13px; }
-.worlds-beyond .wb-equipment button.wb-equipment-name { border: none; background: none; padding: 0; min-height: 36px; font-size: 18px; }
+.worlds-beyond .wb-equipment button.wb-equipment-name { justify-content: flex-start; border: none; background: none; padding: 0; min-height: 44px; font-size: 18px; }
+.worlds-beyond .wb-equipment-list .wb-item-brief { margin: 6px 0 0; color: #E7E4D8; font-size: 14px; }
 .worlds-beyond .wb-equipment-list > li { padding: 10px 12px; }
 .worlds-beyond .wb-equipment-list > li > span { color: #959CB2; font-size: 13px; }
 .worlds-beyond .wb-equipment-list .wb-equipment-actions { margin-top: 8px; }
@@ -410,3 +411,8 @@
 .worlds-beyond .wb-result { font-weight: 700; color: #E7E4D8; }
 .worlds-beyond.wb-attack-card h3,
 .worlds-beyond.wb-consumable-card h3 { font: 18px "Marcellus SC", serif; color: #D6A85C; border: 0; }
+.worlds-beyond.wb-roll-dialog .form-footer button { background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond.wb-roll-dialog .form-footer button:hover,
+.worlds-beyond .wb-defense-actions > button:hover,
+.worlds-beyond .wb-equipment-actions > button:hover,
+.worlds-beyond .wb-wonder-rest > button:hover { background: rgba(214, 168, 92, 0.2); color: #E7E4D8; border-color: #D6A85C; }
