@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { magicPool, customPool, poolSpentForCurrent, adjustedResourceSpent, resourceEntries, resourceRestUpdates } from "../module/resources.mjs";
+import { magicPool, customPool, poolSpentForCurrent, adjustedResourceSpent, resourceEntries, resourceRestUpdates, resourcePresentation, RESOURCE_SCALING } from "../module/resources.mjs";
 import { resourceAction, resourceFormUpdates, addResource } from "../module/resource-actions.mjs";
 import { longRest } from "../module/roll-actions.mjs";
 
@@ -16,7 +16,7 @@ function fixture() {
     prepare() {
       Object.assign(this.system.mana, magicPool(this.system.level, this.system.stats.int.effective, this.system.mana));
       Object.assign(this.system.holyPower, magicPool(this.system.level, this.system.stats.fth.effective, this.system.holyPower));
-      for (const pool of Object.values(this.system.customResources)) Object.assign(pool, customPool(pool));
+      for (const pool of Object.values(this.system.customResources)) Object.assign(pool, customPool(pool, this.system));
     },
     async update(data) { calls.push(data); for (const [path, value] of Object.entries(data)) set(this, path, value); this.prepare(); return this; },
     clone(data) { const system = merge(this.system, data.system ?? {}); const copy = { ...this, system }; copy.prepare(); return copy; }
@@ -116,4 +116,58 @@ test("serialized spends cannot overdraw; unowned actors and cancelled updates do
   assert.equal(f.actor.system.customResources[id].value, 0);
   f.actor.isOwner = false; const count = f.calls.length; await addResource(f.actor); await resourceAction(f.actor, id, "fill"); assert.equal(f.calls.length, count);
   f.actor.isOwner = true; f.actor.update = async () => undefined; await assert.rejects(resourceAction(f.actor, id, "fill"), /cancelled/);
+});
+
+test("custom scaling supports all eight current stats with the single standard formula and retains the manual maximum", () => {
+  assert.deepEqual(Object.keys(RESOURCE_SCALING), ["", "str", "dex", "vit", "agl", "int", "wis", "cha", "fth"]);
+  for (const scaleStat of Object.keys(RESOURCE_SCALING).filter(Boolean)) {
+    const source = { baseMax: 77, scaleStat, bonus: 2, spent: 10 };
+    const before = structuredClone(source);
+    const system = { level: 4, stats: { [scaleStat]: { value: 18, effective: 21 } } };
+    assert.deepEqual(customPool(source, system), { max: 128, value: 118 });
+    system.level = 8; assert.equal(customPool(source, system).max, 212);
+    assert.equal(customPool({ ...source, scaleStat: "" }, system).max, 79);
+    assert.deepEqual(source, before);
+  }
+});
+
+test("scaled pool actions use the same stat-derived maximum as the sheet", async () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id]; pool.scaleStat = "int"; f.actor.prepare();
+  assert.equal(pool.max, 63); assert.equal(pool.value, 43);
+  await resourceAction(f.actor, id, "spend", 3); assert.equal(pool.spent, 23); assert.equal(pool.value, 40);
+  await resourceAction(f.actor, id, "recover"); assert.equal(pool.value, 45);
+});
+
+test("percentage presentation handles rounded totals, zero maxima and manual under/over-cap corrections", () => {
+  assert.equal(resourcePresentation({ display: "percent", max: 3, value: 1 }).inputValue, 33.33);
+  assert.equal(resourcePresentation({ display: "percent", max: 100, value: 125 }).inputValue, 125);
+  assert.equal(resourcePresentation({ display: "percent", max: 100, value: 125 }).meterPercent, 100);
+  assert.equal(resourcePresentation({ display: "percent", max: 100, value: -5 }).meterPercent, 0);
+  assert.equal(resourcePresentation({ display: "percent", max: 0, value: 5 }).percentUnavailable, true);
+  assert.equal(resourcePresentation({ display: "percent", max: 0, value: 5 }).inputValue, 5);
+});
+
+test("changing display or submitting an unchanged rounded percentage never rewrites expenditure", () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id]; pool.baseMax = 3; pool.spent = 2; pool.display = "percent"; f.actor.prepare();
+  const untouched = { resourceValues: { [id]: 33.33 }, system: { customResources: { [id]: { name: "Blood" } } } };
+  resourceFormUpdates(f.actor, untouched); assert.equal(untouched.system.customResources[id].spent, undefined);
+  const switchMode = { resourceValues: { [id]: 33.33 }, system: { customResources: { [id]: { display: "number" } } } };
+  resourceFormUpdates(f.actor, switchMode); assert.equal(switchMode.system.customResources[id].spent, undefined);
+  assert.equal(pool.spent, 2); assert.equal(pool.baseMax, 3);
+});
+
+test("percentage edits convert to points using the revised maximum; zero maximum falls back to points", () => {
+  const f = fixture(); const pool = f.actor.system.customResources[id]; pool.display = "percent"; f.actor.prepare();
+  const edit = { resourceValues: { [id]: 50 }, system: { customResources: { [id]: { baseMax: 200 } } } };
+  resourceFormUpdates(f.actor, edit); assert.equal(edit.system.customResources[id].spent, 100);
+  const clear = { resourceValues: { [id]: "" } }; resourceFormUpdates(f.actor, clear); assert.equal(clear.system.customResources[id].spent, 0);
+  pool.baseMax = 0; pool.spent = -5; f.actor.prepare();
+  const zero = { resourceValues: { [id]: 2 } }; resourceFormUpdates(f.actor, zero); assert.equal(zero.system.customResources[id].spent, -2);
+});
+
+test("percentage mode leaves action amounts in points for custom and built-in pools", async () => {
+  const f = fixture(); f.actor.system.customResources[id].display = "percent"; f.actor.system.mana.display = "percent";
+  await resourceAction(f.actor, id, "spend", 5); assert.equal(f.actor.system.customResources[id].value, 75);
+  await resourceAction(f.actor, "mana", "spend", 5); assert.equal(f.actor.system.mana.value, 48);
+  const edit = { resourceValues: { mana: 50 } }; resourceFormUpdates(f.actor, edit); assert.equal(edit.system.mana.spent, 31.5);
 });

@@ -34,7 +34,7 @@ Website features map to Foundry like this:
 
 The user paused combat development on 2026-11-01. Finish the sheet before returning to the numbered combat tasks below:
 
-1. **Mana, holy power and custom resources — implemented, awaiting validation.** See [RESOURCES.md](RESOURCES.md). Recovery is manual; no new turn automation is introduced.
+1. **Mana, holy power and custom resources — base pools user-validated; scaling/display additions awaiting validation.** See [RESOURCES.md](RESOURCES.md). Custom pools now support any stat with the standard scaling, or manual maxima; resource cards support points/percentage display. Recovery is manual; no new turn automation is introduced.
 2. **Ability records on the sheet.** Descriptions, costs, uses and cooldowns; executing combat actions follows later.
 3. **Effects and forms.** Toggle bonuses/forms and make the sources of stat/resource changes clear.
 4. **Milestone details.** Full rules and unlock state, with any remaining sheet-only passive calculations.

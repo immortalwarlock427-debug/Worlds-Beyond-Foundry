@@ -1,8 +1,11 @@
 // Foundry-free resource math. Magic System uses current INT/FTH × (level + 2).
 import { numberOr } from "./core-numbers.mjs";
+import { STATS } from "./stats.mjs";
 
 export const MAGIC_RESOURCES = Object.freeze({ mana: { label: "Mana", stat: "int" }, holyPower: { label: "Holy power", stat: "fth" } });
 export const customResourceId = id => /^[A-Za-z0-9]{16}$/.test(id);
+export const RESOURCE_SCALING = Object.freeze(Object.fromEntries([["", "Manual maximum"], ...STATS.map(stat => [stat.key, `${stat.label} (${stat.abbr})`])]));
+export const RESOURCE_DISPLAYS = Object.freeze({ number: "Points", percent: "Percentage" });
 
 // Persist expenditure, not a prepared total. Max changes therefore change current
 // by the same amount, without writes on render/reload or erasing manual corrections.
@@ -16,8 +19,27 @@ export function magicPool(level, score, data = {}) {
   return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent), automatic };
 }
 
-export function customPool(data = {}) {
-  return resourcePool(numberOr(data.baseMax, 100) + numberOr(data.bonus, 0), data.spent);
+export function customPool(data = {}, { level = 1, stats = {} } = {}) {
+  const stat = data.scaleStat && STATS.find(stat => stat.key === data.scaleStat);
+  const max = stat ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
+    : numberOr(data.baseMax, 100) + numberOr(data.bonus, 0);
+  return resourcePool(max, data.spent);
+}
+
+export function resourcePresentation(pool) {
+  const percent = pool.display === "percent";
+  const percentUnavailable = percent && !(pool.max > 0);
+  // Round only presentation. An unchanged whole-sheet submission preserves the
+  // exact point balance instead of saving a rounded percentage back into it.
+  const inputValue = percent && !percentUnavailable ? Math.round(pool.value / pool.max * 10000) / 100 : pool.value;
+  const meterPercent = pool.max > 0 ? Math.max(0, Math.min(100, pool.value / pool.max * 100)) : 0;
+  return { percent, percentUnavailable, inputValue, meterPercent };
+}
+
+export function resourceInputPoints(pool, input, maximum = pool.max) {
+  const number = numberOr(input, null);
+  if (number === null) return null;
+  return pool.display === "percent" && pool.max > 0 ? number / 100 * maximum : number;
 }
 
 export function poolSpentForCurrent(max, current) {
@@ -46,7 +68,11 @@ export function resourceEntries(system) {
   const custom = Object.entries(system.customResources ?? {}).filter(([id]) => customResourceId(id)).map(([key, data]) => ({
     key, label: data.name || "Resource", path: `system.customResources.${key}`, custom: true, ...data
   }));
-  return [...magic, ...custom];
+  return [...magic, ...custom].map(pool => ({
+    ...pool, ...resourcePresentation(pool), scaled: !!pool.scaleStat,
+    scalingChoices: Object.entries(RESOURCE_SCALING).map(([value, label]) => ({ value, label, selected: value === (pool.scaleStat ?? "") })),
+    displayChoices: Object.entries(RESOURCE_DISPLAYS).map(([value, label]) => ({ value, label, selected: value === (pool.display ?? "number") }))
+  }));
 }
 
 export function resourceRestUpdates(system) {

@@ -245,6 +245,10 @@
 .worlds-beyond .wb-pool-settings-grid label { color: var(--wb-muted); font-size: 13px; }
 .worlds-beyond .wb-body .wb-pool-settings-grid input:not([type="checkbox"]) { display: block; width: 100%; min-height: 44px; padding: 6px; margin-top: 4px; background: var(--wb-bg); border: 1px solid var(--wb-rule); border-radius: 4px; }
 .worlds-beyond .wb-pool-recover { width: 100%; margin-top: 8px; }
+.worlds-beyond .wb-pool-meter { height: 6px; margin: 4px 0 12px; border-radius: 3px; background: var(--wb-track); overflow: hidden; }
+.worlds-beyond .wb-pool-meter span { display: block; height: 100%; background: var(--wb-verdigris); }
+.worlds-beyond .wb-pool-settings-grid select { width: 100%; min-height: 44px; margin-top: 4px; padding: 6px; background: var(--wb-bg); color: var(--wb-ink); border: 1px solid var(--wb-rule); border-radius: 4px; font-family: var(--wb-font-body); }
+.worlds-beyond .wb-percent-unavailable { padding: 10px 0; font: 28px var(--wb-font-display); }
 .worlds-beyond .wb-resource-management { min-width: 120px; }
 .worlds-beyond .wb-resource-management-fields { display: grid; gap: 8px; padding-top: 8px; }
 .worlds-beyond .wb-pool-card button:disabled { opacity: .55; }
