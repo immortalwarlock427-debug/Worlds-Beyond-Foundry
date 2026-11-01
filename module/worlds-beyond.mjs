@@ -2,6 +2,7 @@ import { STATS, MILESTONE_SCORES, statModifier, milestonesReached, formatModifie
 import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./core-numbers.mjs";
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
+import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
@@ -288,3 +289,5 @@ Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackMessage);
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);
+
+Hooks.on("combatTurnChange", refillTurnResources);

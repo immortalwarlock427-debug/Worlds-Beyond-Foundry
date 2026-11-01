@@ -25,4 +25,4 @@ Before adding combat flow, test:
 - [ ] Use a consumable and apply healing once. Confirm quantity and Health changes are correct and the second click does nothing.
 - [ ] Try repeated fast damage/action clicks. Reload and confirm used flags and resources remain correct.
 
-The next roadmap feature is step 5: start-of-turn AP/reaction refill, then reaction actions and Command in small testable PRs. Drinking-potion AP integration also remains future combat-flow work; this review preserves the current consumable gameplay costs.
+The user merged and approved these review fixes. Start-of-turn AP/reaction refill is now implemented in [TURN-REFILLS.md](TURN-REFILLS.md), awaiting testing before reaction actions and Command. Drinking-potion AP integration also remains future combat-flow work; this review preserves the current consumable gameplay costs.

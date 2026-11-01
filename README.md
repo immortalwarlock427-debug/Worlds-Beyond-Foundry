@@ -21,6 +21,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - **Weapon attacks:** an Attack button on equipped weapons rolls d20 + the right stat against a targeted token's Natural Evasion, spends AP in combat (10 − modifier, from 5 to 15), supports attacking with two Light weapons and Loading/reload, flags automatic disadvantage and crits, then rolls level-scaled damage with double modifiers, charges and Armor Rating notes. See [attacks](docs/ATTACKS.md).
 - Attack, reload and consumable cards respect the selected chat visibility. Failed actions restore spent resources or report when manual correction is needed; damage/healing cards can retry after failure. See [review findings and validation](docs/ACTION-REVIEW.md).
 - Block dice scale with level (1d4, 2d4 at 5th and so on), and the largest equipped shield sets the die size.
+- Starting combat or advancing a turn refills the incoming character's AP and reactions to their current maxima. One active GM performs the update; unlinked tokens use their own actor. See [turn-refill scope and checklist](docs/TURN-REFILLS.md).
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
 - The sheet includes a narrow layout and touch-sized controls. The user tested core numbers and rolls/Wonder; equipment awaits [in-world validation](docs/EQUIPMENT.md).
