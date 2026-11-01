@@ -19,7 +19,7 @@ export function bindStatInput(input) {
     const delta = Number(input.dataset.effective) - Number(input.dataset.base);
     input.value = String(Math.floor(Number(base) + delta));
     input.classList.toggle("is-manual", !cleared && (input.dataset.manual === "true" || Number(base) !== Number(input.dataset.base)));
-    input.classList.toggle("is-adjusted", delta !== 0);
+    input.classList.toggle("is-adjusted", delta !== 0 || input.dataset.adjusted === "true");
   });
 }
 

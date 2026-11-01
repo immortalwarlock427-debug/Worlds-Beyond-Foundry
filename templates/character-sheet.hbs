@@ -18,7 +18,7 @@
     <div class="wb-resource wb-resource-{{resource.key}}">
       <label class="wb-resource-label">
         <span class="wb-eyebrow">{{resource.label}}</span>
-        <span class="wb-resource-values">
+        <span class="wb-resource-values" {{#if resource.sources}}data-tooltip="{{resource.sources}} · Final maximum overrides still take priority"{{/if}}>
           <input type="number" name="{{resource.inputName}}" value="{{resource.value}}" step="1" aria-label="Current {{resource.label}}" {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-resource-max" aria-label="Maximum {{resource.label}}">/ {{resource.max}}</span>
         </span>
@@ -48,7 +48,7 @@
         <header class="wb-pool-heading"><h3>{{label}}</h3>
           {{#if custom}}<button type="button" class="wb-item-remove" data-action="resource" data-operation="remove" aria-label="Remove {{label}}" data-tooltip="Remove resource" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
         </header>
-        <div class="wb-resource-values {{#if percent}}wb-percent-values{{/if}}" data-tooltip="{{value}} / {{max}} points · Minimum {{min}}">
+        <div class="wb-resource-values {{#if percent}}wb-percent-values{{/if}}" data-tooltip="{{value}} / {{max}} points · Minimum {{min}}{{#if sources}} · {{sources}} · Final maximum overrides still take priority{{/if}}">
           {{#if percentUnavailable}}<strong class="wb-percent-unavailable">—%</strong>
           {{else}}<input type="number" name="resourceValues.{{key}}" value="{{inputValue}}" step="1" aria-label="Current {{label}}{{#if percent}} percentage{{/if}}" {{#unless @root.editable}}disabled{{/unless}}><span class="wb-resource-max">{{#if percent}}%{{else}}/ {{max}}{{/if}}</span>{{/if}}
         </div>
@@ -83,7 +83,7 @@
     {{#each coreDetails as |detail|}}
     <div class="wb-core-detail">
       <span class="wb-eyebrow">{{detail.label}}</span>
-      <strong class="wb-core-value">{{detail.value}} <small>{{detail.unit}}</small></strong>
+      <strong class="wb-core-value" {{#if detail.sources}}data-tooltip="{{detail.sources}} · Final overrides still take priority"{{/if}}>{{detail.value}} <small>{{detail.unit}}</small></strong>
     </div>
     {{/each}}
   </section>
@@ -115,7 +115,7 @@
         <li class="wb-stat">
           <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage">{{stat.abbr}}</button>
           <span class="wb-label">{{stat.label}}</span>
-          <input class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}" type="number" name="statScores.{{stat.key}}" data-stat-score="{{stat.key}}" data-base="{{stat.baseValue}}" data-default="{{stat.defaultValue}}" data-effective="{{stat.value}}" data-manual="{{stat.manual}}" value="{{stat.value}}" step="1" aria-label="{{stat.label}} score; edit base score" data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score. Clear to reset the manual edit; effects still apply." {{#unless @root.editable}}disabled{{/unless}}>
+          <input class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}" type="number" name="statScores.{{stat.key}}" data-stat-score="{{stat.key}}" data-base="{{stat.baseValue}}" data-default="{{stat.defaultValue}}" data-effective="{{stat.value}}" data-manual="{{stat.manual}}" data-adjusted="{{stat.adjusted}}" value="{{stat.value}}" step="1" aria-label="{{stat.label}} score; edit base score" data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score. Clear to reset the manual edit; effects still apply.{{#if stat.sources}} {{stat.sources}}{{/if}}" {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
           <span class="wb-pips">
             {{#each stat.pips as |pip|}}
@@ -127,6 +127,55 @@
       </ol>
     </div>
     {{/each}}
+  </section>
+
+  <section class="wb-effects wb-equipment" aria-label="Effects and forms">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Effects &amp; forms</h2><div class="wb-equipment-actions">
+      {{#if hasForms}}<button type="button" data-action="effect" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base</button>{{/if}}
+      <button type="button" data-action="effect" data-operation="create" data-kind="effect" {{#unless editable}}disabled{{/unless}}>Add effect</button>
+      <button type="button" data-action="effect" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
+    </div></div>
+    {{#each effectGroups}}
+    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3><ul class="wb-equipment-list">
+      {{#each rows}}<li class="wb-equipment-row" data-effect-uuid="{{uuid}}">
+        <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
+        <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="effect" data-operation="edit" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
+          <span class="wb-item-title">{{name}} <span class="wb-quantity">{{state}}</span></span>
+          <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
+        </button></div>
+        <div class="wb-row-actions"><button type="button" class="wb-effect-toggle" data-action="effect" data-operation="toggle" aria-pressed="{{active}}" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if form}}{{#if active}}Active{{else}}Use{{/if}}{{else}}<i class="fa-solid fa-power-off" aria-hidden="true"></i>{{/if}}</button>
+          {{#if canRemove}}<button type="button" class="wb-item-remove" data-action="effect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
+        </div>
+      </li>{{/each}}
+    </ul></section>
+    {{else}}<p class="wb-empty">Add a bonus, penalty or form. Base scores stay unchanged.</p>{{/each}}
+  </section>
+
+  <section class="wb-abilities wb-equipment" aria-label="Abilities">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
+      <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+    </div>
+    {{#each abilityGroups}}
+    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>
+      <ul class="wb-equipment-list">
+        {{#each rows}}
+        <li class="wb-equipment-row" data-ability-id="{{id}}">
+          <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
+          <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="ability" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
+            <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
+            <span class="wb-item-brief">{{summary}}</span>
+          </button></div>
+          <div class="wb-row-actions"><button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
+          {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>
+            {{#if description}}<p class="wb-ability-text">{{description}}</p>{{/if}}
+            {{#if duration}}<p>Duration: {{duration}}</p>{{/if}}{{#if recovery}}<p>Uses recover: {{recovery}}</p>{{/if}}
+            {{#if notes}}<p class="wb-ability-text">{{notes}}</p>{{/if}}
+          </details>{{/if}}
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{else}}<p class="wb-empty">Add an ability or drop one from the Items directory.</p>{{/each}}
   </section>
 
   <section class="wb-equipment" aria-label="Equipment">
@@ -179,6 +228,7 @@
       {{/each}}
       <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input type="number" name="system.bonuses.movement" value="{{system.bonuses.movement}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Armor AGL penalty</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Inventory slots</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="1" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
     </div>

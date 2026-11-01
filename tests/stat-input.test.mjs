@@ -84,3 +84,10 @@ test("decimal stat edits floor the base before applying effects", () => {
   const f = fixture(); f.fire("focus"); f.input.value = "22.9"; f.fire("input"); f.fire("blur");
   assert.equal(f.input.value, "24"); assert.deepEqual(editedStatInputs(f.form), [["agl", 22]]);
 });
+
+test("hidden fractional effects keep the adjusted color after focus and blur", () => {
+  const f = fixture("21", "21"); f.input.dataset.adjusted = "true";
+  f.fire("focus"); f.fire("blur");
+  assert.equal(f.classes.has("is-adjusted"), true);
+  assert.deepEqual(editedStatInputs(f.form), []);
+});

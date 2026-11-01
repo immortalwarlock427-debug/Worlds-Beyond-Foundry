@@ -36,7 +36,7 @@ export function coreNumbers({ level = 1, stats = {}, bonuses = {}, overrides = {
     evasion: 12 + aglMod + numberOr(bonuses.evasion, 0),
     armorRating: Math.max(0, (vit >= 28 ? Math.floor(vit / 2) : statModifier("vit", vit))
       + numberOr(bonuses.armor, 0)),
-    movement: Math.max(5, 5 + 5 * aglMod)
+    movement: Math.max(0, Math.max(5, 5 + 5 * aglMod) + numberOr(bonuses.movement, 0))
   };
   const effective = Object.fromEntries(Object.entries(automatic).map(([key, value]) => [key,
     key === "hitDie" ? (String(overrides.hitDie ?? "").trim() || value) : numberOr(overrides[key], value)

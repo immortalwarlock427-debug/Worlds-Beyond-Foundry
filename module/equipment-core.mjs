@@ -39,6 +39,7 @@ export function defaultSlots(type, system = {}) {
 // Worn armor and weapons or shields in hand take no slots. Equipped records cover one
 // worn or held copy, so extra quantity on the same record is carried in the inventory.
 export function carriedSlots(item) {
+  if (item.type === "ability") return 0;
   const system = item.system ?? {};
   const quantity = Math.max(0, numberOr(system.quantity, 1));
   const equippable = ["weapon", "armor", "shield"].includes(item.type);

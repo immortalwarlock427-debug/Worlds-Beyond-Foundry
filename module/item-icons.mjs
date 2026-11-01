@@ -127,6 +127,7 @@ const pieces = {
   legs: "equipment/feet/boots-armored-brass.webp"
 };
 export function stockItemIcon({ type, name, system = {} }) {
+  if (type === "ability") return "icons/svg/book.svg";
   if (type === "weapon") return iconPath(weaponIcons[name === "Gun" ? "Revolver" : name] ?? "weapons/swords/sword-simple-white.webp");
   if (type === "armor") return iconPath(armorIcons[name]?.[1] ?? pieces[system.piece] ?? pieces.chest);
   if (type === "shield") return iconPath(shieldIcons[name] ?? "equipment/shield/buckler-iron-cross-gray.webp");
