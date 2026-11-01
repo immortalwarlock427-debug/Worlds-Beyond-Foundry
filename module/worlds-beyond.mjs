@@ -34,7 +34,10 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       max: number(0, { persisted: false })
     });
     const stat = () => new SchemaField({
-      value: new NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 12 }),
+      // Stores the component before earned points. A manual correction below
+      // the award total can make this component negative; the displayed base
+      // still includes the earned points, exactly as on the website.
+      value: new NumberField({ required: true, nullable: false, integer: true, initial: 12 }),
       manual: new BooleanField({ initial: false }),
       resetValue: override()
     });
@@ -151,14 +154,17 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const context = await super._prepareContext(options);
     const system = this.actor.system;
     const source = system.toObject();
+    const increases = statIncreases(system.level, source.advancement);
     const rows = STATS.map(def => {
       const stat = system.stats[def.key];
-      const baseValue = source.stats[def.key].value;
+      const stored = source.stats[def.key];
+      const increase = increases[def.key];
+      const baseValue = stored.value + increase;
       const value = stat.effective ?? stat.value;
       return {
         ...def,
         value, baseValue,
-        defaultValue: source.stats[def.key].resetValue ?? (source.stats[def.key].manual ? 12 : baseValue),
+        defaultValue: (stored.resetValue ?? (stored.manual ? 12 : stored.value)) + increase,
         adjusted: value !== baseValue,
         manual: !!source.stats[def.key].manual,
         modLabel: formatModifier(stat.mod),
@@ -208,11 +214,13 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   _processFormData(event, form, formData) {
     const data = super._processFormData(event, form, formData);
     delete data.statScores;
+    const systemSource = this.actor.system.toObject?.();
+    const increases = statIncreases(this.actor.system.level, systemSource?.advancement);
     for (const [key, value] of editedStatInputs(form)) {
       if (!STATS.some(stat => stat.key === key) || (value !== null && !Number.isFinite(value))) continue;
-      const source = this.actor.system.toObject().stats[key];
+      const source = systemSource.stats[key];
       const resetValue = source.resetValue ?? (source.manual ? 12 : source.value);
-      foundry.utils.setProperty(data, `system.stats.${key}.value`, value === null ? resetValue : value);
+      foundry.utils.setProperty(data, `system.stats.${key}.value`, value === null ? resetValue : value - increases[key]);
       foundry.utils.setProperty(data, `system.stats.${key}.manual`, value !== null);
       foundry.utils.setProperty(data, `system.stats.${key}.resetValue`, value === null ? null : resetValue);
     }
