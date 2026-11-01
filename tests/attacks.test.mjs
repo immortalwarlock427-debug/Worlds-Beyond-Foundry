@@ -136,3 +136,29 @@ test("Loading weapons track shots; blank means fully loaded", () => {
   assert.equal(shotsLeft({ system: { loading: 1, shots: 0 } }), 0);
   assert.equal(shotsLeft({ system: { loading: 6, shots: 9 } }), 6);
 });
+
+test("the attack dialog switches the dice when range or mounting changes the reasons", async () => {
+  class Input { constructor(name, extra = {}) { Object.assign(this, { name, checked: false, value: "", listeners: [] }, extra); } addEventListener(type, fn) { this.listeners.push(fn); } fire() { this.listeners.forEach(fn => fn()); } }
+  const fields = { mode: new Input("mode", { value: "ranged" }), longRange: new Input("longRange"), mounted: new Input("mounted") };
+  const radios = { normal: new Input("rollMode"), disadvantage: new Input("rollMode") };
+  const text = { hidden: true, textContent: "" };
+  const form = {
+    querySelector(selector) {
+      if (selector === ".wb-attack-reasons") return text;
+      const radio = /value="(\w+)"/.exec(selector);
+      if (radio) return radios[radio[1]];
+      return fields[/name="(\w+)"/.exec(selector)[1]];
+    }
+  };
+  globalThis.foundry ??= {};
+  const { bindAttackDialog } = await import("../module/attack-actions.mjs");
+  const actor = { system: { stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(k => [k, { value: 12, effective: 12 }])), equipment: {} } };
+  bindAttackDialog({ querySelector: s => s === "form" ? form : null }, actor, w("Longbow"));
+  assert.equal(radios.normal.checked, true);
+  assert.equal(text.hidden, true);
+  fields.longRange.checked = true; fields.longRange.fire();
+  assert.equal(radios.disadvantage.checked, true);
+  assert.match(text.textContent, /normal range/);
+  fields.longRange.checked = false; fields.longRange.fire();
+  assert.equal(text.hidden, true);
+});

@@ -62,10 +62,38 @@ export async function promptAttack(actor, itemId) {
   });
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
-    window: { title: `${weapon.name} attack` }, content, ok: { label: "Attack" }, rejectClose: false
+    window: { title: `${weapon.name} attack` }, content, ok: { label: "Attack" }, rejectClose: false,
+    render: (event, dialog) => bindAttackDialog(dialog.element, actor, weapon)
   });
   if (!form) return;
   return rollAttack(actor, weapon, { ...form, mode: form.mode ?? modes[0], stat: form.stat ?? best }, target);
+}
+
+// Keep the listed disadvantage reasons and the pre-selected dice in step with the
+// dialog's choices. The player can still pick any dice after a change.
+export function bindAttackDialog(element, actor, weapon) {
+  const form = element?.querySelector("form") ?? element;
+  const field = name => form?.querySelector(`[name="${name}"]`);
+  const text = form?.querySelector(".wb-attack-reasons");
+  if (!form || !text) return;
+  let previous = null;
+  const update = () => {
+    const reasons = attackDisadvantages({
+      weapon, scores: scores(actor), mode: field("mode")?.value ?? attackModes(weapon)[0],
+      longRange: !!field("longRange")?.checked, mounted: !!field("mounted")?.checked,
+      heavyArmor: !!actor.system.equipment?.heavyDisadvantage
+    });
+    text.hidden = !reasons.length;
+    text.textContent = reasons.length ? `Disadvantage: ${reasons.join("; ")}.` : "";
+    const disadvantage = reasons.length > 0;
+    if (disadvantage !== previous) {
+      const radio = form.querySelector(`[name="rollMode"][value="${disadvantage ? "disadvantage" : "normal"}"]`);
+      if (radio) radio.checked = true;
+      previous = disadvantage;
+    }
+  };
+  for (const name of ["mode", "longRange", "mounted"]) field(name)?.addEventListener("change", update);
+  update();
 }
 
 export async function rollAttack(actor, weapon, options, target = currentTarget()) {

@@ -1,5 +1,5 @@
 <div class="wb-check-options">
-  {{#if reasons.length}}<p>Disadvantage: {{#each reasons}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}.</p>{{/if}}
+  <p class="wb-attack-reasons" {{#unless reasons.length}}hidden{{/unless}}>{{#if reasons.length}}Disadvantage: {{#each reasons}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}.{{/if}}</p>
   {{#if loading}}<p>{{#if shots}}{{shots}} of {{loading}} shots loaded.{{else}}Empty: reload before attacking.{{/if}}</p>{{/if}}
   {{#if partners.length}}<label><span>Hands</span>
     <select name="hands"><option value="">This weapon only</option>{{#each partners}}<option value="{{id}}">Both: with {{name}} in the off hand</option>{{/each}}</select>
