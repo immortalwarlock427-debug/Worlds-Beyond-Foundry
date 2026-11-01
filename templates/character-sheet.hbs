@@ -102,6 +102,7 @@
   <div class="wb-section-heading wb-stat-heading">
     <h2 class="wb-section-title">Attributes</h2>
     <div class="wb-stat-tools">
+      <button type="button" data-action="milestones" data-tooltip="Milestone rules and current unlocks">Milestones</button>
       <button type="button" data-action="statSetup" data-mode="generation" data-tooltip="Roll 2d6 + 1d12 or type scores, then assign them" {{#unless editable}}disabled{{/unless}}>Roll &amp; assign</button>
       <button type="button" data-action="statSetup" data-mode="advancement" data-tooltip="4 points at levels 4, 8, 12, 16 and 19; at most 2 in one stat per award" {{#unless editable}}disabled{{/unless}}>Stat points{{#if unspentStatPoints}} <span class="wb-badge">{{unspentStatPoints}} left</span>{{/if}}</button>
     </div>
@@ -119,7 +120,7 @@
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
           <span class="wb-pips">
             {{#each stat.pips as |pip|}}
-            <span class="wb-pip {{#if pip.lit}}is-lit{{/if}}" data-tooltip="{{pip.score}}: {{pip.name}}"></span>
+            <button type="button" class="wb-milestone-button" data-action="milestones" data-stat="{{stat.key}}" data-threshold="{{pip.score}}" aria-label="{{pip.name}}, {{stat.abbr}} {{pip.score}}: {{pip.status}}. View rules." data-tooltip="{{pip.score}}: {{pip.name}} · {{pip.status}} · {{pip.summary}}"><span class="wb-pip {{#if pip.lit}}is-lit{{/if}}" aria-hidden="true"></span></button>
             {{/each}}
           </span>
         </li>

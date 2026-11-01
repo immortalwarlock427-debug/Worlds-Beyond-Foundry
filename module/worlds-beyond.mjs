@@ -14,6 +14,8 @@ import { AbilityData, AbilitySheet, createAbility } from "./abilities.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { createEffect, toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
+import { milestoneGroups } from "./milestones.mjs";
+import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
@@ -170,6 +172,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     actions: {
       rollStat: CharacterSheet.#onRollStat,
       statSetup: CharacterSheet.#onStatSetup,
+      milestones: CharacterSheet.#onMilestones,
       longRest: CharacterSheet.#onLongRest,
       block: CharacterSheet.#onBlock,
       dodge: CharacterSheet.#onDodge,
@@ -191,6 +194,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const system = this.actor.system;
     const source = system.toObject();
     const effects = effectContext(this.actor);
+    const milestones = Object.fromEntries(milestoneGroups(system).map(group => [group.key, group.rows]));
     const statSources = key => [effects.sources[`system.stats.${key}.value`], key === "agl" && system.equipment?.agilityPenalty ? `Armor: −${wholeNumber(system.equipment.agilityPenalty)}` : ""].filter(Boolean).join(" · ");
     const increases = statIncreases(system.level, source.advancement);
     const rows = STATS.map(def => {
@@ -211,7 +215,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         pips: def.milestones.map((name, i) => ({
           name,
           score: MILESTONE_SCORES[i],
-          lit: stat.milestones > i
+          lit: milestones[def.key][i].unlocked,
+          status: milestones[def.key][i].status,
+          summary: milestones[def.key][i].summary
         }))
       };
     });
@@ -286,6 +292,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
+    // Native read-only actor sheets disable form buttons; rule references are
+    // still viewable and never submit a document update.
+    for (const button of this.element.querySelectorAll('[data-action="milestones"]')) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
@@ -302,6 +311,11 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onStatSetup(event, target) {
     if (!this.isEditable) return;
     try { return await openStatSetup(this.actor, target.dataset.mode); }
+    catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onMilestones(event, target) {
+    try { return await openMilestones(this.actor, target.dataset.stat, target.dataset.threshold); }
     catch (error) { ui.notifications.error(error.message); }
   }
 
