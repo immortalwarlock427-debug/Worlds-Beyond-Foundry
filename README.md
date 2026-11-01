@@ -22,6 +22,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - Attack, reload and consumable cards respect the selected chat visibility. Failed actions restore spent resources or report when manual correction is needed; damage/healing cards can retry after failure. See [review findings and validation](docs/ACTION-REVIEW.md).
 - Block dice scale with level (1d4, 2d4 at 5th and so on), and the largest equipped shield sets the die size.
 - **Block reaction:** the Block button under Worn armor and corrections rolls those dice + STR into chat. Its editable formula supports special equipment; Spend 1 reaction defaults on during combat and off outside combat. Failed posting refunds the reaction. Apply damage to Health manually for now; see [Block scope and checklist](docs/BLOCK.md).
+- **Dodge reaction:** roll d20 + AGL against an entered attack total or area save DC, with optional reaction spending, heavy-armor disadvantage defaults and Wonder support. Direct Dodge must beat the attack; an area save meets its DC for half damage. Health changes stay manual; see [Dodge scope and checklist](docs/DODGE.md).
 - Starting combat or advancing a turn refills the incoming character's AP and reactions to their current maxima. One active GM performs the update; unlinked tokens use their own actor. See [turn-refill scope and checklist](docs/TURN-REFILLS.md).
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
@@ -44,7 +45,8 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 - `module/equipment.mjs`: item data models, sheets and character controls
 - `module/attacks.mjs`: Foundry-free attack, crit, damage-scaling and Armor Rating rules
 - `module/attack-actions.mjs`: attack dialog and attack/damage chat cards
-- `module/reaction-actions.mjs`: Block dialog, reaction spending and chat result
+- `module/defenses.mjs`: Foundry-free Dodge comparison and outcome rules
+- `module/reaction-actions.mjs`: Block/Dodge dialogs, reaction spending and chat results
 - `module/catalog.mjs`: Foundry-free weapon/armor/shield tables transcribed from Notion
 - `module/catalog-import.mjs`: GM import of the catalog into a world compendium
 - `module/worlds-beyond.mjs`: data model, character sheet and registration

@@ -1,5 +1,6 @@
 import { STATS } from "./stats.mjs";
 import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
+import { dodgeOutcome } from "./defenses.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -39,11 +40,16 @@ export async function rollStatCheck(actor, statKey, { kind = "check", mode = "no
   }, { messageMode });
 }
 
-async function rollCard(roll, context, { note = "", success = false } = {}) {
+export async function rollCard(roll, context, { note = "", success = false } = {}) {
+  const defense = context.defense?.type === "dodge" ? {
+    ...context.defense, ...dodgeOutcome(context.defense, roll.total, success),
+    hasTarget: context.defense.target !== null, reroll: !!context.previousMessageId,
+    overriddenDisadvantage: context.defense.heavyArmor && context.mode !== "disadvantage"
+  } : null;
   return renderTemplate("roll-card", {
     label: context.label,
     modeLabel: context.mode ? checkMode(context.mode).label : "Initiative",
-    note, success,
+    note, success, defense,
     rollHTML: await roll.render()
   });
 }

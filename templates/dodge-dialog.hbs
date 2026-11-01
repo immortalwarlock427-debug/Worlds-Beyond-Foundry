@@ -1,0 +1,15 @@
+<div class="wb-check-options">
+  <p>d20 + Agility modifier ({{modifier}}). Dodge for yourself when an attack would hit you.</p>
+  <label>Dodge against<select name="against"><option value="attack">Direct attack · beat its total</option><option value="area">Area attack save · meet its DC</option></select></label>
+  <label>Attack total / area save DC<input type="number" name="target" step="any" placeholder="Optional · compare manually"></label>
+  <label class="wb-check-toggle"><input type="checkbox" name="natural20"> Incoming direct attack rolled a natural 20 (cannot Dodge)</label>
+  {{#if heavyArmor}}<p>Heavy armor without 21 STR: Dodge has disadvantage. It is selected below; change it for other effects or corrections.</p>{{/if}}
+  <fieldset>
+    <legend>Dice</legend>
+    <label><input type="radio" name="mode" value="normal" {{#unless heavyArmor}}checked{{/unless}}> Normal · 1d20</label>
+    <label><input type="radio" name="mode" value="advantage"> Advantage · keep the higher d20</label>
+    <label><input type="radio" name="mode" value="disadvantage" {{#if heavyArmor}}checked{{/if}}> Disadvantage · keep the lower d20</label>
+  </fieldset>
+  <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>
+  <p>No AP cost. Use Dodge once per incoming attack. A failed Dodge can still be followed by Block or Parry with another reaction. Non-attack area effects, such as mind control, cannot be Dodged.</p>
+</div>
