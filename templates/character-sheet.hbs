@@ -129,6 +129,33 @@
     {{/each}}
   </section>
 
+  <section class="wb-abilities wb-equipment" aria-label="Abilities">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
+      <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+    </div>
+    {{#each abilityGroups}}
+    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>
+      <ul class="wb-equipment-list">
+        {{#each rows}}
+        <li class="wb-equipment-row" data-ability-id="{{id}}">
+          <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
+          <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="ability" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
+            <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
+            <span class="wb-item-brief">{{summary}}</span>
+          </button></div>
+          <div class="wb-row-actions"><button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
+          {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>
+            {{#if description}}<p class="wb-ability-text">{{description}}</p>{{/if}}
+            {{#if duration}}<p>Duration: {{duration}}</p>{{/if}}{{#if recovery}}<p>Uses recover: {{recovery}}</p>{{/if}}
+            {{#if notes}}<p class="wb-ability-text">{{notes}}</p>{{/if}}
+          </details>{{/if}}
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{else}}<p class="wb-empty">Add an ability or drop one from the Items directory.</p>{{/each}}
+  </section>
+
   <section class="wb-equipment" aria-label="Equipment">
     <div class="wb-section-heading"><h2 class="wb-section-title">Equipment</h2>
     <details class="wb-add-equipment" data-sync="add-equipment"><summary>Add item</summary><div class="wb-equipment-actions">

@@ -1,0 +1,33 @@
+<div class="wb-body wb-equipment-form wb-ability-form">
+  <header class="wb-item-heading"><img class="wb-item-icon" src="{{record.img}}" alt=""><div><span class="wb-eyebrow">Ability</span>
+    <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Ability name" {{#unless editable}}disabled{{/unless}}>
+  </div></header>
+  <div class="wb-equipment-fields">
+    <label>Type<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Category<input type="text" name="system.category" value="{{system.category}}" placeholder="Spell, class feature…" {{#unless editable}}disabled{{/unless}}></label>
+  </div>
+  <label>Description<textarea name="system.description" rows="4" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
+  <fieldset class="wb-ability-fieldset"><legend>Costs</legend><div class="wb-equipment-fields">
+    <label>Base AP<input type="number" name="system.apCost" value="{{system.apCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>AP discount stat<select name="system.apDiscountStat" {{#unless editable}}disabled{{/unless}}>{{#each stats}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Resource<select name="system.resourceId" {{#unless editable}}disabled{{/unless}}>{{#each resources}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Resource cost<input type="number" name="system.resourceCost" value="{{system.resourceCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Cost unit<select name="system.resourceUnit" {{#unless editable}}disabled{{/unless}}>{{#each units}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+  </div><p class="wb-item-brief">{{#if record.apAdjusted}}Current cost: {{record.ap}} AP{{else}}{{#unless hasActor}}AP discounts preview on a character.{{/unless}}{{/if}}</p></fieldset>
+  <details class="wb-disclosure" data-sync="ability-trackers"><summary>Uses &amp; cooldown</summary><div class="wb-equipment-fields">
+    <label>Maximum uses<input type="number" name="system.uses.max" value="{{system.uses.max}}" placeholder="Unlimited" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    {{#if record.uses.tracked}}<label>Uses left<input type="number" name="usesCurrent" value="{{record.uses.value}}" step="1" data-tooltip="Clear to restore to maximum" {{#unless editable}}disabled{{/unless}}></label>{{/if}}
+    <label>Uses recover<input type="text" name="system.uses.recovery" value="{{system.uses.recovery}}" placeholder="Long rest, once per round…" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Cooldown (rounds)<input type="number" name="system.cooldown.rounds" value="{{system.cooldown.rounds}}" placeholder="None" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Cooldown remaining<input type="number" name="system.cooldown.remaining" value="{{system.cooldown.remaining}}" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Duration<input type="text" name="system.duration" value="{{system.duration}}" placeholder="3 rounds, until dismissed…" {{#unless editable}}disabled{{/unless}}></label>
+  </div></details>
+  <details class="wb-disclosure" data-sync="ability-notes"><summary>Notes &amp; image</summary>
+    <label>Notes<textarea name="system.notes" rows="3" {{#unless editable}}disabled{{/unless}}>{{system.notes}}</textarea></label>
+    <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
+  </details>
+  <details class="wb-disclosure wb-help" data-sync="ability-help"><summary>Ability help</summary>
+    <p>These are records and manual trackers. Editing them does not cast, spend AP/resources, count down cooldowns, apply effects or reset uses on rest. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
+    <p>AP discounts use the selected current stat modifier, capped at half the base cost rounded down in either direction. Spells normally start at 11 AP before the INT/FTH discount. Resource costs can be points or a percentage of the resource maximum. Deleted custom resources remain marked Missing resource until you choose another.</p>
+  </details>
+</div>

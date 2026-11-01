@@ -149,7 +149,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 }
 
 export function equipmentRows(items, slotsUsed = {}) {
-  return Array.from(items).map(original => {
+  return Array.from(items).filter(item => item.type !== "ability").map(original => {
     const item = { ...original, id: original.id, name: original.name, type: original.type, img: original.img, system: wholeDisplay({ ...original.system }) };
     return ({
     id: item.id, name: item.name, type: item.type, typeLabel: ITEM_TYPES[item.type] ?? "Gear", img: itemIcon(item),
