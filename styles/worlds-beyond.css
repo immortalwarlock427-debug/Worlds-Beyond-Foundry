@@ -394,7 +394,8 @@
 .worlds-beyond .wb-summary-value { display: block; margin-top: 3px; font-size: 12px; color: #959CB2; overflow-wrap: anywhere; }
 .worlds-beyond .wb-badge { margin-left: 8px; padding: 2px 6px; background: rgba(214, 168, 92, 0.14); color: #D6A85C; border-radius: 3px; font-size: 11px; }
 .worlds-beyond .wb-adjust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.worlds-beyond .wb-item-details > summary { min-height: 36px; padding: 8px 0; cursor: pointer; color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-item-details > summary { min-height: 44px; padding: 12px 8px; cursor: pointer; color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-item-details[open] { flex-basis: 100%; }
 .worlds-beyond .wb-item-details p { color: #959CB2; font-size: 13px; }
 .worlds-beyond .wb-equipment button.wb-equipment-name { justify-content: flex-start; border: none; background: none; padding: 0; min-height: 44px; font-size: 18px; }
 .worlds-beyond .wb-equipment-list .wb-item-brief { margin: 6px 0 0; color: #E7E4D8; font-size: 14px; }

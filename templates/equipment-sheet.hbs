@@ -2,12 +2,8 @@
   <header><span class="wb-eyebrow">{{typeLabel}}</span>
     <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Item name" {{#unless editable}}disabled{{/unless}}>
   </header>
-  <details class="wb-disclosure" data-sync="item-image"><summary>Image</summary><label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label></details>
   <div class="wb-equipment-fields">
     <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
     {{#if equippable}}<label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>{{/if}}
   </div>
   {{#if weapon}}
@@ -15,16 +11,17 @@
     <label>Weapon family<select name="system.family" {{#unless editable}}disabled{{/unless}}>{{#each weaponFamilies}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
     <label class="wb-equipment-check"><input type="checkbox" name="system.ranged" {{#if system.ranged}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Ranged weapon</label>
     <label>Base damage<input type="text" name="system.damage" value="{{system.damage}}" placeholder="1d8" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Versatile damage<input type="text" name="system.versatileDamage" value="{{system.versatileDamage}}" placeholder="1d10" {{#unless editable}}disabled{{/unless}}></label>
     <label>Damage type<input type="text" name="system.damageType" value="{{system.damageType}}" {{#unless editable}}disabled{{/unless}}></label>
+  </div>
+  <details class="wb-disclosure" data-sync="weapon-range"><summary>Range &amp; loading</summary><div class="wb-equipment-fields">
     <label>Normal range (ft)<input type="number" name="system.range.normal" value="{{system.range.normal}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Long range (ft)<input type="number" name="system.range.long" value="{{system.range.long}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Loading (shots; 0 for none)<input type="number" name="system.loading" value="{{system.loading}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Shots loaded (blank = full)<input type="number" name="system.shots" value="{{system.shots}}" min="0" step="1" placeholder="Full" {{#unless editable}}disabled{{/unless}}></label>
-  </div>
+  </div></details>
   <details class="wb-disclosure" data-sync="weapon-properties"><summary>Properties <span class="wb-summary-value">{{propertySummary}}</span></summary><div class="wb-equipment-fields">
     {{#each weaponProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.properties.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
-  </div></details>
+  </div><label>Versatile damage<input type="text" name="system.versatileDamage" value="{{system.versatileDamage}}" placeholder="1d10" {{#unless editable}}disabled{{/unless}}></label></details>
   <details class="wb-disclosure" data-sync="weapon-signatures"><summary>Signature properties <span class="wb-summary-value">{{signatureSummary}}</span></summary><div class="wb-equipment-fields">
     {{#each signatureProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.signature.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
   </div></details>
@@ -49,6 +46,12 @@
     <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
+  <details class="wb-disclosure" data-sync="item-carrying"><summary>Carrying &amp; cost</summary><div class="wb-equipment-fields">
+    <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
+  </div></details>
+  <details class="wb-disclosure" data-sync="item-image"><summary>Image</summary><label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label></details>
   <details class="wb-disclosure" data-sync="item-description"><summary>Description</summary><label>Description and rules<textarea name="system.description" rows="5" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label></details>
   <details class="wb-disclosure wb-help" data-sync="item-help"><summary>Equipment help</summary>
     {{#if weapon}}<p>Balanced is melee-only. Standard ranged weapons use None + Ranged weapon; Warbow and Arbalest use Paragon + Ranged weapon. Thrown is separate and keeps the weapon's melee family. Loading 0 means no loading limit; blank shots means full.</p>{{/if}}
