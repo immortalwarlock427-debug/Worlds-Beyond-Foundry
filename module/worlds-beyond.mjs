@@ -9,6 +9,7 @@ import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
+import { promptBlock, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -119,6 +120,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     actions: {
       rollStat: CharacterSheet.#onRollStat,
       longRest: CharacterSheet.#onLongRest,
+      block: CharacterSheet.#onBlock,
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait
     }
@@ -249,6 +251,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     });
     return picker.browse();
   }
+
+  static async #onBlock() {
+    if (!this.isEditable) return;
+    try { return await promptBlock(this.actor); }
+    catch (error) { ui.notifications.error(error.message); }
+  }
 }
 
 /* -------------------------------------------- */
@@ -287,6 +295,7 @@ Hooks.once("ready", offerCatalogImport);
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
 Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackMessage);
+Hooks.on("renderChatMessageHTML", decorateReactionMessage);
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);
 

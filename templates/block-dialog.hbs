@@ -1,0 +1,7 @@
+<div class="wb-check-options">
+  <p>Block dice + Strength modifier ({{modifier}}). Use arm guards, a held weapon or a shield. Blocking for an ally requires a shield and reach within 1 AP of movement.</p>
+  <label>Roll formula<input type="text" name="formula" value="{{formula}}" aria-label="Block roll formula"></label>
+  <p>@mod is your STR modifier. Adjust the formula for special items or abilities, including rare-metal multipliers.</p>
+  <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>
+  <p>A Block costs no AP. Use it once per incoming attack; other reaction types can still be used if you have reactions left.</p>
+</div>

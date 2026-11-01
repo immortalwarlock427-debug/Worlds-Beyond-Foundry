@@ -58,6 +58,7 @@
     <label><span>Armor AGL penalty override (blank = auto)</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     {{#if worn.heavyDisadvantage}}<p>Heavy armor with STR below 21: attacks, Dodges and AGL saves have disadvantage. Choose disadvantage when rolling an AGL save.</p>{{/if}}
     <p>Block: {{block.formula}} {{block.strMod}} STR{{#unless block.fromShield}} (no shield equipped){{/unless}}. Another Block die at level {{block.nextLevel}}. You need arm guards, a weapon or a shield to Block.</p>
+    <button type="button" class="wb-block-action" data-action="block" {{#unless editable}}disabled{{/unless}}>Block · {{block.formula}} {{block.strMod}}</button>
     {{#each worn.duplicatePieces}}<p>Multiple equipped {{this}} records: their contributions are added. Review equipped items or use a correction if needed.</p>{{/each}}
   </fieldset>
   <p class="wb-core-hint">Equipped armor and shields now contribute automatically. Clear old manual armor totals to avoid counting them twice; the correction fields above add to equipped items. Final core-number overrides still replace the complete result. AGL score stays editable; modifiers, milestones, reactions and movement use effective AGL.</p>
