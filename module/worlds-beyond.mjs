@@ -4,6 +4,9 @@ import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
+import { MAGIC_RESOURCES, customResourceId, magicPool, customPool, resourceEntries } from "./resources.mjs";
+import { addResource, resourceAction, resourceFormUpdates } from "./resource-actions.mjs";
+import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
@@ -22,7 +25,7 @@ import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls }
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
-const { NumberField, SchemaField, StringField, BooleanField } = foundry.data.fields;
+const { NumberField, SchemaField, StringField, BooleanField, TypedObjectField } = foundry.data.fields;
 
 /* -------------------------------------------- */
 /*  Data model                                  */
@@ -45,6 +48,13 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       manual: new BooleanField({ initial: false }),
       resetValue: override()
     });
+    const resource = () => ({
+      spent: number(), bonus: number(), amount: number(1, { min: 0 }),
+      value: number(0, { persisted: false }), max: number(0, { persisted: false })
+    });
+    const magicResource = () => new SchemaField({
+      ...resource(), enabled: new BooleanField({ initial: false }), maxOverride: number(null, { nullable: true, min: 0 })
+    });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
       stats: new SchemaField(Object.fromEntries(STATS.map(s => [s.key, stat()]))),
@@ -60,6 +70,13 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       ap: pool(),
       reactions: pool(),
       wonder: pool(),
+      mana: magicResource(),
+      holyPower: magicResource(),
+      customResources: new TypedObjectField(new SchemaField({
+        ...resource(), name: new StringField({ required: true, nullable: false, blank: true, initial: "Resource" }),
+        baseMax: number(100, { min: 0 }), regen: number(0, { min: 0 }),
+        refillOnRest: new BooleanField({ initial: true })
+      }), { validateKey: customResourceId }),
       bonuses: new SchemaField({ armor: number(), evasion: number() }),
       inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
       overrides: new SchemaField({
@@ -110,6 +127,10 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.reactions.max = this.core.reactionsMax;
     this.reactions.value = numberOr(this.reactions.value, this.reactions.max);
     Object.assign(this.wonder, wonderPool(this.stats.fth.value, this.wonder));
+    for (const [key, def] of Object.entries(MAGIC_RESOURCES)) {
+      if (this[key]) Object.assign(this[key], magicPool(this.level, this.stats[def.stat].effective, this[key]));
+    }
+    for (const resource of Object.values(this.customResources ?? {})) Object.assign(resource, customPool(resource));
     const items = this.parent?.items ?? [];
     this.carrying = inventory({
       items, strengthMod: this.stats.str.mod,
@@ -146,7 +167,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       dodge: CharacterSheet.#onDodge,
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
-      pickPortrait: CharacterSheet.#onPickPortrait
+      pickPortrait: CharacterSheet.#onPickPortrait,
+      resource: CharacterSheet.#onResource
     }
   };
 
@@ -184,6 +206,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return Object.assign(context, {
       actor: this.actor,
       system,
+      resourcePools: resourceEntries(system),
+      manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
       editable: this.isEditable,
       unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
       hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
@@ -241,12 +265,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const maximum = this.actor.clone(data).system.health.max;
       foundry.utils.setProperty(data, "system.health.damage", damageFromHealth(maximum, numberOr(current, maximum)));
     }
-    return data;
+    return resourceFormUpdates(this.actor, data);
   }
 
   async _onRender(context, options) {
     await super._onRender(context, options);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
+  }
+
+  async _processSubmitData(event, form, submitData, options = {}) {
+    return queuedAction(this.actor.uuid, () => super._processSubmitData(event, form, submitData, options));
   }
 
   static async #onRollStat(event, target) {
@@ -264,6 +292,20 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (!this.isEditable) return;
     try { return await longRest(this.actor); }
     catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onResource(event, target) {
+    if (!this.isEditable) return;
+    try {
+      if (target.dataset.operation === "add") return await addResource(this.actor);
+      const card = target.closest("[data-resource-key]");
+      const key = card?.dataset.resourceKey;
+      const operation = target.dataset.operation;
+      if (operation === "remove" && !await foundry.applications.api.DialogV2.confirm({
+        window: { title: "Remove resource" }, content: "<p>Remove this custom resource and its balance?</p>", rejectClose: false
+      })) return;
+      return await resourceAction(this.actor, key, operation, card?.querySelector("[data-resource-amount]")?.value);
+    } catch (error) { ui.notifications.error(error.message); }
   }
 
   static async #onEquipment(event, target) {
@@ -328,7 +370,7 @@ Hooks.once("init", () => {
     types: Object.keys(ITEM_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
   });
   CONFIG.Actor.trackableAttributes = {
-    character: { bar: ["health", "ap", "reactions"], value: ["core.evasion", "core.armorRating", "core.movement"] }
+    character: { bar: ["health", "ap", "reactions", "mana", "holyPower"], value: ["core.evasion", "core.armorRating", "core.movement"] }
   };
 
   registerCatalogSetting();

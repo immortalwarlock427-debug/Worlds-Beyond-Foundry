@@ -229,6 +229,25 @@
 .worlds-beyond .wb-resource-ap { border-top: 2px solid var(--wb-brass); }
 .worlds-beyond .wb-resource-reactions { border-top: 2px solid var(--wb-verdigris); }
 .worlds-beyond .wb-resource-wonder { border-top: 2px solid var(--wb-brass); }
+.worlds-beyond .wb-extra-resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.worlds-beyond .wb-pool-card { min-width: 0; padding: 12px; background: var(--wb-field); border: 1px solid var(--wb-rule); border-top: 2px solid var(--wb-verdigris); border-radius: 5px; }
+.worlds-beyond .wb-pool-mana { border-top-color: #799BD5; }
+.worlds-beyond .wb-pool-holyPower { border-top-color: var(--wb-brass); }
+.worlds-beyond .wb-pool-heading { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.worlds-beyond .wb-pool-heading h3 { margin: 0; color: var(--wb-brass); font: 16px var(--wb-font-display); border: 0; overflow-wrap: anywhere; }
+.worlds-beyond .wb-pool-heading button { width: 36px; min-height: 36px; flex: 0 0 36px; }
+.worlds-beyond .wb-pool-actions { display: grid; grid-template-columns: 52px repeat(3, minmax(0, 1fr)); gap: 5px; }
+.worlds-beyond .wb-pool-card button,
+.worlds-beyond .wb-resource-management button { min-height: 44px; color: var(--wb-brass); background: var(--wb-bg); border: 1px solid var(--wb-rule); font-family: var(--wb-font-body); }
+.worlds-beyond .wb-body .wb-pool-actions input { min-width: 0; min-height: 44px; background: var(--wb-bg); border: 1px solid var(--wb-rule); border-radius: 4px; }
+.worlds-beyond .wb-pool-settings { margin-top: 10px; }
+.worlds-beyond .wb-pool-settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
+.worlds-beyond .wb-pool-settings-grid label { color: var(--wb-muted); font-size: 13px; }
+.worlds-beyond .wb-body .wb-pool-settings-grid input:not([type="checkbox"]) { display: block; width: 100%; min-height: 44px; padding: 6px; margin-top: 4px; background: var(--wb-bg); border: 1px solid var(--wb-rule); border-radius: 4px; }
+.worlds-beyond .wb-pool-recover { width: 100%; margin-top: 8px; }
+.worlds-beyond .wb-resource-management { min-width: 120px; }
+.worlds-beyond .wb-resource-management-fields { display: grid; gap: 8px; padding-top: 8px; }
+.worlds-beyond .wb-pool-card button:disabled { opacity: .55; }
 .worlds-beyond .wb-resource-label { display: block; }
 .worlds-beyond .wb-resource-values { display: flex; align-items: baseline; gap: 6px; margin: 4px 0; }
 .worlds-beyond .wb-body .wb-resource-values input {
