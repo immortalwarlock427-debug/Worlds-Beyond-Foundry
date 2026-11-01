@@ -18,6 +18,8 @@ test("attack stats follow each weapon family and attack mode", () => {
   assert.deepEqual(attackStatChoices(w("Warbow"), "ranged"), ["str", "dex"]);
   assert.deepEqual(attackStatChoices(w("Longbow"), "ranged"), ["dex"]);
   assert.deepEqual(attackStatChoices(w("Handaxe"), "thrown"), ["dex"]);
+  assert.deepEqual(attackStatChoices({ system: { family: "paragon", properties: { thrown: true } } }, "thrown"), ["dex"]);
+  assert.deepEqual(attackStatChoices(w("Arbalest"), "ranged"), ["str", "dex"]);
   assert.deepEqual(attackModes(w("Handaxe")), ["melee", "thrown"]);
   assert.deepEqual(attackModes(w("Chakram")), ["melee", "thrown"]);
   assert.deepEqual(attackModes(w("Dart")), ["ranged"]);
