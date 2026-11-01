@@ -1,6 +1,7 @@
 import { defaultSlots, consumableUse, healedDamage } from "./equipment-core.mjs";
 import { shotsLeft } from "./attacks.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
+import { itemIcon } from "./item-icons.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -138,12 +139,14 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 
 export function equipmentRows(items, slotsUsed = {}) {
   return Array.from(items).map(item => ({
-    id: item.id, name: item.name, typeLabel: ITEM_TYPES[item.type] ?? "Gear",
+    id: item.id, name: item.name, type: item.type, typeLabel: ITEM_TYPES[item.type] ?? "Gear", img: itemIcon(item),
+    equipIcon: item.type === "shield" ? "fa-shield-halved" : item.type === "armor" ? "fa-shirt" : "fa-hand",
     canUse: item.type === "consumable",
     canAttack: item.type === "weapon" && !!item.system.equipped,
     canReload: item.type === "weapon" && item.system.loading > 0,
     shots: item.type === "weapon" ? shotsLeft(item) : null,
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
+    showQuantity: (item.system.quantity ?? 1) !== 1 || ["consumable", "misc", "gear"].includes(item.type),
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
     brief: item.type === "weapon" ? [item.system.damage, item.system.damageType, item.system.loading ? `${shotsLeft(item)}/${item.system.loading} shots` : ""].filter(Boolean).join(" · ")
@@ -164,6 +167,13 @@ export function equipmentRows(items, slotsUsed = {}) {
             item.system.healingDice ? `Heals ${item.system.healingDice}` : "", `${item.system.perSlot} per slot`].filter(Boolean).join(" · ")
             : item.type === "misc" && item.system.perSlot > 1 ? `${item.system.perSlot} per slot` : ""
   }));
+}
+
+export function groupEquipmentRows(rows) {
+  const known = new Set(["weapon", "armor", "shield", "consumable"]);
+  return [["weapon", "Weapons"], ["armor", "Armor"], ["shield", "Shields"], ["consumable", "Consumables"], ["misc", "Gear"]]
+    .map(([type, label]) => ({ label, rows: rows.filter(row => type === "misc" ? !known.has(row.type) : row.type === type) }))
+    .filter(group => group.rows.length);
 }
 
 export async function createEquipment(actor, type) {

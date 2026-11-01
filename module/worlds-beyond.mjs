@@ -6,7 +6,8 @@ import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
-import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
+import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
+import { decorateSystemMessage } from "./chat-style.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -155,6 +156,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         }))
       };
     });
+    const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
       system,
@@ -170,7 +172,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ],
       defyFate: system.stats.fth.value >= 21,
       worn: system.equipment,
-      equipment: equipmentRows(this.actor.items ?? [], system.carrying?.perItem),
+      equipment, equipmentGroups: groupEquipmentRows(equipment),
       carrying: system.carrying,
       block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
       dodgeMod: formatModifier(system.stats.agl?.mod ?? 0),
@@ -311,6 +313,7 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", offerCatalogImport);
+Hooks.on("renderChatMessageHTML", decorateSystemMessage);
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
 Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackMessage);

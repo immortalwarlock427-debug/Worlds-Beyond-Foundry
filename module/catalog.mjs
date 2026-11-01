@@ -1,6 +1,8 @@
 // Foundry-free equipment catalog, transcribed from Notion "Weapons Explained" and
 // "Armor Types Information" (both checked 2026-10-31). Notion is the authority:
 // update these tables when Notion changes, then bump CATALOG_VERSION.
+import { stockItemIcon } from "./item-icons.mjs";
+
 export const CATALOG_VERSION = 1;
 export const CATALOG_PACK = { name: "worlds-beyond-catalog", label: "Worlds Beyond Catalog" };
 
@@ -136,7 +138,7 @@ function weapon([name, damageText, damageType, propertyText, signatureText, cost
   }
   const description = Object.entries(signature).filter(([, on]) => on).map(([key]) => SIGNATURE_TEXT[key]).join("\n");
   return {
-    _id: catalogId(`weapon:${slug(name)}`), name, type: "weapon", folder, img: ranged ? "icons/svg/target.svg" : "icons/svg/sword.svg",
+    _id: catalogId(`weapon:${slug(name)}`), name, type: "weapon", folder, img: stockItemIcon({ type: "weapon", name }),
     system: {
       description, quantity: 1, slots: properties.twoHanded ? 2 : 1, perSlot: 1, cost, equipped: false,
       family, ranged, damage, versatileDamage, damageType, properties, signature, range, loading
@@ -178,12 +180,12 @@ export function catalogItems() {
     ...ARMOR.map(([armorType, piece, armorRating, evasionBonus, cost]) => {
       const name = `${armorType[0].toUpperCase()}${armorType.slice(1)} ${PIECE_NAMES[piece]}`;
       return {
-        _id: catalogId(`armor:${armorType}-${piece}`), name, type: "armor", folder: folderId("armor"), img: "icons/svg/statue.svg",
+        _id: catalogId(`armor:${armorType}-${piece}`), name, type: "armor", folder: folderId("armor"), img: stockItemIcon({ type: "armor", name, system: { piece } }),
         system: { description: PIECE_NOTES[piece] ?? "", quantity: 1, slots: 1, perSlot: 1, cost, equipped: false, armorType, piece, armorRating, evasionBonus }
       };
     }),
     ...SHIELDS.map(([material, blockDie, armorRating, cost]) => ({
-      _id: catalogId(`shield:${slug(material)}`), name: `${material} Shield`, type: "shield", folder: folderId("shields"), img: "icons/svg/shield.svg",
+      _id: catalogId(`shield:${slug(material)}`), name: `${material} Shield`, type: "shield", folder: folderId("shields"), img: stockItemIcon({ type: "shield", name: `${material} Shield` }),
       system: { description: "", quantity: 1, slots: 2, perSlot: 1, cost, equipped: false, armorRating, blockDie }
     }))
   ];

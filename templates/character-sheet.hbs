@@ -87,23 +87,31 @@
       <p class="wb-inventory-total {{#if carrying.over}}is-over{{/if}}"><strong>{{carrying.used}} / {{carrying.capacity}}</strong> inventory slots{{#if carrying.over}} · over by {{carrying.over}}{{/if}}</p>
       <label class="wb-equipment-check"><input type="checkbox" name="system.inventory.backpack" {{#if system.inventory.backpack}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Backpack</label>
     </div>
-    <ul class="wb-equipment-list">
-      {{#each equipment}}
-      <li data-item-id="{{id}}">
-        <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit">{{name}}</button>
-        <span>{{typeLabel}} · Qty {{quantity}} · {{#if equipped}}{{#if slots}}{{slots}} slots for extras{{else}}worn or in hand{{/if}}{{else}}{{slots}} slots{{/if}}</span>
-        {{#if brief}}<p class="wb-item-brief">{{brief}}</p>{{/if}}
-        <div class="wb-equipment-actions">
-          {{#if canAttack}}<button type="button" class="wb-attack-button" data-action="equipment" data-operation="attack" {{#unless @root.editable}}disabled{{/unless}}>Attack</button>{{/if}}
-          {{#if canReload}}<button type="button" data-action="equipment" data-operation="reload" {{#unless @root.editable}}disabled{{/unless}}>Reload</button>{{/if}}
-          {{#if canUse}}<button type="button" data-action="equipment" data-operation="use" {{#unless @root.editable}}disabled{{/unless}}>Use one</button>{{/if}}
-          {{#if canEquip}}<button type="button" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if equipped}}Equipped{{else}}Equip{{/if}}</button>{{/if}}
-          <button type="button" data-action="equipment" data-operation="delete" {{#unless @root.editable}}disabled{{/unless}}>Remove</button>
-          {{#if detail}}<details class="wb-item-details" data-sync="item-{{id}}"><summary>Details</summary><p>{{detail}}</p></details>{{/if}}
-        </div>
-      </li>
-      {{else}}<li class="wb-empty">Drop an item here or choose Add item.</li>{{/each}}
-    </ul>
+    {{#each equipmentGroups}}
+    <section class="wb-equipment-group">
+      <h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>
+      <ul class="wb-equipment-list">
+        {{#each rows}}
+        <li class="wb-equipment-row" data-item-id="{{id}}">
+          <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
+          <div class="wb-item-main">
+            <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit" data-tooltip="{{detail}} · Qty {{quantity}} · {{slots}} slots">
+              <span class="wb-item-title">{{name}} {{#if showQuantity}}<span class="wb-quantity" aria-label="Quantity {{quantity}}">×{{quantity}}</span>{{/if}}</span>
+              <span class="wb-item-brief">{{#if brief}}{{brief}}{{else}}{{typeLabel}}{{/if}}</span>
+            </button>
+          </div>
+          <div class="wb-row-actions">
+            {{#if canAttack}}<button type="button" class="wb-row-attack" data-action="equipment" data-operation="attack" aria-label="Attack with {{name}}" data-tooltip="Attack" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-crosshairs" aria-hidden="true"></i><span>Attack</span></button>{{/if}}
+            {{#if canReload}}<button type="button" data-action="equipment" data-operation="reload" aria-label="Reload {{name}}" data-tooltip="Reload" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button>{{/if}}
+            {{#if canUse}}<button type="button" class="wb-row-use" data-action="equipment" data-operation="use" aria-label="Use one {{name}}" data-tooltip="Use one" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-flask" aria-hidden="true"></i><span>Use</span></button>{{/if}}
+            {{#if canEquip}}<button type="button" class="wb-equip-toggle" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" aria-label="{{#if equipped}}Unequip{{else}}Equip{{/if}} {{name}}" data-tooltip="{{#if equipped}}Equipped · click to unequip{{else}}Equip{{/if}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid {{equipIcon}}" aria-hidden="true"></i></button>{{/if}}
+            <button type="button" class="wb-item-remove" data-action="equipment" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{else}}<p class="wb-empty">Drop an item here or choose Add item.</p>{{/each}}
   </section>
   <details class="wb-disclosure wb-adjustments" data-sync="adjustments">
     <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
