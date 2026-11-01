@@ -20,6 +20,7 @@
     <label>Normal range (ft)<input type="number" name="system.range.normal" value="{{system.range.normal}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Long range (ft)<input type="number" name="system.range.long" value="{{system.range.long}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     <label>Loading (shots; 0 for none)<input type="number" name="system.loading" value="{{system.loading}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Shots loaded (blank = full)<input type="number" name="system.shots" value="{{system.shots}}" min="0" step="1" placeholder="Full" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   <fieldset><legend>Properties</legend><div class="wb-equipment-fields">
     {{#each weaponProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.properties.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}

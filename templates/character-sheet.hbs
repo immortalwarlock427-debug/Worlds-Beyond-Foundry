@@ -108,6 +108,7 @@
         <p>{{detail}}</p>
         <div class="wb-equipment-actions">
           {{#if canAttack}}<button type="button" class="wb-attack-button" data-action="equipment" data-operation="attack" {{#unless @root.editable}}disabled{{/unless}}>Attack</button>{{/if}}
+          {{#if canReload}}<button type="button" data-action="equipment" data-operation="reload" {{#unless @root.editable}}disabled{{/unless}}>Reload</button>{{/if}}
           {{#if canUse}}<button type="button" data-action="equipment" data-operation="use" {{#unless @root.editable}}disabled{{/unless}}>Use one</button>{{/if}}
           {{#if canEquip}}<button type="button" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if equipped}}Equipped{{else}}Equip{{/if}}</button>{{/if}}
           <button type="button" data-action="equipment" data-operation="delete" {{#unless @root.editable}}disabled{{/unless}}>Remove</button>

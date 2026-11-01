@@ -7,7 +7,7 @@ import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
-import { promptAttack, decorateAttackMessage } from "./attack-actions.mjs";
+import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -231,6 +231,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "toggle") return await toggleEquipment(this.actor, item?.id);
       if (operation === "use") return await useConsumable(this.actor, item?.id);
       if (operation === "attack") return await promptAttack(this.actor, item?.id);
+      if (operation === "reload") return await reloadWeapon(this.actor, item?.id);
       if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
       })) return await item.delete();
