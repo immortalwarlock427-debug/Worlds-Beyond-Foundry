@@ -1,5 +1,5 @@
 import { queuedAction } from "./action-support.mjs";
-import { MAGIC_RESOURCES, customResourceId, magicPool, customPool, adjustedResourceSpent, poolSpentForCurrent } from "./resources.mjs";
+import { MAGIC_RESOURCES, customResourceId, magicPool, customPool, adjustedResourceSpent, poolSpentForCurrent, resourcePresentation, resourceInputPoints } from "./resources.mjs";
 
 function resourcePath(system, key) {
   if (Object.hasOwn(MAGIC_RESOURCES, key) && system[key]) return `system.${key}`;
@@ -16,11 +16,11 @@ export function resourceFormUpdates(actor, data) {
     const path = resourcePath(actor.system, key);
     const pool = Object.hasOwn(MAGIC_RESOURCES, key) ? actor.system[key] : actor.system.customResources[key];
     // A whole-sheet submit must not save a displayed total after changing its stat/max.
-    if (current !== "" && current != null && Number(current) === pool.value) continue;
+    if (current !== "" && current != null && Number(current) === resourcePresentation(pool).inputValue) continue;
     if (current !== "" && current != null && !Number.isFinite(Number(current))) throw new Error("Enter a numeric resource total.");
     revised ??= actor.clone(data).system;
     const next = Object.hasOwn(MAGIC_RESOURCES, key) ? revised[key] : revised.customResources[key];
-    foundry.utils.setProperty(data, `${path}.spent`, poolSpentForCurrent(next.max, current));
+    foundry.utils.setProperty(data, `${path}.spent`, poolSpentForCurrent(next.max, resourceInputPoints(pool, current, next.max, next.min)));
   }
   return data;
 }
@@ -50,7 +50,7 @@ export async function resourceAction(actor, key, action, amount) {
       if (!result) throw new Error("The resource was not removed.");
       return result;
     }
-    const pool = magic ? magicPool(actor.system.level, actor.system.stats[magic.stat].effective ?? actor.system.stats[magic.stat].value, data) : customPool(data);
+    const pool = magic ? magicPool(actor.system.level, actor.system.stats[magic.stat].effective ?? actor.system.stats[magic.stat].value, data) : customPool(data, actor.system);
     const spent = adjustedResourceSpent(pool, action, action === "recover" ? data.regen : amount ?? data.amount);
     if (spent === data.spent) return;
     const result = await actor.update({ [`${path}.spent`]: spent });

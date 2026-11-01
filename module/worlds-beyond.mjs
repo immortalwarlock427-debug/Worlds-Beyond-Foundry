@@ -4,7 +4,7 @@ import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { MAGIC_RESOURCES, customResourceId, magicPool, customPool, resourceEntries } from "./resources.mjs";
+import { MAGIC_RESOURCES, RESOURCE_SCALING, RESOURCE_DISPLAYS, customResourceId, magicPool, customPool, resourceEntries } from "./resources.mjs";
 import { addResource, resourceAction, resourceFormUpdates } from "./resource-actions.mjs";
 import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
@@ -50,10 +50,12 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     });
     const resource = () => ({
       spent: number(), bonus: number(), amount: number(1, { min: 0 }),
-      value: number(0, { persisted: false }), max: number(0, { persisted: false })
+      maxOverride: number(null, { nullable: true, min: 0 }), minOverride: override(),
+      display: new StringField({ required: true, nullable: false, blank: false, initial: "number", choices: RESOURCE_DISPLAYS }),
+      value: number(0, { persisted: false }), max: number(0, { persisted: false }), min: number(0, { persisted: false })
     });
     const magicResource = () => new SchemaField({
-      ...resource(), enabled: new BooleanField({ initial: false }), maxOverride: number(null, { nullable: true, min: 0 })
+      ...resource(), enabled: new BooleanField({ initial: false })
     });
     return {
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
@@ -74,6 +76,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       holyPower: magicResource(),
       customResources: new TypedObjectField(new SchemaField({
         ...resource(), name: new StringField({ required: true, nullable: false, blank: true, initial: "Resource" }),
+        scaleStat: new StringField({ required: true, nullable: false, blank: true, initial: "", choices: RESOURCE_SCALING }),
         baseMax: number(100, { min: 0 }), regen: number(0, { min: 0 }),
         refillOnRest: new BooleanField({ initial: true })
       }), { validateKey: customResourceId }),
@@ -130,7 +133,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     for (const [key, def] of Object.entries(MAGIC_RESOURCES)) {
       if (this[key]) Object.assign(this[key], magicPool(this.level, this.stats[def.stat].effective, this[key]));
     }
-    for (const resource of Object.values(this.customResources ?? {})) Object.assign(resource, customPool(resource));
+    for (const resource of Object.values(this.customResources ?? {})) Object.assign(resource, customPool(resource, this));
     const items = this.parent?.items ?? [];
     this.carrying = inventory({
       items, strengthMod: this.stats.str.mod,
