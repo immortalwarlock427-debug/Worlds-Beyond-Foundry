@@ -7,25 +7,27 @@
       {{#if defense.hasTarget}}<p>Against attack total {{defense.target}}.</p>{{/if}}
       {{#if defense.resolved}}
         {{#if defense.success}}
-          <p class="wb-roll-success">Parried · negate non-magical effects. {{#if defense.overwhelmingForce}}Overwhelming Force keeps damage at half or more.{{else}}No damage.{{/if}}</p>
-        {{else}}<p>Hit · Parry must beat the attack total. A tie fails.</p>{{/if}}
-      {{else}}<p>Beat the attack total to negate its damage and non-magical effects. A tie fails.{{#if defense.overwhelmingForce}} Overwhelming Force keeps damage at half or more.{{/if}}</p>{{/if}}
-      <p class="wb-roll-note">{{#if defense.reroll}}Original Parry: {{/if}}{{#if defense.spent}}1 reaction spent{{#if defense.combatId}} · Parry used for round {{defense.round}}{{/if}}.{{else}}Practice roll · no reaction or round use spent.{{/if}}{{#if defense.reroll}} Wonder spends no additional reaction or Parry use.{{/if}} Apply Health changes manually.</p>
-      {{#unless defense.unlocked}}<p class="wb-roll-note">Parry normally requires DEX 21. Check your ability or manual correction.</p>{{/unless}}
-      {{#unless defense.armed}}<p class="wb-roll-note">Parry normally requires a held weapon or shield. Check your equipment or manual correction.</p>{{/unless}}
+          <p class="wb-roll-success">Parried · {{#if defense.overwhelmingForce}}half damage minimum{{else}}no damage{{/if}}</p>
+        {{else}}<p class="wb-result">Hit · Parry failed</p>{{/if}}
+      {{else}}<p class="wb-result">Compare with the attack total</p>{{/if}}
+      <p class="wb-roll-note">{{#if defense.reroll}}Original: {{/if}}{{#if defense.spent}}1 reaction{{#if defense.combatId}} · round {{defense.round}}{{/if}}{{else}}Practice · no reaction{{/if}}</p>
+      {{#unless defense.unlocked}}<p class="wb-warning">DEX 21 not reached.</p>{{/unless}}
+      {{#unless defense.armed}}<p class="wb-warning">No held weapon or shield.</p>{{/unless}}
+      <details class="wb-disclosure wb-help"><summary>Parry details</summary><p>Beat the attack total; a tie fails. A successful Parry negates damage and non-magical effects.{{#if defense.overwhelmingForce}} Overwhelming Force keeps damage at half or more.{{/if}} Apply Health and effect changes manually.</p>{{#if defense.reroll}}<p>Wonder spends no additional reaction or Parry use.</p>{{/if}}</details>
     {{else}}
     {{#if defense.hasTarget}}<p>Against {{#if defense.area}}area save DC{{else}}attack total{{/if}} {{defense.target}}.</p>{{/if}}
     {{#if defense.resolved}}
       {{#if defense.success}}
-        <p class="wb-roll-success">{{#if defense.area}}Saved · halve damage before Resistance and Armor Rating.{{else}}Dodged · no damage.{{/if}}</p>
+        <p class="wb-roll-success">{{#if defense.area}}Saved · half damage{{else}}Dodged · no damage{{/if}}</p>
       {{else}}
-        <p>{{#if defense.area}}Failed save · full damage before Resistance and Armor Rating.{{else}}Hit · Dodge must beat the attack total.{{/if}}</p>
+        <p class="wb-result">{{#if defense.area}}Failed save · full damage{{else}}Hit · Dodge failed{{/if}}</p>
       {{/if}}
     {{else}}
-      <p>{{#if defense.area}}Meet or beat the area save DC to halve damage before Resistance and Armor Rating.{{else}}Beat the attack total to avoid all damage. A tie fails.{{/if}}</p>
+      <p class="wb-result">Compare with the {{#if defense.area}}save DC{{else}}attack total{{/if}}</p>
     {{/if}}
-    <p class="wb-roll-note">{{#if defense.reroll}}Original Dodge: {{/if}}{{#if defense.spent}}1 reaction spent.{{else}}No reaction spent.{{/if}}{{#if defense.reroll}} Wonder spends no additional reaction.{{/if}} Apply Health changes manually.</p>
-    {{#if defense.overriddenDisadvantage}}<p class="wb-roll-note">Heavy armor without 21 STR gives disadvantage; different dice were chosen.</p>{{/if}}
+    <p class="wb-roll-note">{{#if defense.reroll}}Original: {{/if}}{{#if defense.spent}}1 reaction{{else}}Practice · no reaction{{/if}}</p>
+    {{#if defense.overriddenDisadvantage}}<p class="wb-warning">Heavy armor · disadvantage overridden.</p>{{/if}}
+    <details class="wb-disclosure wb-help"><summary>Dodge details</summary><p>{{#if defense.area}}Meet or beat the save DC to halve damage before Resistance and Armor Rating.{{else}}Beat the attack total to avoid all damage; a tie fails.{{/if}} Apply Health changes manually.</p>{{#if defense.reroll}}<p>Wonder spends no additional reaction.</p>{{/if}}</details>
     {{/if}}
   {{/if}}
   {{#if note}}<p class="wb-roll-note">{{note}}</p>{{/if}}

@@ -1,6 +1,7 @@
 import { defaultSlots, consumableUse, healedDamage } from "./equipment-core.mjs";
 import { shotsLeft } from "./attacks.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
+import { itemIcon } from "./item-icons.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -122,6 +123,8 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: this.item.system, editable: this.isEditable,
       typeLabel: ITEM_TYPES[this.item.type],
+      propertySummary: Object.entries(WEAPON_PROPERTIES).filter(([key]) => this.item.system.properties?.[key]).map(([, label]) => label).join(" · ") || "None",
+      signatureSummary: Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => this.item.system.signature?.[key]).map(([, label]) => label).join(" · ") || "None",
       weapon: this.item.type === "weapon", armor: this.item.type === "armor", shield: this.item.type === "shield",
       consumable: this.item.type === "consumable", equippable: Object.hasOwn(EQUIPMENT_TYPES, this.item.type),
       consumableKinds: Object.entries(CONSUMABLE_KINDS).map(([value, label]) => ({ value, label, selected: value === this.item.system.kind })),
@@ -136,14 +139,20 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 
 export function equipmentRows(items, slotsUsed = {}) {
   return Array.from(items).map(item => ({
-    id: item.id, name: item.name, typeLabel: ITEM_TYPES[item.type] ?? "Gear",
+    id: item.id, name: item.name, type: item.type, typeLabel: ITEM_TYPES[item.type] ?? "Gear", img: itemIcon(item),
+    equipIcon: item.type === "shield" ? "fa-shield-halved" : item.type === "armor" ? "fa-shirt" : "fa-hand",
     canUse: item.type === "consumable",
     canAttack: item.type === "weapon" && !!item.system.equipped,
     canReload: item.type === "weapon" && item.system.loading > 0,
     shots: item.type === "weapon" ? shotsLeft(item) : null,
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
+    showQuantity: (item.system.quantity ?? 1) !== 1 || ["consumable", "misc", "gear"].includes(item.type),
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
+    brief: item.type === "weapon" ? [item.system.damage, item.system.damageType, item.system.loading ? `${shotsLeft(item)}/${item.system.loading} shots` : ""].filter(Boolean).join(" · ")
+      : item.type === "armor" ? `AR ${item.system.armorRating} · Evasion +${item.system.evasionBonus}`
+        : item.type === "shield" ? `Block ${item.system.blockDie} · AR ${item.system.armorRating}`
+          : item.type === "consumable" && item.system.healingDice ? `Healing ${item.system.healingDice}` : "",
     detail: item.type === "weapon" ? [item.system.damage, item.system.damageType,
       item.system.ranged ? "Ranged" : "",
       item.system.family !== "none" ? WEAPON_FAMILIES[item.system.family] : "",
@@ -158,6 +167,13 @@ export function equipmentRows(items, slotsUsed = {}) {
             item.system.healingDice ? `Heals ${item.system.healingDice}` : "", `${item.system.perSlot} per slot`].filter(Boolean).join(" · ")
             : item.type === "misc" && item.system.perSlot > 1 ? `${item.system.perSlot} per slot` : ""
   }));
+}
+
+export function groupEquipmentRows(rows) {
+  const known = new Set(["weapon", "armor", "shield", "consumable"]);
+  return [["weapon", "Weapons"], ["armor", "Armor"], ["shield", "Shields"], ["consumable", "Consumables"], ["misc", "Gear"]]
+    .map(([type, label]) => ({ label, rows: rows.filter(row => type === "misc" ? !known.has(row.type) : row.type === type) }))
+    .filter(group => group.rows.length);
 }
 
 export async function createEquipment(actor, type) {
@@ -192,7 +208,7 @@ export async function useConsumable(actor, id) {
     }
     const amount = roll ? Math.max(0, roll.total) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
-      + (item.system.description ? `<p>${escapeHTML(item.system.description)}</p>` : "")
+      + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")
       + `<p>One used, ${use.quantity} left.${roll ? ` Healing: ${amount}.` : " Apply any effects at the table."}</p>`
       + (roll ? await roll.render() : "") + "</div>";
     await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));

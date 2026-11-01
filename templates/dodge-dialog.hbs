@@ -1,15 +1,20 @@
 <div class="wb-check-options">
-  <p>d20 + Agility modifier ({{modifier}}). Dodge for yourself when an attack would hit you.</p>
-  <label>Dodge against<select name="against"><option value="attack">Direct attack · beat its total</option><option value="area">Area attack save · meet its DC</option></select></label>
-  <label>Attack total / area save DC<input type="number" name="target" step="any" placeholder="Optional · compare manually"></label>
-  <label class="wb-check-toggle"><input type="checkbox" name="natural20"> Incoming direct attack rolled a natural 20 (cannot Dodge)</label>
-  {{#if heavyArmor}}<p>Heavy armor without 21 STR: Dodge has disadvantage. It is selected below; change it for other effects or corrections.</p>{{/if}}
-  <fieldset>
+  <p class="wb-dialog-meta">AGL mod {{modifier}} · 1 reaction</p>
+  <label>Against<select name="against"><option value="attack">Direct attack</option><option value="area">Area save</option></select></label>
+  <label>Attack total / save DC<input type="number" name="target" step="any" placeholder="Optional"></label>
+  <label class="wb-check-toggle" data-tooltip="A direct attack that rolled a natural 20 cannot be Dodged"><input type="checkbox" name="natural20"> Incoming natural 20</label>
+  {{#if heavyArmor}}<p class="wb-warning">Heavy armor · disadvantage applies.</p>{{/if}}
+  <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
-    <label><input type="radio" name="mode" value="normal" {{#unless heavyArmor}}checked{{/unless}}> Normal · 1d20</label>
-    <label><input type="radio" name="mode" value="advantage"> Advantage · keep the higher d20</label>
-    <label><input type="radio" name="mode" value="disadvantage" {{#if heavyArmor}}checked{{/if}}> Disadvantage · keep the lower d20</label>
+    <label><input type="radio" name="mode" value="normal" {{#unless heavyArmor}}checked{{/unless}}> Normal</label>
+    <label data-tooltip="Roll two d20s; keep the higher"><input type="radio" name="mode" value="advantage"> Advantage</label>
+    <label data-tooltip="Roll two d20s; keep the lower"><input type="radio" name="mode" value="disadvantage" {{#if heavyArmor}}checked{{/if}}> Disadvantage</label>
   </fieldset>
   <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>
-  <p>No AP cost. Use Dodge once per incoming attack. A failed Dodge can still be followed by Block or Parry with another reaction. Non-attack area effects, such as mind control, cannot be Dodged.</p>
+  <details class="wb-disclosure wb-help"><summary>How Dodge works</summary>
+    <p>Roll d20 + AGL for yourself. Beat a direct attack's total to avoid all damage; a tie fails. For an area attack, meet or beat its save DC to halve damage before Resistance and Armor Rating. Leave the target blank to compare manually.</p>
+    <p>Natural 20 direct attacks and non-attack area effects, such as mind control, cannot be Dodged. The natural 20 option applies only to direct attacks.</p>
+    <p>Use Dodge once per incoming attack. A failed Dodge may be followed by Block or Parry with another reaction. No AP cost; untick spending for practice. Apply Health changes manually. Wonder is available on the resulting chat card.</p>
+    {{#if heavyArmor}}<p>Heavy armor without STR 21 gives disadvantage on Dodges. Change the selected dice for other effects or corrections.</p>{{/if}}
+  </details>
 </div>

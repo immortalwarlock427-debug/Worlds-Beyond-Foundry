@@ -1,12 +1,13 @@
 <div class="wb-check-options">
-  {{#if heavyArmor}}<p>Heavy armor with STR below 21: choose disadvantage for an Agility saving throw.</p>{{/if}}
+  {{#if heavyArmor}}<p class="wb-warning">Heavy armor · AGL saves have disadvantage.</p>{{/if}}
   <label><span>{{label}} roll</span>
     <select name="kind"><option value="check">Ability check</option><option value="save">Saving throw</option></select>
   </label>
-  <fieldset>
+  <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
-    <label><input type="radio" name="mode" value="normal" checked> Normal · 1d20</label>
-    <label><input type="radio" name="mode" value="advantage"> Advantage · keep the higher d20</label>
-    <label><input type="radio" name="mode" value="disadvantage"> Disadvantage · keep the lower d20</label>
+    <label><input type="radio" name="mode" value="normal" checked> Normal</label>
+    <label data-tooltip="Roll two d20s; keep the higher"><input type="radio" name="mode" value="advantage"> Advantage</label>
+    <label data-tooltip="Roll two d20s; keep the lower"><input type="radio" name="mode" value="disadvantage"> Disadvantage</label>
   </fieldset>
+  <details class="wb-disclosure wb-help"><summary>Roll help</summary><p>Normal rolls one d20. Advantage rolls two and keeps the higher; disadvantage keeps the lower. Your stat modifier is added. Use Wonder from the resulting chat card.</p></details>
 </div>

@@ -4,6 +4,7 @@ import { queuedAction, reversibleAction, createActionMessage } from "./action-su
 import { checkMode } from "./rolls.mjs";
 import { dodgeContext, parryContext, parryReadiness } from "./defenses.mjs";
 import { rollCard } from "./roll-actions.mjs";
+import { fitDialogDisclosures } from "./dialog-layout.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const template = (name, data) => foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/${name}.hbs`, data);
@@ -19,6 +20,7 @@ export async function promptBlock(actor) {
   const choices = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
     window: { title: "Block" }, ok: { label: "Roll Block" }, rejectClose: false,
+    render: (event, dialog) => fitDialogDisclosures(dialog),
     content: await template("block-dialog", {
       formula: `${dice.formula} + @mod`, modifier: actor.system.stats.str.mod,
       reactions: actor.system.reactions.value, spendReaction: inCombat(actor)
@@ -59,6 +61,7 @@ export async function promptDodge(actor) {
   const choices = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
     window: { title: "Dodge" }, ok: { label: "Roll Dodge" }, rejectClose: false,
+    render: (event, dialog) => fitDialogDisclosures(dialog),
     content: await template("dodge-dialog", {
       modifier: actor.system.stats.agl.mod, heavyArmor: !!actor.system.equipment?.heavyDisadvantage,
       reactions: actor.system.reactions.value, spendReaction: inCombat(actor)
@@ -130,6 +133,7 @@ export async function promptParry(actor) {
   const choices = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
     window: { title: "Parry" }, ok: { label: "Roll Parry" }, rejectClose: false,
+    render: (event, dialog) => fitDialogDisclosures(dialog),
     buttons: state.used ? [{ action: "reset", label: "Reset Parry use", callback: async () => { await resetParryUse(actor); return null; } }] : [],
     content: await template("parry-dialog", {
       ...state, modifier: actor.system.stats.dex.mod, reactions: actor.system.reactions.value,

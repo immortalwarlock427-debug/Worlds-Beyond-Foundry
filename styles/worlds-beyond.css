@@ -42,8 +42,8 @@
 
 .worlds-beyond .wb-body {
   display: grid;
-  gap: 22px;
-  padding: 22px 24px 18px;
+  gap: 16px;
+  padding: 18px;
   min-width: 0;
 }
 
@@ -77,15 +77,15 @@
 /* header */
 .worlds-beyond .wb-header {
   display: grid;
-  grid-template-columns: 76px 1fr auto;
-  gap: 18px;
+  grid-template-columns: 56px 1fr auto;
+  gap: 14px;
   align-items: center;
-  padding-bottom: 18px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--wb-rule);
 }
 .worlds-beyond .wb-portrait {
-  width: 76px;
-  height: 76px;
+  width: 56px;
+  height: 56px;
   padding: 0;
   border: 1px solid var(--wb-brass);
   border-radius: 50%;
@@ -215,7 +215,7 @@
 /* Core numbers: comfortable touch targets, using the sheet width rather than screen width. */
 .worlds-beyond .wb-resources,
 .worlds-beyond .wb-core { display: grid; gap: 12px; }
-.worlds-beyond .wb-resources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.worlds-beyond .wb-resources { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .worlds-beyond .wb-core { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .worlds-beyond .wb-resource,
 .worlds-beyond .wb-core-detail {
@@ -288,7 +288,7 @@
   .worlds-beyond .wb-stats { grid-template-columns: minmax(0, 1fr); }
 }
 
-.worlds-beyond .wb-wonder-rest { display: grid; gap: 8px; }
+.worlds-beyond .wb-wonder-rest { display: flex; justify-content: flex-end; margin-top: -8px; }
 .worlds-beyond .wb-wonder-rest p { margin: 0; color: var(--wb-muted); font-size: 14px; }
 .worlds-beyond .wb-wonder-rest button {
   min-height: 44px;
@@ -311,7 +311,7 @@
 .worlds-beyond.wb-roll-dialog .dialog-form > .dialog-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
 .worlds-beyond.wb-roll-dialog .dialog-form > .form-footer { flex: 0 0 auto; }
 .worlds-beyond.wb-roll-dialog .wb-check-options > p { margin: 0; }
-.worlds-beyond .wb-check-options { display: grid; gap: 16px; font-family: "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-check-options { display: grid; gap: 12px; font-family: "Alegreya Sans", sans-serif; }
 .worlds-beyond .wb-check-options > label { display: grid; gap: 8px; }
 .worlds-beyond .wb-check-options select { min-height: 44px; background: #1A2136; color: #E7E4D8; }
 .worlds-beyond .wb-check-options fieldset { min-width: 0; border: 1px solid #2C3452; border-radius: 4px; }
@@ -368,3 +368,107 @@
 .worlds-beyond .wb-equipment .wb-attack-button { border-color: var(--wb-brass); }
 .worlds-beyond .wb-attack-hand { border-top: 1px solid #2C3452; padding-top: 4px; margin-top: 4px; }
 .worlds-beyond .wb-attack-hand h4 { margin: 4px 0; font-family: "Marcellus SC", serif; color: #D6A85C; border: none; }
+
+/* Essentials stay visible; native disclosure controls work with mouse, touch
+   and keyboard. data-sync lets Foundry preserve sheet disclosures on updates. */
+.worlds-beyond .wb-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 10px; border: 0; font: 16px "Marcellus SC", serif; color: #D6A85C; }
+.worlds-beyond .wb-section-title > span { color: #959CB2; font: 13px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-defense-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.worlds-beyond .wb-defense-actions > button { grid-column: auto; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px; background: #1A2136; color: #D6A85C; border: 1px solid #2C3452; font: 16px "Marcellus SC", serif; white-space: normal; }
+.worlds-beyond .wb-defense-actions small { color: #959CB2; font: 14px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-warning { margin: 8px 0 0; padding: 6px 10px; border-left: 2px solid #D6A85C; color: #D6A85C; font-size: 13px; line-height: 1.4; }
+.worlds-beyond .wb-section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.worlds-beyond .wb-section-heading > h2 { margin: 0; }
+.worlds-beyond .wb-add-equipment[open] { flex-basis: 100%; }
+.worlds-beyond .wb-add-equipment > summary { min-height: 44px; padding: 12px 8px; cursor: pointer; color: #D6A85C; }
+.worlds-beyond .wb-add-equipment .wb-equipment-actions { padding: 8px 0; }
+.worlds-beyond .wb-disclosure { min-width: 0; border: 1px solid #2C3452; border-radius: 5px; background: rgba(13, 17, 30, 0.28); }
+.worlds-beyond .wb-disclosure > summary { min-height: 44px; padding: 12px; cursor: pointer; color: #D6A85C; line-height: 1.4; }
+.worlds-beyond .wb-disclosure > summary:hover { background: rgba(214, 168, 92, 0.08); }
+.worlds-beyond .wb-disclosure > summary:focus-visible,
+.worlds-beyond .wb-add-equipment > summary:focus-visible { outline: 2px solid #D6A85C; outline-offset: -2px; border-radius: 4px; }
+.worlds-beyond .wb-disclosure[open] > summary { border-bottom: 1px solid #2C3452; margin-bottom: 10px; }
+.worlds-beyond .wb-disclosure > :not(summary) { margin: 10px 12px; }
+.worlds-beyond .wb-disclosure p { font-size: 14px; line-height: 1.45; color: #959CB2; }
+.worlds-beyond .wb-disclosure h3 { font: 15px "Marcellus SC", serif; color: #D6A85C; border: 0; }
+.worlds-beyond .wb-summary-value { display: block; margin-top: 3px; font-size: 12px; color: #959CB2; overflow-wrap: anywhere; }
+.worlds-beyond .wb-badge { margin-left: 8px; padding: 2px 6px; background: rgba(214, 168, 92, 0.14); color: #D6A85C; border-radius: 3px; font-size: 11px; }
+.worlds-beyond .wb-adjust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.worlds-beyond .wb-item-details > summary { min-height: 44px; padding: 12px 8px; cursor: pointer; color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-item-details[open] { flex-basis: 100%; }
+.worlds-beyond .wb-item-details p { color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-equipment button.wb-equipment-name { justify-content: flex-start; border: none; background: none; padding: 0; min-height: 44px; font-size: 18px; }
+.worlds-beyond .wb-equipment-list .wb-item-brief { margin: 6px 0 0; color: #E7E4D8; font-size: 14px; }
+.worlds-beyond .wb-equipment-list > li { padding: 10px 12px; }
+.worlds-beyond .wb-equipment-list > li > span { color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-equipment-list .wb-equipment-actions { margin-top: 8px; }
+.worlds-beyond .wb-empty { color: #959CB2; font-size: 14px; text-align: center; border-style: dashed !important; }
+.worlds-beyond .wb-dialog-meta { color: #959CB2; font-size: 13px; }
+.worlds-beyond.wb-roll-dialog .wb-check-options .wb-dice-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px; }
+.worlds-beyond.wb-roll-dialog .wb-dice-choices > label { flex-direction: column; justify-content: center; gap: 5px; padding: 6px 2px; min-width: 0; min-height: 54px; font-size: 12px; text-align: center; border: 1px solid transparent; border-radius: 4px; }
+.worlds-beyond.wb-roll-dialog .wb-dice-choices > label:has(input:checked) { background: rgba(214, 168, 92, 0.12); border-color: #D6A85C; }
+.worlds-beyond.wb-roll-dialog .wb-dice-choices input { margin: 0; flex: none; }
+.worlds-beyond.wb-roll-dialog .wb-check-options .wb-disclosure { font-size: 14px; }
+.worlds-beyond .wb-result { font-weight: 700; color: #E7E4D8; }
+.worlds-beyond.wb-attack-card h3,
+.worlds-beyond.wb-consumable-card h3 { font: 18px "Marcellus SC", serif; color: #D6A85C; border: 0; }
+.worlds-beyond.wb-roll-dialog .form-footer button { background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond.wb-roll-dialog .form-footer button:hover,
+.worlds-beyond .wb-defense-actions > button:hover,
+.worlds-beyond .wb-equipment-actions > button:hover,
+.worlds-beyond .wb-wonder-rest > button:hover { background: rgba(214, 168, 92, 0.2); color: #E7E4D8; border-color: #D6A85C; }
+
+/* System chat cards share one surface, including flag-free reload/damage cards.
+   The marker is added only to visible messages containing a system card. */
+.worlds-beyond.wb-chat-message { background: #141A2B; border: 1px solid #2C3452; border-left: 3px solid #D6A85C; color: #E7E4D8; font-family: "Alegreya Sans", sans-serif; }
+.worlds-beyond.wb-chat-message .message-content { color: #E7E4D8; }
+.worlds-beyond.wb-chat-message .message-header,
+.worlds-beyond.wb-chat-message .message-metadata { color: #959CB2; }
+.worlds-beyond.wb-chat-message .message-sender { font-family: "Marcellus SC", serif; color: #D6A85C; }
+.worlds-beyond.wb-chat-message .wb-attack-card,
+.worlds-beyond.wb-chat-message .wb-consumable-card { font-family: "Alegreya Sans", sans-serif; color: #E7E4D8; }
+.worlds-beyond.wb-chat-message .dice-tooltip .part-header,
+.worlds-beyond.wb-chat-message .dice-tooltip .part-formula { color: #959CB2; }
+.worlds-beyond.wb-chat-message .dice-tooltip .part-total { background: #1A2136; color: #E7E4D8; border-color: #2C3452; }
+.worlds-beyond.wb-chat-message button { background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
+.worlds-beyond.wb-chat-message button:hover { background: rgba(214, 168, 92, 0.2); color: #E7E4D8; }
+.worlds-beyond.wb-chat-message button:disabled { color: #959CB2; border-color: #2C3452; }
+
+/* Inventory rows: one icon, a two-line item link, and quiet actions. */
+.worlds-beyond .wb-equipment-group { margin-top: 14px; }
+.worlds-beyond .wb-equipment-group-title { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 6px; border: 0; color: #959CB2; font: 12px "Marcellus SC", serif; letter-spacing: 0.08em; }
+.worlds-beyond .wb-equipment-group-title > span { color: #D6A85C; font: 12px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-equipment-group .wb-equipment-list { display: grid; gap: 0; margin: 0; border-top: 1px solid #2C3452; }
+.worlds-beyond .wb-equipment-list > .wb-equipment-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 58px; padding: 6px 0; border: 0; border-bottom: 1px solid #2C3452; border-radius: 0; background: transparent; }
+.worlds-beyond .wb-item-icon { display: block; width: 40px; height: 40px; object-fit: cover; border: 1px solid #2C3452; border-radius: 4px; background: #0D111E; }
+.worlds-beyond .wb-item-main { min-width: 0; }
+.worlds-beyond .wb-equipment-row button.wb-equipment-name { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; min-height: 44px; width: 100%; padding: 0; border: 0; border-radius: 2px; background: transparent; color: #D6A85C; text-align: left; box-shadow: none; }
+.worlds-beyond .wb-equipment-row button.wb-equipment-name:hover { background: transparent; color: #E7C98E; }
+.worlds-beyond .wb-equipment-name .wb-item-title { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 16px "Marcellus SC", serif; }
+.worlds-beyond .wb-equipment-name .wb-item-brief { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 13px "Alegreya Sans", sans-serif; color: #959CB2; }
+.worlds-beyond .wb-quantity { margin-left: 5px; color: #959CB2; font: 12px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.worlds-beyond .wb-row-actions > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 44px; min-width: 44px; min-height: 44px; height: 44px; padding: 0 8px; border: 1px solid #2C3452; border-radius: 4px; background: #1A2136; color: #D6A85C; font: 13px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-row-actions > .wb-row-attack,
+.worlds-beyond .wb-row-actions > .wb-row-use { width: auto; border-color: #D6A85C; }
+.worlds-beyond .wb-row-actions > button:hover { background: rgba(214, 168, 92, 0.16); border-color: #D6A85C; }
+.worlds-beyond .wb-row-actions > .wb-equip-toggle[aria-pressed="true"] { background: #D6A85C; border-color: #D6A85C; color: #0D111E; }
+.worlds-beyond .wb-row-actions > .wb-item-remove { border-color: transparent; background: transparent; color: #959CB2; font-size: 12px; }
+.worlds-beyond .wb-row-actions > .wb-item-remove:hover { border-color: #D6A85C; color: #D6A85C; }
+.worlds-beyond .wb-row-actions > button:disabled { opacity: 0.55; cursor: default; }
+.worlds-beyond .wb-row-actions > button:focus-visible,
+.worlds-beyond .wb-equipment-name:focus-visible { outline: 2px solid #D6A85C; outline-offset: 2px; }
+
+/* Scoped stock-control colors; Foundry's sidebar and canvas keep their theme. */
+.worlds-beyond.wb-sheet,
+.worlds-beyond.wb-roll-dialog { --color-scrollbar: #8D713F; --color-scrollbar-track: #141A2B; scrollbar-color: #8D713F #141A2B; --checkbox-background-color: #65708D; --checkbox-checked-color: #D6A85C; --checkbox-checkmark-color: #0D111E; --input-focus-outline-color: #D6A85C; }
+.worlds-beyond.wb-sheet input[type="checkbox"],
+.worlds-beyond.wb-roll-dialog input[type="checkbox"],
+.worlds-beyond.wb-roll-dialog input[type="radio"] { --checkbox-background-color: #65708D; --checkbox-checked-color: #D6A85C; --checkbox-checkmark-color: #0D111E; }
+.worlds-beyond.wb-sheet ::-webkit-scrollbar-thumb,
+.worlds-beyond.wb-roll-dialog ::-webkit-scrollbar-thumb { background: #8D713F; border-color: #141A2B; }
+@container (max-width: 560px) {
+  .worlds-beyond .wb-equipment-list > .wb-equipment-row { grid-template-columns: 40px minmax(0, 1fr); gap: 3px 10px; }
+  .worlds-beyond .wb-equipment-row > .wb-item-icon { grid-row: 1 / 3; align-self: start; margin-top: 4px; }
+  .worlds-beyond .wb-row-actions { grid-column: 2; }
+}

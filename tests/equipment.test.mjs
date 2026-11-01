@@ -11,7 +11,28 @@ globalThis.foundry = {
   abstract: { TypeDataModel: class {} },
   applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class { async _prepareContext() { return {}; } } } }
 };
-const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
+const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
+
+test("equipment grouping retains every item and its actions, including zero quantity and legacy gear", () => {
+  const items = [
+    { id: "old", name: "Legacy", type: "gear", system: {} },
+    { id: "gun", name: "Revolver", type: "weapon", img: "icons/svg/target.svg", system: { equipped: true, damage: "1d6", loading: 6, shots: 2, quantity: 0 } },
+    { id: "coat", name: "Armor", type: "armor", system: { equipped: true } },
+    { id: "potion", name: "Potion", type: "consumable", system: { quantity: 2 } },
+    { id: "shield", name: "Shield", type: "shield", system: {} }
+  ];
+  const before = structuredClone(items);
+  const groups = groupEquipmentRows(equipmentRows(items));
+  assert.deepEqual(groups.map(group => group.label), ["Weapons", "Armor", "Shields", "Consumables", "Gear"]);
+  const rows = groups.flatMap(group => group.rows);
+  assert.equal(rows.length, items.length);
+  const gun = rows.find(row => row.id === "gun");
+  assert.equal(gun.quantity, 0); assert.equal(gun.showQuantity, true);
+  assert.equal(gun.canAttack, true); assert.equal(gun.canReload, true); assert.equal(gun.canEquip, true);
+  assert.match(gun.img, /pistol-revolver/); assert.match(gun.brief, /2\/6 shots/);
+  assert.equal(rows.find(row => row.id === "potion").canUse, true);
+  assert.deepEqual(items, before);
+});
 
 test("equipment summaries support all new types and preserve legacy gear", () => {
   const rows = equipmentRows([

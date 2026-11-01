@@ -17,11 +17,12 @@
   {{#if mount}}<label class="wb-check-toggle"><input type="checkbox" name="mounted"> Mounted</label>
   <label><span>Feet moved in a straight line this turn</span><input type="number" name="mountedFeet" value="0" min="0" step="5"></label>{{/if}}
   <label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>
-  {{#if target}}<p>Target: {{target.name}} · Natural Evasion {{target.evasion}}</p>{{else}}<p>No target selected. Target a token to check the hit automatically.</p>{{/if}}
-  <fieldset>
+  {{#if target}}<p class="wb-dialog-meta">{{target.name}} · Evasion {{target.evasion}}</p>{{else}}<p class="wb-dialog-meta">No target · compare manually</p>{{/if}}
+  <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
-    <label><input type="radio" name="rollMode" value="normal" {{#unless reasons.length}}checked{{/unless}}> Normal · 1d20</label>
-    <label><input type="radio" name="rollMode" value="advantage"> Advantage · keep the higher d20</label>
-    <label><input type="radio" name="rollMode" value="disadvantage" {{#if reasons.length}}checked{{/if}}> Disadvantage · keep the lower d20</label>
+    <label><input type="radio" name="rollMode" value="normal" {{#unless reasons.length}}checked{{/unless}}> Normal</label>
+    <label data-tooltip="Roll two d20s; keep the higher"><input type="radio" name="rollMode" value="advantage"> Advantage</label>
+    <label data-tooltip="Roll two d20s; keep the lower"><input type="radio" name="rollMode" value="disadvantage" {{#if reasons.length}}checked{{/if}}> Disadvantage</label>
   </fieldset>
+  <details class="wb-disclosure wb-help"><summary>Attack help</summary><p>Target a token to compare with its Natural Evasion automatically. Advantage keeps the higher of two d20s; disadvantage keeps the lower. You may change the selected dice for other effects or corrections. Roll damage from the resulting chat card.</p><p>Spending is optional for practice. Loading weapons still use a shot. Two Light weapons may attack together for one attack's AP; the off-hand hit deals half damage without a modifier.</p></details>
 </div>
