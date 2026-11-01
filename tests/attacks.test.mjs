@@ -162,3 +162,13 @@ test("the attack dialog switches the dice when range or mounting changes the rea
   fields.longRange.checked = false; fields.longRange.fire();
   assert.equal(text.hidden, true);
 });
+
+test("attack cards replace Foundry's kh/kl notation with plain wording", async () => {
+  const { d20Mode } = await import("../module/attack-actions.mjs");
+  assert.equal(d20Mode("2d20kl1 + 0"), "disadvantage");
+  assert.equal(d20Mode("2d20kh1 + 3"), "advantage");
+  assert.equal(d20Mode("1d20 + 3"), "normal");
+  const { describeD20Roll } = await import("../module/rolls.mjs");
+  const roll = { total: 4, dice: [{ faces: 20, total: 4, results: [{ result: 18, active: false, discarded: true }, { result: 4, active: true }] }] };
+  assert.equal(describeD20Roll(roll, "disadvantage").diceLabel, "2d20 · keep lowest");
+});

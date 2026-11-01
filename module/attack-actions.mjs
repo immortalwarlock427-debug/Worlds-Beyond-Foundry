@@ -218,10 +218,31 @@ export async function rollDamage(message, index, critical) {
   });
 }
 
+// Foundry shows advantage as "2d20kh1"; show the same plain wording as check cards.
+export function d20Mode(formula) {
+  return /kh/i.test(formula) ? "advantage" : /kl/i.test(formula) ? "disadvantage" : "normal";
+}
+
+function plainD20Formulas(message, card) {
+  const sections = card.querySelectorAll(".wb-attack-hand");
+  (sections.length ? Array.from(sections) : [card]).forEach((section, index) => {
+    const roll = message.rolls?.[index];
+    if (!roll?.dice?.some(die => die.faces === 20)) return;
+    const breakdown = describeD20Roll(roll, d20Mode(roll.formula));
+    if (!breakdown) return;
+    const bonus = roll.total - roll.dice[0].total;
+    const formula = section.querySelector(".dice-formula");
+    if (formula) formula.textContent = `${breakdown.diceLabel} ${bonus < 0 ? "−" : "+"} ${Math.abs(bonus)}`;
+    for (const label of section.querySelectorAll(".dice-tooltip .part-formula")) label.textContent = breakdown.diceLabel;
+  });
+}
+
 export function decorateAttackMessage(message, html) {
   const data = message.getFlag?.(SYSTEM_ID, "attack");
   const card = html.querySelector(".wb-attack-card");
-  if (!data || !card || card.querySelector(".wb-damage-action")) return;
+  if (!data || !card) return;
+  if (message.isContentVisible) plainD20Formulas(message, card);
+  if (card.querySelector(".wb-damage-action")) return;
   const actor = foundry.utils.fromUuidSync(data.actorUuid);
   if (!actor?.isOwner) return;
   const hands = attackHands(data);
