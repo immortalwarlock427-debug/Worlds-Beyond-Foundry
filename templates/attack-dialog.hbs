@@ -1,5 +1,9 @@
 <div class="wb-check-options">
   {{#if reasons.length}}<p>Disadvantage: {{#each reasons}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}.</p>{{/if}}
+  {{#if loading}}<p>{{#if shots}}{{shots}} of {{loading}} shots loaded.{{else}}Empty: reload before attacking.{{/if}}</p>{{/if}}
+  {{#if partners.length}}<label><span>Hands</span>
+    <select name="hands"><option value="">This weapon only</option>{{#each partners}}<option value="{{id}}">Both: with {{name}} in the off hand</option>{{/each}}</select>
+  </label>{{/if}}
   {{#if modes.[1]}}<label><span>Attack</span>
     <select name="mode">{{#each modes}}<option value="{{value}}">{{label}}</option>{{/each}}</select>
   </label>{{/if}}
@@ -12,7 +16,7 @@
   {{#if canRange}}<label class="wb-check-toggle"><input type="checkbox" name="longRange"> Past normal range (disadvantage)</label>{{/if}}
   {{#if mount}}<label class="wb-check-toggle"><input type="checkbox" name="mounted"> Mounted</label>
   <label><span>Feet moved in a straight line this turn</span><input type="number" name="mountedFeet" value="0" min="0" step="5"></label>{{/if}}
-  <label class="wb-check-toggle"><input type="checkbox" name="spendAp" checked> Spend AP ({{apLeft}} left)</label>
+  <label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>
   {{#if target}}<p>Target: {{target.name}} · Natural Evasion {{target.evasion}}</p>{{else}}<p>No target selected. Target a token to check the hit automatically.</p>{{/if}}
   <fieldset>
     <legend>Dice</legend>

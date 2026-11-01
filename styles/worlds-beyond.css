@@ -354,3 +354,5 @@
 .worlds-beyond .wb-attack-card p { margin: 4px 0; }
 .worlds-beyond .wb-check-toggle { display: flex; align-items: center; gap: 6px; }
 .worlds-beyond .wb-equipment .wb-attack-button { border-color: var(--wb-brass); }
+.worlds-beyond .wb-attack-hand { border-top: 1px solid #2C3452; padding-top: 4px; margin-top: 4px; }
+.worlds-beyond .wb-attack-hand h4 { margin: 4px 0; font-family: "Marcellus SC", serif; color: #D6A85C; border: none; }

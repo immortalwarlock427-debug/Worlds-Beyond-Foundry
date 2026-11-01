@@ -1,4 +1,5 @@
 import { defaultSlots, consumableUse, healedDamage } from "./equipment-core.mjs";
+import { shotsLeft } from "./attacks.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -61,7 +62,9 @@ export class WeaponData extends EquipmentData {
       damage: text(), versatileDamage: text(), damageType: text(),
       properties: flags(WEAPON_PROPERTIES), signature: flags(SIGNATURE_PROPERTIES),
       range: new foundry.data.fields.SchemaField({ normal: number(), long: number() }),
-      loading: number()
+      loading: number(),
+      // Shots left before reloading; null means fully loaded.
+      shots: new foundry.data.fields.NumberField({ required: true, nullable: true, initial: null, min: 0, integer: true })
     };
   }
 
@@ -135,6 +138,8 @@ export function equipmentRows(items, slotsUsed = {}) {
     id: item.id, name: item.name, typeLabel: ITEM_TYPES[item.type] ?? "Gear",
     canUse: item.type === "consumable",
     canAttack: item.type === "weapon" && !!item.system.equipped,
+    canReload: item.type === "weapon" && item.system.loading > 0,
+    shots: item.type === "weapon" ? shotsLeft(item) : null,
     quantity: item.system.quantity ?? 1, equipped: !!item.system.equipped,
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
@@ -143,7 +148,7 @@ export function equipmentRows(items, slotsUsed = {}) {
       item.system.family !== "none" ? WEAPON_FAMILIES[item.system.family] : "",
       ...Object.entries(WEAPON_PROPERTIES).filter(([key]) => item.system.properties?.[key]).map(([, label]) => label),
       ...Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => item.system.signature?.[key]).map(([, label]) => label),
-      item.system.loading ? `Loading (${item.system.loading})` : "",
+      item.system.loading ? `Loading (${item.system.loading}) · ${shotsLeft(item)} loaded` : "",
       item.system.range?.normal || item.system.range?.long ? `Range ${item.system.range.normal}/${item.system.range.long} ft` : ""
     ].filter(Boolean).join(" · ")
       : item.type === "armor" ? `${ARMOR_TYPES[item.system.armorType] ?? item.system.armorType} · ${ARMOR_PIECES[item.system.piece] ?? item.system.piece} · AR ${item.system.armorRating} · NE +${item.system.evasionBonus}`

@@ -23,8 +23,36 @@ export function attackModes(weapon) {
   return system.properties?.thrown ? ["melee", "thrown"] : ["melee"];
 }
 
+// The action's stat modifier lowers its cost (a negative one raises it), by at most
+// half the base cost, rounded down: a 10 AP attack costs 5–15, an 11 AP spell 6–16.
+export function actionApCost(base, modifier) {
+  const cost = Number(base) || 0;
+  const swing = Math.floor(cost / 2);
+  return Math.min(cost + swing, Math.max(cost - swing, cost - (Number(modifier) || 0)));
+}
+
+export const ATTACK_AP = 10;
+export const RELOAD_AP = 5;
+
 export function attackApCost(modifier) {
-  return Math.max(5, 10 - (Number(modifier) || 0));
+  return actionApCost(ATTACK_AP, modifier);
+}
+
+// Notion's two-weapon fighting: a Light weapon in each hand lets you attack with
+// both for one attack's AP. Returns the other equipped Light weapons.
+export function dualWieldPartners(weapon, items = []) {
+  const light = item => item.type === "weapon" && item.system?.equipped && item.system.properties?.light;
+  if (!light(weapon)) return [];
+  return Array.from(items).filter(item => item.id !== weapon.id && light(item));
+}
+
+// Shots left before reloading; null means fully loaded.
+export function shotsLeft(weapon) {
+  const system = weapon.system ?? weapon;
+  const loading = Number(system.loading) || 0;
+  if (loading <= 0) return null;
+  const shots = system.shots;
+  return shots == null || shots === "" ? loading : Math.max(0, Math.min(loading, Number(shots)));
 }
 
 // Automatic reasons for disadvantage. The player still picks the final roll mode.
@@ -87,15 +115,17 @@ export function scaleDice(expression, times = 1) {
 }
 
 // Everything a damage roll needs, without rolling.
-export function damagePlan({ weapon, level = 1, modifier = 0, grip = "one", critical = false, mountedFeet = 0, mounted = false }) {
+// An off-hand hit from attacking with both weapons deals half damage, rounded down,
+// and adds no modifier.
+export function damagePlan({ weapon, level = 1, modifier = 0, grip = "one", critical = false, mountedFeet = 0, mounted = false, offhand = false }) {
   const system = weapon.system ?? weapon;
   const twoHandedGrip = system.properties?.versatile && grip === "two";
   const listed = twoHandedGrip && system.versatileDamage ? system.versatileDamage : system.damage;
   const times = damageMultiplier(level);
   const dice = scaleDice(listed, times);
   const doubled = system.family === "heavy" || system.family === "paragon";
-  const statBonus = (doubled ? 2 : 1) * modifier;
-  const mountBonus = system.properties?.mount && mounted ? Math.max(0, Math.min(Math.floor((Number(mountedFeet) || 0) / 10), modifier)) : 0;
+  const statBonus = offhand ? 0 : (doubled ? 2 : 1) * modifier;
+  const mountBonus = !offhand && system.properties?.mount && mounted ? Math.max(0, Math.min(Math.floor((Number(mountedFeet) || 0) / 10), modifier)) : 0;
   const flat = statBonus + mountBonus;
   const signed = value => value < 0 ? ` - ${Math.abs(value)}` : ` + ${value}`;
   // A critical hit deals the maximum of its damage, then rolls the damage dice again.
@@ -107,7 +137,8 @@ export function damagePlan({ weapon, level = 1, modifier = 0, grip = "one", crit
   if (twoHanded && system.signature?.puncture) notes.push("Two-handed Puncture: halve the target's Armor Rating (rounded down), then ignore 2 more.");
   else if (twoHanded) notes.push("Two-handed: this hit ignores half the target's Armor Rating, rounded down.");
   else if (system.signature?.puncture) notes.push("Puncture: this hit ignores 2 of the target's Armor Rating.");
-  return { formula, valid: dice.valid, listed, times, statBonus, mountBonus, critical: !!critical, twoHanded, notes };
+  if (offhand) notes.unshift("Off-hand hit: half damage, rounded down, with no modifier.");
+  return { formula, valid: dice.valid, listed, times, statBonus, mountBonus, critical: !!critical, twoHanded, offhand, notes };
 }
 
 // How much of the target's Armor Rating counts against this hit.
@@ -120,4 +151,9 @@ export function effectiveArmor(armorRating, { twoHanded = false, puncture = fals
 
 export function modifierFor(statKey, scores = {}) {
   return statModifier(statKey, scores[statKey] ?? 12);
+}
+
+export function finalDamage(total, { offhand = false } = {}) {
+  const amount = Math.max(0, Number(total) || 0);
+  return offhand ? Math.floor(amount / 2) : amount;
 }
