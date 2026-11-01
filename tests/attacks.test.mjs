@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
-  attackOutcome, damageMultiplier, scaleDice, damagePlan, effectiveArmor
+  attackOutcome, damageMultiplier, scaleDice, damagePlan, effectiveArmor,
+  actionApCost, dualWieldPartners, shotsLeft, finalDamage
 } from "../module/attacks.mjs";
 import { catalogItems } from "../module/catalog.mjs";
 
@@ -23,11 +24,19 @@ test("attack stats follow each weapon family and attack mode", () => {
   assert.deepEqual(attackModes(w("Greatsword")), ["melee"]);
 });
 
-test("attacks cost 10 AP minus the attack modifier, never below 5", () => {
+test("modifiers move AP costs by at most half: attacks 5–15, spells 6–16, reloads 3–7", () => {
   assert.equal(attackApCost(3), 7);
   assert.equal(attackApCost(0), 10);
   assert.equal(attackApCost(8), 5);
   assert.equal(attackApCost(-1), 11);
+  assert.equal(attackApCost(-5), 15);
+  assert.equal(attackApCost(-9), 15);
+  assert.equal(actionApCost(11, 4), 7);
+  assert.equal(actionApCost(11, 9), 6);
+  assert.equal(actionApCost(11, -9), 16);
+  assert.equal(actionApCost(5, 3), 3);
+  assert.equal(actionApCost(5, -3), 7);
+  assert.equal(actionApCost(2, 1), 1);
 });
 
 test("automatic disadvantage reasons match Notion", () => {
@@ -98,4 +107,32 @@ test("Two-handed hits ignore half the target's Armor Rating; Puncture ignores 2 
   assert.equal(damagePlan({ weapon: w("Arbalest") }).notes.length, 1);
   assert.match(damagePlan({ weapon: w("Arbalest") }).notes[0], /halve/);
   assert.match(damagePlan({ weapon: w("Rapier") }).notes[0], /ignores 2/);
+});
+
+test("attacking with both needs a Light weapon equipped in each hand", () => {
+  const equip = (name, id) => ({ ...structuredClone(w(name)), id, system: { ...structuredClone(w(name).system), equipped: true } });
+  const dagger = equip("Dagger", "a"), scimitar = equip("Scimitar", "b"), longsword = equip("Longsword", "c");
+  const stowed = { ...equip("Handaxe", "d"), system: { ...w("Handaxe").system, equipped: false } };
+  assert.deepEqual(dualWieldPartners(dagger, [dagger, scimitar, longsword, stowed]).map(item => item.id), ["b"]);
+  assert.deepEqual(dualWieldPartners(longsword, [dagger, scimitar, longsword]), []);
+  assert.deepEqual(dualWieldPartners(dagger, [dagger, longsword]), []);
+});
+
+test("off-hand hits from attacking with both deal half damage with no modifier", () => {
+  const plan = damagePlan({ weapon: w("Scimitar"), level: 5, modifier: 3, offhand: true });
+  assert.equal(plan.formula, "2d8");
+  assert.equal(plan.statBonus, 0);
+  assert.match(plan.notes[0], /half damage/);
+  assert.equal(finalDamage(9, { offhand: true }), 4);
+  assert.equal(finalDamage(9), 9);
+  assert.equal(finalDamage(-2), 0);
+  assert.equal(damagePlan({ weapon: w("Scimitar"), modifier: 3, offhand: true, critical: true }).formula, "1d8 + 8");
+});
+
+test("Loading weapons track shots; blank means fully loaded", () => {
+  assert.equal(shotsLeft(w("Longsword")), null);
+  assert.equal(shotsLeft(w("Revolver")), 6);
+  assert.equal(shotsLeft({ system: { loading: 6, shots: 2 } }), 2);
+  assert.equal(shotsLeft({ system: { loading: 1, shots: 0 } }), 0);
+  assert.equal(shotsLeft({ system: { loading: 6, shots: 9 } }), 6);
 });
