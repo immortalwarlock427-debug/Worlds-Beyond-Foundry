@@ -31,6 +31,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - The sheet includes a narrow layout and touch-sized controls. The user tested core numbers and rolls/Wonder; equipment awaits [in-world validation](docs/EQUIPMENT.md).
 - The interface keeps totals and common actions up front. **Adjust values** holds overrides; **Rules & help** and per-dialog help sections open on click, tap or keyboard. Item details and longer chat explanations are also collapsible. See [interface scope and checks](docs/INTERFACE.md).
 - System chat cards share the navy/brass theme, including attacks, damage, reloads and consumables. Equipment uses grouped rows with fitting icons, key stats, clear equipped states and compact actions. See [chat and equipment polish](docs/VISUAL-POLISH.md).
+- All 70 catalog entries have unique image paths: 63 stock matches and 7 labelled requests for custom art. Old default images resolve in inventories, editor previews and Item directories/compendiums; custom images stay chosen. See [equipment artwork](docs/EQUIPMENT-ART.md).
 
 ## Installing
 

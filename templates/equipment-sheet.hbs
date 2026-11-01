@@ -1,7 +1,7 @@
 <div class="wb-body wb-equipment-form">
-  <header><span class="wb-eyebrow">{{typeLabel}}</span>
+  <header class="wb-item-heading"><img class="wb-item-icon" src="{{artwork}}" alt=""><div><span class="wb-eyebrow">{{typeLabel}}</span>
     <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Item name" {{#unless editable}}disabled{{/unless}}>
-  </header>
+  </div></header>
   <div class="wb-equipment-fields">
     <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="any" {{#unless editable}}disabled{{/unless}}></label>
     {{#if equippable}}<label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>{{/if}}

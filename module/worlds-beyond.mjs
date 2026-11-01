@@ -10,6 +10,7 @@ import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement
 import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { decorateSystemMessage } from "./chat-style.mjs";
+import { decorateEquipmentDirectory } from "./item-artwork.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -342,6 +343,8 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", offerCatalogImport);
+Hooks.on("renderItemDirectory", decorateEquipmentDirectory);
+Hooks.on("renderCompendium", decorateEquipmentDirectory);
 Hooks.on("renderChatMessageHTML", decorateSystemMessage);
 Hooks.on("renderChatMessageHTML", decorateRollMessage);
 Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
