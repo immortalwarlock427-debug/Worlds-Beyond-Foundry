@@ -472,3 +472,46 @@
   .worlds-beyond .wb-equipment-row > .wb-item-icon { grid-row: 1 / 3; align-self: start; margin-top: 4px; }
   .worlds-beyond .wb-row-actions { grid-column: 2; }
 }
+
+/* Stat generation and advancement are focused drafts, with explicit Apply. */
+.worlds-beyond .wb-stat-heading { margin-bottom: -8px; flex-wrap: wrap; }
+.worlds-beyond .wb-stat-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.worlds-beyond .wb-stat-tools > button,
+.worlds-beyond.wb-stat-setup button { min-height: 44px; height: auto; padding: 6px 10px; background: #1A2136; border: 1px solid #2C3452; color: #D6A85C; font: 14px "Alegreya Sans", sans-serif; box-shadow: none; }
+.worlds-beyond.wb-stat-setup { max-height: min(820px, calc(100dvh - 24px)); }
+.worlds-beyond .wb-setup-body { display: grid; gap: 12px; padding: 16px; min-width: 0; }
+.worlds-beyond .wb-setup-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.worlds-beyond .wb-setup-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.worlds-beyond .wb-setup-summary { margin: 0; font-size: 15px; color: #E7E4D8; }
+.worlds-beyond .wb-score-results,
+.worlds-beyond .wb-point-results { list-style: none; margin: 0; padding: 0; }
+.worlds-beyond .wb-score-results > li { display: grid; grid-template-columns: 18px 64px 80px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 52px; padding: 4px 0; border-bottom: 1px solid #2C3452; }
+.worlds-beyond .wb-result-number { font-size: 12px; color: #959CB2; }
+.worlds-beyond .wb-score-results input,
+.worlds-beyond .wb-score-results select { width: 100%; min-height: 44px; padding: 6px; background: #1A2136; border: 1px solid #2C3452; border-radius: 4px; color: #E7E4D8; font: 16px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-score-results input { text-align: center; color: #D6A85C; font: 24px "Marcellus SC", serif; }
+.worlds-beyond .wb-score-breakdown { color: #959CB2; font-size: 13px; }
+.worlds-beyond .wb-score-breakdown > small { display: block; color: #5DB6AA; font-size: 12px; }
+.worlds-beyond .wb-award-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.worlds-beyond .wb-award-tabs > button { display: flex; flex-direction: column; gap: 2px; min-width: 64px; flex: 1; }
+.worlds-beyond .wb-award-tabs small { font-size: 12px; }
+.worlds-beyond .wb-award-tabs > button[aria-pressed="true"],
+.worlds-beyond .wb-setup-footer > .wb-primary { background: #D6A85C; color: #0D111E; border-color: #D6A85C; }
+.worlds-beyond .wb-point-results > li { display: grid; grid-template-columns: minmax(0, 1fr) 42px auto; align-items: center; gap: 8px; min-height: 52px; padding: 4px 0; border-bottom: 1px solid #2C3452; }
+.worlds-beyond .wb-point-name { color: #D6A85C; font: 16px "Marcellus SC", serif; }
+.worlds-beyond .wb-point-name > small { display: block; color: #959CB2; font: 13px "Alegreya Sans", sans-serif; }
+.worlds-beyond .wb-point-score { color: #E7E4D8; font: 24px "Marcellus SC", serif; text-align: center; }
+.worlds-beyond .wb-point-stepper { display: flex; align-items: center; gap: 8px; }
+.worlds-beyond .wb-point-stepper > button { width: 44px; min-width: 44px; padding: 0; font-size: 22px; }
+.worlds-beyond .wb-point-stepper > span { min-width: 30px; color: #959CB2; text-align: center; font-size: 13px; }
+.worlds-beyond .wb-setup-footer { position: sticky; bottom: -16px; display: flex; justify-content: flex-end; gap: 8px; margin: 0 -16px -16px; padding: 12px 16px; background: #141A2B; border-top: 1px solid #2C3452; }
+.worlds-beyond.wb-stat-setup button:hover,
+.worlds-beyond .wb-stat-tools > button:hover { border-color: #D6A85C; }
+.worlds-beyond.wb-stat-setup button:disabled { opacity: 0.45; cursor: default; }
+.worlds-beyond.wb-stat-setup button:focus-visible,
+.worlds-beyond .wb-stat-tools > button:focus-visible { outline: 2px solid #D6A85C; outline-offset: 2px; }
+@container (max-width: 380px) {
+  .worlds-beyond .wb-score-results > li { grid-template-columns: 14px 60px 72px minmax(0, 1fr); gap: 5px; }
+  .worlds-beyond .wb-point-results > li { grid-template-columns: minmax(0, 1fr) 32px auto; gap: 4px; }
+  .worlds-beyond .wb-point-stepper { gap: 3px; }
+}
