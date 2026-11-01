@@ -4,7 +4,7 @@ For Claude, Codex and other assistants. This repository is the Worlds Beyond hom
 
 The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separate project. Its rules code (for example `js/combat-core.js`) can be ported here, but don't edit that repository from this one.
 
-Before changing sheet presentation or interaction, consult the website's current UI source to match its behavior and palette. Show one stat score: effective at rest, base while editing. Automatic adjustments use teal, direct edits gold, and a manually edited score with an automatic adjustment purple. Notion remains the rules authority.
+Before changing sheet presentation or interaction, consult the website's current UI source to match its behavior and palette. Show one stat score: effective at rest, base while editing. Earned level-up stat points are part of that base and keep its normal color. Gear/effect adjustments use teal, direct edits gold, and a manually edited score with a gear/effect adjustment purple. Notion remains the rules authority.
 
 - **Trust-based character sheet:** players may customize and correct values. Don't add anti-cheat or unsolicited gameplay restrictions.
 - **Requested Wonder behavior:** using Wonder requires at least one current use and consumes each roll result only once. Its new reroll result may use Wonder again. Keep the sheet's manual pool corrections editable.

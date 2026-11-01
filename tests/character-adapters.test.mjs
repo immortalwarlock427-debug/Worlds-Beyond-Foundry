@@ -76,6 +76,30 @@ test("sheet shows effective stats and colors changes while editing only persiste
   assert.equal(source.vit.value, 12);
 });
 
+test("earned points belong to the normal editable base; only gear/effects add the adjusted color", async () => {
+  const source = {
+    stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: false, resetValue: null }])),
+    advancement: { level4: { str: 2, vit: 2 }, level8: { dex: 2, wis: 2 }, level12: { agl: 2 } }
+  };
+  source.stats.dex = { value: 20, manual: true, resetValue: 19 };
+  source.stats.wis = { value: 20, manual: true, resetValue: 19 };
+  const stats = structuredClone(source.stats);
+  for (const stat of Object.values(stats)) Object.assign(stat, { effective: stat.value, mod: 0, milestones: 0 });
+  stats.str.effective = 21; stats.dex.effective = 22;
+  stats.vit.effective = 23; stats.wis.effective = 24;
+  const sheet = new CharacterSheet(); sheet.isEditable = true;
+  sheet.actor = { items: [], system: { level: 12, stats, toObject: () => structuredClone(source), health: {}, ap: {}, reactions: {}, wonder: {}, core: { automatic: {} }, overrides: {} } };
+  const rows = (await sheet._prepareContext({})).groups.flatMap(group => group.rows);
+  for (const [key, base, adjusted, manual] of [["str", 21, false, false], ["dex", 22, false, true], ["vit", 21, true, false], ["wis", 22, true, true], ["agl", 21, true, false]]) {
+    const row = rows.find(stat => stat.key === key);
+    assert.equal(row.baseValue, base);
+    assert.equal(row.adjusted, adjusted);
+    assert.equal(row.manual, manual);
+    assert.equal(row.defaultValue, 21);
+  }
+  assert.equal(source.stats.str.value, 19);
+});
+
 function actor() {
   const actor = new CharacterActor();
   actor.type = "character";
@@ -183,4 +207,25 @@ test("repeated edits retain the original reset score; clearing restores it witho
   source.resetValue = null;
   result = sheet._processFormData(null, form, { object: {} });
   assert.equal(result.system.stats.agl.value, 12);
+});
+
+test("editing the advanced base subtracts earned points exactly once; clearing preserves points and reset history", () => {
+  const sheet = new CharacterSheet(); sheet.actor = actor(); sheet.actor.system.level = 8;
+  const source = { stats: { agl: { value: 17, manual: false, resetValue: null } }, advancement: { level4: { agl: 2 }, level8: { agl: 2 } } };
+  sheet.actor.system.toObject = () => structuredClone(source);
+  const input = { dataset: { statScore: "agl", base: "21", pendingBase: "22" } };
+  const form = { querySelectorAll: () => [input] };
+  let result = sheet._processFormData(null, form, { object: { statScores: { agl: 24 } } });
+  assert.deepEqual(result.system.stats.agl, { value: 18, manual: true, resetValue: 17 });
+  source.stats.agl = { ...result.system.stats.agl };
+  input.dataset.base = "22"; input.dataset.pendingBase = "";
+  result = sheet._processFormData(null, form, { object: { statScores: { agl: "" } } });
+  assert.deepEqual(result.system.stats.agl, { value: 17, manual: false, resetValue: null });
+  assert.deepEqual(source.advancement, { level4: { agl: 2 }, level8: { agl: 2 } });
+  source.stats.agl.resetValue = null;
+  result = sheet._processFormData(null, form, { object: {} });
+  assert.equal(result.system.stats.agl.value, 12, "legacy reset restores default plus earned points during prep");
+  input.dataset.pendingBase = "0";
+  result = sheet._processFormData(null, form, { object: {} });
+  assert.equal(result.system.stats.agl.value, -4, "manual exceptions below the award total remain editable");
 });
