@@ -1,18 +1,35 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { itemIcon, stockItemIcon } from "../module/item-icons.mjs";
+import { ARTWORK_NEEDED, itemIcon, stockItemIcon } from "../module/item-icons.mjs";
 import { catalogItems } from "../module/catalog.mjs";
 
-test("catalog weapons use fitting stock artwork rather than the shared SVG placeholder", () => {
-  const weapons = catalogItems().filter(item => item.type === "weapon");
-  for (const item of weapons) {
-    assert.match(item.img, /^icons\/.+\.webp$/, item.name);
+test("every catalog item has unique artwork, with explicit placeholders for the seven stock-art gaps", () => {
+  const items = catalogItems();
+  const weapons = items.filter(item => item.type === "weapon");
+  assert.equal(new Set(items.map(item => item.img)).size, items.length);
+  assert.equal(items.filter(item => item.img.startsWith("icons/")).length, 63);
+  assert.equal(Object.keys(ARTWORK_NEEDED).length, 7);
+  for (const item of items) {
+    assert.match(item.img, ARTWORK_NEEDED[item.name] ? /^systems\/worlds-beyond\/icons\/.+\.svg$/ : /^icons\/.+\.webp$/, item.name);
     assert.notEqual(item.img, "icons/weapons/swords/sword-simple-white.webp", item.name);
   }
-  assert.ok(new Set(weapons.map(item => item.img)).size >= 20);
   assert.match(weapons.find(item => item.name === "Revolver").img, /pistol-revolver/);
   assert.match(weapons.find(item => item.name === "Battleaxe").img, /axes/);
   assert.match(weapons.find(item => item.name === "Dagger").img, /daggers/);
+});
+
+test("old automatic stock images resolve per item while chosen stock art and renamed items stay as saved", () => {
+  const old = { type: "weapon", name: "Hand Crossbow", img: "icons/weapons/crossbows/crossbow-blue.webp" };
+  const original = structuredClone(old);
+  assert.match(itemIcon(old), /handcrossbow-black/);
+  assert.deepEqual(old, original);
+  assert.match(itemIcon({ type: "weapon", name: "Kusarigama", img: "icons/weapons/maces/flail-ball-grey.webp" }), /sickle-kusarigama-chain/);
+  assert.match(itemIcon({ type: "armor", name: "Light Arm Guard", img: "icons/equipment/hand/gauntlet-armored-black.webp" }), /bracer-belted-leather/);
+  assert.match(itemIcon({ type: "shield", name: "Scale Shield", img: "icons/equipment/shield/buckler-iron-cross-gray.webp" }), /scale-shield.svg/);
+  const chosen = { ...old, img: "icons/weapons/crossbows/crossbow-ornamental-winged.webp" };
+  assert.equal(itemIcon(chosen), chosen.img);
+  const renamed = { ...old, name: "Family heirloom" };
+  assert.equal(itemIcon(renamed), renamed.img);
 });
 
 test("custom images are preserved while generic legacy images get display fallbacks without mutation", () => {

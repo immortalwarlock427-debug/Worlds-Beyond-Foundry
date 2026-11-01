@@ -122,6 +122,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
   async _prepareContext(options) {
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: this.item.system, editable: this.isEditable,
+      artwork: itemIcon(this.item),
       typeLabel: ITEM_TYPES[this.item.type],
       propertySummary: Object.entries(WEAPON_PROPERTIES).filter(([key]) => this.item.system.properties?.[key]).map(([, label]) => label).join(" · ") || "None",
       signatureSummary: Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => this.item.system.signature?.[key]).map(([, label]) => label).join(" · ") || "None",
