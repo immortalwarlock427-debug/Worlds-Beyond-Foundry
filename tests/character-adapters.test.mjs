@@ -23,7 +23,7 @@ globalThis.foundry = {
   documents: { Actor: ActorStub, Combatant: class {} },
   abstract: { TypeDataModel: class { async _preCreate() {} } },
   data: { fields: {} },
-  applications: { api: { HandlebarsApplicationMixin: base => base, ApplicationV2: class {} }, sheets: { ActorSheetV2: SheetStub, ItemSheetV2: SheetStub } },
+  applications: { api: { HandlebarsApplicationMixin: base => base, ApplicationV2: class {}, DocumentSheetV2: SheetStub }, sheets: { ActorSheetV2: SheetStub, ItemSheetV2: SheetStub } },
   utils: { getProperty, setProperty, hasProperty: (object, path) => getProperty(object, path) !== undefined }
 };
 globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
@@ -186,6 +186,19 @@ test("creating an ability uses native embedded Items and never changes actor res
   assert.deepEqual(calls[0], ["Item", [{ name: "New ability", type: "ability", img: "icons/svg/book.svg" }]]);
   assert.deepEqual(calls[1], { force: true });
   owner.isOwner = false; await createAbility(owner); assert.equal(calls.length, 2);
+});
+
+test("manual defense corrections bind to stored bonuses rather than active effect totals", async () => {
+  const sheet = new CharacterSheet(); sheet.actor = actor();
+  sheet.actor.system.bonuses = { armor: 4, evasion: 3, movement: 5 };
+  sheet.actor.system.toObject = () => ({ bonuses: { armor: 1, evasion: 0, movement: 0 } });
+  const form = { querySelectorAll: selector => selector.includes("data-stat-score") ? [] : ["armor", "evasion", "movement"].map(key => ({ name: `system.bonuses.${key}` })) };
+  const unchanged = sheet._processFormData(null, form, { object: { system: { bonuses: { armor: 1, evasion: 0, movement: 0 } } } });
+  assert.equal(unchanged.system.bonuses.armor, undefined);
+  assert.equal(unchanged.system.bonuses.evasion, undefined);
+  assert.equal(unchanged.system.bonuses.movement, undefined);
+  const edited = sheet._processFormData(null, form, { object: { system: { bonuses: { armor: 4, evasion: 3, movement: 5 } } } });
+  assert.deepEqual(edited.system.bonuses, { armor: 4, evasion: 3, movement: 5 });
 });
 
 test("ability controls allow read-only viewing and require permission plus confirmation for deletion", async () => {

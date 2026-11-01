@@ -12,6 +12,8 @@ import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { AbilityData, AbilitySheet, createAbility } from "./abilities.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
+import { effectContext, effectRows } from "./effects-core.mjs";
+import { createEffect, toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
@@ -83,7 +85,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         baseMax: number(100, { min: 0 }), regen: number(0, { min: 0 }),
         refillOnRest: new BooleanField({ initial: true })
       }), { validateKey: customResourceId }),
-      bonuses: new SchemaField({ armor: number(), evasion: number() }),
+      bonuses: new SchemaField({ armor: number(), evasion: number(), movement: number() }),
       inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
       overrides: new SchemaField({
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
@@ -118,7 +120,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.core = coreNumbers({
       level: this.level,
       stats: { ...this.stats, agl: { value: this.equipment.effectiveAgility } },
-      bonuses: { armor: this.equipment.armor + this.bonuses.armor, evasion: this.equipment.evasion + this.bonuses.evasion },
+      bonuses: { armor: this.equipment.armor + this.bonuses.armor, evasion: this.equipment.evasion + this.bonuses.evasion, movement: this.bonuses.movement },
       overrides: {
         ...this.overrides,
         healthMax: this.health.maxOverride,
@@ -175,7 +177,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait,
       resource: CharacterSheet.#onResource,
-      ability: CharacterSheet.#onAbility
+      ability: CharacterSheet.#onAbility,
+      effect: CharacterSheet.#onEffect
     }
   };
 
@@ -187,6 +190,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const context = await super._prepareContext(options);
     const system = this.actor.system;
     const source = system.toObject();
+    const effects = effectContext(this.actor);
+    const statSources = key => [effects.sources[`system.stats.${key}.value`], key === "agl" && system.equipment?.agilityPenalty ? `Armor: −${wholeNumber(system.equipment.agilityPenalty)}` : ""].filter(Boolean).join(" · ");
     const increases = statIncreases(system.level, source.advancement);
     const rows = STATS.map(def => {
       const stat = system.stats[def.key];
@@ -197,6 +202,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       return {
         ...def,
         value, baseValue,
+        sources: statSources(def.key),
         defaultValue: (stored.resetValue ?? (stored.manual ? 12 : stored.value)) + increase,
         adjusted: value !== baseValue,
         manual: !!source.stats[def.key].manual,
@@ -212,20 +218,21 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
-      system: wholeDisplay({ ...system }),
-      resourcePools: resourceEntries(system),
+      system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
+      resourcePools: resourceEntries(system).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
+      effectGroups: effects.groups, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
       abilityGroups: abilityGroups(this.actor.items ?? [], system),
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
       editable: this.isEditable,
       unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
       hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
         || Object.values(system.overrides ?? {}).some(value => value != null && value !== "")
-        || !!system.bonuses?.armor || !!system.bonuses?.evasion,
+        || Object.values(source.bonuses ?? system.bonuses ?? {}).some(value => !!value),
       resources: wholeDisplay([
-        { key: "health", label: "Health", inputName: "healthCurrent", ...system.health },
+        { key: "health", label: "Health", inputName: "healthCurrent", ...system.health, sources: statSources("vit") },
         { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },
-        { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions },
-        { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder }
+        { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
+        { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
       ]),
       defyFate: system.stats.fth.value >= 21,
       worn: wholeDisplay(system.equipment),
@@ -239,7 +246,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
         { key: "armorRating", label: "Armor Rating", value: system.core.armorRating, type: "number" },
         { key: "movement", label: "Movement / AP", value: system.core.movement, unit: "ft", type: "number" }
-      ].map(detail => wholeDisplay({ ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key] })),
+      ].map(detail => wholeDisplay({ ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key],
+        sources: [effects.sources[`system.bonuses.${({ armorRating: "armor", evasion: "evasion", movement: "movement" })[detail.key]}`], statSources(["evasion", "movement"].includes(detail.key) ? "agl" : "vit")].filter(Boolean).join(" · ") })),
       groups: wholeDisplay([
         { title: "Physical", rows: rows.filter(r => r.group === "physical") },
         { title: "Mental", rows: rows.filter(r => r.group === "mental") }
@@ -248,9 +256,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   _processFormData(event, form, formData) {
-    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: this.actor.system });
-    delete data.statScores;
     const systemSource = this.actor.system.toObject?.();
+    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    delete data.statScores;
     const increases = statIncreases(this.actor.system.level, systemSource?.advancement);
     for (const [key, value] of editedStatInputs(form)) {
       if (!STATS.some(stat => stat.key === key) || (value !== null && !Number.isFinite(value))) continue;
@@ -348,6 +356,23 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     } catch (error) { ui.notifications.error(error.message); }
   }
 
+  static async #onEffect(event, target) {
+    const operation = target.dataset.operation;
+    if (operation !== "edit" && !this.isEditable) return;
+    try {
+      if (operation === "create") return await createEffect(this.actor, target.dataset.kind);
+      if (operation === "base") return await toggleEffect(this.actor, "base");
+      const uuid = target.closest("[data-effect-uuid]")?.dataset.effectUuid;
+      if (operation === "toggle") return await toggleEffect(this.actor, uuid);
+      const row = effectRows(this.actor).find(row => row.uuid === uuid);
+      if (!row) throw new Error("That effect no longer exists. Reopen the sheet.");
+      if (operation === "edit") return await openEffect(row.effect);
+      if (operation === "delete" && row.canRemove && await foundry.applications.api.DialogV2.confirm({
+        window: { title: "Remove effect" }, content: "<p>Remove this effect or form and its bonuses?</p>", rejectClose: false
+      })) return await row.effect.delete();
+    } catch (error) { ui.notifications.error(error.message); }
+  }
+
   static async #onPickPortrait(event, target) {
     if (!this.isEditable) return;
     const FilePicker = foundry.applications.apps.FilePicker.implementation;
@@ -383,6 +408,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 /* -------------------------------------------- */
 
 Hooks.once("init", () => {
+  registerEffectSupport();
   registerEquipmentItem();
   registerTokenAttacks();
   CONFIG.Actor.documentClass = CharacterActor;
