@@ -8,6 +8,13 @@
     <label>Category<input type="text" name="system.category" value="{{system.category}}" placeholder="Spell, class feature…" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   <label>Description<textarea name="system.description" rows="4" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
+  {{#if isForm}}<details class="wb-disclosure" data-sync="form-trigger"><summary>Trigger</summary><div class="wb-equipment-fields">
+    <label>Activation<select name="system.trigger.mode" {{#unless editable}}disabled{{/unless}}>{{#each triggerModes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Resource<select name="system.trigger.resourceId" {{#unless editable}}disabled{{/unless}}>{{#each triggerResources}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>When Current is<select name="system.trigger.comparison" {{#unless editable}}disabled{{/unless}}>{{#each triggerComparisons}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Threshold (points)<input type="number" name="system.trigger.threshold" value="{{system.trigger.threshold}}" placeholder="Resource maximum" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label class="wb-trigger-ending">When it stops matching<select name="system.trigger.endMode" {{#unless editable}}disabled{{/unless}}>{{#each triggerEndModes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+  </div><details class="wb-disclosure wb-help"><summary>Trigger help</summary><p>Checks when the resource changes. Blank threshold uses its maximum. Entry costs apply; leave them blank for a free transformation. Enable Allow over maximum on the resource to gain beyond its cap. Multiple matching forms ask you to choose.</p></details></details>{{/if}}
   <fieldset class="wb-ability-fieldset"><legend>Costs</legend><div class="wb-equipment-fields">
     <label>Base AP<input type="number" name="system.apCost" value="{{system.apCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>AP discount stat<select name="system.apDiscountStat" {{#unless editable}}disabled{{/unless}}>{{#each stats}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>

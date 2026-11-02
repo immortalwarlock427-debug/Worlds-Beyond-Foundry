@@ -37,7 +37,9 @@
   {{#if consumable}}
   <div class="wb-equipment-fields">
     <label>Kind<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each consumableKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Healing dice<input type="text" name="system.healingDice" value="{{system.healingDice}}" placeholder="2d6+2" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Restore<select name="system.restoreTarget" {{#unless editable}}disabled{{/unless}}>{{#each recoveryChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Amount or dice<input type="text" name="system.healingDice" value="{{system.healingDice}}" placeholder="20 or 2d6+2; blank for bonuses only" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Unit<select name="system.restoreUnit" {{#unless editable}}disabled{{/unless}}>{{#each recoveryUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
   </div>
   {{/if}}
   {{#if shield}}
@@ -46,7 +48,7 @@
     <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
-{{#if equippable}}
+{{#if hasBonuses}}
   <section class="wb-item-bonuses" aria-label="Item bonuses">
     <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button type="button" data-action="itemEffect" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
     {{#each itemEffects}}
@@ -58,7 +60,7 @@
     </div>
     {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
   </section>
-<p class="wb-item-brief">Bonuses apply while this item is equipped.</p>
+<p class="wb-item-brief">{{#if consumable}}Apply from the use card. Bonuses stay active until ended in Status.{{else}}Bonuses apply while this item is equipped.{{/if}}</p>
 {{/if}}
   <details class="wb-disclosure" data-sync="item-carrying"><summary>Carrying &amp; cost</summary><div class="wb-equipment-fields">
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
@@ -71,6 +73,6 @@
     {{#if weapon}}<p>Balanced is melee-only. Standard ranged weapons use None + Ranged weapon; Warbow and Arbalest use Paragon + Ranged weapon. Thrown is separate and keeps the weapon's melee family. Loading 0 means no loading limit; blank shots means full.</p>{{/if}}
     {{#if equippable}}<p>Equip armor and shields to add their defenses. Each leg-guard item is a complete pair; worn contributions count once per record, regardless of quantity. Equip weapons to attack from the character sheet.</p>{{/if}}
     <p>Items per slot controls stacking. Potions and ammunition normally stack five to a slot. Quantity, slots and contributions stay editable.</p>
-    {{#if consumable}}<p>Use one from the character sheet. Healing dice roll on use; apply healing from the chat card.</p>{{/if}}
+    {{#if consumable}}<p>Use one from the character sheet, then Apply from its chat card. Choose Health, Mana, Holy power or an available custom resource; enter a fixed amount or dice. Bonuses can be used alone or with restoration. The item is refunded when restoration cannot help and there are no bonuses to apply. Configure custom resources on the character's copy; names never silently rebind missing resources.</p>{{/if}}
   </details>
 </div>

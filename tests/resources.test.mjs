@@ -124,7 +124,7 @@ test("custom scaling supports all eight current stats with the single standard f
     const source = { baseMax: 77, scaleStat, bonus: 2, spent: 10 };
     const before = structuredClone(source);
     const system = { level: 4, stats: { [scaleStat]: { value: 18, effective: 21 } } };
-    assert.deepEqual(customPool(source, system), { min: 0, max: 128, value: 118, automatic: 128 });
+    assert.deepEqual(customPool(source, system), { min: 0, max: 128, value: 118, automatic: 128, allowOverflow: false });
     system.level = 8; assert.equal(customPool(source, system).max, 212);
     assert.equal(customPool({ ...source, scaleStat: "" }, system).max, 79);
     assert.deepEqual(source, before);

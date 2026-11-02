@@ -1,6 +1,6 @@
 # Bonuses, forms and Status
 
-Create an ability or equipment item, then add signed bonuses on its own editor. Forms are Form-type Ability Items, created with **Abilities → Add form** or the ability type selector. **Use** pays the recorded costs and replaces the previous form; **End** or **Base form** ends it freely. Ordinary active abilities remain independent. Bonus records use native Foundry v14 Active Effects internally; players do not create standalone effects from the character sheet.
+Create an ability or equipment item, then add signed bonuses on its own editor. Forms are created with **Abilities → Add form**, with a fixed Form editor. **Use** pays the recorded costs and replaces the previous form; **End** or **Base form** ends it freely. Ordinary active abilities remain independent. Consumable bonuses apply from their use card and appear only in Status while active. Forms can use [resource-threshold prompts](CONSUMABLES-TRIGGERS.md). Bonus records use native Foundry v14 Active Effects internally; players do not create standalone effects from the character sheet.
 
 **Status** is a live list of active sources, not their definitions. An inactive ability, unequipped item, disabled bonus or suppressed/expired effect is absent. Multiple active bonuses from one item are summarized once under its name. Ability End ends that source, while equipment and passive bonuses open their source editor and cannot be ended independently from Status. Native active conditions are also shown. The list does not invent unsettled condition rules or automatic durations.
 

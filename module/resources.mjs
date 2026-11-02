@@ -17,14 +17,14 @@ export function resourcePool(max, spent = 0, minimum = 0) {
 
 export function magicPool(level, score, data = {}) {
   const automatic = Math.max(0, numberOr(score, 12) * (numberOr(level, 1) + 2) + numberOr(data.bonus, 0));
-  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic };
+  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic, allowOverflow: !!data.allowOverflow };
 }
 
 export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   const stat = data.scaleStat && STATS.find(stat => stat.key === data.scaleStat);
   const automatic = stat ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
     : numberOr(data.baseMax, 100) + numberOr(data.bonus, 0);
-  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic: Math.max(0, automatic) };
+  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic: Math.max(0, automatic), allowOverflow: !!data.allowOverflow };
 }
 
 export function resourcePresentation(pool) {
@@ -61,7 +61,7 @@ export function adjustedResourceSpent(pool, action, amount = 1) {
     if (amount > 0 && pool.value - amount < numberOr(pool.min, 0)) throw new Error(`Not enough resource points: spending would go below the minimum (${numberOr(pool.min, 0)}). Correct Current or Minimum on the sheet if needed.`);
     return spent + amount;
   }
-  return pool.value >= pool.max ? spent : Math.max(0, spent - amount);
+  return pool.allowOverflow ? spent - amount : pool.value >= pool.max ? spent : Math.max(0, spent - amount);
 }
 
 export function resourceEntries(system) {

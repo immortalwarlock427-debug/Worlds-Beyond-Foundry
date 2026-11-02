@@ -36,7 +36,7 @@ function fixture(mode = "public") {
     getSpeaker: () => ({ actor: "hero" }),
     async create(data, options) {
       calls.posts.push({ data, options });
-      return { id: "posted", isContentVisible: true, ...data, getFlag: (scope, key) => data.flags?.[scope]?.[key],
+      return { id: `posted${calls.posts.length}`, uuid: `ChatMessage.posted${calls.posts.length}`, isContentVisible: true, ...data, getFlag: (scope, key) => data.flags?.[scope]?.[key],
         async setFlag(scope, key, value) { data.flags[scope][key] = structuredClone(value); return this; } };
     }
   };
@@ -126,6 +126,52 @@ test("partially needed healing applies only the deficit and keeps the paid cost 
   await applyConsumableHealing(message); await applyConsumableHealing(message);
   assert.equal(f.actor.system.health.damage, 0); assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
   const data = message.getFlag("worlds-beyond", "consumable"); assert.equal(data.healed, 3); assert.equal(data.applied, true); assert.equal(data.refunded, false);
+});
+
+function potionBonuses(f) {
+  f.potion.effects = new Map(["str", "dex"].map(key => [key, { name: `${key} tonic`, disabled: false, flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [{ key: `system.stats.${key}.value`, type: "add", phase: "initial", value: 2 }] } }]));
+  f.actor.effects = new Map();
+  f.actor.allApplicableEffects = () => f.actor.effects.values();
+  f.actor.createEmbeddedDocuments = async (type, data) => data.map((entry, index) => {
+    const effect = { ...structuredClone(entry), id: `bonus${index}`, uuid: `Actor.hero.ActiveEffect.bonus${index}`, parent: f.actor,
+      async update(data) { Object.assign(this, data); return this; } };
+    f.actor.effects.set(effect.id, effect); return effect;
+  });
+  f.actor.deleteEmbeddedDocuments = async (type, ids) => ids.map(id => { const effect = f.actor.effects.get(id); f.actor.effects.delete(id); return effect; });
+}
+
+test("consumables restore a chosen magic pool by percentage, preserve fractions, and reject missing resources before spending", async () => {
+  const f = fixture(); f.potion.system.kind = "potion"; f.potion.system.restoreTarget = "mana"; f.potion.system.restoreUnit = "percent";
+  f.actor.system.mana = { enabled: true, max: 125, value: 90, spent: 35 };
+  const message = await useConsumable(f.actor, f.potion.id); // mocked roll is 10 → 10% of 125
+  await applyConsumableHealing(message);
+  assert.equal(f.actor.system.mana.spent, 22.5); assert.equal(f.actor.system.health.damage, 10);
+  f.potion.system.restoreTarget = "resource00000001";
+  await assert.rejects(useConsumable(f.actor, f.potion.id), /available restoration resource/);
+  assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
+});
+
+test("stat tonics work at full Health, stay in Status rather than Abilities, and end all bonuses from one use together", async () => {
+  const f = fixture(); f.potion.system.kind = "potion"; f.potion.name = "Power tonic"; f.actor.system.health.damage = 0;
+  potionBonuses(f);
+  const message = await useConsumable(f.actor, f.potion.id); assert.equal(f.actor.effects.size, 0);
+  await Promise.all([applyConsumableHealing(message), applyConsumableHealing(message)]);
+  assert.equal(f.actor.effects.size, 2); assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
+  const context = effectContext(f.actor); assert.equal(context.statuses.length, 1); assert.equal(context.statuses[0].name, "Power tonic"); assert.equal(context.savedAbilities.length, 0);
+  f.actor.items.delete(f.potion.id); assert.equal(effectContext(f.actor).statuses.length, 1);
+  const { toggleEffect } = await import("../module/effects.mjs");
+  f.actor.type = "character"; await toggleEffect(f.actor, context.statuses[0].uuid, { active: false });
+  assert.equal(effectContext(f.actor).statuses.length, 0); assert.ok(Array.from(f.potion.effects.values()).every(effect => !effect.disabled));
+});
+
+test("partial bonus creation cancels all benefits and leaves the paid card retryable without duplicated restoration", async () => {
+  const f = fixture(); potionBonuses(f);
+  const message = await useConsumable(f.actor, f.potion.id);
+  const create = f.actor.createEmbeddedDocuments; f.actor.createEmbeddedDocuments = (type, data) => create(type, data.slice(0, 1));
+  await assert.rejects(applyConsumableHealing(message), /not all applied/);
+  assert.equal(f.actor.effects.size, 0); assert.equal(f.actor.system.health.damage, 10); assert.equal(message.getFlag("worlds-beyond", "consumable").applied, false);
+  f.actor.createEmbeddedDocuments = create; await applyConsumableHealing(message);
+  assert.equal(f.actor.effects.size, 2); assert.equal(f.actor.system.health.damage, 0);
 });
 
 function bonusAbility(f) {

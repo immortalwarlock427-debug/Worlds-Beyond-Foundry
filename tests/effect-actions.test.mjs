@@ -121,3 +121,11 @@ test("native effect suppression follows managed item state without disabling unr
   effect.expired = true; assert.equal(effect.isSuppressed, true);
   effect.expired = false; effect.flags = {}; effect.item = { type: "weapon", system: { equipped: false } }; assert.equal(effect.isSuppressed, false);
 });
+
+test("consumable bonus definitions never transfer or apply just from carrying the item", async () => {
+  let data;
+  const item = { documentName: "Item", type: "consumable", uuid: "Item.tonic", name: "Tonic", isOwner: true, effects: new Map(),
+    async createEmbeddedDocuments(type, records) { data = records[0]; const effect = { ...data, id: "bonus", parent: item }; item.effects.set(effect.id, effect); return [effect]; } };
+  const effect = await createEffect(item);
+  assert.equal(effect.transfer, false); assert.equal(effect.disabled, false); assert.equal(effect.flags["worlds-beyond"].itemBound, true);
+});
