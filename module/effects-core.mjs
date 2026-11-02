@@ -13,6 +13,7 @@ export const boundItem = effect => managedEffect(effect) && effectFlags(effect).
 export function itemEffectState(effect) {
   const item = boundItem(effect);
   if (!item) return "";
+  if (item.type === "consumable") return "On use";
   if (item.type === "ability") return item.system?.kind === "passive" || item.system?.effectsActive ? "" : "Ability inactive";
   return item.system?.equipped ? "" : "Not equipped";
 }
@@ -90,15 +91,16 @@ export function effectContext(actor) {
   const statuses = new Map();
   for (const row of activeRows) {
     const item = row.effect.item ?? (row.effect.parent?.documentName === "Item" ? row.effect.parent : null);
-    const key = item?.uuid ?? item?.id ?? row.uuid;
+    const consumed = effectFlags(row.effect).consumableUse;
+    const key = consumed?.id || item?.uuid || item?.id || row.uuid;
     const existing = statuses.get(key);
     if (existing) { existing.summaries.push(row.summary); continue; }
     statuses.set(key, { uuid: row.uuid, itemId: item?.id, abilityId: item?.type === "ability" ? item.id : null,
-      name: item?.name ?? row.name, img: item?.img || row.img, source: item ? (item.type === "ability" ? (item.system.kind === "form" ? "Form" : "Ability") : "Equipment") : row.source,
+      name: consumed?.name || item?.name || row.name, img: item?.img || row.img, source: consumed ? "Consumable" : item ? (item.type === "ability" ? (item.system.kind === "form" ? "Form" : "Ability") : "Equipment") : row.source,
       canEnd: item ? item.type === "ability" && item.system.kind !== "passive" && !!item.system.effectsActive : true,
       summaries: [row.summary] });
   }
-  const savedAbilities = rows.filter(row => row.effect.parent === actor && row.managed).map(row => ({ ...row,
+  const savedAbilities = rows.filter(row => row.effect.parent === actor && row.managed && !effectFlags(row.effect).consumableUse).map(row => ({ ...row,
     legacy: true, kind: row.form ? "form" : "active", effectsActive: row.active, canUse: true,
     category: "", hasDetails: false }));
   const forms = effectList(actor.items).filter(item => item.type === "ability" && item.system.kind === "form");

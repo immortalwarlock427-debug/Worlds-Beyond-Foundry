@@ -19,7 +19,7 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
     const effect = this.document, actor = parentActor(effect);
     this.snapshot = effectSnapshot(effect);
     return Object.assign(await super._prepareContext(options), {
-      effect, editable: this.isEditable, form: formEffect(effect), itemBonus: !!boundItem(effect), source: effectFlags(effect).source || "",
+      effect, editable: this.isEditable, form: formEffect(effect), itemBonus: !!boundItem(effect) || !!effectFlags(effect).consumableUse, source: effectFlags(effect).source || "",
       rows: effectChanges(effect).map((change, index) => ({ index, editable: simpleEffectChange(change),
         choices: effectTargets(actor?.system, change.key), value: wholeNumber(Number(change.value)), text: effectChangeText(change, actor?.system) }))
     });
@@ -77,11 +77,11 @@ export function openEffect(effect) {
 
 export async function createEffect(item) {
   if (item.documentName !== "Item") throw new Error("Create an ability and add its bonuses on the ability sheet.");
-  if (!item.isOwner || !["weapon", "armor", "shield", "ability"].includes(item.type)) return;
+  if (!item.isOwner || !["weapon", "armor", "shield", "ability", "consumable"].includes(item.type)) return;
   return queuedAction(item.actor?.uuid ?? item.uuid, async () => {
     const [effect] = await item.createEmbeddedDocuments("ActiveEffect", [{
       name: `${item.name} bonus`, img: "icons/svg/aura.svg",
-      disabled: false, transfer: true, system: { changes: [newEffectChange()] },
+      disabled: false, transfer: item.type !== "consumable", system: { changes: [newEffectChange()] },
       flags: { [EFFECT_SCOPE]: { managed: true, kind: "effect", source: item.name, itemBound: true } }
     }]);
     if (!effect) throw new Error("The bonus was not created. Try again.");
@@ -98,6 +98,13 @@ export async function toggleEffect(actor, uuid, { active } = {}) {
     }
     const effect = effectRows(actor).find(row => row.uuid === uuid)?.effect;
     if (!effect) throw new Error("That effect no longer exists. Reopen the sheet.");
+    const consumed = effectFlags(effect).consumableUse?.id;
+    if (consumed && active === false) {
+      for (const row of effectRows(actor).filter(row => row.effect.parent === actor && effectFlags(row.effect).consumableUse?.id === consumed && !row.disabled)) {
+        await change(() => row.effect.update({ disabled: true }), () => row.effect.update({ disabled: false }));
+      }
+      return;
+    }
     const disabled = active === undefined ? !effect.disabled : !active;
     if (disabled === effect.disabled) return;
     if (!disabled && effect.parent === actor && formEffect(effect)) await endOtherForms(actor, change, { effectId: effect.id });

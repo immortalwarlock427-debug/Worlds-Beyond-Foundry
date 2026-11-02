@@ -2,6 +2,8 @@
 
 Native Ability Items now support self bonuses and Use/End controls in addition to editable records. See [item bonuses and combat actions](ITEM-BONUSES-ACTIONS.md) for activation costs and scope. Attack/damage casting, automatic recovery/timers, targeting and animations remain deferred.
 
+Native Forms also offer an optional resource-threshold Trigger, with Ask first and Ask to end preferences, normal entry costs and stale-prompt checks. Older forms remain manual until configured. See [form trigger setup and limits](CONSUMABLES-TRIGGERS.md).
+
 ## Sources and scope
 
 Read 2026-11-01: Notion [Game Systems](https://app.notion.com/p/351c72092efb8089812cd231debc3e74), [Action Points](https://app.notion.com/p/406c72092efb81a491b3e7dc50e9ba73) and [Magic System](https://app.notion.com/p/351c72092efb81ad8887d6ab65b8cab6). AP modifiers change costs by at most half the base cost rounded down in either direction; spells normally start at 11 AP. The preview reuses the existing Foundry-free `actionApCost` function. No new combat math is introduced.

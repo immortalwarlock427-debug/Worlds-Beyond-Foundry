@@ -18,6 +18,7 @@ import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
+import { registerFormTriggers } from "./form-triggers.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
@@ -69,6 +70,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     });
     const resource = () => ({
       spent: number(), bonus: number(), amount: number(1, { min: 0 }),
+      allowOverflow: new BooleanField({ initial: false }),
       maxOverride: number(null, { nullable: true, min: 0 }), minOverride: override(),
       display: new StringField({ required: true, nullable: false, blank: false, initial: "number", choices: RESOURCE_DISPLAYS }),
       value: number(0, { persisted: false }), max: number(0, { persisted: false }), min: number(0, { persisted: false })
@@ -87,6 +89,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       ]))),
       health: new SchemaField({
         damage: number(),
+        allowOverflow: new BooleanField({ initial: false }),
         maxOverride: override(),
         value: number(0, { persisted: false }),
         max: number(0, { persisted: false })
@@ -522,6 +525,7 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", offerCatalogImport);
+registerFormTriggers();
 Hooks.on("renderItemDirectory", decorateEquipmentDirectory);
 Hooks.on("renderCompendium", decorateEquipmentDirectory);
 Hooks.on("renderChatMessageHTML", decorateSystemMessage);

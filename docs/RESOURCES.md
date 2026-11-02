@@ -1,5 +1,7 @@
 # Character resource pools
 
+Optional **Allow over maximum** now permits gains above the normal cap, with resource-threshold form prompts. Manual current corrections remain unrestricted. Defaults retain capped restoration. See [consumables, overflow and form triggers](CONSUMABLES-TRIGGERS.md) for setup, data and validation.
+
 Version 0.22.0 includes optional mana/holy-power pools and stable custom resource trackers, with any-stat scaling, whole-number points/percentage display and clearable final minimum/maximum overrides. Internal fractional points are retained. The user confirmed the 0.20.0 base pools work. This remains sheet-first work; combat development is paused.
 
 ## Sources

@@ -222,7 +222,7 @@ test("creating an ability uses native embedded Items and never changes actor res
   assert.deepEqual(calls[0], ["Item", [{ name: "New ability", type: "ability", img: "icons/svg/book.svg", system: { kind: "active" } }]]);
   assert.deepEqual(calls[1], { force: true });
   await createAbility(owner, "form");
-  assert.deepEqual(calls[2], ["Item", [{ name: "New form", type: "ability", img: "icons/svg/book.svg", system: { kind: "form" } }]]);
+  assert.deepEqual(calls[2], ["Item", [{ name: "New form", type: "ability", img: "icons/svg/book.svg", system: { kind: "form", trigger: { mode: "prompt", endMode: "prompt" } } }]]);
   owner.isOwner = false; await createAbility(owner); assert.equal(calls.length, 4);
 });
 

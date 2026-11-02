@@ -34,12 +34,22 @@ Website features map to Foundry like this:
 
 The user requested item/ability bonuses, Command and potion AP after the base sheet tabs. These are implemented for validation. Forms belong to Abilities and Status shows only active sources. Opportunity attacks are deferred again: later combat work should prompt when a creature moves away from an armed character with a reaction. Do not add a standalone React button. Broader casting, timers and combat automation remain below.
 
-1. **Mana, holy power and custom resources — base pools user-validated; refinements awaiting validation.** See [RESOURCES.md](RESOURCES.md). Custom pools offer any-stat scaling; all optional pools have points/percentage display, final maximum overrides and minimum spending floors. [Whole-number controls/display](NUMBER-DISPLAY.md) preserve internal fractional balances. Recovery is manual; no new turn automation is introduced.
+1. **Mana, holy power and custom resources — base pools user-validated; refinements awaiting validation.** See [RESOURCES.md](RESOURCES.md). Custom pools offer any-stat scaling; all optional pools have points/percentage display, final maximum overrides and minimum spending floors. Optional overflow lets gains exceed the normal cap, including Health when explicitly enabled. [Whole-number controls/display](NUMBER-DISPLAY.md) preserve internal fractional balances. Recovery is manual; no new turn automation is introduced.
 2. **Ability records on the sheet — user-validated.** Native Ability Items, grouped rows, descriptions, AP previews/resource cost records, manual uses/cooldowns, duration and notes. See [ABILITIES.md](ABILITIES.md). Self-bonus activation/payment is implemented; attack/damage casting follows later.
 3. **Ability/item bonuses, forms and Status — implemented, awaiting validation.** Native item-owned bonuses, Form-type Ability Items with one selected form, and active-only Status. Saved actor-owned forms/adjustments remain under Abilities, with no new standalone effect creator. Base scores and expenditure are preserved. See [EFFECTS-FORMS.md](EFFECTS-FORMS.md). Portrait/loadout switching and automatic timers remain deferred.
 4. **Milestone details — implemented, awaiting validation.** All 16 Notion rules, current effective-score unlock states and current-value previews in an expandable reference opened from the diamonds or Attributes toolbar. Existing Adamantine Body/reaction/Defy Fate passives verified; actions and usage remain manual. See [MILESTONES.md](MILESTONES.md).
 5. **Character details and notes — user-validated.** Class/Race, Background, Appearance, Backstory and Notes fields, with plain-text editing and readable observer output. Six blank-default fields leave existing actors and rules data intact. See [CHARACTER-DETAILS.md](CHARACTER-DETAILS.md).
 6. **Organization and validation — implemented, awaiting in-world validation.** Native Character/Equipment/Abilities/Status/Notes tabs, fixed identity/navigation, independently scrolling panels and narrow layout. Forms stay in Abilities; Status shows active sources only. Offline checks cover all tabs, unchanged form controls, existing actor data and save/reload regressions. The user still needs to check the live client and phone layout; see [SHEET-TABS.md](SHEET-TABS.md).
+7. **Consumable benefits and resource-triggered forms — implemented, awaiting validation.** Consumables restore Health or one selected resource with points/dice/percentage and apply numeric bonuses. Active per-use groups live only in Status. Form triggers detect resource crossings, defaulting to Ask first and Ask to end on newly configured forms. Declining ending keeps the transformation active. See [CONSUMABLES-TRIGGERS.md](CONSUMABLES-TRIGGERS.md).
+
+### Remaining sheet mechanics before wider combat
+
+- **Ability resolution:** healing/resource gains and damage/save/target outcomes on abilities, extending the existing cost/self-bonus records. A simple area ability editor and optional visuals follow later.
+- **Lifetimes and recovery:** ability/consumable durations, cooldown countdown, uses recharge, resource regeneration and configured rest recovery. These counters remain manual today.
+- **Form loadouts:** portraits, gear, available abilities and resource visibility per form, without losing balances or base data.
+- **Richer bonuses and conditions:** advantage/dice adjustments and damage defenses beyond the current numeric targets; condition presets only after their Notion rules are settled. Add reusable feature templates as their rules become available.
+
+Movement AP, opportunity prompts, automatic damage/defenses and wider token combat remain below, after sheet validation.
 
 ### Deferred combat work and wider roadmap
 

@@ -79,6 +79,7 @@
             {{/if}}
             <label data-tooltip="Replaces the calculated maximum and bonuses. Clear to restore the selected maximum source.">Maximum override<input type="number" name="{{path}}.maxOverride" value="{{maxOverride}}" placeholder="Default {{automatic}}" min="0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
             <label data-tooltip="Empty bar and spending floor. Clear to use 0; negative values are allowed.">Minimum override<input type="number" name="{{path}}.minOverride" value="{{minOverride}}" placeholder="Default 0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
+            <label class="wb-equipment-check" data-tooltip="Restore and consumables can raise Current above the normal maximum. Fill still returns to the maximum."><input type="checkbox" name="{{path}}.allowOverflow" {{#if allowOverflow}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Allow over maximum</label>
             <label>Display<select name="{{path}}.display" {{#unless @root.editable}}disabled{{/unless}}>{{#each displayChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
             {{#if percentUnavailable}}<label data-tooltip="Percentage needs a maximum greater than minimum; edit points here">Current points<input type="number" name="resourceValues.{{key}}" value="{{value}}" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>{{/if}}
           </div>
@@ -149,6 +150,7 @@
       <label class="wb-override-label"><span>{{detail.label}}</span><input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="1" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
       {{/each}}
       <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-equipment-check" data-tooltip="Healing consumables may raise Health above its normal maximum."><input type="checkbox" name="system.health.allowOverflow" {{#if system.health.allowOverflow}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Allow Health over maximum</label>
       <label class="wb-override-label"><span>Command AP correction</span><input type="number" name="system.command.value" value="{{commandPool.value}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input type="number" name="system.bonuses.movement" value="{{system.bonuses.movement}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
