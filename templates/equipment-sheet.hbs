@@ -60,7 +60,11 @@
     </div>
     {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
   </section>
-<p class="wb-item-brief">{{#if consumable}}Apply from the use card. Bonuses stay active until ended in Status.{{else}}Bonuses apply while this item is equipped.{{/if}}</p>
+{{#if consumable}}<details class="wb-disclosure" data-sync="consumable-duration"><summary>Bonus duration</summary><div class="wb-equipment-fields">
+  <label>Duration<input type="number" name="system.bonusDuration.value" value="{{system.bonusDuration.value}}" min="0" step="1" placeholder="Until ended" {{#unless editable}}disabled{{/unless}}></label>
+  <label>Unit<select name="system.bonusDuration.units" {{#unless editable}}disabled{{/unless}}>{{#each bonusDurationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+</div><p class="wb-item-brief">Starts when you Apply benefits. Blank or 0 lasts until ended. Rounds end at the start of your turn after that many rounds and need a started encounter. Minutes/hours follow Foundry's game clock, not real time. Restoration is instant.</p></details>{{/if}}
+<p class="wb-item-brief">{{#if consumable}}Apply from the use card. Timed bonuses expire automatically; End in Status removes them early.{{else}}Bonuses apply while this item is equipped.{{/if}}</p>
 {{/if}}
   <details class="wb-disclosure" data-sync="item-carrying"><summary>Carrying &amp; cost</summary><div class="wb-equipment-fields">
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="1" {{#unless editable}}disabled{{/unless}}></label>

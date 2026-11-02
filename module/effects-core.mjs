@@ -3,6 +3,7 @@ import { STATS } from "./stats.mjs";
 import { customResourceId } from "./resources.mjs";
 import { numberOr } from "./core-numbers.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { effectTimeLeft } from "./effect-duration.mjs";
 
 export const EFFECT_SCOPE = "worlds-beyond";
 export const effectFlags = effect => effect.flags?.[EFFECT_SCOPE] ?? {};
@@ -25,6 +26,21 @@ export function itemEffectRows(item) {
   }));
 }
 const effectList = effects => effects?.values ? Array.from(effects.values()) : Array.from(effects ?? []);
+export function itemBonusSummary(item) {
+  const changes = effectList(item.effects).filter(effect => !effect.disabled && !effect.duration?.expired).flatMap(effect => Array.from(effectChanges(effect)));
+  const totals = new Map(), advanced = [];
+  for (const change of changes) {
+    if (change.type !== "add" || change.phase !== "initial" || numberOr(change.value, null) === null) { advanced.push(effectChangeText(change, item.actor?.system)); continue; }
+    if (customEffectResource(change.key) && !item.actor?.system?.customResources?.[customEffectResource(change.key)]) continue;
+    totals.set(change.key, (totals.get(change.key) ?? 0) + Number(change.value));
+  }
+  return [...totals].filter(([, value]) => value !== 0).map(([key, value]) => {
+    const stat = STATS.find(stat => key === `system.stats.${stat.key}.value`);
+    const label = stat?.abbr ?? ({ "system.bonuses.armor": "AR", "system.bonuses.evasion": "Evasion", "system.bonuses.movement": "ft/AP" })[key]
+      ?? effectTargets(item.actor?.system, key).find(target => target.value === key)?.label ?? key;
+    return `${value >= 0 ? "+" : ""}${wholeNumber(value)} ${label}`;
+  }).concat(advanced).join(" · ");
+}
 export const customEffectResource = key => /^system\.customResources\.([A-Za-z0-9]{16})\.bonus$/.exec(key)?.[1] ?? null;
 
 export function effectTargets(system = {}, current = "") {
@@ -63,7 +79,7 @@ export function effectRows(actor) {
   const all = actor.allApplicableEffects ? Array.from(actor.allApplicableEffects()) : effectList(actor.effects);
   return all.map(effect => {
     const direct = effect.parent === actor;
-    const active = !effect.disabled && !effect.isSuppressed && !itemEffectState(effect) && (effect.active ?? true);
+    const active = !effect.disabled && !effect.duration?.expired && !effect.isSuppressed && !itemEffectState(effect) && (effect.active ?? true);
     const form = direct && formEffect(effect);
     const source = boundItem(effect)?.name || effectFlags(effect).source || effect.item?.name || (effect.origin ? effect.sourceName : "") || "";
     return {
@@ -71,7 +87,7 @@ export function effectRows(actor) {
       managed: managedEffect(effect), canRemove: direct, disabled: !!effect.disabled,
       state: effect.disabled ? "Off" : itemEffectState(effect) || (active ? "On" : "Suppressed / expired"),
       source, summary: effectChanges(effect).map(change => effectChangeText(change, actor.system)).join(" · ") || "No bonuses",
-      effect
+      effect, timeLeft: effectTimeLeft(effect)
     };
   });
 }
@@ -94,11 +110,11 @@ export function effectContext(actor) {
     const consumed = effectFlags(row.effect).consumableUse;
     const key = consumed?.id || item?.uuid || item?.id || row.uuid;
     const existing = statuses.get(key);
-    if (existing) { existing.summaries.push(row.summary); continue; }
+    if (existing) { existing.summaries.push(row.summary); if (row.timeLeft && !existing.timers.includes(row.timeLeft)) existing.timers.push(row.timeLeft); continue; }
     statuses.set(key, { uuid: row.uuid, itemId: item?.id, abilityId: item?.type === "ability" ? item.id : null,
       name: consumed?.name || item?.name || row.name, img: item?.img || row.img, source: consumed ? "Consumable" : item ? (item.type === "ability" ? (item.system.kind === "form" ? "Form" : "Ability") : "Equipment") : row.source,
       canEnd: item ? item.type === "ability" && item.system.kind !== "passive" && !!item.system.effectsActive : true,
-      summaries: [row.summary] });
+      summaries: [row.summary], timers: row.timeLeft ? [row.timeLeft] : [] });
   }
   const savedAbilities = rows.filter(row => row.effect.parent === actor && row.managed && !effectFlags(row.effect).consumableUse).map(row => ({ ...row,
     legacy: true, kind: row.form ? "form" : "active", effectsActive: row.active, canUse: true,
@@ -106,7 +122,7 @@ export function effectContext(actor) {
   const forms = effectList(actor.items).filter(item => item.type === "ability" && item.system.kind === "form");
   return {
     groups: [{ label: "Forms", rows: rows.filter(row => row.form) }, { label: "Effects", rows: rows.filter(row => !row.form) }].filter(group => group.rows.length),
-    savedAbilities, statuses: Array.from(statuses.values(), row => ({ ...row, summary: row.summaries.join(" · ") })),
+    savedAbilities, statuses: Array.from(statuses.values(), row => ({ ...row, summary: row.summaries.join(" · "), timeLeft: row.timers.join(" · ") })),
     hasForms: forms.length > 0 || rows.some(row => row.form), hasActiveForm: forms.some(item => item.system.effectsActive) || rows.some(row => row.form && row.active),
     sources: Object.fromEntries(Object.entries(sources).map(([key, values]) => [key, values.join(" · ")]))
   };

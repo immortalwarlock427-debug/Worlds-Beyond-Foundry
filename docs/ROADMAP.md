@@ -44,8 +44,9 @@ The user requested item/ability bonuses, Command and potion AP after the base sh
 
 ### Remaining sheet mechanics before wider combat
 
-- **Ability restoration — implemented, awaiting validation:** self healing/resource gains with fixed amounts, dice or percentage, combined with existing costs and bonuses. Full pure-restoration uses spend nothing; failed actions roll back gains and costs. See [ABILITY-RESTORATION.md](ABILITY-RESTORATION.md).
-- **Lifetimes and recovery:** ability/consumable durations, cooldown countdown, uses recharge, resource regeneration and configured rest recovery. These counters remain manual today.
+- **Ability restoration — user-validated:** self healing/resource gains with fixed amounts, dice or percentage, combined with existing costs and bonuses. Full pure-restoration uses spend nothing; failed actions roll back gains and costs. See [ABILITY-RESTORATION.md](ABILITY-RESTORATION.md).
+- **Consumable lifetimes and bonus hints — implemented, awaiting validation:** optional rounds/minutes/hours expire native applied bonuses; Status shows remaining time, and equipment/consumable rows plus potion cards show compact bonuses. Existing potions default to manual End. See [POTION-DURATIONS.md](POTION-DURATIONS.md).
+- **Remaining lifetimes and recovery:** ability durations, cooldown countdown, uses recharge, resource regeneration and configured rest recovery. These counters remain manual today; native consumable timers above are the first part of this step.
 - **Form loadouts:** portraits, gear, available abilities and resource visibility per form, without losing balances or base data.
 - **Final sheet validation:** verify existing-character saves, base/effective stats, resource bounds and payments, inventory, ability/consumable benefits, forms, active Status and narrow/read-only sheets in the live client. Resolve sheet defects before expanding combat.
 

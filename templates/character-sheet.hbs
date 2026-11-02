@@ -192,9 +192,9 @@
         <li class="wb-equipment-row" data-item-id="{{id}}">
           <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
           <div class="wb-item-main">
-            <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit" data-tooltip="{{detail}} · Qty {{quantity}} · {{slots}} slots">
+            <button type="button" class="wb-equipment-name" data-action="equipment" data-operation="edit" data-tooltip="{{detail}}{{#if bonusHint}} · {{bonusHintTitle}}: {{bonusHint}}{{/if}}{{#if bonusDuration}} · {{bonusDuration}}{{/if}} · Qty {{quantity}} · {{slots}} slots">
               <span class="wb-item-title">{{name}} {{#if showQuantity}}<span class="wb-quantity" aria-label="Quantity {{quantity}}">×{{quantity}}</span>{{/if}}</span>
-              <span class="wb-item-brief">{{#if brief}}{{brief}}{{else}}{{typeLabel}}{{/if}}</span>
+              <span class="wb-item-brief">{{#if brief}}{{brief}}{{else}}{{typeLabel}}{{/if}}{{#if bonusHint}} · <span class="wb-bonus-hint" title="{{bonusHintTitle}}">{{bonusHint}}</span>{{/if}}{{#if bonusDuration}} · {{bonusDuration}}{{/if}}</span>
             </button>
           </div>
           <div class="wb-row-actions">
@@ -257,6 +257,7 @@
         <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="status" data-operation="edit" aria-label="Open source: {{name}}" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
           <span class="wb-item-title">{{name}}</span>
           <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
+          {{#if timeLeft}}<span class="wb-status-time">{{timeLeft}}</span>{{/if}}
         </button></div>
         {{#if canEnd}}<div class="wb-row-actions"><button type="button" class="wb-row-use" data-action="status" data-operation="end" aria-label="End {{name}}" {{#unless @root.editable}}disabled{{/unless}}>End</button></div>{{/if}}
       </li>{{else}}<li class="wb-empty">Nothing is actively affecting you.</li>{{/each}}

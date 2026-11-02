@@ -12,6 +12,7 @@ const setProperty = (object, path, value) => {
   target[last] = value;
 };
 class ActorStub {
+  async onUpdateEffectDurations(...args) { this.durationCallback = args; }
   async update(data) { this.lastUpdate = data; return this; }
   async modifyTokenAttribute(...args) { this.fallback = args; return this; }
 }
@@ -119,6 +120,14 @@ function actor() {
   }).healthMax } } });
   return actor;
 }
+
+test("native duration refresh rerenders existing character views without writing actor data", async () => {
+  const a = actor(), effects = [{ id: "tonic" }], context = { round: 3 };
+  a.render = (...args) => { a.renderArgs = args; };
+  await a.onUpdateEffectDurations(effects, "turnStart", context);
+  assert.deepEqual(a.durationCallback, [effects, "turnStart", context]);
+  assert.deepEqual(a.renderArgs, [false, { renderContext: "updateEffectDurations" }]); assert.equal(a.lastUpdate, undefined);
+});
 
 test("token Health damage, healing and absolute correction preserve the same deficit as the sheet", async () => {
   const a = actor();

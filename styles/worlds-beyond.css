@@ -554,6 +554,8 @@
 .worlds-beyond .wb-equipment-list > .wb-equipment-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 58px; padding: 6px 0; border: 0; border-bottom: 1px solid #2C3452; border-radius: 0; background: transparent; }
 .worlds-beyond .wb-item-icon { display: block; width: 40px; height: 40px; object-fit: cover; border: 1px solid #2C3452; border-radius: 4px; background: #0D111E; }
 .worlds-beyond .wb-item-main { min-width: 0; }
+.worlds-beyond .wb-bonus-hint { color: #45B8AC; }
+.worlds-beyond .wb-status-time { display: block; color: #D6A85C; font: 13px "Alegreya Sans", sans-serif; }
 .worlds-beyond .wb-item-heading { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 10px; }
 .worlds-beyond .wb-equipment-row button.wb-equipment-name { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; min-height: 44px; width: 100%; padding: 0; border: 0; border-radius: 2px; background: transparent; color: #D6A85C; text-align: left; box-shadow: none; }
 .worlds-beyond .wb-equipment-row button.wb-equipment-name:hover { background: transparent; color: #E7C98E; }

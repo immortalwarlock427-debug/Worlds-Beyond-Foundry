@@ -2,6 +2,11 @@ import { damageFromHealth } from "./core-numbers.mjs";
 import { MAGIC_RESOURCES, poolSpentForCurrent } from "./resources.mjs";
 
 export class CharacterActor extends foundry.documents.Actor {
+  async onUpdateEffectDurations(effects, event, context) {
+    await super.onUpdateEffectDurations(effects, event, context);
+    if (this.type === "character") this.render(false, { renderContext: "updateEffectDurations" });
+  }
+
   async modifyTokenAttribute(attribute, value, isDelta = false, isBar = true) {
     if (this.type !== "character" || !isBar || !["health", "ap", "reactions", ...Object.keys(MAGIC_RESOURCES)].includes(attribute)) {
       return super.modifyTokenAttribute(attribute, value, isDelta, isBar);
