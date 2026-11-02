@@ -1,6 +1,6 @@
 # Character details and notes
 
-Open the **Notes** tab for Character details & notes. Fields are visible directly, with entered Class/Race shown beneath the name in the shared header. It uses the same navy/brass palette as the rest of the sheet. Native tab state keeps the selected view during sheet refreshes.
+Open the **Notes** tab for Character details & notes. Fields are visible directly, with entered Class/Race shown beneath the name beside the current form in the shared header. A blank or whitespace-only Class adds no label or separator; the saved text remains unchanged. Clicking the Class or Race label opens Notes. It uses the same navy/brass palette as the rest of the sheet. Native tab state keeps the selected view during sheet refreshes.
 
 - **Class** and **Race** are free text, matching the website's character identity fields.
 - **Background** and **Appearance** are shorter multiline fields.

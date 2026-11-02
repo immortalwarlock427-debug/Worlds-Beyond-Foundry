@@ -31,7 +31,7 @@ export function validateStatAwards(level, advancement, stats = {}, previous = {}
   const before = statIncreases(level, previous), after = statIncreases(level, advancement);
   for (const key of keys) {
     if (after[key] > before[key] && Number(stats[key]?.value ?? 12) + after[key] > 28) {
-      throw new Error(`${STATS.find(stat => stat.key === key).label} can reach 28 from stat points. Gear and manual corrections remain separate.`);
+      throw new Error(`Stat points can't raise ${STATS.find(stat => stat.key === key).label} above 28. Gear and manual corrections still apply.`);
     }
   }
 }

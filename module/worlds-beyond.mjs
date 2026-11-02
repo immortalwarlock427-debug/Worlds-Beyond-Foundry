@@ -299,6 +299,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return Object.assign(context, {
       actor: this.actor,
       overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(this.actor, effects.savedAbilities),
+      overviewClass: source.details?.class?.trim() || "",
       overviewRace: source.details?.race || "Add race",
       baseFormName: appearance.baseFormName,
       canRenameBaseForm: this.isEditable && !effects.hasActiveForm,
