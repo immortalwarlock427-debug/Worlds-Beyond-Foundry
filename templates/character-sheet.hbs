@@ -3,7 +3,14 @@
     <div class="wb-identity">
       <span class="wb-eyebrow wb-archive-title">Worlds Beyond <span aria-hidden="true">✦</span> Infinite Archive</span>
       <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
-      <div class="wb-identity-tags"><button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> {{overviewRace}}</button><span aria-hidden="true">·</span><button type="button" data-action="viewTab" data-tab="abilities" title="Abilities and forms"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}}</button></div>
+      <div class="wb-identity-tags">
+        <button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> {{overviewRace}}</button><span aria-hidden="true">·</span>
+        {{#if canRenameBaseForm}}
+        <button type="button" data-action="archiveAppearance" title="Rename base form" aria-label="Rename {{baseFormName}}"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}} <i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+        {{else}}
+        <button type="button" data-action="viewTab" data-tab="abilities" title="Abilities and forms"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}}</button>
+        {{/if}}
+      </div>
     </div>
     <label class="wb-level">
       <span class="wb-eyebrow">Level</span>
@@ -280,6 +287,7 @@
     <div class="wb-section-heading wb-record-heading"><div><span class="wb-eyebrow">Inscribed arts &amp; transformations</span><h2 class="wb-section-title">Abilities</h2></div>
       <div class="wb-equipment-actions">
         {{#if hasForms}}<button type="button" data-action="ability" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>{{baseFormName}}</button>{{/if}}
+        <button type="button" data-action="archiveAppearance" title="Rename your base form, for example Human Form" {{#unless editable}}disabled{{/unless}}><i class="fa-solid fa-pen" aria-hidden="true"></i> Rename base form</button>
         {{#if hasHiddenFormAbilities}}<button type="button" data-action="formView" data-view="abilities" aria-pressed="{{showAllFormAbilities}}">{{#if showAllFormAbilities}}Form abilities{{else}}Show all{{/if}}</button>{{/if}}
         <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
         <button type="button" data-action="ability" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
