@@ -29,7 +29,7 @@
           <input type="number" name="{{resource.inputName}}" value="{{resource.value}}" step="1" aria-label="Current {{resource.label}}" {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-resource-max" aria-label="Maximum {{resource.label}}">/ {{resource.max}}</span>
         </span>
-        {{#if resource.command}}<small class="wb-command-pool" data-tooltip="Extra AP from Command; spent first on your turn">+ {{resource.command}} Command AP</small>{{/if}}
+        {{#if resource.command}}<small class="wb-command-pool" data-tooltip="Included in the total above, not added twice. Command AP spends first on your turn; the maximum shown is your normal AP cap.">Includes {{resource.command}} Command AP{{#if resource.commandPending}} · your turn{{/if}}</small>{{/if}}
       </label>
     </div>
     {{/each}}

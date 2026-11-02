@@ -16,7 +16,7 @@ On an Ability Item, use **Bonuses → Add bonus**, for example Dexterity score +
 
 On the character's Abilities tab:
 
-- **Use** pays the recorded AP cost in combat, using the selected current stat discount and existing half-base cap. Outside combat it spends no AP. Resource costs and tracked uses are paid in either case. Percentage costs use the resource maximum and keep fractional points internally; negative resource minima remain valid spending floors. Mana/Holy power must be enabled before paid use.
+- **Use** checks and pays the recorded AP cost whenever pressed, including outside a started encounter, as explicitly requested for sheet use/testing. It uses the selected current stat discount and existing half-base cap. Resource costs and tracked uses are also paid. Percentage costs use the resource maximum and keep fractional points internally; negative resource minima remain valid spending floors. Mana/Holy power must be enabled before paid use. Passive abilities and End/Base remain free; manual activation corrections remain available.
 - Use starts the recorded cooldown and enables the ability's self bonuses. Reaction-type abilities also spend one reaction in combat. Missing resources, insufficient AP/resources/uses, remaining cooldown or an unavailable reaction report an error before activation. Existing editable trackers allow corrections.
 - **End** disables the self bonuses without charging or refunding costs. Rapid repeated Use on an already active bonus ability does not pay twice or end it. Abilities without bonus records stay usable as repeated actions rather than becoming toggles.
 - The Item's **Bonuses active (manual correction)** checkbox can correct activation without making a payment. Individually disabled bonus records remain disabled. Passive ability changes use the normal type selector; their bonuses do not need Use.
@@ -25,7 +25,7 @@ Costs use the pre-activation resource maximum/stat. Health damage and resource e
 
 ## Forms and Status
 
-Forms are abilities: **Abilities → Add form** creates a native Ability Item with kind Form. Add bonuses and optional entry costs there. Use replaces the previous form; End or Base form returns to base without refunding entry costs. Ordinary buffs remain enabled. Failed switching/posting restores previous forms and payments. Portraits/loadouts are deferred. Saved actor-owned forms/adjustments remain accessible under Abilities, without conversion or changes merely from opening a sheet; they retain their earlier cost-free toggles. New definitions use Ability Items, not standalone actor effects.
+**Add form** opens a fixed Form editor. **Add ability** offers only Active, Passive, Reaction and Other; Form is not a second route in that dropdown. Both retain their existing native stored fields. Add bonuses and optional entry costs there. Use replaces the previous form; End or Base form returns to base without refunding entry costs. Ordinary buffs remain enabled. Failed switching/posting restores previous forms and payments. Portraits/loadouts are deferred. Saved actor-owned forms/adjustments remain accessible under Abilities, without conversion or changes merely from opening a sheet; they retain their earlier cost-free toggles. New definitions use Ability Items, not standalone actor effects.
 
 The **Status** tab lists currently active sources only, grouped once per ability/equipment item. Power appears after Use and disappears after End; disabled bonuses, inactive abilities, stowed equipment and suppressed/expired effects are hidden. End on an active ability row ends its source; equipment/passive rows open their source instead. There is no Add status/effect or inactive catalog here. No unsettled bleeding/burning/status rules or token-condition automation is invented.
 
@@ -39,7 +39,7 @@ Deferred. The separate React button and opportunity attack mode are removed. Whe
 
 **Character → Command** selects an ally. It costs a fixed **5 own AP**, without CHA discount and without paying from another Command grant. It offers **2 + CHA modifier**, capped at **5** (no positive grant below zero). The ally receives the higher of their remaining grant and the new amount, never their sum.
 
-Command AP is a separate green amount under Action Points, not added to the normal maximum. Normal attacks, reloads, potions and ability AP payments use it first on the ally's turn. Off-turn payments cannot use it; manual ordinary AP corrections stay editable. Adjust values includes a Command AP correction.
+The main Action Points number includes remaining Command AP, with a green **Includes N Command AP** breakdown. It is not added to the normal maximum, and receiving it never changes or refills stored own AP. Normal attacks, reloads, potions and ability AP payments use it first on the ally's turn. Pending grants are labeled for the ally's turn; off-turn payments cannot spend that portion and explain why when insufficient own AP remains. Manually editing the displayed total corrects own AP while preserving Command; unchanged saves preserve exact hidden fractions. Adjust values includes a separate Command AP correction. The native AP token bar remains the ordinary AP pool.
 
 The grant is ready for the current turn if received then, otherwise the next incoming turn. A pending grant survives that turn's normal refill; it clears at the following turn start. Long rest clears it. This adapts the website's separate grant/fresh-turn tracking to Foundry's combat hook rather than allowing the refill to erase it.
 
@@ -48,6 +48,8 @@ The commander posts a grant card after paying. If they own the recipient, delive
 ## Potions and AP
 
 Using a Potion in a started combat spends **5 AP adjusted by DEX**, bounded to **3–7**, and one item. Eligible Command AP pays first. Outside combat it costs no AP. Other consumable kinds retain their prior behavior. Healing dice still post the existing confirmation card; healing is not silently applied. Insufficient AP leaves quantity unchanged, and posting/update failure restores payment and quantity.
+
+Healing consumables at full Health (including a manually corrected value above the maximum) say **You are at full health. Nothing was spent.** No dice, item or AP is spent. If another heal fills Health between Use and Apply, the card refunds the original item and recorded own/Command AP portions once. Failed refunds compensate their partial changes and leave the card retryable. Successful partial healing shows the amount actually restored and keeps its paid cost. The card records payment deltas; refunds add those deltas instead of resetting balances to old snapshots. Older pre-receipt cards or deleted source items require manual cost restoration; no unknown cost is guessed. This covers healing consumables; ability healing/casting remains deferred.
 
 ## Sources and formatting
 

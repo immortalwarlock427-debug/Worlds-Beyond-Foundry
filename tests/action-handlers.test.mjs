@@ -34,11 +34,15 @@ function fixture(mode = "public") {
   }
   const ChatMessage = {
     getSpeaker: () => ({ actor: "hero" }),
-    async create(data, options) { calls.posts.push({ data, options }); return { id: "posted", ...data }; }
+    async create(data, options) {
+      calls.posts.push({ data, options });
+      return { id: "posted", isContentVisible: true, ...data, getFlag: (scope, key) => data.flags?.[scope]?.[key],
+        async setFlag(scope, key, value) { data.flags[scope][key] = structuredClone(value); return this; } };
+    }
   };
   Object.assign(foundry, { dice: { Roll }, documents: { ChatMessage: { implementation: ChatMessage } }, utils: { fromUuid: async () => actor, fromUuidSync: () => actor } });
   globalThis.game = { settings: { get: () => mode }, user: { targets: [] }, combats: [{ started: true, combatants: [{ actor }] }] };
-  globalThis.ui = { notifications: { error() {}, warn() {} } };
+  calls.info = []; globalThis.ui = { notifications: { error() {}, warn() {}, info(message) { calls.info.push(message); } } };
   const flags = {
     attack: { actorUuid: actor.uuid, hands: [{ hand: "main", itemId: weapon.id, mod: 0, stat: "dex", hit: true, critical: false, damageRolled: false }] },
     consumable: { actorUuid: actor.uuid, amount: 6, applied: false }
@@ -83,6 +87,47 @@ test("potions use bounded DEX-adjusted AP, spend eligible Command first, and ref
   game.combats = []; await useConsumable(f.actor, f.potion.id); assert.equal(f.potion.system.quantity, 0);
 });
 
+test("full health prevents healing consumables before dice, item or AP spending, including manual overheal", async () => {
+  const f = fixture(); f.potion.system.kind = "potion";
+  for (const damage of [0, -3]) {
+    f.actor.system.health.damage = damage; await useConsumable(f.actor, f.potion.id);
+    assert.equal(f.potion.system.quantity, 2); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.health.damage, damage);
+  }
+  assert.equal(f.calls.posts.length, 0); assert.equal(f.calls.evaluations.length, 0);
+  assert.ok(f.calls.info.every(message => /You are at full health/.test(message)));
+});
+
+test("reaching full health before Apply refunds the original item and both AP portions once", async () => {
+  const f = fixture(); f.potion.system.kind = "potion"; f.actor.system.ap.value = 2; f.actor.system.command = { value: 3 };
+  game.combats[0].combatant = { actor: f.actor };
+  const message = await useConsumable(f.actor, f.potion.id);
+  assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.command.value, 0); assert.equal(f.potion.system.quantity, 1);
+  f.actor.system.health.damage = 0;
+  await Promise.all([applyConsumableHealing(message), applyConsumableHealing(message)]);
+  assert.equal(f.actor.system.ap.value, 2); assert.equal(f.actor.system.command.value, 3); assert.equal(f.potion.system.quantity, 2);
+  assert.equal(message.getFlag("worlds-beyond", "consumable").refunded, true);
+  assert.match(f.calls.info[0], /full health.*refunded/);
+});
+
+test("a cancelled full-health refund restores the receipt and item count so retry refunds only once", async () => {
+  const f = fixture(); f.potion.system.kind = "potion";
+  const message = await useConsumable(f.actor, f.potion.id); f.actor.system.health.damage = 0;
+  const update = f.actor.update; f.actor.update = async () => undefined;
+  await assert.rejects(applyConsumableHealing(message), /cancelled/);
+  assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(message.getFlag("worlds-beyond", "consumable").refunded, false);
+  f.actor.update = update; await applyConsumableHealing(message);
+  assert.equal(f.potion.system.quantity, 2); assert.equal(f.actor.system.ap.value, 15);
+});
+
+test("partially needed healing applies only the deficit and keeps the paid cost instead of refunding after success", async () => {
+  const f = fixture(); f.potion.system.kind = "potion"; f.actor.system.health.damage = 3;
+  const message = await useConsumable(f.actor, f.potion.id);
+  await applyConsumableHealing(message); await applyConsumableHealing(message);
+  assert.equal(f.actor.system.health.damage, 0); assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
+  const data = message.getFlag("worlds-beyond", "consumable"); assert.equal(data.healed, 3); assert.equal(data.applied, true); assert.equal(data.refunded, false);
+});
+
 function bonusAbility(f) {
   const item = { id: "buff", name: "Dexterity buff", type: "ability", effects: new Map([["bonus", { id: "bonus", name: "DEX", system: { changes: [] } }]]),
     system: { kind: "active", effectsActive: false, apCost: 5, apDiscountStat: "", resourceId: "mana", resourceCost: 10, resourceUnit: "percent", uses: { max: 2, spent: 0 }, cooldown: { rounds: 2, remaining: 0 } },
@@ -99,6 +144,23 @@ test("ability Use pays exact percent resources and one use, enables bonuses; rap
   assert.equal(f.calls.posts.length, 1);
   await useAbility(f.actor, item.id, { end: true }); assert.equal(item.system.effectsActive, false); assert.equal(f.actor.system.ap.value, 10);
   await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
+});
+
+test("ability Use pays AP without an encounter and insufficient AP leaves all costs and bonuses untouched", async () => {
+  const f = fixture(), item = bonusAbility(f); game.combats = [];
+  f.actor.system.ap.value = 4;
+  await assert.rejects(useAbility(f.actor, item.id), /Not enough AP/);
+  assert.equal(f.actor.system.ap.value, 4); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.effectsActive, false);
+  f.actor.system.ap.value = 5; await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.mana.spent, 12.5); assert.equal(item.system.effectsActive, true);
+});
+
+test("ability payments spend Command first on the actor's turn and explain pending AP on other turns", async () => {
+  const f = fixture(), item = bonusAbility(f); f.actor.system.ap.value = 1; f.actor.system.command = { value: 4 };
+  await assert.rejects(useAbility(f.actor, item.id), /Command AP can only be spent on your turn/);
+  assert.equal(f.actor.system.ap.value, 1); assert.equal(f.actor.system.command.value, 4); assert.equal(item.system.effectsActive, false);
+  game.combats[0].combatant = { actor: f.actor }; await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.command.value, 0); assert.equal(item.system.effectsActive, true);
 });
 test("Status shows an ability once only while its bonuses are active, and keeps disabled bonus definitions hidden", async () => {
   const f = fixture(), item = bonusAbility(f); item.name = "Power"; item.documentName = "Item"; item.uuid = "Actor.hero.Item.buff";

@@ -12,6 +12,8 @@ import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
 import { promptCommand, receiveCommand, decorateCommand } from "./command.mjs";
+import { apTotal } from "./ap.mjs";
+import { commandReady } from "./combat-support.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
@@ -270,7 +272,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         || Object.values(source.bonuses ?? system.bonuses ?? {}).some(value => !!value),
       resources: wholeDisplay([
         { key: "health", label: "Health", inputName: "healthCurrent", ...system.health, sources: statSources("vit") },
-        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap, command: wholeNumber(system.command?.value ?? 0) },
+        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap, value: apTotal(system), command: wholeNumber(system.command?.value ?? 0),
+          commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false },
         { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
       ]),
@@ -297,7 +300,18 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _processFormData(event, form, formData) {
     const systemSource = this.actor.system.toObject?.();
-    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    const shownAp = apTotal(this.actor.system);
+    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, ap: { ...this.actor.system.ap, value: shownAp }, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    // The main AP field includes Command. Manual total corrections change own AP,
+    // while the separate Command correction remains explicit and unchanged.
+    if (data.system?.ap && Object.hasOwn(data.system.ap, "value")) {
+      const entered = numberOr(data.system.ap.value, null);
+      if (entered === wholeNumber(shownAp)) delete data.system.ap.value;
+      else {
+        const grant = data.system.command && Object.hasOwn(data.system.command, "value") ? numberOr(data.system.command.value, 0) : numberOr(this.actor.system.command?.value, 0);
+        data.system.ap.value = entered === null ? null : Math.floor(entered) - Math.max(0, grant);
+      }
+    }
     // Unrelated sheet saves must not resubmit stored narrative text.
     for (const { key } of CHARACTER_DETAILS) {
       if (data.system?.details?.[key] === systemSource?.details?.[key]) delete data.system?.details?.[key];
@@ -316,7 +330,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     delete data.healthCurrent;
     // A full sheet submission includes unchanged trackers. Do not turn an unrelated
     // stat edit into healing or refill a spent pool just by submitting the form.
-    for (const key of ["ap", "reactions", "wonder"]) {
+    for (const key of ["reactions", "wonder"]) {
       if (data.system?.[key] && numberOr(data.system[key].value, null) === wholeNumber(this.actor.system[key].value)) {
         delete data.system[key].value;
       }

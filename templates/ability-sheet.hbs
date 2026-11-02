@@ -1,9 +1,10 @@
 <div class="wb-body wb-equipment-form wb-ability-form">
-  <header class="wb-item-heading"><img class="wb-item-icon" src="{{record.img}}" alt=""><div><span class="wb-eyebrow">Ability</span>
-    <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="Ability name" {{#unless editable}}disabled{{/unless}}>
+  <header class="wb-item-heading"><img class="wb-item-icon" src="{{record.img}}" alt=""><div><span class="wb-eyebrow">{{#if isForm}}Form{{else}}Ability{{/if}}</span>
+    <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="{{#if isForm}}Form{{else}}Ability{{/if}} name" {{#unless editable}}disabled{{/unless}}>
   </div></header>
   <div class="wb-equipment-fields">
-    <label>Type<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    {{#if isForm}}<div><span class="wb-eyebrow">Type</span><p class="wb-item-brief">Form</p></div>
+    {{else}}<label>Type<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>{{/if}}
     <label>Category<input type="text" name="system.category" value="{{system.category}}" placeholder="Spell, class feature…" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   <label>Description<textarea name="system.description" rows="4" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
@@ -39,7 +40,7 @@
     <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
   </details>
   <details class="wb-disclosure wb-help" data-sync="ability-help"><summary>Ability help</summary>
-    <p>Use on the character sheet pays recorded AP in combat, resource costs and one tracked use, starts the cooldown and enables bonuses. End disables bonuses without refunding costs. Passive bonuses apply while owned. Form abilities replace the previous form; Base form ends your form for free. Active bonuses appear in Status. Cooldown recovery, durations and uses recovery remain manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
+    <p>Use pays recorded AP, resource costs and one tracked use, starts the cooldown and enables bonuses, even outside an encounter. End disables bonuses without refunding costs. Passive bonuses apply while owned. Forms replace the previous form; Base form ends your form for free. Active bonuses appear in Status. Cooldown recovery, durations and uses recovery remain manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
     <p>AP discounts use the selected current stat modifier, capped at half the base cost rounded down in either direction. Spells normally start at 11 AP before the INT/FTH discount. Resource costs can be points or a percentage of the resource maximum. Deleted custom resources remain marked Missing resource until you choose another.</p>
   </details>
 </div>

@@ -1,6 +1,7 @@
 // Foundry-free AP payments. Command AP is separate and is spent first.
 import { numberOr } from "./core-numbers.mjs";
 export const commandAmount = modifier => Math.max(0, Math.min(5, 2 + numberOr(modifier, 0)));
+export const apTotal = system => numberOr(system.ap?.value, 0) + Math.max(0, numberOr(system.command?.value, 0));
 export function apAvailable(system, commandReady = true) {
   return numberOr(system.ap?.value, 0) + (commandReady ? Math.max(0, numberOr(system.command?.value, 0)) : 0);
 }

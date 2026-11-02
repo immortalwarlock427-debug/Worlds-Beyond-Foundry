@@ -36,7 +36,7 @@ globalThis.foundry = {
 globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
-const { createAbility } = await import("../module/abilities.mjs");
+const { createAbility, AbilitySheet } = await import("../module/abilities.mjs");
 
 test("stat awards prepare from stored bases without accumulating or rewriting reset history", () => {
   const source = { level: 8, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: true, resetValue: 18 }])),
@@ -183,6 +183,35 @@ test("whole displayed Health and AP preserve hidden fractions; deliberate numeri
   assert.equal(untouched.system.health?.damage, undefined); assert.equal(untouched.system.ap.value, undefined);
   const edited = sheet._processFormData(null, form, { object: { healthCurrent: 119.9, system: { ap: { value: 3.9 } } } });
   assert.equal(edited.system.health.damage, sheet.actor.clone(edited).system.health.max - 119); assert.equal(edited.system.ap.value, 3);
+});
+
+test("the AP field includes Command while saves preserve separate balances and hidden fractions", async () => {
+  globalThis.game = { combats: [] };
+  const sheet = new CharacterSheet(); sheet.actor = actor(); sheet.actor.uuid = "Actor.hero"; sheet.actor.items = [];
+  sheet.actor.system.ap.value = 4.9; sheet.actor.system.command = { value: 3, fresh: true };
+  sheet.actor.system.stats = Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12 }]));
+  sheet.actor.system.core = { automatic: {} }; sheet.actor.system.overrides = {};
+  sheet.actor.system.toObject = () => ({ stats: sheet.actor.system.stats });
+  const context = await sheet._prepareContext({});
+  const ap = context.resources.find(row => row.key === "ap");
+  assert.equal(ap.value, 7); assert.equal(ap.command, 3); assert.equal(ap.max, 15);
+  const form = { querySelectorAll: selector => selector.includes("data-stat-score") ? [] : [{ name: "system.ap.value" }] };
+  const unchanged = sheet._processFormData(null, form, { object: { system: { ap: { value: 7 } } } });
+  assert.equal(unchanged.system.ap.value, undefined); assert.equal(sheet.actor.system.ap.value, 4.9);
+  const edited = sheet._processFormData(null, form, { object: { system: { ap: { value: 6.9 } } } });
+  assert.equal(edited.system.ap.value, 3); assert.equal(edited.system.command, undefined);
+  const cleared = sheet._processFormData(null, form, { object: { system: { ap: { value: "" } } } }); assert.equal(cleared.system.ap.value, null);
+  const both = sheet._processFormData(null, form, { object: { system: { ap: { value: 9 }, command: { value: 2 } } } }); assert.equal(both.system.ap.value, 7);
+});
+
+test("Form editors have a fixed type and ordinary ability editors offer only active/passive/reaction/other", async () => {
+  for (const kind of ["form", "active", "passive", "reaction", "other"]) {
+    const sheet = new AbilitySheet(); sheet.isEditable = true;
+    sheet.item = { type: "ability", system: { kind }, effects: [] };
+    const context = await sheet._prepareContext({});
+    assert.equal(context.isForm, kind === "form");
+    assert.deepEqual(context.kinds.map(choice => choice.value), ["active", "passive", "reaction", "other"]);
+  }
 });
 
 test("creating an ability uses native embedded Items and never changes actor resources", async () => {

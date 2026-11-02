@@ -38,9 +38,9 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
     const choices = (definitions, selected) => Object.entries(definitions).map(([value, label]) => ({ value, label, selected: value === selected }));
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: wholeDisplay({ ...system }), editable: this.isEditable,
-      itemEffects: itemEffectRows(this.item), passive: system.kind === "passive",
+      itemEffects: itemEffectRows(this.item), passive: system.kind === "passive", isForm: system.kind === "form",
       record: wholeDisplay(abilityRecord(this.item, character)),
-      kinds: choices(ABILITY_TYPES, system.kind), stats: choices(ABILITY_STATS, system.apDiscountStat),
+      kinds: choices(Object.fromEntries(Object.entries(ABILITY_TYPES).filter(([key]) => key !== "form")), system.kind), stats: choices(ABILITY_STATS, system.apDiscountStat),
       units: choices(ABILITY_COST_UNITS, system.resourceUnit), resources: abilityResources(character, system.resourceId),
       hasActor: !!character
     });
@@ -92,7 +92,8 @@ export async function useAbility(actor, id, { end = false } = {}) {
       const points = item.system.resourceUnit === "percent" ? pool.max * cost / 100 : cost;
       spent = adjustedResourceSpent(pool, "spend", points);
     }
-    const ap = inCombat(actor) ? record.ap ?? 0 : 0;
+    // Use is an explicit paid activation, including testing outside an encounter.
+    const ap = record.ap ?? 0;
     const reaction = inCombat(actor) && item.system.kind === "reaction";
     if (reaction && !(actor.system.reactions.value >= 1)) throw new Error("No reactions left. Correct the tracker if needed.");
     const messageMode = game.settings.get("core", "messageMode");
