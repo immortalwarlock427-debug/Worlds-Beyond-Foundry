@@ -25,6 +25,23 @@ test("friendly targets cover current stats, movement/defenses and stable custom 
   assert.deepEqual(newEffectChange(), { key: "system.stats.str.value", type: "add", value: 0, phase: "initial", priority: 20 });
 });
 
+test("Status excludes inactive equipment/abilities/expired effects, keeps live sources, and saves old definitions under Abilities", () => {
+  const actor = { items: [], effects: [], system: {} };
+  const off = effect("Power", "system.stats.str.value", 3, { parent: actor, disabled: true });
+  const oldForm = effect("Monstrous", "system.stats.str.value", 3, { parent: actor, disabled: true, flags: flags("form") });
+  const expired = effect("Expired", "system.stats.dex.value", 1, { parent: actor, active: false, flags: {} });
+  const status = effect("Poisoned", "system.stats.vit.value", -1, { parent: actor, flags: {} });
+  const sword = { id: "sword", documentName: "Item", type: "weapon", name: "Sword", system: { equipped: false } };
+  const gear = effect("bonus", "system.stats.str.value", 3, { parent: sword, flags: { "worlds-beyond": { managed: true, itemBound: true } } });
+  actor.allApplicableEffects = () => [off, oldForm, expired, status, gear];
+  let context = effectContext(actor);
+  assert.deepEqual(context.statuses.map(row => row.name), ["Poisoned"]);
+  assert.deepEqual(context.savedAbilities.map(row => [row.name, row.kind, row.effectsActive]), [["Power", "active", false], ["Monstrous", "form", false]]);
+  sword.system.equipped = true; context = effectContext(actor);
+  assert.deepEqual(context.statuses.map(row => row.name), ["Poisoned", "Sword"]); assert.equal(context.statuses[1].canEnd, false);
+  assert.equal(off.disabled, true); assert.equal(oldForm.disabled, true);
+});
+
 test("selecting a form sends the complete form selection without touching independent or unmarked effects", () => {
   const a = effect("wolf", "system.stats.str.value", 2, { flags: flags("form"), disabled: false });
   const b = effect("bear", "system.stats.vit.value", 3, { flags: flags("form"), disabled: true });

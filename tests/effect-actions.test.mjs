@@ -27,11 +27,11 @@ function fixture() {
   return { actor, make, calls };
 }
 
-test("form switches update every form in one native batch and independent effects remain enabled", async () => {
+test("saved form switches keep one form active and independent saved abilities remain enabled", async () => {
   const f = fixture(), wolf = f.make("wolf", "form"), bear = f.make("bear", "form"), blessing = f.make("blessing"); blessing.disabled = false;
   await toggleEffect(f.actor, wolf.uuid); assert.equal(wolf.disabled, false); assert.equal(bear.disabled, true);
   await toggleEffect(f.actor, bear.uuid); assert.equal(wolf.disabled, true); assert.equal(bear.disabled, false); assert.equal(blessing.disabled, false);
-  assert.deepEqual(f.calls[1], { type: "ActiveEffect", updates: [{ _id: "wolf", disabled: true }, { _id: "bear", disabled: false }] });
+  assert.deepEqual(f.calls.map(call => call.data), [{ disabled: false }, { disabled: true }, { disabled: false }]);
   await toggleEffect(f.actor, "base"); assert.equal(bear.disabled, true); assert.equal(blessing.disabled, false);
 });
 
@@ -43,22 +43,34 @@ test("rapid local form changes serialize and selecting the active form returns t
   f.actor.isOwner = false; const count = f.calls.length; await toggleEffect(f.actor, a.uuid); assert.equal(f.calls.length, count);
 });
 
-test("cancelled batch/single updates report failure rather than claiming a form or effect activated", async () => {
+test("using a saved form replaces a Form ability and restores it if the saved form update is cancelled", async () => {
+  const f = fixture(), saved = f.make("Monstrous", "form");
+  const item = { id: "wolf", type: "ability", system: { kind: "form", effectsActive: true }, async update(data) { this.system.effectsActive = data["system.effectsActive"]; return this; } };
+  f.actor.items = new Map([[item.id, item]]);
+  const update = saved.update; saved.update = async () => undefined;
+  await assert.rejects(toggleEffect(f.actor, saved.uuid, { active: true }), /cancelled/);
+  assert.equal(item.system.effectsActive, true); assert.equal(saved.disabled, true);
+  saved.update = update; await toggleEffect(f.actor, saved.uuid, { active: true });
+  assert.equal(item.system.effectsActive, false); assert.equal(saved.disabled, false);
+  await toggleEffect(f.actor, saved.uuid, { active: true }); assert.equal(saved.disabled, false);
+});
+
+test("cancelled saved form/ability updates report failure rather than claiming activation", async () => {
   const f = fixture(), a = f.make("a", "form"), effect = f.make("effect");
-  f.actor.updateEmbeddedDocuments = async () => [];
-  await assert.rejects(toggleEffect(f.actor, a.uuid), /did not complete/); assert.equal(a.disabled, true);
+  a.update = async () => undefined;
+  await assert.rejects(toggleEffect(f.actor, a.uuid), /cancelled/); assert.equal(a.disabled, true);
   effect.update = async () => undefined;
   await assert.rejects(toggleEffect(f.actor, effect.uuid), /cancelled/);
   await assert.rejects(toggleEffect(f.actor, "missing"), /no longer exists/);
 });
 
-test("creation makes an inactive native v14 effect without changing scores, resources or the current form", async () => {
+test("standalone actor effect creation is replaced by ability creation without changing saved records", async () => {
   const f = fixture(), active = f.make("active", "form"); active.disabled = false; const before = structuredClone(f.actor.system);
-  const created = await createEffect(f.actor, "form"); assert.equal(created.disabled, true); assert.equal(active.disabled, false);
-  assert.equal(f.calls[0].type, "ActiveEffect"); assert.equal(f.calls[0].data[0].transfer, false);
-  assert.deepEqual(f.calls[0].data[0].system.changes, [newEffectChange()]); assert.equal(f.calls[0].data[0].changes, undefined);
+  await assert.rejects(createEffect(f.actor, "form"), /Create an ability/);
+  await assert.rejects(createEffect(f.actor), /Create an ability/);
+  assert.equal(active.disabled, false);
   assert.deepEqual(f.actor.system, before);
-  f.actor.isOwner = false; await createEffect(f.actor); assert.equal(f.calls.length, 1);
+  assert.equal(f.calls.length, 0);
 });
 
 test("effect sheets reject stale edits and permission loss without overwriting native changes", async () => {

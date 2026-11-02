@@ -5,6 +5,7 @@ import { itemEffectAction } from "./effects.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { inCombat, payAp } from "./combat-support.mjs";
 import { adjustedResourceSpent, customResourceId } from "./resources.mjs";
+import { endOtherForms } from "./forms.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 
@@ -57,9 +58,10 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   }
 }
 
-export async function createAbility(actor) {
+export async function createAbility(actor, kind = "active") {
   if (!actor.isOwner || actor.type !== "character") return;
-  const [item] = await actor.createEmbeddedDocuments("Item", [{ name: "New ability", type: "ability", img: ABILITY_ICON }]);
+  if (!Object.hasOwn(ABILITY_TYPES, kind)) throw new Error("Choose an ability type.");
+  const [item] = await actor.createEmbeddedDocuments("Item", [{ name: kind === "form" ? "New form" : "New ability", type: "ability", img: ABILITY_ICON, system: { kind } }]);
   if (!item) throw new Error("The ability was not created. Try again.");
   await item.sheet.render({ force: true });
   return item;
@@ -99,8 +101,10 @@ export async function useAbility(actor, id, { end = false } = {}) {
     if (spent !== undefined) await change(() => actor.update({ [`${path}.spent`]: spent }), () => actor.update({ [`${path}.spent`]: previousSpent }));
     if (reaction) await change(() => actor.update({ "system.reactions.value": actor.system.reactions.value - 1 }), () => actor.update({ "system.reactions.value": actor.system.reactions.value + 1 }));
     const previous = { "system.effectsActive": false, "system.uses.spent": item.system.uses.spent, "system.cooldown.remaining": item.system.cooldown.remaining };
+    if (item.system.kind === "form") await endOtherForms(actor, change, { itemId: item.id });
     const hasBonuses = itemEffectRows(item).length > 0;
-    const updates = { "system.effectsActive": hasBonuses, "system.uses.spent": item.system.uses.spent + (record.uses.tracked ? 1 : 0), "system.cooldown.remaining": item.system.cooldown.rounds ?? 0 };
+    const staysActive = hasBonuses || item.system.kind === "form";
+    const updates = { "system.effectsActive": staysActive, "system.uses.spent": item.system.uses.spent + (record.uses.tracked ? 1 : 0), "system.cooldown.remaining": item.system.cooldown.rounds ?? 0 };
     // Native updates can return undefined when there is no diff. A simple ability
     // without bonuses or trackers still posts and pays its configured costs.
     if (Object.keys(updates).some(key => updates[key] !== previous[key])) await change(() => item.update(updates), () => item.update(previous));

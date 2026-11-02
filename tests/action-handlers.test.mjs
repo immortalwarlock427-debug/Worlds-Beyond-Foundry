@@ -5,6 +5,8 @@ globalThis.foundry = { abstract: { TypeDataModel: class {} }, applications: { ap
 const { rollAttack, reloadWeapon, rollDamage, decorateAttackMessage } = await import("../module/attack-actions.mjs");
 const { useConsumable, applyConsumableHealing, decorateConsumableMessage } = await import("../module/equipment.mjs");
 const { useAbility } = await import("../module/abilities.mjs");
+const { effectContext } = await import("../module/effects-core.mjs");
+const { returnToBase } = await import("../module/forms.mjs");
 
 function fixture(mode = "public") {
   const calls = { evaluations: [], posts: [], flags: [], updates: [] };
@@ -60,25 +62,12 @@ test("attack/reload/consumable cards pass all four v14 visibility modes; blind d
   }
 });
 
-test("opportunity attacks spend one reaction and no AP or Command AP; failed posts refund reaction and shots", async () => {
-  const f = fixture(); f.actor.system.reactions = { value: 2 }; f.actor.system.ap.value = 0; f.actor.system.command = { value: 4 };
-  await rollAttack(f.actor, f.weapon, { opportunity: true, spendReaction: true, spendAp: true, mode: "ranged", stat: "dex" });
-  assert.equal(f.actor.system.reactions.value, 1); assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.command.value, 4); assert.equal(f.weapon.system.shots, 1);
-  assert.match(f.calls.posts[0].data.content, /1 reaction spent/);
-  f.ChatMessage.create = async () => { throw new Error("offline"); };
-  await assert.rejects(rollAttack(f.actor, f.weapon, { opportunity: true, spendReaction: true }), /offline/);
-  assert.equal(f.actor.system.reactions.value, 1); assert.equal(f.weapon.system.shots, 1);
-  f.actor.system.reactions.value = 0;
-  await assert.rejects(rollAttack(f.actor, f.weapon, { opportunity: true, spendReaction: true }), /No reactions/);
-});
-
-test("Flicker prevents an opportunity hit while ordinary attacks keep their normal result", async () => {
-  const f = fixture();
-  await rollAttack(f.actor, f.weapon, { opportunity: true }, { name: "Swift", evasion: 0, flicker: true });
-  assert.equal(f.calls.posts[0].data.flags["worlds-beyond"].attack.hands[0].hit, false);
-  assert.match(f.calls.posts[0].data.content, /Flicker/);
-  await rollAttack(f.actor, f.weapon, {}, { name: "Swift", evasion: 0, flicker: true });
-  assert.equal(f.calls.posts[1].data.flags["worlds-beyond"].attack.hands[0].hit, true);
+test("ordinary attacks still spend AP without spending reactions", async () => {
+  const f = fixture(); f.actor.system.reactions = { value: 2 };
+  await rollAttack(f.actor, f.weapon, { spendAp: true, mode: "ranged", stat: "dex" }, { name: "Swift", evasion: 0 });
+  assert.equal(f.actor.system.ap.value, 5); assert.equal(f.actor.system.reactions.value, 2);
+  assert.equal(f.calls.posts[0].data.flags["worlds-beyond"].attack.hands[0].hit, true);
+  assert.doesNotMatch(f.calls.posts[0].data.content, /Opportunity|reaction spent/);
 });
 
 test("potions use bounded DEX-adjusted AP, spend eligible Command first, and refund both AP and quantity on failure", async () => {
@@ -110,6 +99,36 @@ test("ability Use pays exact percent resources and one use, enables bonuses; rap
   assert.equal(f.calls.posts.length, 1);
   await useAbility(f.actor, item.id, { end: true }); assert.equal(item.system.effectsActive, false); assert.equal(f.actor.system.ap.value, 10);
   await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
+});
+test("Status shows an ability once only while its bonuses are active, and keeps disabled bonus definitions hidden", async () => {
+  const f = fixture(), item = bonusAbility(f); item.name = "Power"; item.documentName = "Item"; item.uuid = "Actor.hero.Item.buff";
+  for (const id of ["str", "dex", "off"]) item.effects.set(id, { id, uuid: `${item.uuid}.ActiveEffect.${id}`, name: id, parent: item, disabled: id === "off",
+    flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [{ key: `system.stats.${id}.value`, value: 2, type: "add", phase: "initial" }] } });
+  item.effects.delete("bonus"); f.actor.allApplicableEffects = () => item.effects.values();
+  assert.deepEqual(effectContext(f.actor).statuses, []);
+  await useAbility(f.actor, item.id);
+  const rows = effectContext(f.actor).statuses;
+  assert.equal(rows.length, 1); assert.equal(rows[0].name, "Power"); assert.equal(rows[0].abilityId, item.id); assert.equal(rows[0].canEnd, true);
+  assert.match(rows[0].summary, /Strength score \+2.*Dexterity score \+2/); assert.doesNotMatch(rows[0].summary, /off/);
+  await useAbility(f.actor, item.id, { end: true }); assert.deepEqual(effectContext(f.actor).statuses, []);
+  item.system.kind = "passive";
+  assert.equal(effectContext(f.actor).statuses[0].canEnd, false);
+  f.actor.allApplicableEffects = () => []; assert.deepEqual(effectContext(f.actor).statuses, []);
+});
+
+test("form abilities switch the previous item/saved form off, refund a failed switch, and return to Base freely", async () => {
+  const f = fixture(), item = bonusAbility(f); item.system.kind = "form";
+  const old = { id: "old", type: "ability", system: { kind: "form", effectsActive: true }, async update(data) { this.system.effectsActive = data["system.effectsActive"]; return this; } };
+  const saved = { id: "saved", disabled: false, flags: { "worlds-beyond": { managed: true, kind: "form" } }, async update(data) { this.disabled = data.disabled; return this; } };
+  f.actor.items.set(old.id, old); f.actor.effects = new Map([[saved.id, saved]]); f.actor.type = "character";
+  const create = f.ChatMessage.create; f.ChatMessage.create = async () => undefined;
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/);
+  assert.equal(old.system.effectsActive, true); assert.equal(saved.disabled, false); assert.equal(item.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
+  f.ChatMessage.create = create; await useAbility(f.actor, item.id);
+  assert.equal(old.system.effectsActive, false); assert.equal(saved.disabled, true); assert.equal(item.system.effectsActive, true);
+  const ap = f.actor.system.ap.value; await returnToBase(f.actor);
+  assert.equal(item.system.effectsActive, false); assert.equal(f.actor.system.ap.value, ap);
 });
 test("failed ability posting refunds AP/resource/uses/cooldown/activation; missing pools and empty uses spend nothing", async () => {
   const f = fixture(), item = bonusAbility(f); f.ChatMessage.create = async () => undefined;

@@ -4,7 +4,7 @@ import { actionApCost } from "./attacks.mjs";
 import { numberOr } from "./core-numbers.mjs";
 import { wholeNumber } from "./number-display.mjs";
 
-export const ABILITY_TYPES = Object.freeze({ active: "Active", passive: "Passive", reaction: "Reaction", other: "Other" });
+export const ABILITY_TYPES = Object.freeze({ active: "Active", passive: "Passive", reaction: "Reaction", form: "Form", other: "Other" });
 export const ABILITY_COST_UNITS = Object.freeze({ points: "Points", percent: "% of maximum" });
 export const ABILITY_STATS = Object.freeze(Object.fromEntries([["", "None (fixed cost)"], ...STATS.map(stat => [stat.key, stat.label])]));
 export const ABILITY_ICON = "icons/svg/book.svg";
@@ -47,7 +47,7 @@ export function abilityRecord(item, character) {
 
 export function abilityGroups(items, character) {
   const records = Array.from(items).filter(item => item.type === "ability").map(item => abilityRecord(item, character));
-  return Object.entries(ABILITY_TYPES).map(([kind, label]) => ({ label, rows: records.filter(row => row.kind === kind) })).filter(group => group.rows.length);
+  return Object.entries(ABILITY_TYPES).map(([kind, label]) => ({ label: kind === "form" ? "Forms" : label, rows: records.filter(row => row.kind === kind) })).filter(group => group.rows.length);
 }
 
 export function abilityFormUpdates(system, data) {

@@ -1,6 +1,6 @@
 # Item bonuses and combat actions
 
-This implements the user's combined request: equipment/ability stat bonuses, a separate Effects & Statuses tab, opportunity attacks, Command AP and potion AP. The explicit request resumes these combat actions after the base sheet work.
+Equipment/ability stat bonuses, forms under Abilities, active-only Status, Command AP and potion AP. Opportunity attacks are deferred again at the user's request; no separate React control or movement prompt is included.
 
 ## Equipment bonuses
 
@@ -23,17 +23,17 @@ On the character's Abilities tab:
 
 Costs use the pre-activation resource maximum/stat. Health damage and resource expenditure survive bonus changes. Failed document/chat operations compensate AP, resources, reaction, uses, cooldown and activation; failed compensation requests manual correction. Durations remain free text, cooldown countdown/recovery and uses recovery remain manual. This step does not add targeted buff delivery, ability attacks/damage/saves, templates or animations. Newly dropped active abilities start inactive; passive abilities still apply normally.
 
-## Effects & Statuses
+## Forms and Status
 
-This separate fifth tab holds forms, manual adjustments/statuses and a source overview of native item effects. It does not replace Item bonuses. Linked bonuses are edited on their source or through the source row; changing equipment/ability state controls whether they apply. Existing standalone effects/forms are retained. No unsettled bleeding/burning/status rules or token-condition automation is invented.
+Forms are abilities: **Abilities → Add form** creates a native Ability Item with kind Form. Add bonuses and optional entry costs there. Use replaces the previous form; End or Base form returns to base without refunding entry costs. Ordinary buffs remain enabled. Failed switching/posting restores previous forms and payments. Portraits/loadouts are deferred. Saved actor-owned forms/adjustments remain accessible under Abilities, without conversion or changes merely from opening a sheet; they retain their earlier cost-free toggles. New definitions use Ability Items, not standalone actor effects.
+
+The **Status** tab lists currently active sources only, grouped once per ability/equipment item. Power appears after Use and disappears after End; disabled bonuses, inactive abilities, stowed equipment and suppressed/expired effects are hidden. End on an active ability row ends its source; equipment/passive rows open their source instead. There is no Add status/effect or inactive catalog here. No unsettled bleeding/burning/status rules or token-condition automation is invented.
 
 Managed item bonuses alone use the new equipped/ability gate. Unrelated native effects retain their existing transfer/suppression behavior. Expired or disabled native effects remain inactive.
 
 ## Opportunity attacks
 
-**Equipment → React** on an equipped weapon opens the existing attack dialog in opportunity mode. It spends one reaction and no AP, uses one weapon, and retains normal dice, stat choice, loading/shots, damage and linked-defense cards. Unticking reaction spending makes a practice roll; loading weapons still use shots as in existing practice attacks. A failed post restores reaction and shots.
-
-Trigger, reach and exceptions are resolved at the table; token movement does not auto-trigger attacks. The target's current AGL 28 Flicker is shown and makes the opportunity card unable to hit, including a natural 20; ordinary attacks retain their previous outcome. Manually resolve an exceptional immunity bypass.
+Deferred. The separate React button and opportunity attack mode are removed. When combat work resumes, the user's requested design is a prompt when a creature moves away from someone with an equipped weapon and an available reaction. Trigger, reach, Flicker and movement handling will be addressed together then. Ordinary attacks retain their existing AP behavior.
 
 ## Command
 
@@ -53,21 +53,21 @@ Using a Potion in a started combat spends **5 AP adjusted by DEX**, bounded to *
 
 - [Notion Action Points](https://app.notion.com/p/406c72092efb81a491b3e7dc50e9ba73): potion cost, DEX item-action discount, half-base cap, fixed Command cost and non-stacking grant.
 - [Notion Charisma](https://app.notion.com/p/351c72092efb81e78d5ae82a2cf5cd8c): Command grant and use on the ally's turn.
-- [Notion Defenses](https://app.notion.com/p/406c72092efb81088e3be6e9d3b2c44d): opportunity attacks spend a reaction and no AP. [Agility](https://app.notion.com/p/351c72092efb812cae19fb7713e9e76b): Flicker immunity.
-- Website `js/abilities.js`, `js/combat-core.js`, `js/character-core.js` and `js/encounter-actions.js`: source-owned effects, cost preflight, separate Command AP, spending grants first and turn freshness. Notion remains authoritative; unrelated website stat/milestone discrepancies are not ported.
+- [Notion Defenses](https://app.notion.com/p/406c72092efb81088e3be6e9d3b2c44d) and [Agility](https://app.notion.com/p/351c72092efb812cae19fb7713e9e76b): later opportunity attack/Flicker rules; not automated here.
+- Website `js/abilities.js`, `js/status.js`, `js/combat-core.js`, `js/character-core.js` and `js/encounter-actions.js`: source-owned effects, active-status summaries, forms within Abilities, cost preflight, separate Command AP, spending grants first and turn freshness. Notion remains authoritative; unrelated website stat/milestone discrepancies are not ported.
 - Formatting references: [D&D5e's native effect guide](https://github.com/foundryvtt/dnd5e/wiki/Active-Effect-Guide) and [Nimble's item activation/effect editor](https://nimble-co.github.io/FoundryVTT-Nimble/documentation/homebrew/activations.html). These informed source-owned bonus sections, compact named rows and distinct activation controls. Their rules, field names and implementation are not copied.
 
 ## Data and validation
 
-Additive fields: Ability `system.effectsActive` (false); Actor `system.command.value` (0) and `fresh` (false). Item Active Effects use existing v14 `system.changes`, `transfer: true`, and namespaced `managed`/`itemBound` flags. Recipient `flags.worlds-beyond.commandClaims` records delivered message UUIDs. Existing data fields are not renamed or removed and no world migration is run.
+Additive fields: Ability `system.effectsActive` (false); Actor `system.command.value` (0) and `fresh` (false). Ability kind also accepts `form`. Item Active Effects use existing v14 `system.changes`, `transfer: true`, and namespaced `managed`/`itemBound` flags. Recipient `flags.worlds-beyond.commandClaims` records delivered message UUIDs. Existing data fields are not renamed or removed and no world migration is run.
 
-Portable tests cover equipment/ability gates, native item-effect creation, permissions/stale editors, activation payments/refunds/cooldowns, percentage fractions, reaction abilities, opportunity payments/refunds/Flicker, potion costs/refunds, separate AP spending, Command ownership/delivery/retry/non-stacking/failure, native turn rollover and existing regressions. Offline installed v14.365 data fields and strict templates verify the sword +3 STR / ability +2 DEX examples through equip/active/passive/removal, effective modifiers and unchanged bases. A document adapter is used offline; this is not a live native document-lifecycle test. The five-tab populated Chromium preview checks desktop/phone widths with a simplified frame.
+Portable tests cover equipment/ability gates, active-only grouped Status, saved definition compatibility, native item-effect creation, form switches/refunds/Base, permissions/stale editors, activation payments/refunds/cooldowns, percentage fractions, reaction abilities, potion costs/refunds, separate AP spending, Command ownership/delivery/retry/non-stacking/failure, native turn rollover and existing regressions. Offline installed v14.365 data fields and strict templates verify the sword +3 STR / ability +2 DEX examples through equip/active/passive/removal, effective modifiers and unchanged bases. A document adapter is used offline; this is not a live native document-lifecycle test. The five-tab populated Chromium preview checks desktop/phone widths with a simplified frame.
 
 User checks after restarting Foundry and refreshing browsers:
 
 1. Create a +3 STR sword bonus; equip/stow/delete/copy it. Check teal effective score, base editing, modifiers, milestones, source labels and resource maxima.
 2. Create +2 DEX on an active ability, set costs/uses, Use/End and repeat as Passive. Check costs, cooldown correction, source removal, reload and a native world/compendium drop.
-3. Use React with reactions available/empty, normal and advantage dice, a loading weapon and a Flicker target. Check no AP payment and normal damage/defense cards.
+3. Check that equipment has no React button, forms live in Abilities and Status has no inactive definitions/creator. Use/End Power and switch forms/Base; verify only active sources appear, bases return, costs/refunds are correct and ordinary buffs remain. Check saved forms from earlier sheets too.
 4. Command between two owned actors, then two player owners with an active GM and without one. Test delivery retry, no stacking, payment priority, pending/active turn grants, next-turn expiry and long rest. Check unlinked token actors.
 5. Use potions in/out of combat with DEX bonuses/penalties, insufficient AP and Command AP. Confirm quantity, healing confirmation and balances.
 6. Check read-only sheets, item editors, five tabs and phone layout. Native multi-client lifecycle, actual server permissions/GM hooks, real drops and UI rendering remain for live validation. The assistant did not access or edit live actor/world data.

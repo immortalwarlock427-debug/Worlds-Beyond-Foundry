@@ -56,7 +56,6 @@
 .worlds-beyond .wb-sheet-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; flex: 0 0 auto; margin: 0; padding: 12px 18px; border: 0; border-bottom: 1px solid var(--wb-rule); }
 .worlds-beyond .wb-sheet-tabs > button { min-width: 0; min-height: 44px; margin: 0; padding: 8px 4px; color: var(--wb-muted); background: var(--wb-bg); border: 1px solid var(--wb-rule); border-radius: 4px; font: 15px var(--wb-font-label); box-shadow: none; }
 .worlds-beyond .wb-sheet-tabs > button.active { color: var(--wb-brass); background: var(--wb-brass-soft); border-color: var(--wb-brass); }
-.worlds-beyond .wb-sheet-tabs > button[data-tab="effects"] { white-space: normal; line-height: 1.2; font-size: 13px; }
 .worlds-beyond .wb-command-pool { display: block; color: var(--wb-verdigris); font-size: 13px; }
 .worlds-beyond .wb-sheet-tabs > button:hover { color: var(--wb-brass); border-color: var(--wb-brass); }
 .worlds-beyond .wb-sheet-tabs > button:focus-visible { outline: 2px solid var(--wb-brass); outline-offset: 1px; }

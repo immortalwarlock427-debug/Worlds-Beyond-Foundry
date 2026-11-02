@@ -6,11 +6,11 @@ The character sheet now uses Foundry v14's native ApplicationV2 tabs:
 | --- | --- |
 | Character | Resources, long rest, core numbers, defenses, stats/milestones, Adjust values and rules help |
 | Equipment | Inventory, backpack, equipment rows, Add item and equipment help |
-| Abilities | Ability records and Use/End controls |
-| Effects & Statuses | Forms, manual adjustments/statuses and item-effect sources |
+| Abilities | Ability records, forms, Use/End controls and Base form |
+| Status | Currently active ability/form/equipment/native status sources only; End or open the source |
 | Notes | Class, Race, Background, Appearance, Backstory and Notes, directly visible |
 
-Portrait, name, Class/Race summary, level and tab navigation stay above the scrolling panel. The default window is 720 × 780, capped to the viewport; it can be resized. Narrow sheets use two rows of 44 px navigation buttons, two-column resources/core numbers and single-column stats/details as space requires. Existing navy/brass styling, stat colors, fields and actions are retained.
+Portrait, name, Class/Race summary, level and tab navigation stay above the scrolling panel. The default window is 720 × 780, capped to the viewport; it can be resized. Narrow sheets wrap 44 px navigation buttons into two columns, use two-column resources/core numbers and single-column stats/details as space requires. Existing navy/brass styling and stat colors are retained. Inactive definitions stay in their ability/equipment editors, not Status. New standalone actor-effect creation is removed; saved actor-owned forms/adjustments appear under Abilities for compatibility.
 
 ## Native behavior and data
 

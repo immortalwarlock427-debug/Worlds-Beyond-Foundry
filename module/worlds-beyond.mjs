@@ -14,7 +14,8 @@ import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilitie
 import { promptCommand, receiveCommand, decorateCommand } from "./command.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
-import { createEffect, toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
+import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
+import { returnToBase } from "./forms.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
@@ -195,20 +196,21 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       resource: CharacterSheet.#onResource,
       ability: CharacterSheet.#onAbility,
       command: async function () { if (!this.isEditable) return; try { await promptCommand(this.actor); } catch (error) { ui.notifications.error(error.message); } },
-      effect: CharacterSheet.#onEffect
+      savedAbility: CharacterSheet.#onSavedAbility,
+      status: CharacterSheet.#onStatus
     }
   };
 
   static PARTS = {
     sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [
       '.wb-sheet-panel[data-tab="character"]', '.wb-sheet-panel[data-tab="equipment"]',
-      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="effects"]', '.wb-sheet-panel[data-tab="notes"]'
+      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="status"]', '.wb-sheet-panel[data-tab="notes"]'
     ] }
   };
   static TABS = {
     sheet: { initial: "character", tabs: [
       { id: "character", label: "Character" }, { id: "equipment", label: "Equipment" },
-      { id: "abilities", label: "Abilities" }, { id: "effects", label: "Effects & Statuses" }, { id: "notes", label: "Notes" }
+      { id: "abilities", label: "Abilities" }, { id: "status", label: "Status" }, { id: "notes", label: "Notes" }
     ] }
   };
 
@@ -217,6 +219,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const system = this.actor.system;
     const source = system.toObject();
     const effects = effectContext(this.actor);
+    const abilities = abilityGroups(this.actor.items ?? [], system);
+    for (const row of effects.savedAbilities) {
+      let group = abilities.find(group => group.rows[0]?.kind === row.kind);
+      if (!group) { group = { label: row.form ? "Forms" : "Active", rows: [] }; abilities.push(group); }
+      group.rows.push(row);
+    }
     const milestones = Object.fromEntries(milestoneGroups(system).map(group => [group.key, group.rows]));
     const statSources = key => [effects.sources[`system.stats.${key}.value`], key === "agl" && system.equipment?.agilityPenalty ? `Armor: −${wholeNumber(system.equipment.agilityPenalty)}` : ""].filter(Boolean).join(" · ");
     const increases = statIncreases(system.level, source.advancement);
@@ -252,8 +260,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
       system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
       resourcePools: resourceEntries(system).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
-      effectGroups: effects.groups, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
-      abilityGroups: abilityGroups(this.actor.items ?? [], system),
+      activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
+      abilityGroups: abilities,
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
       editable: this.isEditable,
       unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
@@ -379,7 +387,6 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "toggle") return await toggleEquipment(this.actor, item?.id);
       if (operation === "use") return await useConsumable(this.actor, item?.id);
       if (operation === "attack") return await promptAttack(this.actor, item?.id);
-      if (operation === "opportunity") return await promptAttack(this.actor, item?.id, undefined, { opportunity: true });
       if (operation === "reload") return await reloadWeapon(this.actor, item?.id);
       if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
@@ -391,7 +398,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const operation = target.dataset.operation;
     if (operation !== "edit" && !this.isEditable) return;
     try {
-      if (operation === "create") return await createAbility(this.actor);
+      if (operation === "create") return await createAbility(this.actor, target.dataset.kind ?? "active");
+      if (operation === "base") return await returnToBase(this.actor);
       const item = this.actor.items.get(target.closest("[data-ability-id]")?.dataset.abilityId);
       if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");
       if (operation === "edit") return item.sheet.render({ force: true });
@@ -402,20 +410,31 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     } catch (error) { ui.notifications.error(error.message); }
   }
 
-  static async #onEffect(event, target) {
+  static async #onSavedAbility(event, target) {
     const operation = target.dataset.operation;
     if (operation !== "edit" && !this.isEditable) return;
     try {
-      if (operation === "create") return await createEffect(this.actor, target.dataset.kind);
-      if (operation === "base") return await toggleEffect(this.actor, "base");
       const uuid = target.closest("[data-effect-uuid]")?.dataset.effectUuid;
-      if (operation === "toggle") return await toggleEffect(this.actor, uuid);
-      const row = effectRows(this.actor).find(row => row.uuid === uuid);
-      if (!row) throw new Error("That effect no longer exists. Reopen the sheet.");
+      const row = effectRows(this.actor).find(row => row.uuid === uuid && row.managed && row.effect.parent === this.actor);
+      if (!row) throw new Error("That saved ability no longer exists. Reopen the sheet.");
+      if (["use", "end"].includes(operation)) return await toggleEffect(this.actor, uuid, { active: operation === "use" });
       if (operation === "edit") return await openEffect(row.effect);
       if (operation === "delete" && row.canRemove && await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Remove effect" }, content: "<p>Remove this effect or form and its bonuses?</p>", rejectClose: false
+        window: { title: "Remove saved ability" }, content: "<p>Remove this saved ability or form and its bonuses?</p>", rejectClose: false
       })) return await row.effect.delete();
+    } catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onStatus(event, target) {
+    const operation = target.dataset.operation;
+    if (operation !== "edit" && !this.isEditable) return;
+    try {
+      const uuid = target.closest("[data-effect-uuid]")?.dataset.effectUuid;
+      const row = effectContext(this.actor).statuses.find(row => row.uuid === uuid);
+      if (!row) return; // A concurrent End already removed the live entry.
+      const item = row.itemId ? this.actor.items.get(row.itemId) : null;
+      if (operation === "edit") return await (item ? item.sheet.render({ force: true }) : openEffect(effectRows(this.actor).find(effect => effect.uuid === uuid).effect));
+      if (operation === "end" && row.canEnd) return await (row.abilityId ? useAbility(this.actor, row.abilityId, { end: true }) : toggleEffect(this.actor, uuid, { active: false }));
     } catch (error) { ui.notifications.error(error.message); }
   }
 

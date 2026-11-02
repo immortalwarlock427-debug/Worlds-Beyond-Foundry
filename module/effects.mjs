@@ -1,5 +1,6 @@
-import { EFFECT_SCOPE, effectFlags, managedEffect, formEffect, effectChanges, effectTargets, simpleEffectChange, newEffectChange, effectChangeText, effectSnapshot, effectFormUpdates, effectRows, formUpdates, customEffectResource, itemEffectState } from "./effects-core.mjs";
-import { queuedAction } from "./action-support.mjs";
+import { EFFECT_SCOPE, effectFlags, managedEffect, formEffect, effectChanges, effectTargets, simpleEffectChange, newEffectChange, effectChangeText, effectSnapshot, effectFormUpdates, effectRows, customEffectResource, itemEffectState, boundItem } from "./effects-core.mjs";
+import { queuedAction, reversibleAction } from "./action-support.mjs";
+import { endOtherForms } from "./forms.mjs";
 import { wholeNumber, bindWholeNumbers } from "./number-display.mjs";
 
 const editors = new WeakMap();
@@ -18,7 +19,7 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
     const effect = this.document, actor = parentActor(effect);
     this.snapshot = effectSnapshot(effect);
     return Object.assign(await super._prepareContext(options), {
-      effect, editable: this.isEditable, form: formEffect(effect), source: effectFlags(effect).source || "",
+      effect, editable: this.isEditable, form: formEffect(effect), itemBonus: !!boundItem(effect), source: effectFlags(effect).source || "",
       rows: effectChanges(effect).map((change, index) => ({ index, editable: simpleEffectChange(change),
         choices: effectTargets(actor?.system, change.key), value: wholeNumber(Number(change.value)), text: effectChangeText(change, actor?.system) }))
     });
@@ -74,43 +75,35 @@ export function openEffect(effect) {
   return sheet.render({ force: true });
 }
 
-export async function createEffect(actor, kind = "effect") {
-  const item = actor.documentName === "Item";
-  if (!actor.isOwner || (item ? !["weapon", "armor", "shield", "ability"].includes(actor.type) : actor.type !== "character")) return;
-  if (!["effect", "form"].includes(kind)) throw new Error("Choose an effect or a form.");
-  return queuedAction(actor.actor?.uuid ?? actor.uuid, async () => {
-    const [effect] = await actor.createEmbeddedDocuments("ActiveEffect", [{
-      name: item ? `${actor.name} bonus` : kind === "form" ? "New form" : "New effect", img: kind === "form" ? "icons/svg/mystery-man.svg" : "icons/svg/aura.svg",
-      disabled: !item, transfer: item, system: { changes: [newEffectChange()] },
-      flags: { [EFFECT_SCOPE]: { managed: true, kind, source: item ? actor.name : "", ...(item ? { itemBound: true } : {}) } }
+export async function createEffect(item) {
+  if (item.documentName !== "Item") throw new Error("Create an ability and add its bonuses on the ability sheet.");
+  if (!item.isOwner || !["weapon", "armor", "shield", "ability"].includes(item.type)) return;
+  return queuedAction(item.actor?.uuid ?? item.uuid, async () => {
+    const [effect] = await item.createEmbeddedDocuments("ActiveEffect", [{
+      name: `${item.name} bonus`, img: "icons/svg/aura.svg",
+      disabled: false, transfer: true, system: { changes: [newEffectChange()] },
+      flags: { [EFFECT_SCOPE]: { managed: true, kind: "effect", source: item.name, itemBound: true } }
     }]);
-    if (!effect) throw new Error("The effect was not created. Try again.");
+    if (!effect) throw new Error("The bonus was not created. Try again.");
     await openEffect(effect); return effect;
   });
 }
 
-export async function toggleEffect(actor, uuid) {
+export async function toggleEffect(actor, uuid, { active } = {}) {
   if (!actor.isOwner || actor.type !== "character") return;
-  return queuedAction(actor.uuid, async () => {
+  return queuedAction(actor.uuid, () => reversibleAction(async change => {
     if (uuid === "base") {
-      const updates = formUpdates(actor.effects);
-      if (updates.length) await applyFormUpdates(actor, updates);
+      await endOtherForms(actor, change);
       return;
     }
     const effect = effectRows(actor).find(row => row.uuid === uuid)?.effect;
     if (!effect) throw new Error("That effect no longer exists. Reopen the sheet.");
-    if (effect.parent === actor && formEffect(effect)) {
-      const updates = formUpdates(actor.effects, effect.disabled ? effect.id : null);
-      if (updates.length) await applyFormUpdates(actor, updates);
-    } else if (!await effect.update({ disabled: !effect.disabled })) throw new Error("The effect toggle was cancelled.");
-  });
-}
-
-async function applyFormUpdates(actor, updates) {
-  await actor.updateEmbeddedDocuments("ActiveEffect", updates);
-  if (updates.some(update => actor.effects.get(update._id)?.disabled !== update.disabled)) {
-    throw new Error("The form switch did not complete. Check the active forms and try again.");
-  }
+    const disabled = active === undefined ? !effect.disabled : !active;
+    if (disabled === effect.disabled) return;
+    if (!disabled && effect.parent === actor && formEffect(effect)) await endOtherForms(actor, change, { effectId: effect.id });
+    const previous = effect.disabled;
+    await change(() => effect.update({ disabled }), () => effect.update({ disabled: previous }));
+  }));
 }
 
 export function registerEffectSupport() {

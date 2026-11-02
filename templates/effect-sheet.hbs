@@ -1,5 +1,5 @@
 <div class="wb-body wb-equipment-form wb-effect-form">
-  <header class="wb-item-heading"><img class="wb-item-icon" src="{{effect.img}}" alt=""><div><span class="wb-eyebrow">{{#if form}}Form{{else}}Effect{{/if}}</span>
+  <header class="wb-item-heading"><img class="wb-item-icon" src="{{effect.img}}" alt=""><div><span class="wb-eyebrow">{{#if form}}Form{{else}}{{#if itemBonus}}Bonus{{else}}Saved ability{{/if}}{{/if}}</span>
     <input class="wb-name" type="text" name="name" value="{{effect.name}}" aria-label="Name" {{#unless editable}}disabled{{/unless}}>
   </div></header>
   <label>Source<input type="text" name="flags.worlds-beyond.source" value="{{source}}" placeholder="Ability, item or other source" {{#unless editable}}disabled{{/unless}}></label>
@@ -19,9 +19,9 @@
     <label>Notes<textarea name="description" rows="4" {{#unless editable}}disabled{{/unless}}>{{effect.description}}</textarea></label>
     <label>Image path<input type="text" name="img" value="{{effect.img}}" {{#unless editable}}disabled{{/unless}}></label>
   </details>
-  <details class="wb-disclosure wb-help"><summary>Effect help</summary>
-    <p>Edits save automatically. Enable the effect or choose the form from the character sheet. Positive amounts add; negative amounts subtract. Bonuses use current scores and keep base scores and points spent unchanged. Final manual overrides still take priority.</p>
-    <p>Forms switch bonus sets; independent effects can stay enabled alongside them. Form portraits, gear loadouts, entry costs and automatic durations are not enabled here. The Foundry editor remains available for advanced native changes; those rows are preserved.</p>
+  <details class="wb-disclosure wb-help"><summary>Bonus help</summary>
+    <p>Edits save automatically. Equipment bonuses apply while equipped; ability bonuses apply when you Use the ability, or while owned for Passive abilities. Positive amounts add; negative amounts subtract. Base scores and points spent stay unchanged. Final manual overrides still take priority.</p>
+    <p>Saved abilities and forms from older sheets remain available under Abilities. Create new ones with Add ability or Add form there. Active bonuses appear in Status. The Foundry editor remains available for advanced native changes; those rows are preserved.</p>
     <button type="button" data-action="advancedEffect">Open Foundry editor</button>
   </details>
 </div>

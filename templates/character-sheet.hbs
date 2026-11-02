@@ -197,7 +197,6 @@
           </div>
           <div class="wb-row-actions">
             {{#if canAttack}}<button type="button" class="wb-row-attack" data-action="equipment" data-operation="attack" aria-label="Attack with {{name}}" data-tooltip="Attack" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-crosshairs" aria-hidden="true"></i><span>Attack</span></button>{{/if}}
-            {{#if canAttack}}<button type="button" data-action="equipment" data-operation="opportunity" aria-label="Opportunity attack with {{name}}" data-tooltip="Opportunity attack · 1 reaction, no AP" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-bolt" aria-hidden="true"></i><span>React</span></button>{{/if}}
             {{#if canReload}}<button type="button" data-action="equipment" data-operation="reload" aria-label="Reload {{name}}" data-tooltip="Reload" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button>{{/if}}
             {{#if canUse}}<button type="button" class="wb-row-use" data-action="equipment" data-operation="use" aria-label="Use one {{name}}" data-tooltip="Use one" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-flask" aria-hidden="true"></i><span>Use</span></button>{{/if}}
             {{#if canEquip}}<button type="button" class="wb-equip-toggle" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" aria-label="{{#if equipped}}Unequip{{else}}Equip{{/if}} {{name}}" data-tooltip="{{#if equipped}}Equipped · click to unequip{{else}}Equip{{/if}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid {{equipIcon}}" aria-hidden="true"></i></button>{{/if}}
@@ -214,22 +213,26 @@
     <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
   </details>
   </section>
-  <section class="tab wb-sheet-panel {{tabs.abilities.cssClass}}" data-group="sheet" data-tab="abilities" aria-label="Abilities, effects and forms">
+  <section class="tab wb-sheet-panel {{tabs.abilities.cssClass}}" data-group="sheet" data-tab="abilities" aria-label="Abilities and forms">
   <section class="wb-abilities wb-equipment" aria-label="Abilities">
     <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
-      <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+      <div class="wb-equipment-actions">
+        {{#if hasForms}}<button type="button" data-action="ability" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base form</button>{{/if}}
+        <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+        <button type="button" data-action="ability" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
+      </div>
     </div>
     {{#each abilityGroups}}
     <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>
       <ul class="wb-equipment-list">
         {{#each rows}}
-        <li class="wb-equipment-row" data-ability-id="{{id}}">
+        <li class="wb-equipment-row" data-ability-id="{{id}}" {{#if legacy}}data-effect-uuid="{{uuid}}"{{/if}}>
           <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
-          <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="ability" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
+          <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
             <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
             <span class="wb-item-brief">{{summary}}</span>
           </button></div>
-          <div class="wb-row-actions">{{#if canUse}}<button type="button" class="wb-row-use" data-action="ability" data-operation="{{#if effectsActive}}end{{else}}use{{/if}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if effectsActive}}End{{else}}Use{{/if}}</button>{{/if}}<button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
+          <div class="wb-row-actions">{{#if canUse}}<button type="button" class="wb-row-use" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="{{#if effectsActive}}end{{else}}use{{/if}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if effectsActive}}End{{else}}Use{{/if}}</button>{{/if}}<button type="button" class="wb-item-remove" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
           {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>
             {{#if description}}<p class="wb-ability-text">{{description}}</p>{{/if}}
             {{#if duration}}<p>Duration: {{duration}}</p>{{/if}}{{#if recovery}}<p>Uses recover: {{recovery}}</p>{{/if}}
@@ -243,27 +246,19 @@
   </section>
 
   </section>
-  <section class="tab wb-sheet-panel {{tabs.effects.cssClass}}" data-group="sheet" data-tab="effects" aria-label="Effects and statuses">
-  <section class="wb-effects wb-equipment" aria-label="Effects and forms">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Effects &amp; statuses</h2><div class="wb-equipment-actions">
-      {{#if hasForms}}<button type="button" data-action="effect" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base</button>{{/if}}
-      <button type="button" data-action="effect" data-operation="create" data-kind="effect" {{#unless editable}}disabled{{/unless}}>Add status / effect</button>
-      <button type="button" data-action="effect" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
-    </div></div>
-    {{#each effectGroups}}
-    <section class="wb-equipment-group"><h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3><ul class="wb-equipment-list">
-      {{#each rows}}<li class="wb-equipment-row" data-effect-uuid="{{uuid}}">
+  <section class="tab wb-sheet-panel {{tabs.status.cssClass}}" data-group="sheet" data-tab="status" aria-label="Status">
+  <section class="wb-status wb-equipment" aria-label="Active status">
+    <h2 class="wb-section-title">Status</h2>
+    <ul class="wb-equipment-list">
+      {{#each activeStatuses}}<li class="wb-equipment-row" data-effect-uuid="{{uuid}}">
         <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
-        <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="effect" data-operation="edit" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
-          <span class="wb-item-title">{{name}} <span class="wb-quantity">{{state}}</span></span>
+        <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="status" data-operation="edit" aria-label="Open source: {{name}}" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
+          <span class="wb-item-title">{{name}}</span>
           <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
         </button></div>
-        <div class="wb-row-actions"><button type="button" class="wb-effect-toggle" data-action="effect" data-operation="toggle" aria-pressed="{{active}}" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if form}}{{#if active}}Active{{else}}Use{{/if}}{{else}}<i class="fa-solid fa-power-off" aria-hidden="true"></i>{{/if}}</button>
-          {{#if canRemove}}<button type="button" class="wb-item-remove" data-action="effect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>{{/if}}
-        </div>
-      </li>{{/each}}
-    </ul></section>
-    {{else}}<p class="wb-empty">Add a bonus, penalty or form. Base scores stay unchanged.</p>{{/each}}
+        {{#if canEnd}}<div class="wb-row-actions"><button type="button" class="wb-row-use" data-action="status" data-operation="end" aria-label="End {{name}}" {{#unless @root.editable}}disabled{{/unless}}>End</button></div>{{/if}}
+      </li>{{else}}<li class="wb-empty">Nothing is actively affecting you.</li>{{/each}}
+    </ul>
   </section>
 
   </section>
