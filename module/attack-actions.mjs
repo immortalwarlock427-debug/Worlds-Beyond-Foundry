@@ -10,7 +10,7 @@ import { inCombat, availableAp, payAp } from "./combat-support.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
-  attackOutcome, damagePlan, effectiveArmor, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
+  attackOutcome, damagePlan, hitDamage, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
 } from "./attacks.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -220,12 +220,23 @@ export async function rollDamage(message, index, critical) {
       ...plan.notes
     ];
     const target = data.target;
+    const overwhelming = (actor.system.stats.str.effective ?? actor.system.stats.str.value) >= 28;
+    const mitigation = {
+      damage: total, armor: target?.armor ?? 0, twoHanded: plan.twoHanded,
+      puncture: !!weapon.system.signature?.puncture, overwhelming
+    };
+    const hit = hitDamage(mitigation);
+    const resisted = hitDamage({ ...mitigation, resistant: true });
     if (target?.armor != null) {
-      const armor = effectiveArmor(target.armor, { twoHanded: plan.twoHanded, puncture: !!weapon.system.signature?.puncture });
-      let after = Math.max(0, total - armor);
-      const overwhelming = (actor.system.stats.str.effective ?? actor.system.stats.str.value) >= 28;
-      if (overwhelming) after = Math.max(after, Math.floor(total / 2));
-      lines.push(`Against ${escapeHTML(target.name)}: ${armor} of their ${target.armor} Armor Rating counts, leaving ${after} before Resistance and Block.${overwhelming ? " Overwhelming Force keeps it at half or more." : ""}`);
+      lines.push(`Against ${escapeHTML(target.name)}: ${hit.armor} of their ${target.armor} Armor Rating counts.`);
+    }
+    lines.push("If the target is resistant, halve the damage first (rounded down), then subtract Armor Rating.");
+    if (target?.armor != null) {
+      lines.push(`Before Block: ${hit.afterArmor} damage with no Resistance; ${resisted.afterArmor} with Resistance.`);
+    }
+    lines.push("Subtract Block next. Apply Health changes manually.");
+    if (overwhelming) {
+      lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower.`);
     }
     for (const [key, on] of Object.entries(weapon.system.signature ?? {})) {
       if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));

@@ -514,6 +514,32 @@ test("rapid damage clicks post once and two attacks cannot both spend the final 
   assert.equal(f.actor.system.ap.value, 0);
 });
 
+test("damage cards show Resistance before armor, Block next and Overwhelming Force last", async () => {
+  const f = fixture();
+  f.flags.attack.target = { name: '<Defender>', armor: 6 };
+  f.actor.system.stats.str.effective = 28;
+  f.Roll.prototype.evaluate = async function () { this.total = 16; return this; };
+  await rollDamage(f.message, 0, false);
+  const content = f.calls.posts[0].data.content;
+  assert.match(content, /Against &lt;Defender&gt;: 6 of their 6 Armor Rating counts/);
+  assert.match(content, /If the target is resistant, halve the damage first \(rounded down\), then subtract Armor Rating/);
+  assert.match(content, /Before Block: 10 damage with no Resistance; 2 with Resistance/);
+  assert.match(content, /Subtract Block next/);
+  assert.match(content, /Overwhelming Force then raises damage back to 8/);
+  assert.ok(content.indexOf('Subtract Block next') < content.indexOf('Overwhelming Force then'));
+  assert.doesNotMatch(content, /before Resistance and Block/);
+  assert.equal(f.actor.system.health.damage, 10, 'the card keeps Health application manual');
+});
+
+test("untargeted damage cards still explain the mitigation order", async () => {
+  const f = fixture();
+  await rollDamage(f.message, 0, false);
+  const content = f.calls.posts[0].data.content;
+  assert.match(content, /halve the damage first/);
+  assert.match(content, /Subtract Block next/);
+  assert.doesNotMatch(content, /Before Block:|Overwhelming Force then/);
+});
+
 test("failed healing updates clear the applied flag and can be retried once", async () => {
   const f = fixture(); const update = f.actor.update;
   f.actor.update = async () => { throw new Error("update failed"); };
