@@ -2,7 +2,7 @@
   "id": "worlds-beyond",
   "title": "Worlds Beyond",
   "description": "The Worlds Beyond homebrew: eight stats, Action Points, and a combat framework of its own.",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14.365"
@@ -11,7 +11,7 @@
     { "name": "immortalwarlock427" }
   ],
   "esmodules": ["module/worlds-beyond.mjs"],
-  "styles": ["styles/worlds-beyond.css"],
+  "styles": ["styles/worlds-beyond.css", "styles/overview.css"],
   "languages": [{ "lang": "en", "name": "English", "path": "en.json" }],
   "documentTypes": {
     "Actor": {

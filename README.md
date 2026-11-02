@@ -4,6 +4,8 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 
 ## What's in it so far
 
+- **Character overview:** a large circular portrait with eight stat medallions, live Health/resources/AP/reactions/Wonder, defenses/movement/initiative and four source-linked favorite abilities. Name/level/race/form stay prominent. Stat circles roll; value cards jump to the existing editors in Details. See [overview setup and validation](docs/CHARACTER-OVERVIEW.md).
+
 - A **character** actor with a level and the eight stats: Strength, Dexterity, Vitality, Agility, Intelligence, Wisdom, Charisma and Faith.
 - **Roll & assign** generates eight 2d6 + 1d12 scores or accepts typed scores, with swappable destinations and an explicit Apply. **Stat points** tracks 4-point awards at levels 4/8/12/16/19, at most 2 per stat per award, separately from bases and gear. See [stat setup](docs/STAT-SETUP.md).
 - Modifiers are calculated from the score. Strength and Dexterity use (score − 12) ÷ 2, rounded down. The other six move 1 per 3 points away from 12.
@@ -40,7 +42,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
 - Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
 - The sheet includes a narrow layout and touch-sized controls. The user tested core numbers and rolls/Wonder; equipment awaits [in-world validation](docs/EQUIPMENT.md).
-- **Sheet tabs:** Character, Equipment, Abilities, Status and Notes keep each view shorter. The portrait/name/level and navigation remain above independently scrolling panels; narrow sheets wrap navigation buttons. Forms live in Abilities, and Status is an active-only list. Switching tabs preserves form controls, and the current tab survives actor refreshes in that window. See [sheet organization](docs/SHEET-TABS.md).
+- **Sheet tabs:** Character, Details, Equipment, Abilities, Status and Notes keep each view shorter. Name/level/race/form and navigation remain above independently scrolling panels; the large portrait is on Character; narrow sheets wrap navigation buttons. Forms live in Abilities, and Status is an active-only list. Switching tabs preserves form controls, and the current tab survives actor refreshes in that window. See [sheet organization](docs/SHEET-TABS.md).
 - The interface keeps totals and common actions up front. **Adjust values** holds overrides; **Rules & help** and per-dialog help sections open on click, tap or keyboard. Item details and longer chat explanations are also collapsible. See [interface scope and checks](docs/INTERFACE.md).
 - System chat cards share the navy/brass theme, including attacks, damage, reloads and consumables. Equipment uses grouped rows with fitting icons, key stats, clear equipped states and compact actions. See [chat and equipment polish](docs/VISUAL-POLISH.md).
 - All 70 catalog entries have unique image paths: 63 stock matches and 7 user-supplied illustrations. Old default images and matching placeholders resolve in inventories, editor previews and Item directories/compendiums; custom images stay chosen. See [equipment artwork](docs/EQUIPMENT-ART.md).
