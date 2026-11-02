@@ -5,6 +5,7 @@ import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { resourceRestUpdates } from "./resources.mjs";
 import { queuedAction } from "./action-support.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { recoverActor } from "./recovery-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
@@ -97,14 +98,14 @@ function actorOperation(actor, operation) {
 
 export async function longRest(actor) {
   if (!actor.isOwner) return;
-  return actorOperation(actor, () => queuedAction(actor.uuid, () => actor.update({
+  return actorOperation(actor, () => recoverActor(actor, "longRest", { updates: {
     "system.health.damage": 0,
     "system.ap.value": null,
     "system.reactions.value": null,
     "system.wonder.value": null,
     ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
     ...resourceRestUpdates(actor.system)
-  })));
+  } }));
 }
 
 export async function useWonder(message) {

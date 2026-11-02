@@ -11,6 +11,7 @@ import { TRIGGER_MODES, TRIGGER_COMPARISONS, TRIGGER_END_MODES } from "./form-tr
 import { BONUS_DURATION_UNITS, bonusDurationText } from "./effect-duration.mjs";
 import { abilityActive, cooldownRemaining, abilityTimerFormUpdates } from "./ability-timers-core.mjs";
 import { abilityTimerPlans, validateAbilityTimers, startAbilityTimers, stopAbilityClock, cleanupAbilityClocks } from "./ability-timers.mjs";
+import { USES_RECOVERY } from "./recovery-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 
@@ -28,7 +29,7 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
       apCost: number(null, { min: 0 }), apDiscountStat: text("", { choices: ABILITY_STATS }),
       resourceId: text(), resourceCost: number(null, { min: 0 }), resourceUnit: text("points", { choices: ABILITY_COST_UNITS, blank: false }),
       restoration: new SchemaField({ target: text("health"), amount: text(), unit: text("points", { choices: ABILITY_COST_UNITS, blank: false }) }),
-      uses: new SchemaField({ max: number(null, { min: 0 }), spent: number(0), recovery: text() }),
+      uses: new SchemaField({ max: number(null, { min: 0 }), spent: number(0), recovery: text(), resetOn: text("manual", { choices: USES_RECOVERY, blank: false }) }),
       cooldown: new SchemaField({ rounds: number(null, { min: 0 }), remaining: number(0, { min: 0 }), automatic: new foundry.data.fields.BooleanField({ initial: false }) })
     };
   }
@@ -48,6 +49,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: wholeDisplay({ ...system, effectsActive: abilityActive(this.item), cooldown: { ...system.cooldown, remaining: cooldownRemaining(this.item) } }), editable: this.isEditable,
       durationUnits: choices(BONUS_DURATION_UNITS, system.activeDuration?.units ?? "rounds"),
+      useRecoveryChoices: choices(USES_RECOVERY, system.uses?.resetOn ?? "manual"),
       itemEffects: itemEffectRows(this.item), passive: system.kind === "passive", isForm: system.kind === "form",
       record: wholeDisplay(abilityRecord(this.item, character)),
       kinds: choices(Object.fromEntries(Object.entries(ABILITY_TYPES).filter(([key]) => key !== "form")), system.kind), stats: choices(ABILITY_STATS, system.apDiscountStat),

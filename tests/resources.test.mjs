@@ -23,7 +23,7 @@ function fixture() {
   };
   function set(object, path, value) { const keys = path.split("."); const last = keys.pop(); const target = keys.reduce((o, key) => o[key] ??= {}, object); if (value instanceof foundry.data.operators.ForcedDeletion) delete target[last]; else target[last] = value; }
   function merge(a, b) { const out = structuredClone(a); for (const [key, value] of Object.entries(b)) out[key] = value && typeof value === "object" && !Array.isArray(value) ? merge(out[key] ?? {}, value) : value; return out; }
-  globalThis.foundry = { data: { operators: { ForcedDeletion: class {} } }, utils: { setProperty: set, randomID: () => "resource00000002" } };
+  globalThis.foundry = { data: { operators: { ForcedDeletion: class {} } }, utils: { setProperty: set, getProperty: (object, path) => path.split('.').reduce((value, key) => value?.[key], object), randomID: () => "resource00000002" } };
   actor.prepare();
   return { actor, calls };
 }

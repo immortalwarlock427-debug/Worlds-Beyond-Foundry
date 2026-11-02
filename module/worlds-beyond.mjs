@@ -11,7 +11,7 @@ import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
-import { promptCommand, receiveCommand, decorateCommand } from "./command.mjs";
+import { promptCommand, receiveCommand, decorateCommand, refreshCommandControls } from "./command.mjs";
 import { apTotal } from "./ap.mjs";
 import { commandReady } from "./combat-support.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
@@ -20,6 +20,7 @@ import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
+import { registerRecovery } from "./recovery-actions.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
@@ -71,6 +72,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     });
     const resource = () => ({
       spent: number(), bonus: number(), amount: number(1, { min: 0 }),
+      regen: number(0, { min: 0 }), autoRecover: new BooleanField({ initial: false }), refillOnRest: new BooleanField({ initial: true }),
       allowOverflow: new BooleanField({ initial: false }),
       maxOverride: number(null, { nullable: true, min: 0 }), minOverride: override(),
       display: new StringField({ required: true, nullable: false, blank: false, initial: "number", choices: RESOURCE_DISPLAYS }),
@@ -104,8 +106,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       customResources: new TypedObjectField(new SchemaField({
         ...resource(), name: new StringField({ required: true, nullable: false, blank: true, initial: "Resource" }),
         scaleStat: new StringField({ required: true, nullable: false, blank: true, initial: "", choices: RESOURCE_SCALING }),
-        baseMax: number(100, { min: 0 }), regen: number(0, { min: 0 }),
-        refillOnRest: new BooleanField({ initial: true })
+        baseMax: number(100, { min: 0 })
       }), { validateKey: customResourceId }),
       bonuses: new SchemaField({ armor: number(), evasion: number(), movement: number() }),
       inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
@@ -528,6 +529,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", offerCatalogImport);
 registerFormTriggers();
 registerAbilityTimers();
+registerRecovery();
 Hooks.on("renderItemDirectory", decorateEquipmentDirectory);
 Hooks.on("renderCompendium", decorateEquipmentDirectory);
 Hooks.on("renderChatMessageHTML", decorateSystemMessage);
@@ -541,6 +543,7 @@ Hooks.on("createChatMessage", message => {
   if (game.user.isActiveGM && message.getFlag(SYSTEM_ID, "command")) receiveCommand(message).catch(error => ui.notifications.warn(`Command is waiting in chat: ${error.message}`));
 });
 Hooks.on("updateActor", refreshWonderControls);
+Hooks.on("updateActor", refreshCommandControls);
 Hooks.on("createChatMessage", refreshWonderControls);
 
 Hooks.on("combatTurnChange", refillTurnResources);

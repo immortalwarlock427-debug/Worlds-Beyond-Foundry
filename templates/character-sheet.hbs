@@ -68,15 +68,17 @@
           <button type="button" data-action="resource" data-operation="restore" {{#unless @root.editable}}disabled{{/unless}}>Restore</button>
           <button type="button" data-action="resource" data-operation="fill" {{#unless @root.editable}}disabled{{/unless}}>Fill</button>
         </div>
-        {{#if custom}}{{#if regen}}<button type="button" class="wb-pool-recover" data-action="resource" data-operation="recover" data-tooltip="Apply this pool's recovery amount once; turn automation is not enabled" {{#unless @root.editable}}disabled{{/unless}}>Recover +{{regen}}</button>{{/if}}{{/if}}
+        {{#if regen}}<button type="button" class="wb-pool-recover" data-action="resource" data-operation="recover" data-tooltip="Apply this pool's configured recovery once" {{#unless @root.editable}}disabled{{/unless}}>Recover +{{regen}}</button>{{/if}}
+        {{#if autoRecover}}{{#if regen}}<small class="wb-status-time">+{{regen}} on your turn</small>{{/if}}{{/if}}
         <details class="wb-disclosure wb-pool-settings" data-sync="pool-{{key}}"><summary>Settings</summary>
           <div class="wb-pool-settings-grid">
             {{#if custom}}
               <label>Name<input type="text" name="{{path}}.name" value="{{name}}" {{#unless @root.editable}}disabled{{/unless}}></label>
               <label data-tooltip="Selected stat × (level + 2)">Maximum from<select name="{{path}}.scaleStat" {{#unless @root.editable}}disabled{{/unless}}>{{#each scalingChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-              <label>Recovery amount<input type="number" name="{{path}}.regen" value="{{regen}}" min="0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
-              <label class="wb-equipment-check"><input type="checkbox" name="{{path}}.refillOnRest" {{#if refillOnRest}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Fill on long rest</label>
             {{/if}}
+            <label>Recovery amount (points)<input type="number" name="{{path}}.regen" value="{{regen}}" min="0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
+            <label class="wb-equipment-check" data-tooltip="Apply Recovery amount once at the start of this character's turn in a started encounter; the active GM performs it"><input type="checkbox" name="{{path}}.autoRecover" {{#if autoRecover}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Recover on own turn</label>
+            <label class="wb-equipment-check"><input type="checkbox" name="{{path}}.refillOnRest" {{#if refillOnRest}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Fill on long rest</label>
             <label data-tooltip="Replaces the calculated maximum and bonuses. Clear to restore the selected maximum source.">Maximum override<input type="number" name="{{path}}.maxOverride" value="{{maxOverride}}" placeholder="Default {{automatic}}" min="0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
             <label data-tooltip="Empty bar and spending floor. Clear to use 0; negative values are allowed.">Minimum override<input type="number" name="{{path}}.minOverride" value="{{minOverride}}" placeholder="Default 0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
             <label class="wb-equipment-check" data-tooltip="Restore and consumables can raise Current above the normal maximum. Fill still returns to the maximum."><input type="checkbox" name="{{path}}.allowOverflow" {{#if allowOverflow}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Allow over maximum</label>

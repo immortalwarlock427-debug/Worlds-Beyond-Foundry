@@ -4,15 +4,19 @@ import { promptStatCheck, rollStatCheck, useWonder, longRest, decorateRollMessag
 
 function fixture({ faith = 18, value = 2, kind = "check", mode = "normal", blind = false, whisper = [] } = {}) {
   const calls = { rolls: [], messages: [], updates: [], cards: [], warnings: [], initiative: [] };
+  const source = {};
   const actor = {
     uuid: "Actor.hero", type: "character", isOwner: true,
     flags: { wonderUsed: {} },
     getFlag(scope, key) { return this.flags[key]; },
+    toObject() { return structuredClone(source); },
     system: { stats: { str: { mod: 3 }, fth: { value: faith } }, wonder: { value, max: 2 } },
     async update(data) {
       calls.updates.push(data);
       this.system.wonder.value = data["system.wonder.value"] ?? this.system.wonder.max;
       for (const [key, value] of Object.entries(data)) {
+        const parts = key.split('.'), leaf = parts.pop();
+        parts.reduce((parent, part) => parent[part] ??= {}, source)[leaf] = structuredClone(value);
         const prefix = "flags.worlds-beyond.wonderUsed.";
         if (!key.startsWith(prefix)) continue;
         const id = key.slice(prefix.length);
@@ -42,6 +46,7 @@ function fixture({ faith = 18, value = 2, kind = "check", mode = "normal", blind
   globalThis.game = { user: { id: "player" }, settings: { get: () => "public" }, combats: new Map(), messages };
   globalThis.ui = { notifications: { warn: text => calls.warnings.push(text) } };
   globalThis.foundry = {
+    utils: { getProperty: (object, path) => path.split('.').reduce((value, key) => value?.[key], object) },
     dice: { Roll },
     applications: {
       handlebars: { async renderTemplate(path, data) { calls.cards.push({ path, data }); return `<article>${data.label}</article>`; } },
