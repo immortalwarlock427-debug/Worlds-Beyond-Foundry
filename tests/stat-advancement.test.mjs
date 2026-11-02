@@ -36,7 +36,7 @@ test("award validation enforces four total, two per stat, whole points and earne
 test("guided point spending stops at natural 28 while reductions and existing manual exceptions remain possible", () => {
   const stats = { str: { value: 27 } };
   validateStatAwards(4, { level4: { str: 1 } }, stats);
-  assert.throws(() => validateStatAwards(4, { level4: { str: 2 } }, stats), /reach 28/);
+  assert.throws(() => validateStatAwards(4, { level4: { str: 2 } }, stats), /Stat points can't raise Strength above 28\. Gear and manual corrections still apply\./);
   validateStatAwards(4, { level4: { str: 1, dex: 2 } }, { str: { value: 40 } }, { level4: { str: 2 } });
 });
 

@@ -4,6 +4,7 @@
       <span class="wb-eyebrow wb-archive-title">Worlds Beyond <span aria-hidden="true">✦</span> Infinite Archive</span>
       <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
       <div class="wb-identity-tags">
+        {{#if overviewClass}}<button type="button" data-action="viewTab" data-tab="notes" title="Class and character notes"><i class="fa-solid fa-book-open" aria-hidden="true"></i> {{overviewClass}}</button><span aria-hidden="true">·</span>{{/if}}
         <button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> {{overviewRace}}</button><span aria-hidden="true">·</span>
         {{#if canRenameBaseForm}}
         <button type="button" data-action="archiveAppearance" title="Rename base form" aria-label="Rename {{baseFormName}}"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}} <i class="fa-solid fa-pen" aria-hidden="true"></i></button>
@@ -64,9 +65,9 @@
     <section class="wb-archive-foundation" aria-label="Favorite abilities and character utilities"><section class="wb-favorites" aria-label="Four favorite abilities">
       <div class="wb-section-heading"><h2 class="wb-section-title">Favorite abilities <small>Inscribed in the Archive</small></h2><button type="button" data-action="favorites" title="Choose four favorite abilities" {{#unless editable}}disabled{{/unless}}><i class="fa-regular fa-star" aria-hidden="true"></i> Choose</button></div>
       <div class="wb-favorite-grid">{{#each favoriteSlots}}
-        <article class="wb-favorite-card {{#if empty}}is-empty{{/if}}" {{#unless empty}}data-ability-id="{{id}}" {{#if legacy}}data-effect-uuid="{{uuid}}"{{/if}}{{/unless}}><span class="wb-inscription-seal" aria-hidden="true">{{index}}</span>
+        <article class="wb-favorite-card {{#if empty}}is-empty{{/if}} {{#if effectsActive}}is-active{{/if}}" {{#unless empty}}data-ability-id="{{id}}" {{#if legacy}}data-effect-uuid="{{uuid}}"{{/if}}{{/unless}}><span class="wb-inscription-seal" aria-hidden="true">{{index}}</span>
           {{#if empty}}<button type="button" class="wb-favorite-empty" data-action="favorites" {{#unless @root.editable}}disabled{{/unless}}><span class="wb-favorite-index">0{{index}}</span><span>{{name}}</span><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
-          {{else}}<img src="{{img}}" alt="" loading="lazy"><button type="button" class="wb-favorite-name" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="edit" title="{{summary}}"><strong>{{name}}</strong><small>{{quickSummary}}</small></button><button type="button" class="wb-favorite-use {{#if effectsActive}}is-active{{/if}}" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="{{operation}}" aria-label="{{actionLabel}} {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{actionLabel}}</button>{{/if}}
+          {{else}}<button type="button" class="wb-favorite-name" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="edit" title="{{name}} · {{summary}}"><img src="{{img}}" alt="" loading="lazy"><strong>{{name}}</strong></button><small class="wb-favorite-summary" title="{{summary}}">{{quickSummary}}</small><button type="button" class="wb-favorite-use {{#if effectsActive}}is-active{{/if}}" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="{{operation}}" aria-label="{{actionLabel}} {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{actionLabel}}</button>{{/if}}
         </article>
       {{/each}}</div>
     </section>
@@ -83,7 +84,7 @@
           <input type="number" name="{{resource.inputName}}" value="{{resource.value}}" step="1" aria-label="Current {{resource.label}}" {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-resource-max" aria-label="Maximum {{resource.label}}">/ {{resource.max}}</span>
         </span>
-        {{#if resource.command}}<small class="wb-command-pool" data-tooltip="Included in the total above, not added twice. Command AP spends first on your turn; the maximum shown is your normal AP cap.">Includes {{resource.command}} Command AP{{#if resource.commandPending}} · your turn{{/if}}</small>{{/if}}
+        {{#if resource.command}}<small class="wb-command-pool" data-tooltip="Already included in the total above. Command AP spends first on your turn; the maximum shown is your normal AP cap.">Includes {{resource.command}} Command AP{{#if resource.commandPending}} · your turn{{/if}}</small>{{/if}}
       </label>
     </div>
     {{/each}}
