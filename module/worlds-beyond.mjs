@@ -19,6 +19,7 @@ import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
+import { registerAbilityTimers } from "./ability-timers.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
@@ -526,6 +527,7 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", offerCatalogImport);
 registerFormTriggers();
+registerAbilityTimers();
 Hooks.on("renderItemDirectory", decorateEquipmentDirectory);
 Hooks.on("renderCompendium", decorateEquipmentDirectory);
 Hooks.on("renderChatMessageHTML", decorateSystemMessage);

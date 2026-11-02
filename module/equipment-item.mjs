@@ -1,4 +1,5 @@
 import { itemList, stowedConflicts } from "./loadout.mjs";
+import { timerKind } from "./ability-timers-core.mjs";
 
 // Batch preflight uses Foundry v14's supported Item operation API. The switch
 // and all resulting stows are sent in one update, including item-sheet edits.
@@ -50,6 +51,11 @@ export function registerEquipmentItem() {
       for (const item of documents) {
         if (["weapon", "shield"].includes(item.type) && item.system.equipped) item.updateSource({ "system.equipped": false });
         if (item.type === "ability" && item.system.effectsActive) item.updateSource({ "system.effectsActive": false });
+        const effects = Array.from(item.effects?.values?.() ?? item.effects ?? []);
+        if (item.type === "ability" && (item.system.timers?.durationId || item.system.timers?.cooldownId || effects.some(timerKind))) item.updateSource({
+          "system.timers.durationId": "", "system.timers.cooldownId": "",
+          effects: effects.filter(effect => !timerKind(effect)).map(effect => effect.toObject())
+        });
       }
     }
   };

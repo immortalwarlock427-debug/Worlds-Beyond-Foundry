@@ -8,6 +8,9 @@ import { adjustedResourceSpent, customResourceId } from "./resources.mjs";
 import { endOtherForms } from "./forms.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
 import { TRIGGER_MODES, TRIGGER_COMPARISONS, TRIGGER_END_MODES } from "./form-trigger-core.mjs";
+import { BONUS_DURATION_UNITS, bonusDurationText } from "./effect-duration.mjs";
+import { abilityActive, cooldownRemaining, abilityTimerFormUpdates } from "./ability-timers-core.mjs";
+import { abilityTimerPlans, validateAbilityTimers, startAbilityTimers, stopAbilityClock, cleanupAbilityClocks } from "./ability-timers.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 
@@ -18,13 +21,15 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
     const number = (initial = null, options = {}) => new NumberField({ required: true, nullable: initial === null, initial, ...options });
     return {
       effectsActive: new foundry.data.fields.BooleanField({ initial: false }),
+      activeDuration: new SchemaField({ value: number(null, { min: 0, integer: true }), units: text("rounds", { choices: BONUS_DURATION_UNITS, blank: false }) }),
+      timers: new SchemaField({ durationId: text(), cooldownId: text() }),
       trigger: new SchemaField({ mode: text("manual", { choices: TRIGGER_MODES, blank: false }), resourceId: text(), comparison: text("above", { choices: TRIGGER_COMPARISONS, blank: false }), threshold: number(), endMode: text("prompt", { choices: TRIGGER_END_MODES, blank: false }) }),
       kind: text("active", { choices: ABILITY_TYPES, blank: false }), category: text(), description: text(), notes: text(), duration: text(),
       apCost: number(null, { min: 0 }), apDiscountStat: text("", { choices: ABILITY_STATS }),
       resourceId: text(), resourceCost: number(null, { min: 0 }), resourceUnit: text("points", { choices: ABILITY_COST_UNITS, blank: false }),
       restoration: new SchemaField({ target: text("health"), amount: text(), unit: text("points", { choices: ABILITY_COST_UNITS, blank: false }) }),
       uses: new SchemaField({ max: number(null, { min: 0 }), spent: number(0), recovery: text() }),
-      cooldown: new SchemaField({ rounds: number(null, { min: 0 }), remaining: number(0, { min: 0 }) })
+      cooldown: new SchemaField({ rounds: number(null, { min: 0 }), remaining: number(0, { min: 0 }), automatic: new foundry.data.fields.BooleanField({ initial: false }) })
     };
   }
 }
@@ -41,7 +46,8 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
     const system = this.item.system, character = this.item.actor?.system;
     const choices = (definitions, selected) => Object.entries(definitions).map(([value, label]) => ({ value, label, selected: value === selected }));
     return Object.assign(await super._prepareContext(options), {
-      item: this.item, system: wholeDisplay({ ...system }), editable: this.isEditable,
+      item: this.item, system: wholeDisplay({ ...system, effectsActive: abilityActive(this.item), cooldown: { ...system.cooldown, remaining: cooldownRemaining(this.item) } }), editable: this.isEditable,
+      durationUnits: choices(BONUS_DURATION_UNITS, system.activeDuration?.units ?? "rounds"),
       itemEffects: itemEffectRows(this.item), passive: system.kind === "passive", isForm: system.kind === "form",
       record: wholeDisplay(abilityRecord(this.item, character)),
       kinds: choices(Object.fromEntries(Object.entries(ABILITY_TYPES).filter(([key]) => key !== "form")), system.kind), stats: choices(ABILITY_STATS, system.apDiscountStat),
@@ -54,8 +60,9 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   }
 
   _processFormData(event, form, formData) {
-    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: this.item.system });
-    return abilityFormUpdates(this.item.system, data);
+    const original = { ...this.item.system, cooldown: { ...this.item.system.cooldown, remaining: cooldownRemaining(this.item) } };
+    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: original });
+    return abilityTimerFormUpdates(this.item, abilityFormUpdates(this.item.system, data));
   }
 
   async _onRender(context, options) {
@@ -83,16 +90,20 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
     const updateOptions = triggered ? { worldsBeyondFormTrigger: true } : {};
     if (end) {
       if (!item.system.effectsActive) return;
+      await stopAbilityClock(item, "duration", change);
       const result = await item.update({ "system.effectsActive": false });
       if (!result) throw new Error("Ending the ability was cancelled.");
       return result;
     }
-    if (item.system.effectsActive) return;
+    if (abilityActive(item)) return;
     const record = abilityRecord(item, actor.system);
     if (record.uses.tracked && !(record.uses.value >= 1)) throw new Error("No ability uses left. Correct the tracker if needed.");
     if (record.remaining > 0) throw new Error("This ability is on cooldown. Correct the tracker if needed.");
+    const timerPlans = abilityTimerPlans(item);
+    validateAbilityTimers(item, timerPlans);
+    const timed = timerPlans.some(plan => plan.kind === "duration");
     const bonusRows = itemEffectRows(item), hasBonuses = bonusRows.length > 0;
-    const otherBenefit = item.system.kind === "form" || bonusRows.some(row => !row.disabled);
+    const otherBenefit = timed || item.system.kind === "form" || bonusRows.some(row => !row.disabled);
     const benefit = item.system.restoration, formula = String(benefit?.amount ?? "").trim();
     const target = benefit?.target ?? "health", restorePool = formula ? recoveryPool(actor.system, target) : null;
     if (formula) {
@@ -135,16 +146,21 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
     // not overwrite the payment. Percentage amounts use the pre-use maximum.
     const restoration = formula ? restorationPlan(actor.system, target, amount) : null;
     if (restoration?.restored) await change(() => actor.update({ [restoration.path]: restoration.next }, updateOptions), () => actor.update({ [restoration.path]: restoration.previous }, updateOptions));
-    const previous = { "system.effectsActive": false, "system.uses.spent": item.system.uses.spent, "system.cooldown.remaining": item.system.cooldown.remaining };
+    const previous = { "system.effectsActive": item.system.effectsActive, "system.uses.spent": item.system.uses.spent, "system.cooldown.remaining": item.system.cooldown.remaining };
+    const timerIds = await startAbilityTimers(item, timerPlans, change);
+    if (timerPlans.length || item.system.timers?.durationId || item.system.timers?.cooldownId) for (const kind of ["durationId", "cooldownId"]) previous[`system.timers.${kind}`] = item.system.timers?.[kind] ?? "";
     if (item.system.kind === "form") await endOtherForms(actor, change, { itemId: item.id });
-    const staysActive = hasBonuses || item.system.kind === "form";
+    const staysActive = timed || hasBonuses || item.system.kind === "form";
     const updates = { "system.effectsActive": staysActive, "system.uses.spent": item.system.uses.spent + (record.uses.tracked ? 1 : 0), "system.cooldown.remaining": item.system.cooldown.rounds ?? 0 };
+    for (const key of Object.keys(previous).filter(key => key.startsWith("system.timers."))) updates[key] = timerIds[key.split(".").at(-1)];
     // Native updates can return undefined when there is no diff. A simple ability
     // without bonuses or trackers still posts and pays its configured costs.
     if (Object.keys(updates).some(key => updates[key] !== previous[key])) await change(() => item.update(updates), () => item.update(previous));
-    return createActionMessage({ speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-      content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}<details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(item.system.description)}</p></details></div>`,
+    const message = await createActionMessage({ speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+      content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${timed ? ` Duration: ${escapeHTML(bonusDurationText(item.system.activeDuration))}.` : hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}<details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(item.system.description)}</p></details></div>`,
       rolls: roll ? [roll] : []
     }, { messageMode });
+    try { await cleanupAbilityClocks(item); } catch { ui.notifications.warn("Ability used; old internal timers could not be removed. Its current timers still apply."); }
+    return message;
   }));
 }
