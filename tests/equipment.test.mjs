@@ -13,6 +13,19 @@ globalThis.foundry = {
 };
 const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
 
+test("inventory rows show compact configured bonuses while stowed/on-use, with the right pool and duration", () => {
+  const change = (key, value) => ({ key, value, type: "add", phase: "initial" });
+  const effects = [{ system: { changes: [change("system.stats.str.value", 3), change("system.stats.dex.value", -2)] } }, { disabled: true, system: { changes: [change("system.stats.str.value", 99)] } }];
+  const potion = { id: "power", type: "consumable", effects, system: { bonusDuration: { value: 3, units: "rounds" } } };
+  const gear = { id: "sword", type: "weapon", effects, system: { equipped: false, damage: "2d8" } };
+  const custom = "resource00000001";
+  const blood = { id: "blood", type: "consumable", actor: { system: { customResources: { [custom]: { name: "Blood" } } } }, system: { healingDice: "20", restoreTarget: custom, restoreUnit: "percent" } };
+  const rows = equipmentRows([potion, gear, blood]);
+  assert.equal(rows[0].bonusHint, "+3 STR · -2 DEX"); assert.equal(rows[0].bonusDuration, "3 rounds"); assert.equal(rows[0].bonusHintTitle, "On use");
+  assert.equal(rows[1].bonusHint, rows[0].bonusHint); assert.match(rows[1].bonusHintTitle, /stowed/); assert.equal(gear.system.equipped, false);
+  assert.equal(rows[2].brief, "Restore 20% Blood"); assert.equal(rows[2].bonusHint, "");
+});
+
 test("equipment grouping retains every item and its actions, including zero quantity and legacy gear", () => {
   const items = [
     { id: "old", name: "Legacy", type: "gear", system: {} },

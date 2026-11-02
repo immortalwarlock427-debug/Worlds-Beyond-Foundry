@@ -141,6 +141,49 @@ function potionBonuses(f) {
   f.actor.deleteEmbeddedDocuments = async (type, ids) => ids.map(id => { const effect = f.actor.effects.get(id); f.actor.effects.delete(id); return effect; });
 }
 
+test("timed potion definitions snapshot on Use but their native clock starts on Apply for the drinker", async () => {
+  const f = fixture(); potionBonuses(f); f.potion.system.bonusDuration = { value: 3, units: "rounds" };
+  const combat = game.combats[0]; combat.id = "encounter"; combat.round = 4; combat.turn = 1;
+  combat.combatants = [{ id: "other", actor: { uuid: "Actor.other" } }, { id: "drinker", actor: f.actor }];
+  game.time = { worldTime: 100 };
+  foundry.documents.ActiveEffect = { implementation: { getEffectStart: c => ({ time: game.time.worldTime, combat: c?.id ?? null, combatant: "other", round: c?.round ?? null, turn: c?.turn ?? null }) } };
+  const message = await useConsumable(f.actor, f.potion.id);
+  assert.match(f.calls.posts[0].data.content, /\+2 STR · \+2 DEX · 3 rounds/);
+  assert.equal(message.getFlag("worlds-beyond", "consumable").bonuses[0].start, undefined);
+  f.potion.system.bonusDuration.value = 99; game.time.worldTime = 200; combat.round = 6;
+  await Promise.all([applyConsumableHealing(message), applyConsumableHealing(message)]);
+  assert.equal(f.actor.effects.size, 2);
+  for (const effect of f.actor.effects.values()) {
+    assert.deepEqual(effect.duration, { value: 3, units: "rounds", expiry: "turnStart", expired: false });
+    assert.deepEqual(effect.start, { time: 200, combat: "encounter", combatant: "drinker", round: 6, turn: 1 });
+    effect.duration.label = "2 rounds";
+  }
+  assert.equal(effectContext(f.actor).statuses[0].timeLeft, "2 rounds left");
+  for (const effect of f.actor.effects.values()) effect.duration.expired = true;
+  assert.equal(effectContext(f.actor).statuses.length, 0); // Expired copies cannot masquerade as live Status.
+  assert.equal(f.potion.effects.values().next().value.disabled, false);
+});
+
+test("round timers fail before spending without an encounter; time-based timers remain available", async () => {
+  const f = fixture(); potionBonuses(f); game.combats = []; f.potion.system.bonusDuration = { value: 2, units: "rounds" };
+  await assert.rejects(useConsumable(f.actor, f.potion.id), /started encounter/);
+  assert.equal(f.potion.system.quantity, 2); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.calls.posts.length, 0);
+  game.time = { worldTime: 0 }; foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: game.time.worldTime, combat: null }) } };
+  f.potion.system.bonusDuration.units = "minutes";
+  const message = await useConsumable(f.actor, f.potion.id); game.time.worldTime = 50;
+  await applyConsumableHealing(message);
+  assert.equal(f.actor.effects.values().next().value.start.time, 50);
+  assert.equal(f.actor.effects.values().next().value.duration.expiry, null);
+});
+
+test("an encounter ending before Apply leaves a timed card retryable and restores any healing attempt", async () => {
+  const f = fixture(); potionBonuses(f); f.potion.system.bonusDuration = { value: 2, units: "rounds" };
+  foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: 0 }) } };
+  const message = await useConsumable(f.actor, f.potion.id); game.combats = [];
+  await assert.rejects(applyConsumableHealing(message), /started encounter/);
+  assert.equal(message.getFlag("worlds-beyond", "consumable").applied, false); assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.effects.size, 0);
+});
+
 test("consumables restore a chosen magic pool by percentage, preserve fractions, and reject missing resources before spending", async () => {
   const f = fixture(); f.potion.system.kind = "potion"; f.potion.system.restoreTarget = "mana"; f.potion.system.restoreUnit = "percent";
   f.actor.system.mana = { enabled: true, max: 125, value: 90, spent: 35 };

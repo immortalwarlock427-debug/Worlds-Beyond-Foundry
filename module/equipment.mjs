@@ -3,12 +3,13 @@ import { shotsLeft } from "./attacks.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { itemIcon } from "./item-icons.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
-import { itemEffectRows } from "./effects-core.mjs";
+import { itemEffectRows, itemBonusSummary } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { inCombat, payAp } from "./combat-support.mjs";
 import { actionApCost } from "./attacks.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
-import { consumableBonusData, applyConsumableBonuses } from "./consumable-effects.mjs";
+import { consumableBonusData, applyConsumableBonuses, consumableDurationStart } from "./consumable-effects.mjs";
+import { BONUS_DURATION_UNITS, bonusDurationText } from "./effect-duration.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -55,7 +56,8 @@ export class ConsumableData extends CarriedData {
     return {
       ...super.defineSchema(), perSlot: number(5),
       kind: text("potion", { choices: CONSUMABLE_KINDS, blank: false }),
-      healingDice: text(), restoreTarget: text("health"), restoreUnit: text("points", { choices: { points: "Points", percent: "% of maximum" }, blank: false })
+      healingDice: text(), restoreTarget: text("health"), restoreUnit: text("points", { choices: { points: "Points", percent: "% of maximum" }, blank: false }),
+      bonusDuration: new foundry.data.fields.SchemaField({ value: new foundry.data.fields.NumberField({ required: true, nullable: true, initial: null, min: 0, integer: true }), units: text("rounds", { choices: BONUS_DURATION_UNITS, blank: false }) })
     };
   }
 }
@@ -140,6 +142,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
       hasBonuses: Object.hasOwn(EQUIPMENT_TYPES, this.item.type) || this.item.type === "consumable",
       recoveryChoices: recoveryChoices(this.item.actor?.system, this.item.system.restoreTarget ?? "health"),
       recoveryUnits: Object.entries({ points: "Points", percent: "% of maximum" }).map(([value, label]) => ({ value, label, selected: value === (this.item.system.restoreUnit ?? "points") })),
+      bonusDurationUnits: Object.entries(BONUS_DURATION_UNITS).map(([value, label]) => ({ value, label, selected: value === (this.item.system.bonusDuration?.units ?? "rounds") })),
       consumableKinds: Object.entries(CONSUMABLE_KINDS).map(([value, label]) => ({ value, label, selected: value === this.item.system.kind })),
       weaponFamilies: Object.entries(WEAPON_FAMILIES).map(([value, label]) => ({ value, label, selected: value === this.item.system.family })),
       weaponProperties: Object.entries(WEAPON_PROPERTIES).map(([key, label]) => ({ key, label, checked: !!this.item.system.properties?.[key] })),
@@ -163,6 +166,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 export function equipmentRows(items, slotsUsed = {}) {
   return Array.from(items).filter(item => item.type !== "ability").map(original => {
     const item = { ...original, id: original.id, name: original.name, type: original.type, img: original.img, system: wholeDisplay({ ...original.system }) };
+    const bonusHint = itemBonusSummary(original);
     return ({
     id: item.id, name: item.name, type: item.type, typeLabel: ITEM_TYPES[item.type] ?? "Gear", img: itemIcon(item),
     equipIcon: item.type === "shield" ? "fa-shield-halved" : item.type === "armor" ? "fa-shirt" : "fa-hand",
@@ -174,10 +178,12 @@ export function equipmentRows(items, slotsUsed = {}) {
     showQuantity: (item.system.quantity ?? 1) !== 1 || ["consumable", "misc", "gear"].includes(item.type),
     slots: slotsUsed[item.id] ?? null,
     canEquip: Object.hasOwn(EQUIPMENT_TYPES, item.type),
+    bonusHint, bonusHintTitle: item.type === "consumable" ? "On use" : item.system.equipped ? "While equipped · active" : "While equipped · currently stowed",
+    bonusDuration: item.type === "consumable" && bonusHint ? bonusDurationText(item.system.bonusDuration) : "",
     brief: item.type === "weapon" ? [item.system.damage, item.system.damageType, item.system.loading ? `${shotsLeft(item)}/${item.system.loading} shots` : ""].filter(Boolean).join(" · ")
       : item.type === "armor" ? `AR ${item.system.armorRating} · Evasion +${item.system.evasionBonus}`
         : item.type === "shield" ? `Block ${item.system.blockDie} · AR ${item.system.armorRating}`
-          : item.type === "consumable" && item.system.healingDice ? `Healing ${item.system.healingDice}` : "",
+          : item.type === "consumable" && item.system.healingDice ? `Restore ${item.system.healingDice}${item.system.restoreUnit === "percent" ? "%" : ""} ${recoveryChoices(original.actor?.system, item.system.restoreTarget ?? "health").find(choice => choice.selected)?.label ?? "Resource"}` : "",
     detail: item.type === "weapon" ? [item.system.damage, item.system.damageType,
       item.system.ranged ? "Ranged" : "",
       item.system.family !== "none" ? WEAPON_FAMILIES[item.system.family] : "",
@@ -228,6 +234,7 @@ export async function useConsumable(actor, id) {
     if (!use.ok) throw new Error(use.message);
     const formula = String(item.system.healingDice ?? "").trim();
     const bonuses = consumableBonusData(item), target = item.system.restoreTarget ?? "health";
+    if (bonuses[0]?.duration) consumableDurationStart(actor, bonuses[0].duration); // Validate the clock before spending.
     const pool = formula ? recoveryPool(actor.system, target) : null;
     if (formula && !pool) throw new Error("Choose an available restoration resource on the consumable.");
     if (formula && item.system.restoreUnit === "percent" && !(pool.max > 0) && !bonuses.length) throw new Error("Set a positive resource maximum before using percentage restoration.");
@@ -244,7 +251,8 @@ export async function useConsumable(actor, id) {
     const apCost = item.system.kind === "potion" && inCombat(actor) ? actionApCost(5, actor.system.stats.dex.mod) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
       + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")
-      + `<p>One used, ${wholeNumber(use.quantity)} left.${apCost ? ` ${apCost} AP spent.` : ""}${roll ? ` Restore ${wholeNumber(amount)} ${escapeHTML(pool.label)}.` : ""}${bonuses.length ? ` ${bonuses.length} bonus set(s).` : ""}</p>`
+      + `<p>One used, ${wholeNumber(use.quantity)} left.${apCost ? ` ${apCost} AP spent.` : ""}${roll ? ` Restore ${wholeNumber(amount)} ${escapeHTML(pool.label)}.` : ""}</p>`
+      + (bonuses.length ? `<p>${escapeHTML(itemBonusSummary(item) || "Bonuses")}${bonusDurationText(item.system.bonusDuration) ? ` · ${escapeHTML(bonusDurationText(item.system.bonusDuration))}` : " · until ended"}</p>` : "")
       + (roll ? await roll.render() : "") + "</div>";
     const payment = apCost ? await payAp(actor, apCost, change) : null;
     await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));
