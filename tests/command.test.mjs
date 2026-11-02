@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { commandAlly, receiveCommand, commandCandidates, decorateCommand } from "../module/command.mjs";
+import { commandAlly, receiveCommand, commandCandidates, decorateCommand, promptCommand } from "../module/command.mjs";
+import { payAp } from "../module/combat-support.mjs";
+import { reversibleAction } from "../module/action-support.mjs";
 function fixture() {
   const actors = new Map(), posts = [], warnings = [], infos = [], errors = [];
   const actor = (id, mod = 0) => {
@@ -46,9 +48,58 @@ test("failed Command post refunds the commander; insufficient own AP, self-targe
   assert.equal(await commandAlly(f.sender, f.sender), undefined);
   f.actors.delete(f.ally.uuid); await assert.rejects(commandAlly(f.sender, f.ally), /no longer exists/);
 });
-test("Command candidates retain exact synthetic combat actors and exclude the commander", () => {
+test("Command candidates put sidebar characters first while retaining exact synthetic actors and excluding the commander", () => {
   const f = fixture(), token = f.actor('scene-token'); game.combats = [{ combatants: [{ actor: token }] }];
-  assert.deepEqual(commandCandidates(f.sender).map(actor => actor.uuid), [token.uuid, f.ally.uuid]);
+  assert.deepEqual(commandCandidates(f.sender).map(actor => actor.uuid), [f.ally.uuid, token.uuid]);
+});
+
+test("the Command picker distinguishes same-name sidebar and token copies, using exact UUIDs rather than ambiguous indices", async () => {
+  const f = fixture(); f.sender.system.stats.cha.mod = 0;
+  f.ally.name = 'Aldrich'; f.ally.system.ap.value = 17;
+  const token = f.actor('copy'); token.uuid = 'Scene.arena.Token.copy.Actor.ally'; f.actors.set(token.uuid, token);
+  token.name = 'Aldrich'; token.isToken = true; token.token = { name: 'Aldrich', parent: { name: 'Arena <north>' } }; token.system.command.value = 5;
+  game.combats = [{ combatants: [{ actor: token }] }];
+  let content;
+  foundry.applications = { api: { DialogV2: { input: async options => { content = options.content; return { ally: f.ally.uuid }; } } } };
+  await promptCommand(f.sender);
+  assert.match(content, /value="Actor.ally">Aldrich · Character/);
+  assert.match(content, /value="Scene.arena.Token.copy.Actor.ally">Aldrich · Token copy/);
+  assert.match(content, /Arena &lt;north&gt;/);
+  assert.equal(f.posts[0].message.getFlag('worlds-beyond', 'command').targetUuid, f.ally.uuid);
+  assert.equal(f.posts[0].message.getFlag('worlds-beyond', 'command').amount, 2);
+  assert.equal(f.ally.system.command.value, 2); assert.equal(token.system.command.value, 5);
+  assert.match(f.infos[0], /received 2 Command AP/); assert.match(f.infos[0], /19 AP total/);
+});
+
+test("a two-AP offer reports keeping a higher previous grant rather than claiming to grant five", async () => {
+  const f = fixture(); f.sender.system.stats.cha.mod = 0; f.ally.system.command.value = 5;
+  await commandAlly(f.sender, f.ally);
+  assert.equal(f.posts[0].message.getFlag('worlds-beyond','command').amount, 2);
+  assert.equal(f.ally.system.command.value, 5);
+  assert.match(f.infos[0], /offered 2 Command AP; kept existing 5/);
+});
+
+test("the chosen sidebar recipient spends its two Command AP first outside combat and on its turn", async () => {
+  for (const started of [false, true]) {
+    const f = fixture(); f.sender.system.stats.cha.mod = 0; f.ally.system.ap.value = 17;
+    game.combats = started ? [{ started: true, combatants: [{ actor: f.sender }, { actor: f.ally }], combatant: { actor: f.ally } }] : [];
+    await commandAlly(f.sender, f.ally);
+    assert.equal(f.ally.system.command.value, 2);
+    const payment = await reversibleAction(change => payAp(f.ally, 6, change));
+    assert.equal(payment.fromGiven, 2); assert.equal(payment.fromOwn, 4);
+    assert.equal(f.ally.system.ap.value, 13); assert.equal(f.ally.system.command.value, 0);
+  }
+});
+
+test("selecting an encounter token explicitly updates only that copy, and linked combatants do not duplicate sidebar choices", async () => {
+  const f = fixture(); f.sender.system.stats.cha.mod = 0;
+  const token = f.actor('token'); token.isToken = true; token.name = f.ally.name;
+  game.combats = [{ combatants: [{ actor: f.ally }, { actor: token }] }];
+  assert.deepEqual(commandCandidates(f.sender).map(actor => actor.uuid), [f.ally.uuid, token.uuid]);
+  foundry.applications = { api: { DialogV2: { input: async () => ({ ally: token.uuid }) } } };
+  await promptCommand(f.sender);
+  assert.equal(token.system.command.value, 2); assert.equal(f.ally.system.command.value, 0);
+  assert.match(f.posts[0].message.content, /Token copy/);
 });
 
 test("owned Command delivers outside combat directly and reports the increased total without raising the normal cap", async () => {
@@ -72,10 +123,11 @@ test("receiving serialized numeric offers works, while invalid or unretained gra
 
 test("Command receive controls refresh after actual receipt and stay retryable on invalid offers", async () => {
   const f = fixture(); f.ally.isOwner = false; const message = await commandAlly(f.sender, f.ally); f.ally.isOwner = true;
-  const buttons = []; globalThis.document = { createElement: () => ({ addEventListener(name, handler) { this[name] = handler; } }) };
+  const buttons = []; globalThis.document = { createElement: () => ({ dataset: {}, addEventListener(name, handler) { this[name] = handler; } }) };
   const content = { querySelector: () => null, append: button => buttons.push(button) };
   const html = { querySelector: () => content }; message.isContentVisible = true;
   decorateCommand(message, html); assert.equal(buttons[0].textContent, 'Receive Command AP');
+  assert.match(buttons[0].title, /ally · Character/);
   await receiveCommand(message); assert.equal(buttons[0].textContent, 'Command received'); assert.equal(buttons[0].disabled, true);
   const invalid = { ...message, uuid: 'ChatMessage.invalid', getFlag: () => ({ targetUuid: f.ally.uuid, amount: 'invalid' }) };
   decorateCommand(invalid, html); await buttons[1].click();
