@@ -75,6 +75,12 @@
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-management { min-width: 100px; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-management > summary { padding: 10px 12px; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-management-fields { min-width: min(180px, 100%); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-color-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-color-grid fieldset { min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--wb-record-edge); border-radius: 4px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-color-grid legend { color: var(--wb-brass); font: 13px var(--wb-font-body); padding-inline: 5px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-bar-color-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-bar-color-fields label { color: var(--wb-muted); font: 12px/1.4 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-bar-color-fields input { width: 100%; min-width: 0; min-height: 44px; margin-top: 5px; padding: 7px 9px; background: #0A1222; border: 1px solid #42506C; border-radius: 4px; color: var(--wb-ink); font: 13px/1.4 var(--wb-font-body); }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin: 0 0 22px; padding: 10px 14px 14px; border: 1px solid var(--wb-record-edge); border-radius: 12px 3px 12px 3px; background: var(--wb-record-surface); }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-total { flex: 1; margin: 0; color: var(--wb-muted); font-size: 13px; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-total strong { color: var(--wb-ink); font: 24px/1.4 var(--wb-font-display); margin-right: 8px; }
@@ -139,6 +145,7 @@
   .worlds-beyond.wb-character-sheet [data-record-tab] .wb-ability-details { grid-column: 1 / -1; }
 }
 @container (max-width: 450px) {
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-color-grid { grid-template-columns: minmax(0, 1fr); }
   .worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-details-grid { grid-template-columns: minmax(0, 1fr); }
   .worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading { margin-bottom: 12px; }
   .worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading h2 { font-size: 25px; }
