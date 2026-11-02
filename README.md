@@ -5,7 +5,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 ## What's in it so far
 
 - **Character overview:** a large circular portrait with eight stat medallions, live Health/resources/AP/reactions/Wonder, defenses/movement/initiative and four source-linked favorite abilities. Name/level/race/form stay prominent. Stat circles roll; value cards jump to the existing editors in Details. See [overview setup and validation](docs/CHARACTER-OVERVIEW.md).
-- **Infinite Archive polish:** spiral portrait engraving, unclipped medallions, visible resource meters and a connected four-seal favorite foundation. Appearance offers a renameable Base Form and live vertical framing per form; Form loadout has a portrait picker. Existing rules, balances and quick actions are preserved.
+- **Infinite Archive polish:** a layered void-vortex portrait background, unclipped medallions, visible resource meters and a connected four-seal favorite foundation. Appearance offers a renameable Base Form and live vertical framing per form; Form loadout has a portrait picker. Existing rules, balances and quick actions are preserved.
 - **Matching ledger tabs:** Details, Equipment, Abilities, Status and Notes share framed navy/brass sections, readable controls, clear equipped/active states and a numbered Notes chronicle. All original fields/actions remain. See [sheet organization and validation](docs/SHEET-TABS.md).
 - **Resource bar colors:** each optional resource's Settings accepts one hex color for a solid fill or two for a gradient. Core bar colors under Details configures Health/AP/Reactions/Wonder. Clear both fields for the theme default; balances are unchanged. See [resources](docs/RESOURCES.md).
 

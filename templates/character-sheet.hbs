@@ -21,12 +21,13 @@
       <section class="wb-astral-portrait" aria-label="Character artwork and eight attributes">
         <div class="wb-orbit-toolbar"><span class="wb-eyebrow">Attributes</span><div><button type="button" data-action="archiveAppearance" title="Portrait framing and Base form name" aria-label="Portrait framing and Base form name" {{#unless editable}}disabled{{/unless}}><i class="fa-solid fa-sliders" aria-hidden="true"></i></button><button type="button" data-action="milestones" title="Milestone rules" aria-label="Milestone rules"><i class="fa-solid fa-diamond" aria-hidden="true"></i></button><button type="button" data-action="overviewEdit" data-field="statScores.str" title="Edit attributes" aria-label="Edit attributes"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></div></div>
         <div class="wb-attribute-orbit">
-          <div class="wb-orbit-art" style="--wb-portrait-y:{{overviewPortraitY}}%"><svg class="wb-celestial-vortex" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
-            <circle cx="200" cy="200" r="168" class="wb-vortex-ring"/><circle cx="200" cy="200" r="181" class="wb-vortex-ticks"/>
-            <g class="wb-vortex-arms"><path d="M200 15 C330 8 410 150 350 260 C310 335 215 349 160 305"/><path d="M385 200 C392 330 250 410 140 350 C65 310 51 215 95 160"/><path d="M200 385 C70 392 -10 250 50 140 C90 65 185 51 240 95"/><path d="M15 200 C8 70 150 -10 260 50 C335 90 349 185 305 240"/></g>
-            <g class="wb-vortex-inscriptions"><path d="M200 25 L205 35 L200 45 L195 35 Z M375 200 L365 205 L355 200 L365 195 Z M200 375 L195 365 L200 355 L205 365 Z M25 200 L35 195 L45 200 L35 205 Z"/><circle cx="200" cy="200" r="155"/></g>
-          </svg><button type="button" data-action="pickPortrait" title="Change artwork for the current form" aria-label="Change artwork for the current form" {{#unless editable}}disabled{{/unless}}><img src="{{actor.img}}" alt="{{actor.name}}"></button></div>
-          <span class="wb-orbit-star" aria-hidden="true">✦</span>
+          <div class="wb-singularity" aria-hidden="true">
+            <span class="wb-vortex-nebula"></span>
+            <img class="wb-vortex-streams" src="systems/worlds-beyond/icons/void-vortex.svg" alt="">
+            <span class="wb-vortex-texture"></span>
+            <span class="wb-vortex-depth"></span>
+          </div>
+          <div class="wb-orbit-art" style="--wb-portrait-y:{{overviewPortraitY}}%"><button type="button" data-action="pickPortrait" title="Change artwork for the current form" aria-label="Change artwork for the current form" {{#unless editable}}disabled{{/unless}}><img src="{{actor.img}}" alt="{{actor.name}}"></button></div>
           {{#each overviewStats}}<button type="button" class="wb-stat-orb wb-orb-{{key}} {{#if manual}}is-manual{{/if}} {{#if adjusted}}is-adjusted{{/if}}" data-action="rollStat" data-stat="{{key}}" title="{{label}} {{value}} · {{modLabel}} · Check or save{{#if sources}} · {{sources}}{{/if}}" aria-label="{{label}} {{value}}, modifier {{modLabel}}. Roll a check or save." {{#unless @root.editable}}disabled{{/unless}}>
             <span class="wb-orb-abbr">{{abbr}}</span><span class="wb-orb-scoreline"><span class="wb-orb-pip {{#if pips.0.lit}}is-lit{{/if}}" title="21: {{pips.0.name}} · {{pips.0.status}}" aria-hidden="true"></span><strong class="wb-orb-value">{{value}}</strong><span class="wb-orb-pip {{#if pips.1.lit}}is-lit{{/if}}" title="28: {{pips.1.name}} · {{pips.1.status}}" aria-hidden="true"></span></span><span class="wb-orb-mod">{{modLabel}}</span>
           </button>{{/each}}
