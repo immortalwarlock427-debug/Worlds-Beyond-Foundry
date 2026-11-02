@@ -1,0 +1,160 @@
+/* The remaining ledger pages share the overview's Infinite Archive language.
+   Scope stops at character tabs; document editors, chat and Foundry are untouched. */
+.worlds-beyond.wb-character-sheet [data-record-tab] {
+  --wb-record-edge: #D4B06A50;
+  --wb-record-surface: linear-gradient(145deg, #18244770, #0F172B);
+  gap: 18px;
+  background: radial-gradient(ellipse at 100% 0, #6FD6FF05, transparent 55%);
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 10px 16px; min-width: 0; margin: 0 0 16px; padding: 0 0 12px;
+  border-bottom: 1px solid var(--wb-record-edge);
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading > div:first-child { flex: 1; min-width: min(180px, 100%); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading .wb-eyebrow { color: var(--wb-muted); font-size: 9px; letter-spacing: .18em; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading h2 { display: flex; justify-content: flex-start; align-items: center; gap: 8px; margin: 6px 0 0; border: 0; color: var(--wb-ink); font: 27px/1.2 var(--wb-font-display); letter-spacing: .015em; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-seal { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 1px solid var(--wb-record-edge); border-radius: 50%; color: var(--wb-brass); background: #18244760; box-shadow: inset 0 0 0 4px #0D1526; font-size: 14px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-section-title { color: var(--wb-brass); font-family: "Marcellus SC", var(--wb-font-display); font-size: 15px; letter-spacing: .04em; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-section-title > span { color: var(--wb-muted); font: 12px var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-resource, .wb-core-detail, .wb-pool-card, .wb-defenses, .wb-group) {
+  min-width: 0; border: 1px solid var(--wb-record-edge); border-radius: 12px 3px 12px 3px;
+  background: var(--wb-record-surface); padding: 14px;
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resources { gap: 8px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource { position: relative; padding: 12px; border-top: 1px solid var(--wb-brass); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-health { border-top-color: #B96980; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-reactions { border-top-color: var(--wb-cyan); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-wonder { border-top-color: #AD98F0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource .wb-eyebrow { font-size: 10px; letter-spacing: .06em; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-values input { font: 31px/1.25 var(--wb-font-display); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-values { gap: 5px; margin-bottom: 0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-percent-values { gap: 2px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-command-pool { font-size: 11px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-wonder-rest { gap: 8px; margin: -9px 0 0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-wonder-rest, .wb-stat-tools, .wb-equipment-actions, .wb-defense-actions) > button {
+  min-height: 44px; height: auto; margin: 0; padding: 8px 12px; border: 1px solid var(--wb-record-edge);
+  border-radius: 3px 9px 3px 9px; background: #18244766; color: var(--wb-brass);
+  font: 13px/1.25 var(--wb-font-body); box-shadow: none; white-space: normal;
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-actions > button[aria-pressed="true"] { background: #D4B06A20; border-color: var(--wb-brass); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-defense-actions > button { display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-defense-actions small { color: var(--wb-muted); font: 12px/1.2 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core { gap: 8px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-detail { padding: 11px 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-detail .wb-eyebrow { font-size: 10px; letter-spacing: .04em; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-core-value { font: 28px/1.3 var(--wb-font-display); margin-top: 5px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-card { position: relative; padding: 14px 14px 10px; border-left: 2px solid #6FD6FF60; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-heading h3 { font-size: 21px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-meter { height: 7px; margin: 6px 0 14px; border-radius: 1px; background: #080F20; box-shadow: 0 0 0 1px #879DC326; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-meter > span { background: linear-gradient(90deg, #429DA8, var(--wb-cyan)); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-actions { grid-template-columns: 48px repeat(3, minmax(0, 1fr)); gap: 6px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-card button { font: 13px/1.25 var(--wb-font-body); background: #101A2E; border-color: var(--wb-record-edge); box-shadow: none; border-radius: 4px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-settings { border: 0; background: transparent; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-settings > summary { padding: 8px 0; min-height: 44px; font-size: 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-pool-settings-grid, .wb-adjust-grid) label { color: var(--wb-muted); font-size: 12px; line-height: 1.4; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-pool-settings-grid, .wb-adjust-grid) :is(input:not([type="checkbox"]), select) {
+  width: 100%; min-width: 0; min-height: 44px; margin-top: 5px; padding: 7px 9px; border: 1px solid #42506C;
+  border-radius: 4px; background: #0A1222; color: var(--wb-ink); font: 14px/1.4 var(--wb-font-body);
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-group { padding: 10px 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-group-title { color: var(--wb-brass); font-size: 11px; border-bottom-color: var(--wb-record-edge); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-stats { gap: 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat { grid-template-columns: 44px minmax(0, 1fr) 48px 32px 48px; gap: 5px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-abbr { border: 1px solid var(--wb-record-edge); border-radius: 50%; background: #18244788; font-size: 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-score { font: 26px/1.2 var(--wb-font-display); background: #0A1222; border-color: #42506C; border-radius: 3px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-mod { font-size: 23px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-label { font-size: 14px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-disclosure { border-color: #D4B06A35; border-radius: 3px 10px 3px 10px; background: #0E1728; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-disclosure > summary { color: var(--wb-brass); font: 13px/1.4 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-disclosure[open] > summary { border-bottom-color: var(--wb-record-edge); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-disclosure p { color: var(--wb-muted); font: 13px/1.5 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-help { margin-top: 2px; border-style: solid; border-color: #D4B06A25; background: transparent; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-help > summary { color: var(--wb-muted); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-management { min-width: 100px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-management > summary { padding: 10px 12px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-resource-management-fields { min-width: min(180px, 100%); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin: 0 0 22px; padding: 10px 14px 14px; border: 1px solid var(--wb-record-edge); border-radius: 12px 3px 12px 3px; background: var(--wb-record-surface); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-total { flex: 1; margin: 0; color: var(--wb-muted); font-size: 13px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-total strong { color: var(--wb-ink); font: 24px/1.4 var(--wb-font-display); margin-right: 8px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-total.is-over, .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-total.is-over strong { color: #E0A6C8; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-meter { display: block; flex: 1 0 100%; height: 5px; margin-top: 6px; background: #080F20; border-radius: 1px; overflow: hidden; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-meter > span { display: block; width: clamp(0%, calc(var(--wb-load) / max(1, var(--wb-capacity)) * 100%), 100%); height: 100%; background: var(--wb-brass); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-meter.is-over > span { background: linear-gradient(90deg, var(--wb-brass), var(--wb-rose)); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-add-equipment > summary { padding: 8px 12px; border: 1px solid var(--wb-record-edge); border-radius: 3px 9px 3px 9px; background: #18244766; color: var(--wb-brass); font: 13px/1.9 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-add-equipment[open] { padding-bottom: 3px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-add-equipment[open] > summary { width: fit-content; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-group { margin-top: 20px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-group-title { position: relative; align-items: center; margin: 0; padding: 0 2px 9px; color: var(--wb-brass); font: 12px/1.4 "Marcellus SC", var(--wb-font-display); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-group-title > span, .worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; margin-left: 6px; padding: 0 5px; border: 1px solid var(--wb-record-edge); border-radius: 50%; color: var(--wb-brass); font: 12px/1 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-group .wb-equipment-list { gap: 6px; border: 0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-list > .wb-equipment-row {
+  position: relative; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 8px 12px; min-height: 68px;
+  padding: 9px 10px; border: 1px solid #D4B06A30; border-radius: 3px 10px 3px 10px; background: var(--wb-record-surface);
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-list > .is-equipped { border-left: 2px solid #D4B06AB0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-list > .is-active { border-left: 2px solid #6FD6FFA0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-item-icon { width: 42px; height: 42px; border: 1px solid #D4B06A55; border-radius: 9px 2px 9px 2px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-row button.wb-equipment-name { min-width: 0; line-height: 1.3; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-name .wb-item-title { white-space: normal; overflow-wrap: anywhere; color: var(--wb-ink); font: 20px/1.25 var(--wb-font-display); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-name .wb-item-brief { white-space: normal; color: var(--wb-muted); font: 12px/1.4 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-quantity { display: inline-block; margin-left: 7px; color: #B7C4DC; font: 11px/1.3 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions { gap: 5px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > button { border-color: #D4B06A55; background: #0D1628; color: var(--wb-brass); font: 12px/1.2 var(--wb-font-body); border-radius: 3px 8px 3px 8px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > :is(.wb-row-attack, .wb-row-use) { padding: 0 10px; border-color: #D4B06AA0; background: #D4B06A0E; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > .wb-equip-toggle[aria-pressed="true"] { color: #0A1020; background: var(--wb-brass); border-color: var(--wb-brass); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .is-active .wb-row-use { color: var(--wb-cyan); border-color: #6FD6FF60; background: #6FD6FF09; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > .wb-item-remove { color: #8E9AB2; background: transparent; border-color: transparent; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > .wb-item-remove:hover { color: #E0A6C8; border-color: #D46A9D55; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-status-time { color: #B5D8E5; font: 11px/1.4 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-ability-details { border: 0; border-top: 1px solid #D4B06A25; border-radius: 0; background: transparent; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-ability-details > summary { padding: 11px 0; min-height: 44px; color: var(--wb-muted); font-size: 11px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-status .wb-equipment-list { gap: 10px; margin: 0; padding-left: 11px; border-left: 1px solid #6FD6FF45; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-status .wb-equipment-row::before { content: ""; position: absolute; width: 6px; height: 6px; top: 28px; left: -16px; border: 1px solid var(--wb-cyan); background: #0F172B; transform: rotate(45deg); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-status .wb-equipment-list:has(> .wb-empty) { border: 0; padding: 0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-equipment, .wb-status) > .wb-empty,
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-status .wb-equipment-list > .wb-empty { display: grid; place-content: center; gap: 12px; min-height: 170px; margin: 18px 0 0; padding: 24px; text-align: center; color: var(--wb-muted); border: 1px solid #D4B06A35; border-radius: 16px 3px 16px 3px; background: radial-gradient(ellipse, #18244750, transparent); font-size: 14px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-equipment, .wb-status) > .wb-empty::before,
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-status .wb-equipment-list > .wb-empty::before { content: "◇"; color: #D4B06A99; font: 36px/1 var(--wb-font-display); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-details-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; counter-reset: chronicle; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail { position: relative; counter-increment: chronicle; padding: 16px; border: 1px solid var(--wb-record-edge); border-radius: 12px 3px 12px 3px; background: var(--wb-record-surface); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail::before { content: counter(chronicle, upper-roman); position: absolute; right: 14px; top: 14px; color: #D4B06A70; font: 12px/1.4 var(--wb-font-display); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail .wb-eyebrow { margin-right: 24px; font-size: 11px; letter-spacing: .1em; color: var(--wb-brass); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail :is(input, textarea) { min-height: 44px; padding: 10px 0; color: var(--wb-ink); border: 0; border-bottom: 1px solid #6FD6FF30; border-radius: 0; background: transparent; font: 15px/1.6 var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail textarea { min-height: 100px; resize: vertical; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail :is(input, textarea)::placeholder { color: #7D8AA6; opacity: 1; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail-text { color: var(--wb-ink); font-size: 15px; line-height: 1.65; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-detail .wb-empty { margin: 0; color: #8794AE; font-size: 13px; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(button, summary):hover { border-color: #D4B06AA0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] :is(input, select, textarea):focus-visible { outline: 1px solid var(--wb-cyan); outline-offset: 2px; box-shadow: none; }
+@container (max-width: 700px) {
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading .wb-equipment-actions { flex: 1 0 100%; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stats { grid-template-columns: minmax(0, 1fr); }
+}
+@container (max-width: 560px) {
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-list > .wb-equipment-row { grid-template-columns: 42px minmax(0, 1fr); gap: 4px 10px; padding: 10px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions { grid-column: 2; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-equipment-row > .wb-item-icon { grid-row: 1 / 3; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-ability-details { grid-column: 1 / -1; }
+}
+@container (max-width: 450px) {
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-character-details-grid { grid-template-columns: minmax(0, 1fr); }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading { margin-bottom: 12px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-record-heading h2 { font-size: 25px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-resources, .worlds-beyond.wb-character-sheet [data-record-tab] .wb-core { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-actions { grid-template-columns: 44px repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-pool-actions button { padding-inline: 3px; font-size: 12px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-group { padding: 10px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat { grid-template-columns: 40px minmax(0, 1fr) 44px 29px 40px; gap: 4px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-pips { gap: 0; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-button { width: 20px; flex-basis: 20px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat .wb-label { font-size: 12px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat .wb-abbr { font-size: 11px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat .wb-score { font-size: 24px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat-tools { gap: 5px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-stat-tools > button { padding-inline: 9px; font-size: 12px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-defense-actions { gap: 5px; }
+  .worlds-beyond.wb-character-sheet [data-record-tab] .wb-defense-actions > button { padding-inline: 5px; }
+}
