@@ -5,6 +5,7 @@ export class CharacterActor extends foundry.documents.Actor {
   async onUpdateEffectDurations(effects, event, context) {
     await super.onUpdateEffectDurations(effects, event, context);
     if (this.type === "character") this.render(false, { renderContext: "updateEffectDurations" });
+    for (const item of new Set(effects.filter(effect => effect.parent?.documentName === "Item").map(effect => effect.parent))) item.render(false, { renderContext: "updateEffectDurations" });
   }
 
   async modifyTokenAttribute(attribute, value, isDelta = false, isBar = true) {

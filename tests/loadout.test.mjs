@@ -68,4 +68,8 @@ test("Item operation registration respects cancellation, runs batch normalizatio
   let source; await Item._preCreateOperation([{ type: "weapon", system: { equipped: true }, updateSource: data => { source = data; } }], { parent: actor }, {});
   assert.deepEqual(source, { "system.equipped": false });
   source = null; await Item._preCreateOperation([{ type: "weapon", system: { equipped: true }, updateSource: data => { source = data; } }], {}, {}); assert.equal(source, null);
+  const copied = { type: "ability", system: { effectsActive: false, timers: { durationId: "clock", cooldownId: "" } },
+    effects: [{ flags: { "worlds-beyond": { abilityTimer: "duration" } } }, { toObject: () => ({ name: "Actual bonus", system: { changes: [] } }) }], updateSource: data => { source = data; } };
+  await Item._preCreateOperation([copied], { parent: actor }, {});
+  assert.deepEqual(source, { "system.timers.durationId": "", "system.timers.cooldownId": "", effects: [{ name: "Actual bonus", system: { changes: [] } }] });
 });

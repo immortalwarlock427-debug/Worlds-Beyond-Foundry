@@ -1,5 +1,6 @@
 import { recoveryPool } from "./consumable-benefits.mjs";
 import { numberOr } from "./core-numbers.mjs";
+import { abilityActive } from "./ability-timers-core.mjs";
 export const TRIGGER_MODES = Object.freeze({ manual: "Manual", automatic: "Automatic", prompt: "Ask first" });
 export const TRIGGER_COMPARISONS = Object.freeze({ above: "Above", atLeast: "At or above", below: "Below", atMost: "At or below" });
 export const TRIGGER_END_MODES = Object.freeze({ prompt: "Ask to end", stay: "Keep active", automatic: "End automatically" });
@@ -30,8 +31,8 @@ export function triggerTransitions(actor, before) {
   for (const item of items(actor).filter(item => item.type === "ability" && item.system.kind === "form")) {
     const now = triggerCondition(actor.system, item.system.trigger), was = before[item.id];
     if (now === null) continue;
-    if (now && was !== true && !item.system.effectsActive) enter.push(item);
-    if (!now && was === true && item.system.effectsActive && item.system.trigger?.endMode !== "stay") end.push(item);
+    if (now && was !== true && !abilityActive(item)) enter.push(item);
+    if (!now && was === true && abilityActive(item) && item.system.trigger?.endMode !== "stay") end.push(item);
   }
   return { enter, end };
 }

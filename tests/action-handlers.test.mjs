@@ -7,6 +7,8 @@ const { useConsumable, applyConsumableHealing, decorateConsumableMessage } = awa
 const { useAbility } = await import("../module/abilities.mjs");
 const { effectContext } = await import("../module/effects-core.mjs");
 const { returnToBase } = await import("../module/forms.mjs");
+const { reconcileAbilityTimers } = await import("../module/ability-timers.mjs");
+const { abilityActive, cooldownRemaining } = await import("../module/ability-timers-core.mjs");
 
 function fixture(mode = "public") {
   const calls = { evaluations: [], posts: [], flags: [], updates: [] };
@@ -226,6 +228,71 @@ function bonusAbility(f) {
   f.actor.items.set(item.id, item); f.actor.system.mana = { enabled: true, max: 125, value: 125, spent: 0, min: 0 };
   return item;
 }
+
+function timedAbility(f) {
+  const item = bonusAbility(f); item.actor = f.actor; item.documentName = "Item";
+  f.actor.type = "character"; item.system.timers = { durationId: "", cooldownId: "" };
+  item.system.activeDuration = { value: 3, units: "rounds" }; item.system.cooldown.automatic = true;
+  game.time = { worldTime: 0 }; game.users = { activeGM: { isSelf: true } };
+  const combat = game.combats[0]; combat.id = "combat"; combat.round = 1; combat.combatants[0].id = "hero";
+  foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: game.time.worldTime, combat: combat.id, round: combat.round }) } };
+  let sequence = 0;
+  item.createEmbeddedDocuments = async (type, data) => data.map(entry => {
+    const effect = { ...structuredClone(entry), id: `clock${++sequence}`, parent: item,
+      async update(data) { Object.assign(this, structuredClone(data)); return this; }, async delete() { item.effects.delete(this.id); return this; } };
+    item.effects.set(effect.id, effect); return effect;
+  });
+  item.deleteEmbeddedDocuments = async (type, ids) => Promise.all(ids.map(id => item.effects.get(id).delete()));
+  return item;
+}
+
+test("ability duration and automatic cooldown start together; End stops duration but never clears cooldown", async () => {
+  const f = fixture(), item = timedAbility(f);
+  await useAbility(f.actor, item.id); const duration = item.effects.get(item.system.timers.durationId), cooldown = item.effects.get(item.system.timers.cooldownId);
+  assert.equal(duration.duration.value, 3); assert.equal(cooldown.duration.value, 2); assert.equal(duration.start.combatant, "hero");
+  assert.equal(f.actor.system.ap.value, 10); assert.equal(item.effects.size, 3); assert.equal(effectContext(f.actor).savedAbilities.length, 0);
+  await useAbility(f.actor, item.id, { end: true }); assert.equal(duration.disabled, true); assert.equal(item.system.effectsActive, false); assert.equal(cooldown.disabled, false);
+  await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
+  cooldown.duration.expired = true; await reconcileAbilityTimers(item); assert.equal(item.system.cooldown.remaining, 0);
+  const oldId = duration.id; await useAbility(f.actor, item.id); assert.notEqual(item.system.timers.durationId, oldId);
+  assert.equal(item.effects.size, 3, "Successful activation cleans superseded internal clocks");
+  await reconcileAbilityTimers(item, duration); assert.equal(item.system.effectsActive, true, "A stale expiry from the previous activation cannot end this one");
+});
+
+test("expired native clocks immediately remove bonuses and reconcile persistent fields only on the active GM", async () => {
+  const f = fixture(), item = timedAbility(f); await useAbility(f.actor, item.id);
+  for (const effect of item.effects.values()) if (effect.duration) effect.duration.expired = true;
+  assert.equal(abilityActive(item), false); assert.equal(cooldownRemaining(item), 0);
+  game.users.activeGM.isSelf = false; await reconcileAbilityTimers(item); assert.equal(item.system.effectsActive, true);
+  game.users.activeGM.isSelf = true; await Promise.all([reconcileAbilityTimers(item), reconcileAbilityTimers(item)]);
+  assert.equal(item.system.effectsActive, false); assert.equal(item.system.cooldown.remaining, 0); assert.equal(f.actor.system.ap.value, 10);
+});
+
+test("failed timed ability posting refunds costs/trackers and removes both newly created clocks", async () => {
+  const f = fixture(), item = timedAbility(f); f.ChatMessage.create = async () => undefined;
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/);
+  assert.equal(item.effects.size, 1); assert.deepEqual(item.system.timers, { durationId: "", cooldownId: "" });
+  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.effectsActive, false); assert.equal(item.system.uses.spent, 0);
+});
+
+test("partial clock creation rolls back the first clock; native delete-on-expiry clears current flags only", async () => {
+  let f = fixture(), item = timedAbility(f), create = item.createEmbeddedDocuments, calls = 0;
+  item.createEmbeddedDocuments = (...args) => ++calls === 2 ? [] : create(...args);
+  await assert.rejects(useAbility(f.actor, item.id), /cancelled/); assert.equal(item.effects.size, 1); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
+  f = fixture(); item = timedAbility(f); await useAbility(f.actor, item.id);
+  const expired = item.effects.get(item.system.timers.durationId); await expired.delete();
+  assert.equal(abilityActive(item), false); await reconcileAbilityTimers(item, expired);
+  assert.equal(item.system.effectsActive, false); assert.equal(item.system.timers.durationId, ""); assert.equal(cooldownRemaining(item), 2);
+});
+
+test("timed no-bonus forms can expire; Base form cancels its duration, and missing encounters spend nothing", async () => {
+  const f = fixture(), item = timedAbility(f); item.effects.clear(); item.system.kind = "form"; item.system.cooldown.automatic = false;
+  await useAbility(f.actor, item.id); assert.equal(abilityActive(item), true);
+  assert.equal(effectContext(f.actor).statuses[0].source, "Form");
+  await returnToBase(f.actor); assert.equal(abilityActive(item), false); assert.equal(item.effects.get(item.system.timers.durationId).disabled, true);
+  const next = fixture(), noEncounter = timedAbility(next); game.combats = [];
+  await assert.rejects(useAbility(next.actor, noEncounter.id), /started encounter/); assert.equal(next.actor.system.ap.value, 15); assert.equal(noEncounter.effects.size, 1);
+});
 test("ability Use pays exact percent resources and one use, enables bonuses; rapid Use does not double-pay, End is free", async () => {
   const f = fixture(), item = bonusAbility(f);
   await Promise.all([useAbility(f.actor, item.id), useAbility(f.actor, item.id)]);

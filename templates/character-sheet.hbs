@@ -233,6 +233,7 @@
           <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="edit" aria-label="Open {{name}}: {{summary}}" data-tooltip="{{summary}}">
             <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
             <span class="wb-item-brief">{{summary}}</span>
+            {{#if timerSummary}}<span class="wb-status-time">{{timerSummary}}</span>{{/if}}
           </button></div>
           <div class="wb-row-actions">{{#if canUse}}<button type="button" class="wb-row-use" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="{{#if effectsActive}}end{{else}}use{{/if}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if effectsActive}}End{{else}}Use{{/if}}</button>{{/if}}<button type="button" class="wb-item-remove" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
           {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>

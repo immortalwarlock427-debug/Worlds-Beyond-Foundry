@@ -39,20 +39,25 @@
     {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
   </section>
   {{#if passive}}<p class="wb-item-brief">Passive bonuses apply while this ability is on your character.</p>{{else}}<label class="wb-equipment-check" data-tooltip="Manual correction; Use on the character pays costs"><input type="checkbox" name="system.effectsActive" {{#if system.effectsActive}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Bonuses active (manual correction)</label>{{/if}}
+  {{#unless passive}}<details class="wb-disclosure" data-sync="ability-duration"><summary>Active duration</summary><div class="wb-equipment-fields">
+    <label>Duration<input type="number" name="system.activeDuration.value" value="{{system.activeDuration.value}}" min="0" step="1" placeholder="Until ended" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Unit<select name="system.activeDuration.units" {{#unless editable}}disabled{{/unless}}>{{#each durationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+  </div><p class="wb-item-brief">Starts on Use; expires bonuses or the form. Blank/0 keeps manual End. Rounds need a started encounter; minutes/hours follow Foundry game time. Instant restoration stays applied.</p></details>{{/unless}}
   <details class="wb-disclosure" data-sync="ability-trackers"><summary>Uses &amp; cooldown</summary><div class="wb-equipment-fields">
     <label>Maximum uses<input type="number" name="system.uses.max" value="{{system.uses.max}}" placeholder="Unlimited" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
     {{#if record.uses.tracked}}<label>Uses left<input type="number" name="usesCurrent" value="{{record.uses.value}}" step="1" data-tooltip="Clear to restore to maximum" {{#unless editable}}disabled{{/unless}}></label>{{/if}}
     <label>Uses recover<input type="text" name="system.uses.recovery" value="{{system.uses.recovery}}" placeholder="Long rest, once per round…" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cooldown (rounds)<input type="number" name="system.cooldown.rounds" value="{{system.cooldown.rounds}}" placeholder="None" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cooldown remaining<input type="number" name="system.cooldown.remaining" value="{{system.cooldown.remaining}}" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Duration<input type="text" name="system.duration" value="{{system.duration}}" placeholder="3 rounds, until dismissed…" {{#unless editable}}disabled{{/unless}}></label>
+    {{#unless passive}}<label class="wb-equipment-check"><input type="checkbox" name="system.cooldown.automatic" {{#if system.cooldown.automatic}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Count cooldown automatically</label>{{/unless}}
+    <label>Duration notes<input type="text" name="system.duration" value="{{system.duration}}" placeholder="Special ending conditions…" {{#unless editable}}disabled{{/unless}}></label>
   </div></details>
   <details class="wb-disclosure" data-sync="ability-notes"><summary>Notes &amp; image</summary>
     <label>Notes<textarea name="system.notes" rows="3" {{#unless editable}}disabled{{/unless}}>{{system.notes}}</textarea></label>
     <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
   </details>
   <details class="wb-disclosure wb-help" data-sync="ability-help"><summary>Ability help</summary>
-    <p>Use pays recorded AP, resource costs and one tracked use, applies restoration, starts the cooldown and enables bonuses, even outside an encounter. End disables bonuses without undoing restoration or refunding costs. Passive bonuses apply while owned; restoration never runs automatically from a Passive ability. Forms replace the previous form; Base form ends your form for free. Active bonuses appear in Status. Cooldown recovery, durations and uses recovery remain manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
+    <p>Use pays recorded AP, resource costs and one tracked use, applies restoration, starts the cooldown and enables bonuses. End disables bonuses without undoing restoration, refunding costs or clearing cooldown. Passive bonuses apply while owned. Forms replace the previous form; Base form ends it for free. Optional Active duration expires bonuses/forms; automatic cooldown counts rounds to your turn. Both start on the next Use, and round clocks require a started encounter. Manual active/cooldown corrections detach their current clock; later Uses start configured clocks again. Duration notes are descriptive. Uses recovery remains manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
     <p>AP discounts use the selected current stat modifier, capped at half the base cost rounded down in either direction. Spells normally start at 11 AP before the INT/FTH discount. Resource costs can be points or a percentage of the resource maximum. Deleted custom resources remain marked Missing resource until you choose another.</p>
   </details>
 </div>

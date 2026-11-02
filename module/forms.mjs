@@ -1,10 +1,12 @@
 import { formEffect } from "./effects-core.mjs";
 import { queuedAction, reversibleAction } from "./action-support.mjs";
+import { stopAbilityClock } from "./ability-timers.mjs";
 
 // A form is an ability. Retain older actor-owned forms without rewriting saves.
 export async function endOtherForms(actor, change, { itemId, effectId } = {}) {
   for (const item of actor.items?.values?.() ?? actor.items ?? []) {
     if (item.type !== "ability" || item.system.kind !== "form" || !item.system.effectsActive || item.id === itemId) continue;
+    await stopAbilityClock(item, "duration", change);
     await change(() => item.update({ "system.effectsActive": false }), () => item.update({ "system.effectsActive": true }));
   }
   for (const effect of actor.effects?.values?.() ?? actor.effects ?? []) {
