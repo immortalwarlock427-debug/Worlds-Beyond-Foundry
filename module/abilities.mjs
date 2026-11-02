@@ -12,6 +12,8 @@ import { BONUS_DURATION_UNITS, bonusDurationText } from "./effect-duration.mjs";
 import { abilityActive, cooldownRemaining, abilityTimerFormUpdates } from "./ability-timers-core.mjs";
 import { abilityTimerPlans, validateAbilityTimers, startAbilityTimers, stopAbilityClock, cleanupAbilityClocks } from "./ability-timers.mjs";
 import { USES_RECOVERY } from "./recovery-core.mjs";
+import { formLoadoutSchema, formLoadoutContext, copyFormEquipment, syncFormLoadout } from "./form-loadouts.mjs";
+import { formLoadoutFormUpdates } from "./form-loadout-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 
@@ -21,6 +23,7 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
     const text = (initial = "", options = {}) => new StringField({ required: true, nullable: false, blank: true, initial, ...options });
     const number = (initial = null, options = {}) => new NumberField({ required: true, nullable: initial === null, initial, ...options });
     return {
+      loadout: formLoadoutSchema(),
       effectsActive: new foundry.data.fields.BooleanField({ initial: false }),
       activeDuration: new SchemaField({ value: number(null, { min: 0, integer: true }), units: text("rounds", { choices: BONUS_DURATION_UNITS, blank: false }) }),
       timers: new SchemaField({ durationId: text(), cooldownId: text() }),
@@ -39,7 +42,8 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet", "wb-item-sheet", "wb-ability-sheet"], position: { width: 480, height: 660 },
     window: { resizable: true }, form: { submitOnChange: true },
-    actions: { itemEffect: async function (event, target) { try { return await itemEffectAction(this.item, target, this.isEditable); } catch (error) { ui.notifications.error(error.message); } } }
+    actions: { itemEffect: async function (event, target) { try { return await itemEffectAction(this.item, target, this.isEditable); } catch (error) { ui.notifications.error(error.message); } },
+      copyFormEquipment: async function () { if (!this.isEditable) return; try { await copyFormEquipment(this.item); } catch (error) { ui.notifications.error(error.message); } } }
   };
   static PARTS = { sheet: { template: `systems/${SYSTEM_ID}/templates/ability-sheet.hbs`, scrollable: [""] } };
 
@@ -56,6 +60,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       units: choices(ABILITY_COST_UNITS, system.resourceUnit), resources: abilityResources(character, system.resourceId),
       restorationResources: recoveryChoices(character, system.restoration?.target ?? "health"), restorationUnits: choices(ABILITY_COST_UNITS, system.restoration?.unit ?? "points"),
       hasActor: !!character,
+      formLoadout: formLoadoutContext(this.item),
       triggerModes: choices(TRIGGER_MODES, system.trigger?.mode ?? "manual"), triggerComparisons: choices(TRIGGER_COMPARISONS, system.trigger?.comparison ?? "above"), triggerEndModes: choices(TRIGGER_END_MODES, system.trigger?.endMode ?? "prompt"),
       triggerResources: [{ value: "", label: "Choose resource", selected: !system.trigger?.resourceId }, ...recoveryChoices(character, system.trigger?.resourceId || "")]
     });
@@ -64,7 +69,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   _processFormData(event, form, formData) {
     const original = { ...this.item.system, cooldown: { ...this.item.system.cooldown, remaining: cooldownRemaining(this.item) } };
     const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: original });
-    return abilityTimerFormUpdates(this.item, abilityFormUpdates(this.item.system, data));
+    return abilityTimerFormUpdates(this.item, formLoadoutFormUpdates(this.item.system, abilityFormUpdates(this.item.system, data)));
   }
 
   async _onRender(context, options) {
@@ -93,8 +98,8 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
     if (end) {
       if (!item.system.effectsActive) return;
       await stopAbilityClock(item, "duration", change);
-      const result = await item.update({ "system.effectsActive": false });
-      if (!result) throw new Error("Ending the ability was cancelled.");
+      const result = await change(() => item.update({ "system.effectsActive": false }, { ...updateOptions, worldsBeyondFormLoadout: true }), () => item.update({ "system.effectsActive": true }, { ...updateOptions, worldsBeyondFormLoadout: true }));
+      if (item.system.kind === "form") await syncFormLoadout(actor, change);
       return result;
     }
     if (abilityActive(item)) return;
@@ -157,7 +162,8 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
     for (const key of Object.keys(previous).filter(key => key.startsWith("system.timers."))) updates[key] = timerIds[key.split(".").at(-1)];
     // Native updates can return undefined when there is no diff. A simple ability
     // without bonuses or trackers still posts and pays its configured costs.
-    if (Object.keys(updates).some(key => updates[key] !== previous[key])) await change(() => item.update(updates), () => item.update(previous));
+    if (Object.keys(updates).some(key => updates[key] !== previous[key])) await change(() => item.update(updates, { ...updateOptions, worldsBeyondFormLoadout: true }), () => item.update(previous, { ...updateOptions, worldsBeyondFormLoadout: true }));
+    if (item.system.kind === "form") await syncFormLoadout(actor, change);
     const message = await createActionMessage({ speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
       content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${timed ? ` Duration: ${escapeHTML(bonusDurationText(item.system.activeDuration))}.` : hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}<details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(item.system.description)}</p></details></div>`,
       rolls: roll ? [roll] : []

@@ -13,7 +13,7 @@ Create an ability or equipment item, then add signed bonuses on its own editor. 
 - Final maximum/core overrides still replace the calculated result. Clear an override to restore calculation with active bonuses. Extra defense/movement corrections edit stored bonuses independently of effects.
 - Movement adds its bonus after the normal AGL-based rate and cannot go below zero. A final movement override replaces that result.
 
-Equipment and ability bonuses live on their source Items; ability Use pays recorded costs and enables bonuses. Automatic durations/recovery, form portraits, gear loadouts and attack/damage casting remain later work. See [item bonuses and actions](ITEM-BONUSES-ACTIONS.md). Native advanced changes remain editable in Foundry's editor and are preserved by the simple editor. Managed item bonuses are suppressed unless the item is equipped or its ability is passive/active. Unrelated native transferred effects retain their existing behavior.
+Equipment and ability bonuses live on their source Items; ability Use pays recorded costs and enables bonuses. Optional durations/recovery are implemented. [Form loadouts](FORM-LOADOUTS.md) add portraits, saved gear and row visibility; attack/damage casting remains later work. See [item bonuses and actions](ITEM-BONUSES-ACTIONS.md). Native advanced changes remain editable in Foundry's editor and are preserved by the simple editor. Managed item bonuses are suppressed unless the item is equipped or its ability is passive/active. Unrelated native transferred effects retain their existing behavior.
 
 ## Data and compatibility
 

@@ -284,7 +284,7 @@ test("read-only actor sheets keep milestone reference buttons usable without ena
   const sheet = new CharacterSheet(); sheet.isEditable = false;
   const reference = { disabled: true }, correction = { disabled: true };
   sheet.element = { querySelectorAll: selector => {
-    assert.equal(selector, '[data-action="milestones"], .wb-sheet-tabs [data-action="tab"]'); return [reference];
+    assert.equal(selector, '[data-action="milestones"], [data-action="formView"], .wb-sheet-tabs [data-action="tab"]'); return [reference];
   } };
   await sheet._onRender({}, {});
   assert.equal(reference.disabled, false); assert.equal(correction.disabled, true);

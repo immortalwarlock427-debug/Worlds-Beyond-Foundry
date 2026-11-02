@@ -7,6 +7,7 @@
       <span class="wb-eyebrow">Character</span>
       <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
       {{#if characterDetailsSummary}}<span class="wb-header-details" data-tooltip="{{characterDetailsSummary}}">{{characterDetailsSummary}}</span>{{/if}}
+      {{#if currentFormName}}<span class="wb-header-details">Form: {{currentFormName}}</span>{{/if}}
     </div>
     <label class="wb-level">
       <span class="wb-eyebrow">Level</span>
@@ -43,6 +44,7 @@
   <section class="wb-extra-resources" aria-label="Magic and custom resources">
     <div class="wb-section-heading">
       <h2 class="wb-section-title">Resources</h2>
+      {{#if hasHiddenFormResources}}<button type="button" data-action="formView" data-view="resources" aria-pressed="{{showAllFormResources}}">{{#if showAllFormResources}}Form resources{{else}}Show all{{/if}}</button>{{/if}}
       <details class="wb-resource-management wb-disclosure" data-sync="resource-management"><summary>Manage</summary>
         <div class="wb-resource-management-fields">
           <label class="wb-equipment-check"><input type="checkbox" name="system.mana.enabled" {{#if manaEnabled}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Show mana</label>
@@ -222,6 +224,7 @@
     <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
       <div class="wb-equipment-actions">
         {{#if hasForms}}<button type="button" data-action="ability" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base form</button>{{/if}}
+        {{#if hasHiddenFormAbilities}}<button type="button" data-action="formView" data-view="abilities" aria-pressed="{{showAllFormAbilities}}">{{#if showAllFormAbilities}}Form abilities{{else}}Show all{{/if}}</button>{{/if}}
         <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
         <button type="button" data-action="ability" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
       </div>

@@ -34,6 +34,7 @@ export function registerEquipmentItem() {
       if (await super._preUpdateOperation(documents, operation, user) === false) return false;
       const actor = operation.parent ?? documents[0]?.actor;
       if (actor?.type !== "character") return;
+      if (operation.worldsBeyondFormRestore) return;
       const stowed = normalizeHandUpdates(actor, operation.updates);
       if (stowed.length) operation.worldsBeyondStowed = stowed.map(id => actor.items.get(id)?.name).filter(Boolean);
     }

@@ -424,6 +424,11 @@
 .worlds-beyond .wb-check-options { display: grid; gap: 12px; font-family: "Alegreya Sans", sans-serif; }
 .worlds-beyond .wb-check-options > label { display: grid; gap: 8px; }
 .worlds-beyond .wb-check-options select { min-height: 44px; background: #1A2136; color: #E7E4D8; }
+.worlds-beyond .wb-form-loadout-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 4px 12px; margin: 8px 0; }
+.worlds-beyond .wb-equipment-form .wb-form-loadout-list label { display: flex; align-items: center; gap: 8px; min-height: 44px; overflow-wrap: anywhere; }
+.worlds-beyond .wb-form-loadout-list input[type="checkbox"] { flex: none; width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--wb-brass); }
+.worlds-beyond [data-sync="form-loadout"] input[type="checkbox"] { accent-color: var(--wb-brass); }
+.worlds-beyond [data-action="copyFormEquipment"] { min-height: 44px; background: var(--wb-bg); color: var(--wb-brass); border: 1px solid var(--wb-rule); border-radius: 4px; padding: 6px 10px; }
 .worlds-beyond .wb-check-options fieldset { min-width: 0; border: 1px solid #2C3452; border-radius: 4px; }
 .worlds-beyond .wb-check-options legend { color: #D6A85C; }
 .worlds-beyond .wb-check-options fieldset label { display: flex; align-items: center; gap: 10px; min-height: 44px; }
