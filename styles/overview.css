@@ -26,14 +26,14 @@
 .worlds-beyond.wb-character-sheet .wb-orbit-toolbar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding-left: 8px; position: relative; z-index: 2; }
 .worlds-beyond.wb-character-sheet .wb-orbit-toolbar > div { display: flex; }
 .worlds-beyond.wb-character-sheet .wb-orbit-toolbar button { width: 44px; height: 44px; min-height: 44px; padding: 0; margin: 0; background: transparent; border: 0; box-shadow: none; color: var(--wb-brass); font-size: 12px; }
-.worlds-beyond.wb-character-sheet .wb-attribute-orbit { position: relative; height: 360px; isolation: isolate; background: radial-gradient(circle at 30% 34%, #F3EBDD77 0 1px, transparent 1.5px), radial-gradient(circle at 76% 64%, #6FD6FF66 0 1px, transparent 1.5px), radial-gradient(circle at 61% 27%, #F3EBDD55 0 1px, transparent 1.5px); }
+.worlds-beyond.wb-character-sheet .wb-attribute-orbit { position: relative; height: 360px; isolation: isolate; }
 .worlds-beyond.wb-character-sheet .wb-orbit-art { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 62%; aspect-ratio: 1; border-radius: 50%; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art::before, .worlds-beyond.wb-character-sheet .wb-orbit-art::after { content: ""; position: absolute; pointer-events: none; border-radius: 50%; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art::before { inset: -10px; border: 1px solid #D4B06A66; outline: 1px solid #6FD6FF17; outline-offset: 5px; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art::after { inset: -19px; border: 1px dashed #D4B06A26; transform: rotate(28deg) scaleY(.91); }
-.worlds-beyond.wb-character-sheet .wb-orbit-art button { display: block; width: 100%; height: 100%; margin: 0; padding: 3px; overflow: hidden; border-radius: 50%; border: 1px solid var(--wb-brass); background: #10182B; box-shadow: 0 0 35px #6FD6FF0C, 0 0 50px #8A6CFF12; opacity: 1; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art img { display: block; width: 100%; height: 100%; border: 0; border-radius: 50%; object-fit: cover; object-position: 50% var(--wb-portrait-y, 35%); }
-.worlds-beyond.wb-character-sheet .wb-orbit-star { position: absolute; top: 35%; left: 82%; color: #D4B06A88; font-size: 16px; }
+.worlds-beyond.wb-character-sheet .wb-orbit-art button { display: block; width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; border-radius: 50%; border: 0; background: #01030A; opacity: 1; }
+.worlds-beyond.wb-character-sheet .wb-orbit-art img {
+  display: block; width: 100%; height: 100%; border: 0; border-radius: 50%; object-fit: cover;
+  object-position: 50% var(--wb-portrait-y, 35%);
+  mask-image: radial-gradient(circle closest-side, #000 88%, #000D9 95%, transparent 100%);
+}
 .worlds-beyond.wb-character-sheet .wb-stat-orb { position: absolute; transform: translate(-50%, -50%); display: grid; grid-template-rows: 12px 32px 14px; justify-items: center; align-content: center; gap: 1px; width: 76px; height: 76px; min-height: 76px; padding: 6px; margin: 0; border: 1px solid #AC8D54; border-radius: 50%; color: var(--wb-ink); background: radial-gradient(ellipse at 40% 20%, #263452, #10192D 80%); box-shadow: 0 2px 12px #0007, inset 0 0 0 3px #11182C; line-height: 1; white-space: normal; }
 .worlds-beyond.wb-character-sheet .wb-stat-orb:hover { border-color: var(--wb-cyan); box-shadow: 0 0 12px #6FD6FF23; }
 .worlds-beyond.wb-character-sheet .wb-stat-orb:disabled { opacity: 1; }
@@ -105,23 +105,54 @@
 .worlds-beyond.wb-character-sheet .wb-overview-status > small { color: var(--wb-brass); }
 .worlds-beyond.wb-character-sheet button:focus-visible { outline: 2px solid var(--wb-cyan); outline-offset: 2px; }
 .worlds-beyond.wb-roll-dialog .wb-favorite-options select { width: 100%; min-width: 0; max-width: 100%; }
-/* One celestial record: engraved orbit, suspended fragments, inscribed foundation. */
+/* One celestial record: void vortex, suspended fragments, inscribed foundation. */
 .worlds-beyond.wb-character-sheet .window-header .window-title { font-size: 10px; font-weight: 400; opacity: .5; letter-spacing: .04em; }
 .worlds-beyond.wb-character-sheet .wb-archive-title { font-family: var(--wb-font-label); }
 .worlds-beyond.wb-character-sheet .wb-archive-title > span { padding: 0 8px; color: #7C6945; }
 .worlds-beyond.wb-character-sheet .wb-sheet-panel[data-tab="character"] { gap: 0; }
 .worlds-beyond.wb-character-sheet .wb-astral-portrait { border-radius: 20px 4px 20px 4px; background: radial-gradient(ellipse at 50% 48%, #6FD6FF09, transparent 65%), linear-gradient(160deg, #111A30, #0B1120); }
-.worlds-beyond.wb-character-sheet .wb-orbit-art { isolation: isolate; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art::before { border-color: #D4B06AA0; outline-color: #6FD6FF35; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art::after { border-style: solid; border-color: #6FD6FF38 transparent #8A6CFF55; transform: rotate(-25deg) scaleY(.85); box-shadow: 0 0 25px #6FD6FF0D; }
-.worlds-beyond.wb-character-sheet .wb-orbit-art button { position: relative; line-height: 1; box-shadow: 0 0 16px #000E, 0 0 26px #8A6CFF29, 0 0 46px #6FD6FF12; }
-.worlds-beyond.wb-character-sheet .wb-celestial-vortex { position: absolute; inset: -24%; width: 148%; height: 148%; z-index: -1; pointer-events: none; overflow: visible; fill: none; stroke-width: 1; }
-.worlds-beyond.wb-character-sheet .wb-vortex-ring { stroke: #D4B06A45; stroke-dasharray: 160 18 7 18; }
-.worlds-beyond.wb-character-sheet .wb-vortex-ticks { stroke: #D4B06A55; stroke-width: 4; stroke-dasharray: 1 15; }
-.worlds-beyond.wb-character-sheet .wb-vortex-arms { stroke: #6FD6FF70; stroke-width: 1.5; }
-.worlds-beyond.wb-character-sheet .wb-vortex-arms path:nth-child(even) { stroke: #B59CF777; }
-.worlds-beyond.wb-character-sheet .wb-vortex-inscriptions { stroke: #D4B06A88; }
-.worlds-beyond.wb-character-sheet .wb-vortex-inscriptions path { fill: #D4B06A44; }
+.worlds-beyond.wb-character-sheet .wb-singularity {
+  position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background: radial-gradient(ellipse at center, #010209 0 38%, #040713 48%, transparent 73%);
+}
+.worlds-beyond.wb-character-sheet .wb-vortex-nebula {
+  position: absolute; inset: 2% -4%; border-radius: 50%; filter: blur(12px);
+  background:
+    radial-gradient(ellipse at 25% 58%, #367A9D55, transparent 42%),
+    radial-gradient(ellipse at 71% 34%, #6C448A66, transparent 40%),
+    conic-gradient(from 40deg, transparent 12deg, #586BA84D 58deg, transparent 112deg,
+      #37244966 194deg, #6AAFC055 230deg, transparent 290deg);
+  mask-image: radial-gradient(ellipse, transparent 28%, #000 53%, transparent 73%);
+}
+.worlds-beyond.wb-character-sheet .wb-vortex-streams {
+  position: absolute; left: 50%; top: 50%; width: 112%; height: auto; max-width: none;
+  aspect-ratio: 1; border: 0; opacity: .85; transform: translate(-50%, -50%);
+  animation: worlds-beyond-vortex-turn 180s linear infinite;
+}
+.worlds-beyond.wb-character-sheet .wb-vortex-depth {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse, #010208 0 32%, #010208D9 39%, transparent 55%, #080D1D50 72%, transparent 84%);
+}
+.worlds-beyond.wb-character-sheet .wb-vortex-texture {
+  /* Optional future image layer: set --wb-vortex-texture to a trusted CSS url(). */
+  position: absolute; inset: 0; border-radius: 50%; background-image: var(--wb-vortex-texture, none);
+  background-size: cover; background-position: center; opacity: .22; mix-blend-mode: screen;
+  mask-image: radial-gradient(ellipse, transparent 34%, #000 52%, transparent 76%);
+}
+.worlds-beyond.wb-character-sheet .wb-orbit-art { z-index: 1; isolation: isolate; }
+.worlds-beyond.wb-character-sheet .wb-orbit-art button {
+  position: relative; line-height: 1;
+  box-shadow: 0 0 0 8px #010209E8, 0 0 20px 14px #010209D9, -7px 9px 30px #28325755;
+}
+.worlds-beyond.wb-character-sheet .wb-stat-orb { z-index: 2; }
+.worlds-beyond.wb-character-sheet .wb-sheet-panel:not(.active) .wb-vortex-streams { animation-play-state: paused; }
+@keyframes worlds-beyond-vortex-turn {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .worlds-beyond.wb-character-sheet .wb-vortex-streams { animation: none; }
+}
 .worlds-beyond.wb-character-sheet .wb-overview-vitals { position: relative; padding-left: 12px; border-left: 1px solid #D4B06A40; }
 .worlds-beyond.wb-character-sheet .wb-overview-vitals::before { content: "✦"; position: absolute; left: -6px; top: 46%; font-size: 12px; color: var(--wb-brass); background: #0D1424; }
 .worlds-beyond.wb-character-sheet .wb-overview-health, .worlds-beyond.wb-character-sheet .wb-economy-tile, .worlds-beyond.wb-character-sheet .wb-overview-pool, .worlds-beyond.wb-character-sheet .wb-overview-metrics > * { position: relative; border-radius: 10px 2px 10px 2px; border-color: #D4B06A45; border-top-color: #D4B06A75; background: linear-gradient(135deg, #1B284180, #10192C), #10192C; }
