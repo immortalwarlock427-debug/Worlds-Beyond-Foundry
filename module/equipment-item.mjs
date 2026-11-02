@@ -49,6 +49,7 @@ export function registerEquipmentItem() {
       if (operation.parent?.type !== "character") return;
       for (const item of documents) {
         if (["weapon", "shield"].includes(item.type) && item.system.equipped) item.updateSource({ "system.equipped": false });
+        if (item.type === "ability" && item.system.effectsActive) item.updateSource({ "system.effectsActive": false });
       }
     }
   };

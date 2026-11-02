@@ -1,9 +1,11 @@
-import { EFFECT_SCOPE, effectFlags, managedEffect, formEffect, effectChanges, effectTargets, simpleEffectChange, newEffectChange, effectChangeText, effectSnapshot, effectFormUpdates, effectRows, formUpdates, customEffectResource } from "./effects-core.mjs";
-import { queuedAction } from "./action-support.mjs";
+import { EFFECT_SCOPE, effectFlags, managedEffect, formEffect, effectChanges, effectTargets, simpleEffectChange, newEffectChange, effectChangeText, effectSnapshot, effectFormUpdates, effectRows, customEffectResource, itemEffectState, boundItem } from "./effects-core.mjs";
+import { queuedAction, reversibleAction } from "./action-support.mjs";
+import { endOtherForms } from "./forms.mjs";
 import { wholeNumber, bindWholeNumbers } from "./number-display.mjs";
 
 const editors = new WeakMap();
-const parentActor = effect => effect.parent?.documentName === "Actor" ? effect.parent : null;
+const parentActor = effect => effect.parent?.documentName === "Actor" ? effect.parent : effect.parent?.actor ?? null;
+const queueKey = effect => parentActor(effect)?.uuid ?? effect.parent.uuid;
 
 export class EffectSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.DocumentSheetV2) {
   static DEFAULT_OPTIONS = {
@@ -17,7 +19,7 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
     const effect = this.document, actor = parentActor(effect);
     this.snapshot = effectSnapshot(effect);
     return Object.assign(await super._prepareContext(options), {
-      effect, editable: this.isEditable, form: formEffect(effect), source: effectFlags(effect).source || "",
+      effect, editable: this.isEditable, form: formEffect(effect), itemBonus: !!boundItem(effect), source: effectFlags(effect).source || "",
       rows: effectChanges(effect).map((change, index) => ({ index, editable: simpleEffectChange(change),
         choices: effectTargets(actor?.system, change.key), value: wholeNumber(Number(change.value)), text: effectChangeText(change, actor?.system) }))
     });
@@ -28,8 +30,8 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
   }
 
   async _processSubmitData(event, form, data, options = {}) {
-    const actor = parentActor(this.document), snapshot = this.snapshot;
-    return queuedAction(actor.uuid, async () => {
+    const snapshot = this.snapshot;
+    return queuedAction(queueKey(this.document), async () => {
       this.#check(snapshot);
       const result = await super._processSubmitData(event, form, data, options);
       if (!result?.updated) throw new Error("The effect update was cancelled.");
@@ -38,8 +40,8 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
   }
 
   #check(snapshot) {
-    const actor = parentActor(this.document);
-    if (!this.isEditable || !actor?.isOwner || actor.effects.get(this.document.id) !== this.document) throw new Error("You need permission to edit this effect.");
+    const parent = this.document.parent;
+    if (!this.isEditable || !parent?.isOwner || parent.effects.get(this.document.id) !== this.document) throw new Error("You need permission to edit this effect.");
     if (effectSnapshot(this.document) !== snapshot) throw new Error("This effect changed in another window. Reopen it before editing.");
   }
 
@@ -51,9 +53,9 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
   static async #onAdd() { return this.#changeRows(null); }
   static async #onRemove(event, target) { return this.#changeRows(Number(target.dataset.index)); }
   async #changeRows(index) {
-    const actor = parentActor(this.document), snapshot = this.snapshot;
+    const snapshot = this.snapshot;
     try {
-      await queuedAction(actor.uuid, async () => {
+      await queuedAction(queueKey(this.document), async () => {
         this.#check(snapshot);
         const changes = effectChanges(this.document).map(change => ({ ...change }));
         if (index === null) changes.push(newEffectChange());
@@ -67,53 +69,47 @@ export class EffectSheet extends foundry.applications.api.HandlebarsApplicationM
 }
 
 export function openEffect(effect) {
-  if (!managedEffect(effect) || !parentActor(effect)) return effect.sheet.render({ force: true });
+  if (!managedEffect(effect) || !["Actor", "Item"].includes(effect.parent?.documentName)) return effect.sheet.render({ force: true });
   let sheet = editors.get(effect);
   if (!sheet) { sheet = new EffectSheet({ document: effect }); editors.set(effect, sheet); }
   return sheet.render({ force: true });
 }
 
-export async function createEffect(actor, kind = "effect") {
-  if (!actor.isOwner || actor.type !== "character") return;
-  if (!["effect", "form"].includes(kind)) throw new Error("Choose an effect or a form.");
-  return queuedAction(actor.uuid, async () => {
-    const [effect] = await actor.createEmbeddedDocuments("ActiveEffect", [{
-      name: kind === "form" ? "New form" : "New effect", img: kind === "form" ? "icons/svg/mystery-man.svg" : "icons/svg/aura.svg",
-      disabled: true, transfer: false, system: { changes: [newEffectChange()] },
-      flags: { [EFFECT_SCOPE]: { managed: true, kind, source: "" } }
+export async function createEffect(item) {
+  if (item.documentName !== "Item") throw new Error("Create an ability and add its bonuses on the ability sheet.");
+  if (!item.isOwner || !["weapon", "armor", "shield", "ability"].includes(item.type)) return;
+  return queuedAction(item.actor?.uuid ?? item.uuid, async () => {
+    const [effect] = await item.createEmbeddedDocuments("ActiveEffect", [{
+      name: `${item.name} bonus`, img: "icons/svg/aura.svg",
+      disabled: false, transfer: true, system: { changes: [newEffectChange()] },
+      flags: { [EFFECT_SCOPE]: { managed: true, kind: "effect", source: item.name, itemBound: true } }
     }]);
-    if (!effect) throw new Error("The effect was not created. Try again.");
+    if (!effect) throw new Error("The bonus was not created. Try again.");
     await openEffect(effect); return effect;
   });
 }
 
-export async function toggleEffect(actor, uuid) {
+export async function toggleEffect(actor, uuid, { active } = {}) {
   if (!actor.isOwner || actor.type !== "character") return;
-  return queuedAction(actor.uuid, async () => {
+  return queuedAction(actor.uuid, () => reversibleAction(async change => {
     if (uuid === "base") {
-      const updates = formUpdates(actor.effects);
-      if (updates.length) await applyFormUpdates(actor, updates);
+      await endOtherForms(actor, change);
       return;
     }
     const effect = effectRows(actor).find(row => row.uuid === uuid)?.effect;
     if (!effect) throw new Error("That effect no longer exists. Reopen the sheet.");
-    if (effect.parent === actor && formEffect(effect)) {
-      const updates = formUpdates(actor.effects, effect.disabled ? effect.id : null);
-      if (updates.length) await applyFormUpdates(actor, updates);
-    } else if (!await effect.update({ disabled: !effect.disabled })) throw new Error("The effect toggle was cancelled.");
-  });
-}
-
-async function applyFormUpdates(actor, updates) {
-  await actor.updateEmbeddedDocuments("ActiveEffect", updates);
-  if (updates.some(update => actor.effects.get(update._id)?.disabled !== update.disabled)) {
-    throw new Error("The form switch did not complete. Check the active forms and try again.");
-  }
+    const disabled = active === undefined ? !effect.disabled : !active;
+    if (disabled === effect.disabled) return;
+    if (!disabled && effect.parent === actor && formEffect(effect)) await endOtherForms(actor, change, { effectId: effect.id });
+    const previous = effect.disabled;
+    await change(() => effect.update({ disabled }), () => effect.update({ disabled: previous }));
+  }));
 }
 
 export function registerEffectSupport() {
   const Base = CONFIG.ActiveEffect.documentClass;
   CONFIG.ActiveEffect.documentClass = class WorldsBeyondEffect extends Base {
+    get isSuppressed() { return super.isSuppressed || !!itemEffectState(this); }
     shouldApplyChange(change, options) {
       if (!super.shouldApplyChange(change, options)) return false;
       const id = customEffectResource(change.key);
@@ -122,4 +118,21 @@ export function registerEffectSupport() {
       return true;
     }
   };
+}
+
+// Shared actions for the native equipment and ability Item sheets.
+export async function itemEffectAction(item, target, editable) {
+  const operation = target.dataset.operation;
+  if (operation !== "edit" && (!editable || !item.isOwner)) return;
+  if (operation === "create") return createEffect(item);
+  const id = target.closest("[data-item-effect-id]")?.dataset.itemEffectId;
+  const effect = item.effects.get(id);
+  if (!effect) throw new Error("That bonus no longer exists. Reopen the item.");
+  if (operation === "edit") return openEffect(effect);
+  if (operation === "toggle") {
+    const result = await effect.update({ disabled: !effect.disabled });
+    if (!result) throw new Error("The bonus toggle was cancelled.");
+    return result;
+  }
+  if (operation === "delete" && await foundry.applications.api.DialogV2.confirm({ window: { title: "Remove bonus" }, content: "<p>Remove this bonus from the item?</p>", rejectClose: false })) return effect.delete();
 }

@@ -4,7 +4,7 @@ import { wholeNumber } from "./number-display.mjs";
 // differ (reloads and damage cards do not carry the original attack flag).
 export function decorateSystemMessage(message, html) {
   if (!message.isContentVisible) return;
-  if (!html.querySelector(".wb-roll-card, .wb-attack-card, .wb-consumable-card, .wb-block-card")) return;
+  if (!html.querySelector(".wb-roll-card, .wb-attack-card, .wb-consumable-card, .wb-block-card, .wb-ability-card, .wb-command-card")) return;
   html.classList.add("worlds-beyond", "wb-chat-message");
   for (const total of html.querySelectorAll?.(".dice-total") ?? []) {
     const value = total.textContent.trim();

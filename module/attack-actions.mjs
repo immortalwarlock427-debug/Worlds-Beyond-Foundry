@@ -6,6 +6,8 @@ import { queuedAction, reversibleAction, createActionMessage } from "./action-su
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
+import { inCombat, availableAp, payAp } from "./combat-support.mjs";
+export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
   attackOutcome, damagePlan, effectiveArmor, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
@@ -25,11 +27,6 @@ export function targetFromToken(token) {
 
 function currentTarget() {
   return targetFromToken(game.user.targets?.first?.() ?? Array.from(game.user.targets ?? [])[0]);
-}
-
-// Actions cost AP during a started combat the actor is part of. Outside combat they're free.
-export function inCombat(actor) {
-  return !!game.combats?.some(combat => combat.started && combat.combatants.some(c => c.actor?.uuid === actor.uuid));
 }
 
 function requireLoaded(weapon) {
@@ -57,7 +54,7 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
   const partners = dualWieldPartners(weapon, actor.items);
   const shots = shotsLeft(weapon);
   const content = await foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/attack-dialog.hbs`, wholeDisplay({
-    reasons, target, apLeft: actor.system.ap.value, spendAp: inCombat(actor),
+    reasons, target, apLeft: availableAp(actor), spendAp: inCombat(actor),
     partners: partners.map(item => ({ id: item.id, name: item.name })),
     shots, loading: weapon.system.loading,
     modes: modes.map(value => ({ value, label: MODE_LABELS[value] })),
@@ -120,8 +117,8 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
     for (const { item } of hands) requireLoaded(item);
     // Attacking with both weapons costs the same AP as one attack.
     const cost = attackApCost(hands[0].mod);
-    if (options.spendAp && !(actor.system.ap.value >= cost)) {
-      throw new Error(`Not enough AP: this attack costs ${cost} and you have ${actor.system.ap.value}. Untick Spend AP to roll anyway.`);
+    if (options.spendAp && !(availableAp(actor) >= cost)) {
+      throw new Error(`Not enough AP: this attack costs ${cost} and you have ${availableAp(actor)}. Untick Spend AP to roll anyway.`);
     }
     const rollMode = options.rollMode ?? "normal";
     const sections = [];
@@ -150,10 +147,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         + (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "") + "</section>");
       rolls.push(roll);
     }
-    if (options.spendAp) await change(
-      () => actor.update({ "system.ap.value": actor.system.ap.value - cost }),
-      () => actor.update({ "system.ap.value": actor.system.ap.value + cost })
-    );
+    if (options.spendAp) await payAp(actor, cost, change);
     for (const { item } of hands) {
       const shots = shotsLeft(item);
       if (shots !== null) await change(
@@ -190,11 +184,7 @@ export async function reloadWeapon(actor, itemId) {
     if (!actor.isOwner || weapon?.type !== "weapon" || !(weapon.system.loading > 0)) return;
     const combat = inCombat(actor);
     const cost = actionApCost(RELOAD_AP, actor.system.stats.dex.mod);
-    if (combat && !(actor.system.ap.value >= cost)) throw new Error(`Not enough AP to reload: it costs ${cost} and you have ${actor.system.ap.value}.`);
-    if (combat) await change(
-      () => actor.update({ "system.ap.value": actor.system.ap.value - cost }),
-      () => actor.update({ "system.ap.value": actor.system.ap.value + cost })
-    );
+    if (combat) await payAp(actor, cost, change);
     const previous = weapon.system.shots;
     await change(() => weapon.update({ "system.shots": null }), () => weapon.update({ "system.shots": previous }));
     return createActionMessage({

@@ -32,6 +32,16 @@ test("first combat turn refills only AP/reactions without touching other resourc
   assert.equal(f.actor.system.wonder.value, 1);
 });
 
+test("Command survives the first incoming turn and expires at the following turn even when normal pools are full", async () => {
+  const f = fixture(); f.actor.system.command = { value: 4, fresh: true };
+  const update = f.actor.update.bind(f.actor);
+  f.actor.update = async data => { await update(data); f.actor.system.command.value = data["system.command.value"]; f.actor.system.command.fresh = data["system.command.fresh"]; return f.actor; };
+  await start(f); assert.deepEqual(f.actor.system.command, { value: 4, fresh: false });
+  f.combat.previous = { round: 1, turn: 0 }; f.combat.current.round = 2; f.context.round = 2;
+  await start(f); assert.deepEqual(f.actor.system.command, { value: 0, fresh: false });
+  assert.equal(f.actor.system.ap.value, 17);
+});
+
 test("next turns, round wrap and a single-combatant next round refill current maxima including zero", async () => {
   for (const [previous, current] of [
     [{ round: 1, turn: 0 }, { round: 1, turn: 1 }],

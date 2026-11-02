@@ -3,6 +3,10 @@ import { shotsLeft } from "./attacks.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { itemIcon } from "./item-icons.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
+import { itemEffectRows } from "./effects-core.mjs";
+import { itemEffectAction } from "./effects.mjs";
+import { inCombat, payAp } from "./combat-support.mjs";
+import { actionApCost } from "./attacks.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -115,7 +119,8 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet", "wb-item-sheet"],
     position: { width: 480, height: "auto" },
-    window: { resizable: true }, form: { submitOnChange: true }
+    window: { resizable: true }, form: { submitOnChange: true },
+    actions: { itemEffect: async function (event, target) { try { return await itemEffectAction(this.item, target, this.isEditable); } catch (error) { ui.notifications.error(error.message); } } }
   };
 
   static PARTS = { sheet: { template: `systems/${SYSTEM_ID}/templates/equipment-sheet.hbs` } };
@@ -124,6 +129,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: wholeDisplay({ ...this.item.system }), editable: this.isEditable,
       artwork: itemIcon(this.item),
+      itemEffects: itemEffectRows(this.item),
       typeLabel: ITEM_TYPES[this.item.type],
       propertySummary: Object.entries(WEAPON_PROPERTIES).filter(([key]) => this.item.system.properties?.[key]).map(([, label]) => label).join(" · ") || "None",
       signatureSummary: Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => this.item.system.signature?.[key]).map(([, label]) => label).join(" · ") || "None",
@@ -144,6 +150,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 
   async _onRender(context, options) {
     await super._onRender(context, options);
+    for (const button of this.element?.querySelectorAll('[data-action="itemEffect"][data-operation="edit"]') ?? []) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
   }
 }
@@ -215,21 +222,28 @@ export async function useConsumable(actor, id) {
     const use = consumableUse(item.system.quantity);
     if (!use.ok) throw new Error(use.message);
     const formula = String(item.system.healingDice ?? "").trim();
+    if (formula && actor.system.health.damage <= 0) {
+      ui.notifications.info("You are at full health. Nothing was spent.");
+      return;
+    }
     let roll = null;
     if (formula) {
       if (!foundry.dice.Roll.validate(formula)) throw new Error("Enter complete healing dice such as 2d6+2, or leave healing blank.");
       roll = await new foundry.dice.Roll(formula).evaluate({ allowInteractive: messageMode !== "blind" });
     }
     const amount = roll ? Math.max(0, roll.total) : 0;
+    const apCost = item.system.kind === "potion" && inCombat(actor) ? actionApCost(5, actor.system.stats.dex.mod) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
       + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")
-      + `<p>One used, ${wholeNumber(use.quantity)} left.${roll ? ` Healing: ${wholeNumber(amount)}.` : " Apply any effects at the table."}</p>`
+      + `<p>One used, ${wholeNumber(use.quantity)} left.${apCost ? ` ${apCost} AP spent.` : ""}${roll ? ` Healing: ${wholeNumber(amount)}.` : " Apply any effects at the table."}</p>`
       + (roll ? await roll.render() : "") + "</div>";
+    const payment = apCost ? await payAp(actor, apCost, change) : null;
     await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));
     return createActionMessage({
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
       content, rolls: roll ? [roll] : [],
-      flags: { [SYSTEM_ID]: { consumable: { actorUuid: actor.uuid, amount, applied: false } } }
+      flags: { [SYSTEM_ID]: { consumable: { actorUuid: actor.uuid, amount, applied: false, refunded: false,
+        payment: { itemId: item.id, quantity: 1, ownAp: payment?.fromOwn ?? 0, commandAp: payment?.fromGiven ?? 0 } } } }
     }, { messageMode });
   }));
 }
@@ -242,8 +256,27 @@ export async function applyConsumableHealing(message) {
   if (!actor?.isOwner) return;
   return queuedAction(actor.uuid, () => reversibleAction(async change => {
       const data = structuredClone(message.getFlag(SYSTEM_ID, "consumable"));
-      if (!data || data.applied || !(data.amount > 0)) return;
-      await change(() => message.setFlag(SYSTEM_ID, "consumable", { ...data, applied: true }), () => message.setFlag(SYSTEM_ID, "consumable", data));
+      if (!data || data.applied || data.refunded || !(data.amount > 0)) return;
+      if (actor.system.health.damage <= 0) {
+        const payment = data.payment;
+        if (!payment) {
+          ui.notifications.info("You are at full health. This older card has no cost receipt; restore its cost manually.");
+          return;
+        }
+        const item = actor.items.get(payment.itemId);
+        if (!item || item.type !== "consumable") throw new Error("You are at full health. The original consumable was removed; restore its item and AP cost manually.");
+        const quantity = item.system.quantity;
+        const updates = {}, restore = {};
+        if (payment.ownAp > 0) { updates["system.ap.value"] = actor.system.ap.value + payment.ownAp; restore["system.ap.value"] = actor.system.ap.value; }
+        if (payment.commandAp > 0) { updates["system.command.value"] = actor.system.command.value + payment.commandAp; restore["system.command.value"] = actor.system.command.value; }
+        await change(() => message.setFlag(SYSTEM_ID, "consumable", { ...data, refunded: true }), () => message.setFlag(SYSTEM_ID, "consumable", data));
+        await change(() => item.update({ "system.quantity": quantity + payment.quantity }), () => item.update({ "system.quantity": quantity }));
+        if (Object.keys(updates).length) await change(() => actor.update(updates), () => actor.update(restore));
+        ui.notifications.info("You are at full health. The item and its AP cost were refunded.");
+        return;
+      }
+      const healed = Math.min(actor.system.health.damage, data.amount);
+      await change(() => message.setFlag(SYSTEM_ID, "consumable", { ...data, applied: true, healed }), () => message.setFlag(SYSTEM_ID, "consumable", data));
       const updated = await actor.update({ "system.health.damage": healedDamage(actor.system.health.damage, data.amount) });
       if (!updated) throw new Error("Healing update was cancelled.");
       return updated;
@@ -260,11 +293,16 @@ export function decorateConsumableMessage(message, html) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "wb-consumable-heal";
-  button.disabled = !!data.applied;
-  button.textContent = data.applied ? `Healed ${wholeNumber(data.amount)}` : `Apply ${wholeNumber(data.amount)} healing to me`;
+  button.disabled = !!(data.applied || data.refunded);
+  button.textContent = data.refunded ? "Refunded · full health" : data.applied ? `Healed ${wholeNumber(data.healed ?? data.amount)}` : `Apply ${wholeNumber(data.amount)} healing to me`;
   button.addEventListener("click", async () => {
     button.disabled = true;
-    try { await applyConsumableHealing(message); }
+    try {
+      await applyConsumableHealing(message);
+      const latest = message.getFlag(SYSTEM_ID, "consumable");
+      button.disabled = !!(latest?.applied || latest?.refunded);
+      button.textContent = latest?.refunded ? "Refunded · full health" : latest?.applied ? `Healed ${wholeNumber(latest.healed ?? latest.amount)}` : `Apply ${wholeNumber(data.amount)} healing to me`;
+    }
     catch (error) { button.disabled = false; ui.notifications.error(error.message); }
   });
   content.append(button);

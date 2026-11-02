@@ -10,10 +10,14 @@ import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
-import { AbilityData, AbilitySheet, createAbility } from "./abilities.mjs";
+import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
+import { promptCommand, receiveCommand, decorateCommand } from "./command.mjs";
+import { apTotal } from "./ap.mjs";
+import { commandReady } from "./combat-support.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
-import { createEffect, toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
+import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
+import { returnToBase } from "./forms.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
@@ -88,6 +92,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         max: number(0, { persisted: false })
       }),
       ap: pool(),
+      command: new SchemaField({ value: number(), fresh: new BooleanField({ initial: false }) }),
       reactions: pool(),
       wonder: pool(),
       mana: magicResource(),
@@ -192,20 +197,22 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       pickPortrait: CharacterSheet.#onPickPortrait,
       resource: CharacterSheet.#onResource,
       ability: CharacterSheet.#onAbility,
-      effect: CharacterSheet.#onEffect
+      command: async function () { if (!this.isEditable) return; try { await promptCommand(this.actor); } catch (error) { ui.notifications.error(error.message); } },
+      savedAbility: CharacterSheet.#onSavedAbility,
+      status: CharacterSheet.#onStatus
     }
   };
 
   static PARTS = {
     sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [
       '.wb-sheet-panel[data-tab="character"]', '.wb-sheet-panel[data-tab="equipment"]',
-      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="notes"]'
+      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="status"]', '.wb-sheet-panel[data-tab="notes"]'
     ] }
   };
   static TABS = {
     sheet: { initial: "character", tabs: [
       { id: "character", label: "Character" }, { id: "equipment", label: "Equipment" },
-      { id: "abilities", label: "Abilities" }, { id: "notes", label: "Notes" }
+      { id: "abilities", label: "Abilities" }, { id: "status", label: "Status" }, { id: "notes", label: "Notes" }
     ] }
   };
 
@@ -214,6 +221,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const system = this.actor.system;
     const source = system.toObject();
     const effects = effectContext(this.actor);
+    const abilities = abilityGroups(this.actor.items ?? [], system);
+    for (const row of effects.savedAbilities) {
+      let group = abilities.find(group => group.rows[0]?.kind === row.kind);
+      if (!group) { group = { label: row.form ? "Forms" : "Active", rows: [] }; abilities.push(group); }
+      group.rows.push(row);
+    }
     const milestones = Object.fromEntries(milestoneGroups(system).map(group => [group.key, group.rows]));
     const statSources = key => [effects.sources[`system.stats.${key}.value`], key === "agl" && system.equipment?.agilityPenalty ? `Armor: −${wholeNumber(system.equipment.agilityPenalty)}` : ""].filter(Boolean).join(" · ");
     const increases = statIncreases(system.level, source.advancement);
@@ -244,12 +257,13 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
+      commandPool: wholeDisplay(system.command ?? { value: 0, fresh: false }),
       characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
       characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
       system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
       resourcePools: resourceEntries(system).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
-      effectGroups: effects.groups, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
-      abilityGroups: abilityGroups(this.actor.items ?? [], system),
+      activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
+      abilityGroups: abilities,
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
       editable: this.isEditable,
       unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
@@ -258,7 +272,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         || Object.values(source.bonuses ?? system.bonuses ?? {}).some(value => !!value),
       resources: wholeDisplay([
         { key: "health", label: "Health", inputName: "healthCurrent", ...system.health, sources: statSources("vit") },
-        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },
+        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap, value: apTotal(system), command: wholeNumber(system.command?.value ?? 0),
+          commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false },
         { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
       ]),
@@ -285,7 +300,18 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _processFormData(event, form, formData) {
     const systemSource = this.actor.system.toObject?.();
-    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    const shownAp = apTotal(this.actor.system);
+    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, ap: { ...this.actor.system.ap, value: shownAp }, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    // The main AP field includes Command. Manual total corrections change own AP,
+    // while the separate Command correction remains explicit and unchanged.
+    if (data.system?.ap && Object.hasOwn(data.system.ap, "value")) {
+      const entered = numberOr(data.system.ap.value, null);
+      if (entered === wholeNumber(shownAp)) delete data.system.ap.value;
+      else {
+        const grant = data.system.command && Object.hasOwn(data.system.command, "value") ? numberOr(data.system.command.value, 0) : numberOr(this.actor.system.command?.value, 0);
+        data.system.ap.value = entered === null ? null : Math.floor(entered) - Math.max(0, grant);
+      }
+    }
     // Unrelated sheet saves must not resubmit stored narrative text.
     for (const { key } of CHARACTER_DETAILS) {
       if (data.system?.details?.[key] === systemSource?.details?.[key]) delete data.system?.details?.[key];
@@ -304,7 +330,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     delete data.healthCurrent;
     // A full sheet submission includes unchanged trackers. Do not turn an unrelated
     // stat edit into healing or refill a spent pool just by submitting the form.
-    for (const key of ["ap", "reactions", "wonder"]) {
+    for (const key of ["reactions", "wonder"]) {
       if (data.system?.[key] && numberOr(data.system[key].value, null) === wholeNumber(this.actor.system[key].value)) {
         delete data.system[key].value;
       }
@@ -386,30 +412,43 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const operation = target.dataset.operation;
     if (operation !== "edit" && !this.isEditable) return;
     try {
-      if (operation === "create") return await createAbility(this.actor);
+      if (operation === "create") return await createAbility(this.actor, target.dataset.kind ?? "active");
+      if (operation === "base") return await returnToBase(this.actor);
       const item = this.actor.items.get(target.closest("[data-ability-id]")?.dataset.abilityId);
       if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");
       if (operation === "edit") return item.sheet.render({ force: true });
+      if (["use", "end"].includes(operation)) return await useAbility(this.actor, item.id, { end: operation === "end" });
       if (operation === "delete" && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove ability" }, content: "<p>Remove this ability and its trackers from this character?</p>", rejectClose: false
       })) return await item.delete();
     } catch (error) { ui.notifications.error(error.message); }
   }
 
-  static async #onEffect(event, target) {
+  static async #onSavedAbility(event, target) {
     const operation = target.dataset.operation;
     if (operation !== "edit" && !this.isEditable) return;
     try {
-      if (operation === "create") return await createEffect(this.actor, target.dataset.kind);
-      if (operation === "base") return await toggleEffect(this.actor, "base");
       const uuid = target.closest("[data-effect-uuid]")?.dataset.effectUuid;
-      if (operation === "toggle") return await toggleEffect(this.actor, uuid);
-      const row = effectRows(this.actor).find(row => row.uuid === uuid);
-      if (!row) throw new Error("That effect no longer exists. Reopen the sheet.");
+      const row = effectRows(this.actor).find(row => row.uuid === uuid && row.managed && row.effect.parent === this.actor);
+      if (!row) throw new Error("That saved ability no longer exists. Reopen the sheet.");
+      if (["use", "end"].includes(operation)) return await toggleEffect(this.actor, uuid, { active: operation === "use" });
       if (operation === "edit") return await openEffect(row.effect);
       if (operation === "delete" && row.canRemove && await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Remove effect" }, content: "<p>Remove this effect or form and its bonuses?</p>", rejectClose: false
+        window: { title: "Remove saved ability" }, content: "<p>Remove this saved ability or form and its bonuses?</p>", rejectClose: false
       })) return await row.effect.delete();
+    } catch (error) { ui.notifications.error(error.message); }
+  }
+
+  static async #onStatus(event, target) {
+    const operation = target.dataset.operation;
+    if (operation !== "edit" && !this.isEditable) return;
+    try {
+      const uuid = target.closest("[data-effect-uuid]")?.dataset.effectUuid;
+      const row = effectContext(this.actor).statuses.find(row => row.uuid === uuid);
+      if (!row) return; // A concurrent End already removed the live entry.
+      const item = row.itemId ? this.actor.items.get(row.itemId) : null;
+      if (operation === "edit") return await (item ? item.sheet.render({ force: true }) : openEffect(effectRows(this.actor).find(effect => effect.uuid === uuid).effect));
+      if (operation === "end" && row.canEnd) return await (row.abilityId ? useAbility(this.actor, row.abilityId, { end: true }) : toggleEffect(this.actor, uuid, { active: false }));
     } catch (error) { ui.notifications.error(error.message); }
   }
 
@@ -491,6 +530,10 @@ Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackDefenses);
 Hooks.on("renderChatMessageHTML", decorateReactionMessage);
+Hooks.on("renderChatMessageHTML", decorateCommand);
+Hooks.on("createChatMessage", message => {
+  if (game.user.isActiveGM && message.getFlag(SYSTEM_ID, "command")) receiveCommand(message).catch(error => ui.notifications.warn(`Command is waiting in chat: ${error.message}`));
+});
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);
 

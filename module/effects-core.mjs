@@ -9,6 +9,20 @@ export const effectFlags = effect => effect.flags?.[EFFECT_SCOPE] ?? {};
 export const managedEffect = effect => effectFlags(effect).managed === true;
 export const formEffect = effect => managedEffect(effect) && effectFlags(effect).kind === "form";
 export const effectChanges = effect => effect.system?.changes ?? [];
+export const boundItem = effect => managedEffect(effect) && effectFlags(effect).itemBound ? (effect.item ?? (effect.parent?.documentName === "Item" ? effect.parent : null)) : null;
+export function itemEffectState(effect) {
+  const item = boundItem(effect);
+  if (!item) return "";
+  if (item.type === "ability") return item.system?.kind === "passive" || item.system?.effectsActive ? "" : "Ability inactive";
+  return item.system?.equipped ? "" : "Not equipped";
+}
+export function itemEffectRows(item) {
+  return Array.from(item.effects?.values?.() ?? item.effects ?? []).map(effect => ({
+    id: effect.id, name: effect.name, disabled: !!effect.disabled,
+    state: effect.disabled ? "Off" : itemEffectState(effect) || "Enabled",
+    summary: effectChanges(effect).map(change => effectChangeText(change, item.actor?.system)).join(" · ") || "No bonuses"
+  }));
+}
 const effectList = effects => effects?.values ? Array.from(effects.values()) : Array.from(effects ?? []);
 export const customEffectResource = key => /^system\.customResources\.([A-Za-z0-9]{16})\.bonus$/.exec(key)?.[1] ?? null;
 
@@ -48,13 +62,13 @@ export function effectRows(actor) {
   const all = actor.allApplicableEffects ? Array.from(actor.allApplicableEffects()) : effectList(actor.effects);
   return all.map(effect => {
     const direct = effect.parent === actor;
-    const active = effect.active ?? (!effect.disabled && !effect.isSuppressed);
+    const active = !effect.disabled && !effect.isSuppressed && !itemEffectState(effect) && (effect.active ?? true);
     const form = direct && formEffect(effect);
-    const source = effectFlags(effect).source || effect.item?.name || (effect.origin ? effect.sourceName : "") || "";
+    const source = boundItem(effect)?.name || effectFlags(effect).source || effect.item?.name || (effect.origin ? effect.sourceName : "") || "";
     return {
       id: effect.id, uuid: effect.uuid, name: effect.name, img: effect.img || "icons/svg/aura.svg", form, active,
       managed: managedEffect(effect), canRemove: direct, disabled: !!effect.disabled,
-      state: effect.disabled ? "Off" : active ? "On" : "Suppressed / expired",
+      state: effect.disabled ? "Off" : itemEffectState(effect) || (active ? "On" : "Suppressed / expired"),
       source, summary: effectChanges(effect).map(change => effectChangeText(change, actor.system)).join(" · ") || "No bonuses",
       effect
     };
@@ -63,17 +77,35 @@ export function effectRows(actor) {
 
 export function effectContext(actor) {
   const rows = effectRows(actor);
+  const activeRows = rows.filter(row => row.active);
   const sources = {};
-  for (const row of rows.filter(row => row.active)) for (const change of effectChanges(row.effect)) {
+  for (const row of activeRows) for (const change of effectChanges(row.effect)) {
     if (change.phase !== "initial" || row.effect.shouldApplyChange?.(change, { phase: "initial" }) === false) continue;
     if (customEffectResource(change.key) && !actor.system.customResources?.[customEffectResource(change.key)]) continue;
     const value = numberOr(change.value, null);
     const adjustment = change.type === "add" && value !== null ? `${value >= 0 ? "+" : ""}${wholeNumber(value)}` : `${change.type} ${String(change.value ?? "")}`;
     (sources[change.key] ??= []).push(`${row.name}: ${adjustment}${row.source ? ` (${row.source})` : ""}`);
   }
+  // Status is a live projection of active sources, never a bonus-definition list.
+  const statuses = new Map();
+  for (const row of activeRows) {
+    const item = row.effect.item ?? (row.effect.parent?.documentName === "Item" ? row.effect.parent : null);
+    const key = item?.uuid ?? item?.id ?? row.uuid;
+    const existing = statuses.get(key);
+    if (existing) { existing.summaries.push(row.summary); continue; }
+    statuses.set(key, { uuid: row.uuid, itemId: item?.id, abilityId: item?.type === "ability" ? item.id : null,
+      name: item?.name ?? row.name, img: item?.img || row.img, source: item ? (item.type === "ability" ? (item.system.kind === "form" ? "Form" : "Ability") : "Equipment") : row.source,
+      canEnd: item ? item.type === "ability" && item.system.kind !== "passive" && !!item.system.effectsActive : true,
+      summaries: [row.summary] });
+  }
+  const savedAbilities = rows.filter(row => row.effect.parent === actor && row.managed).map(row => ({ ...row,
+    legacy: true, kind: row.form ? "form" : "active", effectsActive: row.active, canUse: true,
+    category: "", hasDetails: false }));
+  const forms = effectList(actor.items).filter(item => item.type === "ability" && item.system.kind === "form");
   return {
     groups: [{ label: "Forms", rows: rows.filter(row => row.form) }, { label: "Effects", rows: rows.filter(row => !row.form) }].filter(group => group.rows.length),
-    hasForms: rows.some(row => row.form), hasActiveForm: rows.some(row => row.form && row.active),
+    savedAbilities, statuses: Array.from(statuses.values(), row => ({ ...row, summary: row.summaries.join(" · ") })),
+    hasForms: forms.length > 0 || rows.some(row => row.form), hasActiveForm: forms.some(item => item.system.effectsActive) || rows.some(row => row.form && row.active),
     sources: Object.fromEntries(Object.entries(sources).map(([key, values]) => [key, values.join(" · ")]))
   };
 }

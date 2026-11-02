@@ -1,10 +1,10 @@
-// Sheet records only. Casting, payments, timers and effects are deferred.
+// Foundry-free ability records and cost previews. Timers remain manual.
 import { STATS } from "./stats.mjs";
 import { actionApCost } from "./attacks.mjs";
 import { numberOr } from "./core-numbers.mjs";
 import { wholeNumber } from "./number-display.mjs";
 
-export const ABILITY_TYPES = Object.freeze({ active: "Active", passive: "Passive", reaction: "Reaction", other: "Other" });
+export const ABILITY_TYPES = Object.freeze({ active: "Active", passive: "Passive", reaction: "Reaction", form: "Form", other: "Other" });
 export const ABILITY_COST_UNITS = Object.freeze({ points: "Points", percent: "% of maximum" });
 export const ABILITY_STATS = Object.freeze(Object.fromEntries([["", "None (fixed cost)"], ...STATS.map(stat => [stat.key, stat.label])]));
 export const ABILITY_ICON = "icons/svg/book.svg";
@@ -37,7 +37,7 @@ export function abilityRecord(item, character) {
   if (remaining > 0) parts.push(`${wholeNumber(remaining)} rounds left`);
   else if (cooldown > 0) parts.push(`Ready · ${wholeNumber(cooldown)}-round cooldown`);
   return {
-    id: item.id, name: item.name, img: !item.img || item.img === "icons/svg/item-bag.svg" ? ABILITY_ICON : item.img,
+    id: item.id, name: item.name, effectsActive: !!system.effectsActive, canUse: system.kind !== "passive", img: !item.img || item.img === "icons/svg/item-bag.svg" ? ABILITY_ICON : item.img,
     kind: system.kind || "active", category: system.category || "", description: system.description || "", notes: system.notes || "",
     duration: system.duration || "", recovery: system.uses?.recovery || "", hasDetails: !!(system.description || system.notes || system.duration || system.uses?.recovery),
     summary: parts.join(" · ") || ABILITY_TYPES[system.kind] || "Ability",
@@ -47,7 +47,7 @@ export function abilityRecord(item, character) {
 
 export function abilityGroups(items, character) {
   const records = Array.from(items).filter(item => item.type === "ability").map(item => abilityRecord(item, character));
-  return Object.entries(ABILITY_TYPES).map(([kind, label]) => ({ label, rows: records.filter(row => row.kind === kind) })).filter(group => group.rows.length);
+  return Object.entries(ABILITY_TYPES).map(([kind, label]) => ({ label: kind === "form" ? "Forms" : label, rows: records.filter(row => row.kind === kind) })).filter(group => group.rows.length);
 }
 
 export function abilityFormUpdates(system, data) {
