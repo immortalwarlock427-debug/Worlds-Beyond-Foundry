@@ -96,4 +96,19 @@ test("remote clients, observers and trigger-generated updates never execute the 
   captureFormTriggers(f.actor, {}, options, "another-client"); assert.equal(options.worldsBeyondFormBefore, undefined);
   f.actor.isOwner = false; captureFormTriggers(f.actor, {}, options, "owner"); assert.equal(options.worldsBeyondFormBefore, undefined);
   f.actor.isOwner = true; const triggered = { worldsBeyondFormTrigger: true }; captureFormTriggers(f.actor, {}, triggered, "owner"); assert.equal(triggered.worldsBeyondFormBefore, undefined);
+  for (const internal of [{ worldsBeyondFormLoadout: true }, { worldsBeyondAbilityTimers: true }]) {
+    captureFormTriggers(f.actor, {}, internal, "owner"); assert.equal(internal.worldsBeyondFormBefore, undefined);
+  }
+});
+
+test("several post-update hooks sharing a batch consume its crossing only once", async () => {
+  const f = fixture(), form = f.form(), options = {};
+  form.system.trigger.mode = "prompt";
+  captureFormTriggers(f.actor, {}, options, "owner");
+  f.actor.system.customResources[id].value = 105;
+  const first = processFormTriggers(f.actor, {}, options, "owner");
+  assert.equal(processFormTriggers(f.actor, {}, options, "owner"), undefined);
+  await first;
+  assert.equal(f.dialogs.length, 1); assert.equal(form.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, 15);
 });

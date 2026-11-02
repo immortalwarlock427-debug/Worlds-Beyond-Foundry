@@ -5,6 +5,7 @@ import { syncFormLoadout, copyFormEquipment, setCharacterPortrait, registerFormL
 import { reversibleAction } from "../module/action-support.mjs";
 globalThis.foundry = { abstract: { TypeDataModel: class {} }, applications: { api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class {} } } };
 const { useAbility } = await import("../module/abilities.mjs");
+const { captureFormTriggers, processFormTriggers } = await import("../module/form-triggers.mjs");
 const { returnToBase } = await import("../module/forms.mjs");
 const get = (data, path) => path.split('.').reduce((value, key) => value?.[key], data);
 class DeleteField {}
@@ -31,6 +32,86 @@ function fixture() {
   return { actor, item, first, second, sword, axe, shield, calls, errors };
 }
 const sync = (actor, options) => reversibleAction(change => syncFormLoadout(actor, change, options));
+
+// v14 mutates operation objects: embedded writes add parentUuid, and subsequent
+// root writes resolve that UUID even after Document.update sets parent to null.
+// Model that lifecycle, including the real resource-trigger hook callbacks.
+function nativeOperations(f) {
+  const documents = new Map(), jobs = [], warnings = [], resource = 'resource00000001';
+  const actor = f.actor;
+  actor.documentName = 'Actor'; actor.parent = null;
+  game.user.id = 'owner';
+  ui.notifications.warn = text => warnings.push(text);
+  const request = (documentName, parent, operation) => {
+    operation.parent = parent;
+    const resolved = parent ?? documents.get(operation.parentUuid);
+    if (resolved && documentName === 'Actor') throw new Error(`Actor is not a valid embedded Document within the ${resolved.documentName} Document`);
+    if (resolved) operation.parentUuid = resolved.uuid;
+    delete operation.parent;
+  };
+  const wrap = doc => {
+    documents.set(doc.uuid, doc);
+    const update = doc.update;
+    doc.update = async (changes, operation = {}) => {
+      request(doc.documentName, doc.parent, operation);
+      if (doc === actor) captureFormTriggers(actor, changes, operation, 'owner');
+      const result = await update.call(doc, changes, operation);
+      if (doc === actor) {
+        const pool = actor.system.customResources[resource];
+        if (pool) pool.value = pool.max - pool.spent;
+        const job = processFormTriggers(actor, changes, operation, 'owner');
+        if (job) jobs.push(job);
+      }
+      return result;
+    };
+  };
+  wrap(actor);
+  for (const item of actor.items.values()) { item.parent = actor; wrap(item); }
+  const batch = actor.updateEmbeddedDocuments;
+  actor.updateEmbeddedDocuments = async (type, changes, operation = {}) => {
+    request(type, actor, operation);
+    return batch.call(actor, type, changes, operation);
+  };
+  return { resource, jobs, warnings, async drain() {
+    for (let i = 0; i < jobs.length; i++) { assert.ok(i < 20, 'Form hooks must settle instead of looping'); await jobs[i]; }
+  } };
+}
+
+test("v14 operation metadata cannot leak from equipped Items into Actor portrait updates or Base restoration", async () => {
+  const f = fixture(), native = nativeOperations(f);
+  await useAbility(f.actor, f.first.id);
+  assert.equal(f.actor.img, 'first.png'); assert.equal(f.axe.system.equipped, true);
+  await useAbility(f.actor, f.second.id);
+  assert.equal(f.actor.img, 'second.png'); assert.equal(f.first.system.effectsActive, false);
+  await returnToBase(f.actor); await native.drain();
+  assert.equal(f.actor.img, 'base.png'); assert.equal(f.sword.system.equipped, true);
+  assert.equal(f.second.system.effectsActive, false); assert.equal(f.actor.system.ap.value, 11);
+  assert.deepEqual(native.warnings, []);
+});
+
+test("triggered physical forms enter and end once without retrying their own portrait and equipment writes", async () => {
+  const f = fixture(), native = nativeOperations(f), id = native.resource;
+  f.actor.system.customResources[id] = { name: 'Blood', max: 100, value: 100, spent: 0 };
+  f.first.system.trigger = { mode: 'automatic', resourceId: id, comparison: 'above', threshold: 100, endMode: 'automatic' };
+  await f.actor.update({ [`system.customResources.${id}.spent`]: -5 }); await native.drain();
+  assert.equal(f.first.system.effectsActive, true); assert.equal(f.actor.img, 'first.png');
+  assert.equal(f.actor.system.ap.value, 14); assert.deepEqual(native.warnings, []);
+  await f.actor.update({ [`system.customResources.${id}.spent`]: 0 }); await native.drain();
+  assert.equal(f.first.system.effectsActive, false); assert.equal(f.actor.img, 'base.png');
+  assert.equal(f.actor.system.ap.value, 14); assert.deepEqual(native.warnings, []);
+  assert.equal(native.jobs.length, 2, 'Only the two external resource updates may evaluate triggers');
+});
+
+test("v14 form rollback restores gear, portrait, Base receipt and AP without reentering the trigger queue", async () => {
+  const f = fixture(), native = nativeOperations(f);
+  foundry.documents.ChatMessage.implementation.create = async () => { throw new Error('offline'); };
+  await assert.rejects(useAbility(f.actor, f.first.id), /offline/); await native.drain();
+  assert.equal(f.first.system.effectsActive, false); assert.equal(f.actor.img, 'base.png');
+  assert.equal(f.sword.system.equipped, true); assert.equal(f.axe.system.equipped, false);
+  assert.equal(f.actor.system.ap.value, 17); assert.equal(f.first.system.uses.spent, 1);
+  assert.equal(f.actor.getFlag('worlds-beyond', 'formLoadoutState'), undefined);
+  assert.deepEqual(native.warnings, []);
+});
 
 test("paid forms switch gear/portrait and Base restores originals while balances, shots and uses stay shared", async () => {
   const f = fixture(), balance = structuredClone(f.actor.system);
