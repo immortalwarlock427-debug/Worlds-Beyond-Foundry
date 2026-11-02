@@ -7,7 +7,7 @@
   <label>Roll formula<input type="text" name="formula" value="{{formula}}" aria-label="Block roll formula"></label>
   <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>
   <details class="wb-disclosure wb-help"><summary>How Block works</summary>
-    <p>Roll Block dice + STR, then subtract the total from damage left after Resistance and Armor Rating. Apply Health changes manually. A full Block also stops effects that need to cut into you; Overwhelming Force may keep damage at half.</p>
+    <p>If resistant, halve the incoming damage first, rounded down. Subtract Armor Rating, then subtract your Block total. Overwhelming Force then raises damage back to half the original, rounded down, if those reductions brought it lower. Apply Health changes manually. A full Block also stops effects that need to cut into you.</p>
     <p>Use arm guards, a held weapon or a shield. Blocking for an ally needs a shield and reach within 1 AP of movement. Use Block once per incoming attack; other defenses may use another reaction. No AP cost.</p>
     <p>@mod is your STR modifier. Edit the formula for special items, rare-metal multipliers or Fast Roll. Untick spending for practice.</p>
   </details>

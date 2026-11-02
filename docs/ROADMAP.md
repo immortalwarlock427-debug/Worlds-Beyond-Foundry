@@ -30,7 +30,9 @@ Website features map to Foundry like this:
 
 ## Next
 
-### Current priority: polish all sheet tabs, then complete the final audit
+### Current priority: base character-sheet review
+
+The user supplied Claude's review checklist against main d202d91. Work follows its order, with one PR per item: damage-order correction, text/Class header fixes, then structure work before missing features. Items marked Ask first require a user decision, and the later combat section remains deferred. Review item 1 (Resistance → Armor Rating → Block → Overwhelming Force) is implemented for validation in [ATTACKS.md](ATTACKS.md#order-of-a-hit); it remains pending merge. The rest of the review is outstanding.
 
 Before the final audit, the user requested a cosmic overview with circular artwork/stats, compact vitals and four favorite abilities. This takes priority and is implemented for visual review in CHARACTER-OVERVIEW.md. The user requested item/ability bonuses, Command and potion AP after the base sheet tabs. These are implemented for validation. Forms belong to Abilities and Status shows only active sources. Opportunity attacks are deferred again: later combat work should prompt when a creature moves away from an armed character with a reaction. Do not add a standalone React button. Broader casting, timers and combat automation remain below.
 

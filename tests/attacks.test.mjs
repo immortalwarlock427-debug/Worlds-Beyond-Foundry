@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
   attackOutcome, damageMultiplier, scaleDice, damagePlan, effectiveArmor,
-  actionApCost, dualWieldPartners, shotsLeft, finalDamage
+  actionApCost, dualWieldPartners, shotsLeft, finalDamage, hitDamage
 } from "../module/attacks.mjs";
 import { catalogItems } from "../module/catalog.mjs";
 
@@ -107,8 +107,55 @@ test("Two-handed hits ignore half the target's Armor Rating; Puncture ignores 2 
   assert.equal(effectiveArmor(7, { twoHanded: true, puncture: true }), 2);
   assert.equal(effectiveArmor(1, { puncture: true }), 0);
   assert.equal(damagePlan({ weapon: w("Arbalest") }).notes.length, 1);
-  assert.match(damagePlan({ weapon: w("Arbalest") }).notes[0], /halve/);
+  assert.match(damagePlan({ weapon: w("Arbalest") }).notes[0], /half.*rounded up.*ignore 2/);
   assert.match(damagePlan({ weapon: w("Rapier") }).notes[0], /ignores 2/);
+});
+
+test("hit damage applies rounded-down Resistance before Armor Rating", () => {
+  assert.equal(hitDamage({ damage: 16, armor: 6, resistant: true }).total, 2);
+  assert.equal(hitDamage({ damage: 17, armor: 6, resistant: true }).afterResistance, 8);
+  assert.equal(hitDamage({ damage: 17, armor: 6, resistant: true }).total, 2);
+  assert.equal(hitDamage({ damage: 16, armor: 6 }).total, 10);
+});
+
+test("hit damage handles odd/even Two-handed armor and Puncture before subtracting armor", () => {
+  for (const [armor, twoHanded, puncture, used] of [
+    [7, false, false, 7], [7, true, false, 4], [8, true, false, 4],
+    [7, false, true, 5], [7, true, true, 2], [1, true, true, 0]
+  ]) {
+    const hit = hitDamage({ damage: 16, resistant: true, armor, twoHanded, puncture });
+    assert.equal(hit.armor, used);
+    assert.equal(hit.total, Math.max(0, 8 - used));
+  }
+});
+
+test("Block subtracts from the remainder after Resistance and Armor Rating, with a zero floor", () => {
+  const hit = hitDamage({ damage: 16, resistant: true, armor: 6, block: 1 });
+  assert.equal(hit.afterResistance, 8);
+  assert.equal(hit.afterArmor, 2);
+  assert.equal(hit.afterBlock, 1);
+  assert.equal(hit.total, 1);
+  assert.equal(hitDamage({ damage: 16, resistant: true, armor: 6, block: 3 }).total, 0);
+  assert.equal(hitDamage({ damage: 14, armor: 5, block: 8 }).total, 1);
+  assert.equal(hitDamage({ damage: 2, armor: 6, block: 3 }).total, 0);
+});
+
+test("Overwhelming Force applies last and uses half the original damage", () => {
+  const hit = hitDamage({ damage: 16, resistant: true, armor: 6, block: 1, overwhelming: true });
+  assert.equal(hit.afterBlock, 1);
+  assert.equal(hit.minimum, 8);
+  assert.equal(hit.total, 8);
+  assert.equal(hitDamage({ damage: 17, resistant: true, armor: 99, block: 99, overwhelming: true }).total, 8);
+  assert.equal(hitDamage({ damage: 16, overwhelming: true }).total, 16);
+  assert.equal(hitDamage({ damage: 16, resistant: true, armor: 7, twoHanded: true,
+    puncture: true, block: 3, overwhelming: true }).total, 8);
+});
+
+test("hit damage accepts already-halved off-hand damage and clamps negative reductions", () => {
+  assert.equal(hitDamage({ damage: finalDamage(15, { offhand: true }), resistant: true, armor: 2 }).total, 1);
+  assert.equal(hitDamage({ damage: -5, overwhelming: true }).total, 0);
+  assert.equal(hitDamage({ damage: 16, armor: -2, block: -3 }).total, 16);
+  assert.equal(hitDamage().total, 0);
 });
 
 test("attacking with both needs a Light weapon equipped in each hand", () => {

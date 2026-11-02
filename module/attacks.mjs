@@ -135,7 +135,9 @@ export function damagePlan({ weapon, level = 1, modifier = 0, grip = "one", crit
     : `${dice.formula}${flat ? signed(flat) : ""}`;
   const twoHanded = !!(system.properties?.twoHanded || twoHandedGrip);
   const notes = [];
-  if (twoHanded && system.signature?.puncture) notes.push("Two-handed Puncture: halve the target's Armor Rating (rounded down), then ignore 2 more.");
+  if (twoHanded && system.signature?.puncture) {
+    notes.push("Two-handed Puncture: half the target's Armor Rating counts, rounded up, then ignore 2 more.");
+  }
   else if (twoHanded) notes.push("Two-handed: this hit ignores half the target's Armor Rating, rounded down.");
   else if (system.signature?.puncture) notes.push("Puncture: this hit ignores 2 of the target's Armor Rating.");
   if (offhand) notes.unshift("Off-hand hit: half damage, rounded down, with no modifier.");
@@ -148,6 +150,27 @@ export function effectiveArmor(armorRating, { twoHanded = false, puncture = fals
   if (twoHanded) armor -= Math.floor(armor / 2);
   if (puncture) armor -= 2;
   return Math.max(0, armor);
+}
+
+// Notion Defenses → Order of a Hit (checked 2026-11-02).
+// Input is damage after any off-hand/critical roll adjustment. Dodge/Parry are
+// resolved separately. The breakdown keeps pre-Block numbers distinct from the
+// final Overwhelming Force floor; this helper never changes an actor's Health.
+export function hitDamage({
+  damage = 0, resistant = false, armor = 0, twoHanded = false,
+  puncture = false, overwhelming = false, block = 0
+} = {}) {
+  const original = finalDamage(damage);
+  const afterResistance = resistant ? Math.floor(original / 2) : original;
+  const armorUsed = effectiveArmor(armor, { twoHanded, puncture });
+  const afterArmor = Math.max(0, afterResistance - armorUsed);
+  const blocked = finalDamage(block);
+  const afterBlock = Math.max(0, afterArmor - blocked);
+  const minimum = overwhelming ? Math.floor(original / 2) : 0;
+  return {
+    original, afterResistance, armor: armorUsed, afterArmor, block: blocked,
+    afterBlock, minimum, total: Math.max(afterBlock, minimum)
+  };
 }
 
 export function modifierFor(statKey, scores = {}) {
