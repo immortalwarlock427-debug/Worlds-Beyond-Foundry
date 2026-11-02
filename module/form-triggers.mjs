@@ -2,7 +2,8 @@ import { triggerSnapshot, triggerTransitions, triggerCondition } from "./form-tr
 import { useAbility } from "./abilities.mjs";
 import { queuedAction } from "./action-support.mjs";
 const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const eligible = (actor, options, userId) => actor?.type === "character" && actor.isOwner && userId === game.user.id && !options.worldsBeyondFormTrigger;
+const eligible = (actor, options, userId) => actor?.type === "character" && actor.isOwner && userId === game.user.id
+  && !options.worldsBeyondFormTrigger && !options.worldsBeyondFormLoadout && !options.worldsBeyondAbilityTimers;
 
 export function captureFormTriggers(actor, changes, options, userId) {
   if (!eligible(actor, options, userId)) return;
@@ -12,6 +13,9 @@ export function captureFormTriggers(actor, changes, options, userId) {
 export function processFormTriggers(actor, changes, options, userId) {
   const before = options.worldsBeyondFormBefore?.[actor.uuid];
   if (!before || !eligible(actor, options, userId)) return;
+  // One batch can emit several Item hooks with the same operation. Consume its
+  // snapshot once rather than queueing the same crossing/prompt repeatedly.
+  delete options.worldsBeyondFormBefore[actor.uuid];
   // Separate coordination key: Use itself queues on the actor, including paid
   // consumable/resource actions that may still be completing this update.
   return queuedAction(`form-triggers:${actor.uuid}`, async () => {

@@ -2,7 +2,9 @@ import { activeLoadoutForm, equipmentSnapshot, equipmentPlan, formGear, hasPhysi
 import { itemList } from "./loadout.mjs";
 import { queuedAction, reversibleAction } from "./action-support.mjs";
 const SCOPE = "worlds-beyond", KEY = "formLoadoutState";
-const operation = { worldsBeyondFormLoadout: true };
+// v14 mutates each operation with parentUuid and hook snapshots. Never reuse it
+// across Item/Actor writes, compensation, or another character's transaction.
+const operation = () => ({ worldsBeyondFormLoadout: true });
 
 export function formLoadoutSchema() {
   const { SchemaField, StringField, BooleanField, TypedObjectField, NumberField } = foundry.data.fields;
@@ -38,7 +40,7 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
       const old = { ...(prior.system.loadout.equipment ?? {}) };
       if (Object.entries(currentGear).some(([id, value]) => old[id] !== value)) {
         const restore = { ...Object.fromEntries(Object.keys(currentGear).filter(id => !Object.hasOwn(old, id)).map(id => [id, new foundry.data.operators.ForcedDeletion()])), ...old };
-        await change(() => prior.update({ "system.loadout.equipment": currentGear }, operation), () => prior.update({ "system.loadout.equipment": restore }, operation));
+        await change(() => prior.update({ "system.loadout.equipment": currentGear }, operation()), () => prior.update({ "system.loadout.equipment": restore }, operation()));
       }
     } else baseEquipment = currentGear;
   }
@@ -49,8 +51,8 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
   if (updates.length) {
     const restore = updates.map(update => ({ _id: update._id, "system.equipped": currentGear[update._id] }));
     // Register compensation first: native batches may fail after a partial apply.
-    await change(() => actor, () => actor.updateEmbeddedDocuments("Item", restore, { ...operation, worldsBeyondFormRestore: true }));
-    await actor.updateEmbeddedDocuments("Item", updates, operation);
+    await change(() => actor, () => actor.updateEmbeddedDocuments("Item", restore, { ...operation(), worldsBeyondFormRestore: true }));
+    await actor.updateEmbeddedDocuments("Item", updates, operation());
     if (updates.some(update => !!actor.items.get(update._id)?.system.equipped !== update["system.equipped"])) throw new Error("The form's equipment switch was cancelled or not retained.");
   }
   const img = nextId && form.system.loadout.portrait ? form.system.loadout.portrait : basePortrait;
@@ -60,7 +62,7 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
   if (JSON.stringify(previous) !== JSON.stringify(state)) changes[`flags.${SCOPE}.${KEY}`] = state;
   if (!Object.keys(changes).length) return;
   const restore = { img: actor.img, [`flags.${SCOPE}.${KEY}`]: previous ?? new foundry.data.operators.ForcedDeletion() };
-  await change(() => actor.update(changes, operation), () => actor.update(restore, operation));
+  await change(() => actor.update(changes, operation()), () => actor.update(restore, operation()));
   if (actor.img !== img || JSON.stringify(actor.getFlag(SCOPE, KEY)) !== JSON.stringify(state)) throw new Error("The form's portrait or restore state was not retained.");
 }
 

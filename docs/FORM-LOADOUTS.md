@@ -19,6 +19,8 @@ Additive `Ability.system.loadout` fields: `portrait` (blank), `gearEnabled` (fal
 
 `flags.worlds-beyond.formLoadoutState` holds the current configured form ID, Base portrait/equipment and whether the prior form used a gear preset. It is created on an intentional configured switch, not on ordinary rendering or when using unconfigured forms. The actor's existing action queue coordinates Use/End/Base. The reversible action restores costs, flags, portrait and gear after a failed post/update, including partial gear batches. An internal compensation flag bypasses hand normalization only while restoring the exact prior equipment snapshot. No data-model fields are renamed or removed.
 
+Each loadout write and compensation receives a fresh Foundry operation object. v14 adds `parentUuid` to embedded Item requests; reusing that object for a subsequent Actor update incorrectly addresses the Actor as its own embedded document. Fresh operations also prevent prior trigger snapshots leaking into later switches. Internal loadout writes do not evaluate resource triggers.
+
 Native timer/manual/deletion hooks reconcile physical loadouts through the active GM (the owner handles changes when no GM is active). Internal paid-switch updates suppress duplicate hook work. Reload/canvas-ready reconciliation can finish an expired saved loadout. These hooks do not poll or advance time. Existing linked/unlinked Actor identities remain distinct; changing a token actor affects that copy.
 
 ## Sources and checks
