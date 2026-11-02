@@ -7,7 +7,7 @@ import { itemEffectRows } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { inCombat, payAp } from "./combat-support.mjs";
 import { actionApCost } from "./attacks.mjs";
-import { recoveryChoices, recoveryPool, restorationPlan } from "./consumable-benefits.mjs";
+import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
 import { consumableBonusData, applyConsumableBonuses } from "./consumable-effects.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -240,7 +240,7 @@ export async function useConsumable(actor, id) {
       if (!foundry.dice.Roll.validate(formula)) throw new Error("Enter complete healing dice such as 2d6+2, or leave healing blank.");
       roll = await new foundry.dice.Roll(formula).evaluate({ allowInteractive: messageMode !== "blind" });
     }
-    const amount = roll ? Math.max(0, roll.total) * (item.system.restoreUnit === "percent" ? pool.max / 100 : 1) : 0;
+    const amount = roll ? restorationAmount(roll.total, item.system.restoreUnit, pool.max) : 0;
     const apCost = item.system.kind === "potion" && inCombat(actor) ? actionApCost(5, actor.system.stats.dex.mod) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
       + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")

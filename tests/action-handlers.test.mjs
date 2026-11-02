@@ -20,7 +20,8 @@ function fixture(mode = "public") {
     level: 1, ap: { value: 15 }, health: { damage: 10 }, equipment: {}, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0 }]))
   }, async update(data) {
     calls.updates.push(data);
-    for (const [key, value] of Object.entries(data)) { const [, pool, field] = key.split("."); this.system[pool][field] = value; }
+    for (const [key, value] of Object.entries(data)) { const keys = key.split('.').slice(1), field = keys.pop(); keys.reduce((entry, name) => entry[name] ??= {}, this.system)[field] = value; }
+    for (const pool of [this.system.mana, this.system.holyPower, ...Object.values(this.system.customResources ?? {})]) if (pool?.max != null && pool.spent != null) pool.value = pool.max - pool.spent;
     return this;
   } };
   class Roll {
@@ -199,6 +200,86 @@ test("ability Use pays AP without an encounter and insufficient AP leaves all co
   assert.equal(f.actor.system.ap.value, 4); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.effectsActive, false);
   f.actor.system.ap.value = 5; await useAbility(f.actor, item.id);
   assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.mana.spent, 12.5); assert.equal(item.system.effectsActive, true);
+});
+
+test("healing abilities apply on Use, cap at the deficit, pay once per use and stay usable without active bonus state", async () => {
+  const f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.cooldown.rounds = null;
+  item.system.restoration = { target: "health", amount: "2d6", unit: "points" }; f.actor.system.health.damage = 15;
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.health.damage, 5); assert.equal(f.actor.system.ap.value, 10); assert.equal(item.system.uses.spent, 1); assert.equal(item.system.effectsActive, false);
+  assert.match(f.calls.posts[0].data.content, /Restored 10 Health/); assert.equal(f.calls.posts[0].data.rolls.length, 1);
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.health.damage, 0); assert.equal(f.actor.system.ap.value, 5); assert.equal(item.system.uses.spent, 2);
+  assert.match(f.calls.posts[1].data.content, /Restored 5 Health/);
+});
+
+test("a full restoration target spends no AP, resource, use or cooldown; mixed buffs and forms still activate", async () => {
+  let f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "10", unit: "points" }; f.actor.system.health.damage = 0;
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.cooldown.remaining, 0); assert.equal(f.calls.posts.length, 0); assert.equal(f.calls.evaluations.length, 0);
+  assert.match(f.calls.info[0], /full health.*Nothing was spent/);
+  f = fixture(); item = bonusAbility(f); item.system.restoration = { target: "health", amount: "10", unit: "points" }; f.actor.system.health.damage = 0;
+  await useAbility(f.actor, item.id); assert.equal(item.system.effectsActive, true); assert.equal(f.actor.system.ap.value, 10); assert.equal(f.actor.system.health.damage, 0);
+  await useAbility(f.actor, item.id, { end: true }); assert.equal(f.actor.system.health.damage, 0); assert.equal(f.actor.system.ap.value, 10);
+  f = fixture(); item = bonusAbility(f); item.effects.clear(); item.system.kind = "form"; item.system.restoration = { target: "health", amount: "10", unit: "points" }; f.actor.system.health.damage = 0;
+  await useAbility(f.actor, item.id); assert.equal(item.system.effectsActive, true); assert.equal(f.actor.system.ap.value, 10);
+});
+
+test("percentage restoration uses the pre-use maximum and preserves payment when restoring the cost's own pool", async () => {
+  const f = fixture(), item = bonusAbility(f); item.effects.clear(); f.actor.system.mana.spent = 20; f.actor.system.mana.value = 105;
+  item.system.resourceCost = 10; item.system.resourceUnit = "points";
+  item.system.restoration = { target: "mana", amount: "10", unit: "percent" };
+  await useAbility(f.actor, item.id); // 20 spent + 10 cost - 12.5 restored
+  assert.equal(f.actor.system.mana.spent, 17.5); assert.equal(f.actor.system.mana.value, 107.5);
+  assert.match(f.calls.posts[0].data.content, /Restored 12 Mana/); assert.doesNotMatch(f.calls.posts[0].data.content, /12\.5/);
+  item.system.cooldown.remaining = 0; f.ChatMessage.create = async () => undefined;
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/);
+  assert.equal(f.actor.system.mana.spent, 17.5); assert.equal(f.actor.system.ap.value, 10); assert.equal(item.system.uses.spent, 1);
+});
+
+test("custom-resource restoration respects stable IDs, overflow and missing/hidden target validation before payment", async () => {
+  const f = fixture(), item = bonusAbility(f); item.effects.clear(); const id = "resource00000001";
+  f.actor.system.customResources = { [id]: { name: "Blood <test>", max: 100, spent: 0, value: 100, allowOverflow: true } };
+  item.system.restoration = { target: id, amount: "10", unit: "points" };
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.customResources[id].spent, -10); assert.equal(f.actor.system.customResources[id].value, 110);
+  assert.match(f.calls.posts[0].data.content, /Blood &lt;test&gt;/);
+  item.system.cooldown.remaining = 0; delete f.actor.system.customResources[id]; const ap = f.actor.system.ap.value;
+  await assert.rejects(useAbility(f.actor, item.id), /restoration resource is missing or hidden/); assert.equal(f.actor.system.ap.value, ap);
+});
+
+test("failed restorative ability posting rolls back the gain, both costs, activation, use and cooldown", async () => {
+  const f = fixture(), item = bonusAbility(f); item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+  f.ChatMessage.create = async () => undefined;
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/);
+  assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.effectsActive, false); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.cooldown.remaining, 0);
+});
+
+test("restoration dice honor all chat modes; insufficient AP and dice/render failures spend nothing", async () => {
+  for (const mode of ["public", "gm", "blind", "self"]) {
+    const f = fixture(mode), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+    await useAbility(f.actor, item.id);
+    assert.equal(f.calls.posts[0].options.messageMode, mode); assert.equal(f.calls.evaluations[0].allowInteractive, mode !== "blind");
+  }
+  for (const failure of ["AP", "evaluate", "render"]) {
+    const f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+    if (failure === "AP") f.actor.system.ap.value = 4;
+    else f.Roll.prototype[failure] = async () => { throw new Error(failure); };
+    await assert.rejects(useAbility(f.actor, item.id), failure === "AP" ? /Not enough AP/ : new RegExp(failure));
+    assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(f.calls.posts.length, 0);
+    if (failure === "AP") assert.equal(f.calls.evaluations.length, 0);
+  }
+});
+
+test("Health overflow is respected and zero-result restoration leaves every cost untouched", async () => {
+  let f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "10", unit: "points" };
+  f.actor.system.health = { damage: 0, max: 100, allowOverflow: true }; await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.health.damage, -10); assert.equal(f.actor.system.ap.value, 10);
+  f = fixture(); item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "0", unit: "points" };
+  f.Roll.prototype.evaluate = async () => ({ total: 0 }); await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(f.calls.posts.length, 0);
+  assert.match(f.calls.info[0], /No restoration was rolled/);
 });
 
 test("ability payments spend Command first on the actor's turn and explain pending AP on other turns", async () => {

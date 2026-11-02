@@ -28,6 +28,13 @@ test("resources use stable IDs, retain hidden mana/holy power, and preserve miss
   assert.deepEqual(character, before);
 });
 
+test("ability summaries include restoration without adding a payment, rebinding a missing pool or triggering passive gains", () => {
+  const source = item({ restoration: { target: id, amount: "2d6+2", unit: "points" } });
+  assert.match(abilityRecord(source, character).summary, /Restore 2d6\+2 Blood/);
+  assert.match(abilityRecord(source, {}).summary, /Missing or hidden resource/);
+  source.system.kind = "passive"; assert.doesNotMatch(abilityRecord(source, character).summary, /Restore/);
+});
+
 test("uses distinguish unlimited, zero caps and manual exceptions while retaining spent counts through maximum changes", () => {
   assert.deepEqual(abilityUses({}), { max: null, value: null, tracked: false });
   assert.deepEqual(abilityUses({ uses: { max: 0 } }), { max: 0, value: 0, tracked: true });

@@ -22,6 +22,11 @@
     <label>Resource cost<input type="number" name="system.resourceCost" value="{{system.resourceCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cost unit<select name="system.resourceUnit" {{#unless editable}}disabled{{/unless}}>{{#each units}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
   </div><p class="wb-item-brief">{{#if record.apAdjusted}}Current cost: {{record.ap}} AP{{else}}{{#unless hasActor}}AP discounts preview on a character.{{/unless}}{{/if}}</p></fieldset>
+  {{#unless passive}}<details class="wb-disclosure" data-sync="ability-restoration"><summary>Restoration</summary><div class="wb-equipment-fields">
+    <label>Restore<select name="system.restoration.target" {{#unless editable}}disabled{{/unless}}>{{#each restorationResources}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Amount or dice<input type="text" name="system.restoration.amount" value="{{system.restoration.amount}}" placeholder="20 or 2d6+2; blank for none" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Unit<select name="system.restoration.unit" {{#unless editable}}disabled{{/unless}}>{{#each restorationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+  </div><p class="wb-item-brief">Applied once on Use. Uses the resource's overflow setting; percentage amounts use its maximum. A pure restoration ability spends nothing if the pool is already full.</p></details>{{/unless}}
   <section class="wb-item-bonuses" aria-label="Item bonuses">
     <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button type="button" data-action="itemEffect" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
     {{#each itemEffects}}
@@ -47,7 +52,7 @@
     <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
   </details>
   <details class="wb-disclosure wb-help" data-sync="ability-help"><summary>Ability help</summary>
-    <p>Use pays recorded AP, resource costs and one tracked use, starts the cooldown and enables bonuses, even outside an encounter. End disables bonuses without refunding costs. Passive bonuses apply while owned. Forms replace the previous form; Base form ends your form for free. Active bonuses appear in Status. Cooldown recovery, durations and uses recovery remain manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
+    <p>Use pays recorded AP, resource costs and one tracked use, applies restoration, starts the cooldown and enables bonuses, even outside an encounter. End disables bonuses without undoing restoration or refunding costs. Passive bonuses apply while owned; restoration never runs automatically from a Passive ability. Forms replace the previous form; Base form ends your form for free. Active bonuses appear in Status. Cooldown recovery, durations and uses recovery remain manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
     <p>AP discounts use the selected current stat modifier, capped at half the base cost rounded down in either direction. Spells normally start at 11 AP before the INT/FTH discount. Resource costs can be points or a percentage of the resource maximum. Deleted custom resources remain marked Missing resource until you choose another.</p>
   </details>
 </div>

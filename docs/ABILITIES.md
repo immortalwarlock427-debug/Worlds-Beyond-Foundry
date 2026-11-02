@@ -12,6 +12,7 @@ The current website `js/abilities.js` was consulted for active/passive/reaction/
 
 ## Use
 
+- **Restoration:** non-passive abilities and forms can restore one selected pool on Use, alongside their bonuses. Choose a target, amount/dice and Points or % of maximum; leave the amount blank to disable it. Pure restoration at full spends nothing. End does not undo restoration. See [configuration, payment behavior and validation](ABILITY-RESTORATION.md).
 - On a character, choose **Abilities → Add ability**. Or create an **Ability** in Foundry's Items directory and drop it onto a character. These are native Item documents; each character owns its own copy and trackers.
 - The character list groups Active, Passive, Reaction, Forms and Other records. **Add form** opens a Form editor with a fixed type; **Add ability** offers Active, Passive, Reaction and Other. Form is absent from that ability dropdown. Existing stored kinds remain compatible. Both editors support bonuses and costs. Use replaces the previous form, and End or Base form ends it for free. Ordinary buffs remain independent. Clicking the brass name opens the editor. Collapsible Details shows description, duration, recovery notes and general notes. Text is escaped and preserves line breaks. Remove requires confirmation and removes only that embedded ability.
 - Set type/category, description and an optional icon path. The default is Foundry's built-in book SVG.
