@@ -14,6 +14,8 @@ The previous circular linework, tick marks and geometric inscriptions are replac
 
 Only the background streams rotate, once every 180 seconds. Inactive tabs pause the animation, and `prefers-reduced-motion: reduce` disables it. The static SVG is decoded as an image; its turbulence/filter parameters are never animated. Portrait framing, image selection, form switching, stats, favorite actions and stored data are unchanged.
 
+A stationary elliptical opacity mask fades the complete vortex composite to transparent at all four bounds. The moving streams, haze, shadows, dust and any future texture share that fade, so rotation and wider portrait panels do not expose a rectangular top/side cutoff. The portrait, stat medallions and toolbar remain outside the mask. The portrait image's separate, narrow edge feather also uses valid eight-digit alpha color syntax.
+
 An optional future texture has its own `.wb-vortex-texture` layer behind the portrait, already masked and blended. It defaults to no image. A trusted stylesheet can set `--wb-vortex-texture: url(...)` later without changing the markup; there is no new saved texture field or user upload control in this pass.
 
 ## Quick interactions
