@@ -37,12 +37,12 @@
         <button type="button" class="wb-overview-health {{#if overviewHealth.low}}is-low{{/if}} {{#if overviewHealth.overflow}}is-overflow{{/if}}" data-action="overviewEdit" data-field="healthCurrent" title="Edit Health">
           <span class="wb-overview-card-heading"><span class="wb-eyebrow">Health</span><i class="fa-regular fa-heart" aria-hidden="true"></i></span>
           <span class="wb-overview-number">{{overviewHealth.value}} <small>/ {{overviewHealth.max}}</small></span>
-          <span class="wb-overview-meter" role="progressbar" aria-label="Health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{overviewHealth.meter}}" aria-valuetext="{{overviewHealth.value}} / {{overviewHealth.max}} Health"><span style="width:{{overviewHealth.meter}}%"></span></span>
+          <span class="wb-overview-meter" role="progressbar" aria-label="Health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{overviewHealth.meter}}" aria-valuetext="{{overviewHealth.value}} / {{overviewHealth.max}} Health"><span style="width:{{overviewHealth.meter}}%;{{overviewHealth.barStyle}}"></span></span>
         </button>
-        <div class="wb-overview-economy">{{#each overviewEconomy}}<button type="button" data-action="overviewEdit" data-field="{{field}}" title="Edit {{label}}" class="wb-economy-tile {{#if overflow}}is-overflow{{/if}}"><span class="wb-eyebrow">{{label}}</span><strong>{{value}}<small>/{{max}}</small></strong><span class="wb-overview-meter wb-segmented-meter" style="--wb-segments:{{segments}}" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meter}}" aria-valuetext="{{value}} / {{max}}"><span style="width:{{meter}}%"></span></span>{{#if command}}<span class="wb-command-pool">Includes {{command}} Command</span>{{/if}}</button>{{/each}}</div>
+        <div class="wb-overview-economy">{{#each overviewEconomy}}<button type="button" data-action="overviewEdit" data-field="{{field}}" title="Edit {{label}}" class="wb-economy-tile {{#if overflow}}is-overflow{{/if}}"><span class="wb-eyebrow">{{label}}</span><strong>{{value}}<small>/{{max}}</small></strong><span class="wb-overview-meter wb-segmented-meter" style="--wb-segments:{{segments}}" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meter}}" aria-valuetext="{{value}} / {{max}}"><span style="width:{{meter}}%;{{barStyle}}"></span></span>{{#if command}}<span class="wb-command-pool">Includes {{command}} Command</span>{{/if}}</button>{{/each}}</div>
         <div class="wb-overview-pools">{{#each overviewPools}}<button type="button" class="wb-overview-pool {{#if overflow}}is-overflow{{/if}}" data-action="overviewEdit" data-field="resourceValues.{{key}}" title="Edit {{label}} · {{value}} / {{max}} points">
           <span class="wb-overview-pool-top"><span class="wb-eyebrow">{{label}}</span><strong>{{#if percentUnavailable}}—%{{else}}{{#if percent}}{{inputValue}}%{{else}}{{value}}<small>/{{max}}</small>{{/if}}{{/if}}</strong></span>
-          <span class="wb-overview-meter" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meterPercent}}" aria-valuetext="{{value}} points; maximum {{max}}"><span style="width:{{meterPercent}}%"></span></span>{{#if overflow}}<small class="wb-overflow-note">Above maximum</small>{{/if}}
+          <span class="wb-overview-meter" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meterPercent}}" aria-valuetext="{{value}} points; maximum {{max}}"><span style="width:{{meterPercent}}%;{{barStyle}}"></span></span>{{#if overflow}}<small class="wb-overflow-note">Above maximum</small>{{/if}}
         </button>{{/each}}</div>
         <div class="wb-overview-metrics">
           <button type="button" data-action="overviewEdit" title="Armor and evasion details"><span class="wb-eyebrow">Natural Evasion</span><strong>{{system.core.evasion}}</strong></button>
@@ -86,6 +86,13 @@
     <button type="button" data-action="longRest" data-tooltip="Restore all resources to maximum" {{#unless editable}}disabled{{/unless}}>Long rest</button>
   </div>
 
+  <details class="wb-disclosure wb-core-bar-colors" data-sync="core-bar-colors"><summary>Core bar colors</summary>
+    <div class="wb-core-color-grid">{{#each resources}}<fieldset><legend>{{label}}</legend><div class="wb-bar-color-fields">
+      <label>Color (hex)<input type="text" name="system.{{key}}.barColors.start" value="{{barColors.start}}" placeholder="Theme default" maxlength="7" pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" title="Hex color such as #6FD6FF or #ABC. Clear for the default." autocomplete="off" spellcheck="false" {{#unless @root.editable}}disabled{{/unless}}></label>
+      <label>Gradient end (optional)<input type="text" name="system.{{key}}.barColors.end" value="{{barColors.end}}" placeholder="Solid color" maxlength="7" pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" title="A second hex color blends left to right with the first." autocomplete="off" spellcheck="false" {{#unless @root.editable}}disabled{{/unless}}></label>
+    </div></fieldset>{{/each}}</div>
+  </details>
+
   <section class="wb-extra-resources" aria-label="Magic and custom resources">
     <div class="wb-section-heading">
       <h2 class="wb-section-title">Resources</h2>
@@ -108,7 +115,7 @@
           {{#if percentUnavailable}}<strong class="wb-percent-unavailable">—%</strong>
           {{else}}<input type="number" name="resourceValues.{{key}}" value="{{inputValue}}" step="1" aria-label="Current {{label}}{{#if percent}} percentage{{/if}}" {{#unless @root.editable}}disabled{{/unless}}><span class="wb-resource-max">{{#if percent}}%{{else}}/ {{max}}{{/if}}</span>{{/if}}
         </div>
-        <div class="wb-pool-meter" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meterPercent}}" aria-valuetext="{{value}} points; minimum {{min}}, maximum {{max}}"><span style="width: {{meterPercent}}%"></span></div>
+        <div class="wb-pool-meter" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meterPercent}}" aria-valuetext="{{value}} points; minimum {{min}}, maximum {{max}}"><span style="width: {{meterPercent}}%;{{barStyle}}"></span></div>
         <div class="wb-pool-actions">
           <input type="number" name="{{path}}.amount" value="{{amount}}" min="0" step="1" data-resource-amount aria-label="Points to spend or restore for {{label}}" data-tooltip="Points to spend or restore" {{#unless @root.editable}}disabled{{/unless}}>
           <button type="button" data-action="resource" data-operation="spend" {{#unless @root.editable}}disabled{{/unless}}>Spend</button>
@@ -130,6 +137,8 @@
             <label data-tooltip="Empty bar and spending floor. Clear to use 0; negative values are allowed.">Minimum override<input type="number" name="{{path}}.minOverride" value="{{minOverride}}" placeholder="Default 0" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
             <label class="wb-equipment-check" data-tooltip="Restore and consumables can raise Current above the normal maximum. Fill still returns to the maximum."><input type="checkbox" name="{{path}}.allowOverflow" {{#if allowOverflow}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> Allow over maximum</label>
             <label>Display<select name="{{path}}.display" {{#unless @root.editable}}disabled{{/unless}}>{{#each displayChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+            <label>Color (hex)<input type="text" name="{{path}}.barColors.start" value="{{barColors.start}}" placeholder="Theme default" maxlength="7" pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" title="Hex color such as #6FD6FF or #ABC. Clear for the default." autocomplete="off" spellcheck="false" {{#unless @root.editable}}disabled{{/unless}}></label>
+            <label>Gradient end (optional)<input type="text" name="{{path}}.barColors.end" value="{{barColors.end}}" placeholder="Solid color" maxlength="7" pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" title="A second hex color blends left to right with the first." autocomplete="off" spellcheck="false" {{#unless @root.editable}}disabled{{/unless}}></label>
             {{#if percentUnavailable}}<label data-tooltip="Percentage needs a maximum greater than minimum; edit points here">Current points<input type="number" name="resourceValues.{{key}}" value="{{value}}" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>{{/if}}
           </div>
         </details>

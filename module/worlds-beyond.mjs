@@ -21,6 +21,7 @@ import { returnToBase } from "./forms.mjs";
 import { registerFormLoadouts, setCharacterPortrait } from "./form-loadouts.mjs";
 import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
 import { favoriteSlots, configureFavorites, overviewFill, archiveAppearance, configureArchive } from "./overview.mjs";
+import { barColorContext, barColorFormUpdates } from "./bar-colors.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
 import { registerRecovery } from "./recovery-actions.mjs";
@@ -60,7 +61,11 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const number = (initial = 0, options = {}) => new NumberField({ required: true, nullable: false, initial, ...options });
     const override = () => number(null, { nullable: true });
+    const barColors = () => new SchemaField(Object.fromEntries(["start", "end"].map(key => [key,
+      new StringField({ required: true, nullable: false, blank: true, initial: "" })
+    ])));
     const pool = () => new SchemaField({
+      barColors: barColors(),
       value: override(),
       maxOverride: override(),
       max: number(0, { persisted: false })
@@ -74,6 +79,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       resetValue: override()
     });
     const resource = () => ({
+      barColors: barColors(),
       spent: number(), bonus: number(), amount: number(1, { min: 0 }),
       regen: number(0, { min: 0 }), autoRecover: new BooleanField({ initial: false }), refillOnRest: new BooleanField({ initial: true }),
       allowOverflow: new BooleanField({ initial: false }),
@@ -99,6 +105,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         `level${level}`, new SchemaField(Object.fromEntries(STATS.map(s => [s.key, number(0, { integer: true, min: 0, max: 2 })])))
       ]))),
       health: new SchemaField({
+        barColors: barColors(),
         damage: number(),
         allowOverflow: new BooleanField({ initial: false }),
         maxOverride: override(),
@@ -296,12 +303,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       baseFormName: appearance.baseFormName,
       overviewPortraitY: appearance.portraitY,
       overviewForm: activeForm?.name || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name || appearance.baseFormName,
-      overviewHealth: { value: wholeNumber(system.health.value), max: wholeNumber(system.health.max), meter: overviewFill(system.health), overflow: system.health.value > system.health.max, low: system.health.max > 0 && system.health.value / system.health.max <= 0.25 },
+      overviewHealth: { ...barColorContext(system.health), value: wholeNumber(system.health.value), max: wholeNumber(system.health.max), meter: overviewFill(system.health), overflow: system.health.value > system.health.max, low: system.health.max > 0 && system.health.value / system.health.max <= 0.25 },
       overviewEconomy: [
-        { label: "Action Points", value: apTotal(system), max: system.ap.max, field: "system.ap.value", icon: "bolt", command: system.command?.value ?? 0 },
-        { label: "Reactions", value: system.reactions.value, max: system.reactions.max, field: "system.reactions.value", icon: "shield-halved" },
-        { label: "Wonder", value: system.wonder.value, max: system.wonder.max, field: "system.wonder.value", icon: "sparkles" }
-      ].map(pool => ({ ...wholeDisplay(pool), meter: overviewFill(pool), segments: Number.isInteger(pool.max) && pool.max > 0 && pool.max <= 24 ? pool.max : 1, overflow: pool.value > pool.max })), overviewPools: overviewPools.map(pool => ({ ...pool, overflow: pool.value > pool.max })),
+        { label: "Action Points", value: apTotal(system), max: system.ap.max, barColors: system.ap.barColors, field: "system.ap.value", icon: "bolt", command: system.command?.value ?? 0 },
+        { label: "Reactions", value: system.reactions.value, max: system.reactions.max, barColors: system.reactions.barColors, field: "system.reactions.value", icon: "shield-halved" },
+        { label: "Wonder", value: system.wonder.value, max: system.wonder.max, barColors: system.wonder.barColors, field: "system.wonder.value", icon: "sparkles" }
+      ].map(pool => ({ ...wholeDisplay(pool), ...barColorContext(pool), meter: overviewFill(pool), segments: Number.isInteger(pool.max) && pool.max > 0 && pool.max <= 24 ? pool.max : 1, overflow: pool.value > pool.max })), overviewPools: overviewPools.map(pool => ({ ...pool, ...barColorContext(pool), overflow: pool.value > pool.max })),
       overviewInitiative: formatModifier(system.stats.wis.mod),
       overviewStatus: effects.statuses.slice(0, 3).map(row => row.name).join(" · "), overviewStatusCount: effects.statuses.length,
       currentFormName: activeForm?.name ?? "",
@@ -311,7 +318,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
       characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
       system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
-      resourcePools: resourceEntries(system).filter(pool => this._showAllFormResources || formShowsResource(activeForm, pool.key)).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
+      resourcePools: resourceEntries(system).filter(pool => this._showAllFormResources || formShowsResource(activeForm, pool.key)).map(pool => ({ ...pool, ...barColorContext(pool), sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
       activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
       abilityGroups: abilities,
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
@@ -326,7 +333,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false },
         { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
-      ]),
+      ]).map(pool => ({ ...pool, ...barColorContext(pool) })),
       defyFate: system.stats.fth.value >= 21,
       worn: wholeDisplay(system.equipment),
       equipment: wholeDisplay(equipment), equipmentGroups: wholeDisplay(groupEquipmentRows(equipment)),
@@ -352,6 +359,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const systemSource = this.actor.system.toObject?.();
     const shownAp = apTotal(this.actor.system);
     const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, ap: { ...this.actor.system.ap, value: shownAp }, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    barColorFormUpdates(this.actor.system, data);
     // The main AP field includes Command. Manual total corrections change own AP,
     // while the separate Command correction remains explicit and unchanged.
     if (data.system?.ap && Object.hasOwn(data.system.ap, "value")) {

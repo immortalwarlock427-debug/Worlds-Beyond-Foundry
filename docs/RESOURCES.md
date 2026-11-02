@@ -1,5 +1,15 @@
 # Character resource pools
 
+## Bar colors
+
+In **Details → Resources → a pool's Settings**, use **Color (hex)** for a solid bar and **Gradient end (optional)** for a second color blended left to right. This works on Mana, Holy power and every custom pool, including percentage and overflow displays. **Details → Core bar colors** offers the same fields for Health, AP, Reactions and Wonder on Character.
+
+Use `#6FD6FF`, `6FD6FF`, or a short code such as `#ABC`. Codes save as uppercase six-digit hex. One valid color in either field gives a solid fill; two give a gradient. Clear both to return to the existing theme. Inputs validate hex values and the renderer only emits validated colors. Custom fills take precedence over the theme's overflow tint; the actual total/percentage and Character's Above maximum label still communicate overflow. These settings style sheet bars; native map-token bars retain Foundry's own colors.
+
+Each resource gains additive `barColors.start` and `barColors.end` text fields, both initially blank. Existing field names/calculations remain intact. The two settings are shared across forms with the pool itself, survive hiding/reloading/rests and never change current, maximum, minimum, spent points or recovery. Unchanged color fields are omitted from full-sheet saves. The website's current `css/sheet.css` was rechecked; custom hex/gradient colors are the user's requested presentation extension.
+
+Validation: portable tests cover short/long codes, solid/gradient/default selection, malformed color rejection, safe rendering, clearing and unchanged/source preservation. Actual v14.365 schema and sheet-form adapters verify blank defaults, read-only fields, normalized color-only saves/reload and exact fractional Health/AP/Mana/custom balances. Ninety isolated browser states at 1120/1000/760/390/340 px cover owner/observer/empty sheets, expanded settings, prior tab behavior and narrow layouts; computed paints match on Character and Details, and native hex input validity is checked. Live autosave, multi-client updates and actual phones remain for user validation after restart/refresh.
+
 Optional **Allow over maximum** now permits gains above the normal cap, with resource-threshold form prompts. Manual current corrections remain unrestricted. Defaults retain capped restoration. See [consumables, overflow and form triggers](CONSUMABLES-TRIGGERS.md) for setup, data and validation.
 
 Version 0.22.0 includes optional mana/holy-power pools and stable custom resource trackers, with any-stat scaling, whole-number points/percentage display and clearable final minimum/maximum overrides. Internal fractional points are retained. The user confirmed the 0.20.0 base pools work. This remains sheet-first work; combat development is paused.
