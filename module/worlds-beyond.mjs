@@ -301,6 +301,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(this.actor, effects.savedAbilities),
       overviewRace: source.details?.race || "Add race",
       baseFormName: appearance.baseFormName,
+      canRenameBaseForm: this.isEditable && !effects.hasActiveForm,
       overviewPortraitY: appearance.portraitY,
       overviewForm: activeForm?.name || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name || appearance.baseFormName,
       overviewHealth: { ...barColorContext(system.health), value: wholeNumber(system.health.value), max: wholeNumber(system.health.max), meter: overviewFill(system.health), overflow: system.health.value > system.health.max, low: system.health.max > 0 && system.health.value / system.health.max <= 0.25 },

@@ -61,7 +61,7 @@ export async function configureArchive(actor) {
   if (!actor.isOwner || actor.type !== "character") return;
   const before = archiveAppearance(actor), form = activeLoadoutForm(actor);
   const content = `<div class="wb-archive-settings"><div class="wb-portrait-preview"><img src="${escape(actor.img)}" alt="Portrait framing preview" style="object-position:50% ${before.portraitY}%"></div>
-    <label>Base form name<input type="text" name="baseFormName" value="${escape(actor.system.appearance?.baseFormName ?? "")}" placeholder="Base Form"></label>
+    <label>Base form name<input type="text" name="baseFormName" value="${escape(actor.system.appearance?.baseFormName ?? "")}" placeholder="Base Form" autofocus></label>
     <label>Portrait framing · ${escape(form?.name || before.baseFormName)}<input type="range" name="portraitY" value="${before.portraitY}" min="0" max="100" step="1"></label>
     <div class="wb-framing-labels"><span>Top of image</span><output>${before.portraitY}%</output><span>Bottom of image</span></div>
     <p class="wb-item-brief">Framing is saved separately for Base and each form. Click the portrait to choose artwork; a form's image returns to Base on End.</p></div>`;
