@@ -80,7 +80,7 @@ export function resourceEntries(system) {
 
 export function resourceRestUpdates(system) {
   const updates = {};
-  for (const key of Object.keys(MAGIC_RESOURCES)) if (system[key]) updates[`system.${key}.spent`] = 0;
+  for (const key of Object.keys(MAGIC_RESOURCES)) if (system[key] && system[key].refillOnRest !== false) updates[`system.${key}.spent`] = 0;
   for (const [id, data] of Object.entries(system.customResources ?? {})) {
     if (customResourceId(id) && data.refillOnRest) updates[`system.customResources.${id}.spent`] = 0;
   }
