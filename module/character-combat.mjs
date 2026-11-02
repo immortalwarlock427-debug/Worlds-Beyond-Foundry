@@ -1,4 +1,5 @@
 import { queuedAction } from "./action-support.mjs";
+import { commandTurn } from "./ap.mjs";
 
 const pendingRefills = new WeakMap();
 
@@ -25,9 +26,12 @@ export async function refillTurnResources(combat, previous, current) {
       const ap = actor.system.ap.max;
       const reactions = actor.system.reactions.max;
       if (!Number.isFinite(ap) || !Number.isFinite(reactions)) throw new Error("Invalid resource maximum.");
-      const full = () => actor.system.ap.value === ap && actor.system.reactions.value === reactions;
+      const command = actor.system.command ? commandTurn(actor.system) : null;
+      const full = () => actor.system.ap.value === ap && actor.system.reactions.value === reactions
+        && (!command || (actor.system.command.value === command.value && actor.system.command.fresh === command.fresh));
       if (full()) return;
-      const updated = await actor.update({ "system.ap.value": ap, "system.reactions.value": reactions });
+      const updated = await actor.update({ "system.ap.value": ap, "system.reactions.value": reactions,
+        ...(command ? { "system.command.value": command.value, "system.command.fresh": command.fresh } : {}) });
       // Foundry may return undefined for an empty update diff, not only cancellation.
       if (!updated && !full()) throw new Error("Resource update was cancelled.");
     } catch (error) {

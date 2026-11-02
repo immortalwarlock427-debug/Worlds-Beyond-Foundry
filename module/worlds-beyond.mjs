@@ -10,7 +10,8 @@ import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
-import { AbilityData, AbilitySheet, createAbility } from "./abilities.mjs";
+import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
+import { promptCommand, receiveCommand, decorateCommand } from "./command.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { createEffect, toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
@@ -88,6 +89,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         max: number(0, { persisted: false })
       }),
       ap: pool(),
+      command: new SchemaField({ value: number(), fresh: new BooleanField({ initial: false }) }),
       reactions: pool(),
       wonder: pool(),
       mana: magicResource(),
@@ -192,6 +194,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       pickPortrait: CharacterSheet.#onPickPortrait,
       resource: CharacterSheet.#onResource,
       ability: CharacterSheet.#onAbility,
+      command: async function () { if (!this.isEditable) return; try { await promptCommand(this.actor); } catch (error) { ui.notifications.error(error.message); } },
       effect: CharacterSheet.#onEffect
     }
   };
@@ -199,13 +202,13 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static PARTS = {
     sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [
       '.wb-sheet-panel[data-tab="character"]', '.wb-sheet-panel[data-tab="equipment"]',
-      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="notes"]'
+      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="effects"]', '.wb-sheet-panel[data-tab="notes"]'
     ] }
   };
   static TABS = {
     sheet: { initial: "character", tabs: [
       { id: "character", label: "Character" }, { id: "equipment", label: "Equipment" },
-      { id: "abilities", label: "Abilities" }, { id: "notes", label: "Notes" }
+      { id: "abilities", label: "Abilities" }, { id: "effects", label: "Effects & Statuses" }, { id: "notes", label: "Notes" }
     ] }
   };
 
@@ -244,6 +247,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
+      commandPool: wholeDisplay(system.command ?? { value: 0, fresh: false }),
       characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
       characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
       system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
@@ -258,7 +262,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         || Object.values(source.bonuses ?? system.bonuses ?? {}).some(value => !!value),
       resources: wholeDisplay([
         { key: "health", label: "Health", inputName: "healthCurrent", ...system.health, sources: statSources("vit") },
-        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap },
+        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap, command: wholeNumber(system.command?.value ?? 0) },
         { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
         { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
       ]),
@@ -375,6 +379,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "toggle") return await toggleEquipment(this.actor, item?.id);
       if (operation === "use") return await useConsumable(this.actor, item?.id);
       if (operation === "attack") return await promptAttack(this.actor, item?.id);
+      if (operation === "opportunity") return await promptAttack(this.actor, item?.id, undefined, { opportunity: true });
       if (operation === "reload") return await reloadWeapon(this.actor, item?.id);
       if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
@@ -390,6 +395,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const item = this.actor.items.get(target.closest("[data-ability-id]")?.dataset.abilityId);
       if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");
       if (operation === "edit") return item.sheet.render({ force: true });
+      if (["use", "end"].includes(operation)) return await useAbility(this.actor, item.id, { end: operation === "end" });
       if (operation === "delete" && await foundry.applications.api.DialogV2.confirm({
         window: { title: "Remove ability" }, content: "<p>Remove this ability and its trackers from this character?</p>", rejectClose: false
       })) return await item.delete();
@@ -491,6 +497,10 @@ Hooks.on("renderChatMessageHTML", decorateConsumableMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackMessage);
 Hooks.on("renderChatMessageHTML", decorateAttackDefenses);
 Hooks.on("renderChatMessageHTML", decorateReactionMessage);
+Hooks.on("renderChatMessageHTML", decorateCommand);
+Hooks.on("createChatMessage", message => {
+  if (game.user.isActiveGM && message.getFlag(SYSTEM_ID, "command")) receiveCommand(message).catch(error => ui.notifications.warn(`Command is waiting in chat: ${error.message}`));
+});
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("createChatMessage", refreshWonderControls);
 

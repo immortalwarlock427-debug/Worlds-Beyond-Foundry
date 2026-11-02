@@ -9,6 +9,20 @@ export const effectFlags = effect => effect.flags?.[EFFECT_SCOPE] ?? {};
 export const managedEffect = effect => effectFlags(effect).managed === true;
 export const formEffect = effect => managedEffect(effect) && effectFlags(effect).kind === "form";
 export const effectChanges = effect => effect.system?.changes ?? [];
+export const boundItem = effect => managedEffect(effect) && effectFlags(effect).itemBound ? (effect.item ?? (effect.parent?.documentName === "Item" ? effect.parent : null)) : null;
+export function itemEffectState(effect) {
+  const item = boundItem(effect);
+  if (!item) return "";
+  if (item.type === "ability") return item.system?.kind === "passive" || item.system?.effectsActive ? "" : "Ability inactive";
+  return item.system?.equipped ? "" : "Not equipped";
+}
+export function itemEffectRows(item) {
+  return Array.from(item.effects?.values?.() ?? item.effects ?? []).map(effect => ({
+    id: effect.id, name: effect.name, disabled: !!effect.disabled,
+    state: effect.disabled ? "Off" : itemEffectState(effect) || "Enabled",
+    summary: effectChanges(effect).map(change => effectChangeText(change, item.actor?.system)).join(" · ") || "No bonuses"
+  }));
+}
 const effectList = effects => effects?.values ? Array.from(effects.values()) : Array.from(effects ?? []);
 export const customEffectResource = key => /^system\.customResources\.([A-Za-z0-9]{16})\.bonus$/.exec(key)?.[1] ?? null;
 
@@ -50,11 +64,11 @@ export function effectRows(actor) {
     const direct = effect.parent === actor;
     const active = effect.active ?? (!effect.disabled && !effect.isSuppressed);
     const form = direct && formEffect(effect);
-    const source = effectFlags(effect).source || effect.item?.name || (effect.origin ? effect.sourceName : "") || "";
+    const source = boundItem(effect)?.name || effectFlags(effect).source || effect.item?.name || (effect.origin ? effect.sourceName : "") || "";
     return {
       id: effect.id, uuid: effect.uuid, name: effect.name, img: effect.img || "icons/svg/aura.svg", form, active,
       managed: managedEffect(effect), canRemove: direct, disabled: !!effect.disabled,
-      state: effect.disabled ? "Off" : active ? "On" : "Suppressed / expired",
+      state: effect.disabled ? "Off" : itemEffectState(effect) || (active ? "On" : "Suppressed / expired"),
       source, summary: effectChanges(effect).map(change => effectChangeText(change, actor.system)).join(" · ") || "No bonuses",
       effect
     };

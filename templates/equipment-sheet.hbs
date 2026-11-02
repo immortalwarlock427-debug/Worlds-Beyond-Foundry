@@ -46,6 +46,20 @@
     <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
+{{#if equippable}}
+  <section class="wb-item-bonuses" aria-label="Item bonuses">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button type="button" data-action="itemEffect" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
+    {{#each itemEffects}}
+    <div class="wb-item-bonus-row" data-item-effect-id="{{id}}">
+      <button type="button" class="wb-bonus-name" data-action="itemEffect" data-operation="edit"><strong>{{name}}</strong><span>{{summary}}</span></button>
+      <span class="wb-item-brief">{{state}}</span>
+      <button type="button" data-action="itemEffect" data-operation="toggle" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-power-off" aria-hidden="true"></i></button>
+      <button type="button" data-action="itemEffect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+    </div>
+    {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
+  </section>
+<p class="wb-item-brief">Bonuses apply while this item is equipped.</p>
+{{/if}}
   <details class="wb-disclosure" data-sync="item-carrying"><summary>Carrying &amp; cost</summary><div class="wb-equipment-fields">
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>

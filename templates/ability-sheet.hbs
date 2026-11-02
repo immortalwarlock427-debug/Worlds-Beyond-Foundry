@@ -14,6 +14,18 @@
     <label>Resource cost<input type="number" name="system.resourceCost" value="{{system.resourceCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
     <label>Cost unit<select name="system.resourceUnit" {{#unless editable}}disabled{{/unless}}>{{#each units}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
   </div><p class="wb-item-brief">{{#if record.apAdjusted}}Current cost: {{record.ap}} AP{{else}}{{#unless hasActor}}AP discounts preview on a character.{{/unless}}{{/if}}</p></fieldset>
+  <section class="wb-item-bonuses" aria-label="Item bonuses">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button type="button" data-action="itemEffect" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
+    {{#each itemEffects}}
+    <div class="wb-item-bonus-row" data-item-effect-id="{{id}}">
+      <button type="button" class="wb-bonus-name" data-action="itemEffect" data-operation="edit"><strong>{{name}}</strong><span>{{summary}}</span></button>
+      <span class="wb-item-brief">{{state}}</span>
+      <button type="button" data-action="itemEffect" data-operation="toggle" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-power-off" aria-hidden="true"></i></button>
+      <button type="button" data-action="itemEffect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+    </div>
+    {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
+  </section>
+  {{#if passive}}<p class="wb-item-brief">Passive bonuses apply while this ability is on your character.</p>{{else}}<label class="wb-equipment-check" data-tooltip="Manual correction; Use on the character pays costs"><input type="checkbox" name="system.effectsActive" {{#if system.effectsActive}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Bonuses active (manual correction)</label>{{/if}}
   <details class="wb-disclosure" data-sync="ability-trackers"><summary>Uses &amp; cooldown</summary><div class="wb-equipment-fields">
     <label>Maximum uses<input type="number" name="system.uses.max" value="{{system.uses.max}}" placeholder="Unlimited" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
     {{#if record.uses.tracked}}<label>Uses left<input type="number" name="usesCurrent" value="{{record.uses.value}}" step="1" data-tooltip="Clear to restore to maximum" {{#unless editable}}disabled{{/unless}}></label>{{/if}}
@@ -27,7 +39,7 @@
     <label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label>
   </details>
   <details class="wb-disclosure wb-help" data-sync="ability-help"><summary>Ability help</summary>
-    <p>These are records and manual trackers. Editing them does not cast, spend AP/resources, count down cooldowns, apply effects or reset uses on rest. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
+    <p>Use on the character sheet pays recorded AP in combat, resource costs and one tracked use, starts the cooldown and enables bonuses. End disables bonuses without refunding costs. Passive bonuses apply while owned. Cooldown recovery, durations and uses recovery remain manual; no attack or damage roll is created here. Clear Maximum uses for unlimited uses; clear Uses left to restore its maximum.</p>
     <p>AP discounts use the selected current stat modifier, capped at half the base cost rounded down in either direction. Spells normally start at 11 AP before the INT/FTH discount. Resource costs can be points or a percentage of the resource maximum. Deleted custom resources remain marked Missing resource until you choose another.</p>
   </details>
 </div>

@@ -270,11 +270,11 @@ test("native tab context keeps the selected view across actor refreshes for owne
   for (const editable of [true, false]) {
     const sheet = new CharacterSheet(); sheet.actor = { items: [], system }; sheet.isEditable = editable;
     assert.equal((await sheet._prepareContext({})).tabs.character.active, true);
-    for (const tab of ["equipment", "abilities", "notes", "character"]) {
+    for (const tab of ["equipment", "abilities", "effects", "notes", "character"]) {
       sheet.tabGroups.sheet = tab;
       system.stats.str.effective = 21; system.stats.str.mod = 4;
       const context = await sheet._prepareContext({});
-      assert.deepEqual(Object.keys(context.tabs), ["character", "equipment", "abilities", "notes"]);
+      assert.deepEqual(Object.keys(context.tabs), ["character", "equipment", "abilities", "effects", "notes"]);
       assert.equal(Object.values(context.tabs).filter(row => row.active).length, 1);
       assert.equal(context.tabs[tab].active, true);
       assert.equal(context.groups[0].rows.find(row => row.key === "str").value, 21);

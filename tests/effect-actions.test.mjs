@@ -84,3 +84,28 @@ test("v14 change guards skip removed managed pools, preserve initial/final phase
   effect.flags = {}; delete effect.target.system.customResources[id];
   assert.equal(effect.shouldApplyChange(change, { phase: "initial" }), true);
 });
+
+test("item bonus creation stores native transferred effects on the Item, enabled but gated by equipment/ability state", async () => {
+  let data;
+  const item = { documentName: "Item", type: "weapon", uuid: "Item.sword", name: "Sword", isOwner: true, effects: new Map(),
+    async createEmbeddedDocuments(type, records) { assert.equal(type, "ActiveEffect"); data = records[0]; const effect = { ...data, id: "bonus", parent: item }; item.effects.set(effect.id, effect); return [effect]; }
+  };
+  const effect = await createEffect(item);
+  assert.equal(effect.parent, item); assert.equal(data.transfer, true); assert.equal(data.disabled, false);
+  assert.equal(data.flags["worlds-beyond"].itemBound, true); assert.equal(data.name, "Sword bonus");
+  const sheet = new EffectSheet({ document: effect }); await sheet._prepareContext({});
+  item.isOwner = false; await assert.rejects(sheet._processSubmitData(null, null, { name: "Changed" }), /permission/);
+});
+
+test("native effect suppression follows managed item state without disabling unrelated transferred effects", () => {
+  class Native { get isSuppressed() { return !!this.expired; } shouldApplyChange() { return true; } }
+  globalThis.CONFIG = { ActiveEffect: { documentClass: Native } }; registerEffectSupport();
+  const effect = new CONFIG.ActiveEffect.documentClass(); effect.flags = { "worlds-beyond": { managed: true, itemBound: true } };
+  effect.item = { type: "weapon", system: { equipped: false } }; assert.equal(effect.isSuppressed, true);
+  effect.item.system.equipped = true; assert.equal(effect.isSuppressed, false);
+  effect.item = { type: "ability", system: { kind: "active", effectsActive: false } }; assert.equal(effect.isSuppressed, true);
+  effect.item.system.effectsActive = true; assert.equal(effect.isSuppressed, false);
+  effect.item.system.kind = "passive"; effect.item.system.effectsActive = false; assert.equal(effect.isSuppressed, false);
+  effect.expired = true; assert.equal(effect.isSuppressed, true);
+  effect.expired = false; effect.flags = {}; effect.item = { type: "weapon", system: { equipped: false } }; assert.equal(effect.isSuppressed, false);
+});

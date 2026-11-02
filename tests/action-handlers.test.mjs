@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-globalThis.foundry = { abstract: { TypeDataModel: class {} }, applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class {} } } };
+globalThis.foundry = { abstract: { TypeDataModel: class {} }, applications: { api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class {} } } };
 const { rollAttack, reloadWeapon, rollDamage, decorateAttackMessage } = await import("../module/attack-actions.mjs");
 const { useConsumable, applyConsumableHealing, decorateConsumableMessage } = await import("../module/equipment.mjs");
+const { useAbility } = await import("../module/abilities.mjs");
 
 function fixture(mode = "public") {
   const calls = { evaluations: [], posts: [], flags: [], updates: [] };
@@ -57,6 +58,85 @@ test("attack/reload/consumable cards pass all four v14 visibility modes; blind d
     assert.deepEqual(f.calls.posts.map(post => post.options), Array(3).fill({ messageMode: mode }));
     assert.ok(f.calls.evaluations.every(options => options.allowInteractive === (mode !== "blind")));
   }
+});
+
+test("opportunity attacks spend one reaction and no AP or Command AP; failed posts refund reaction and shots", async () => {
+  const f = fixture(); f.actor.system.reactions = { value: 2 }; f.actor.system.ap.value = 0; f.actor.system.command = { value: 4 };
+  await rollAttack(f.actor, f.weapon, { opportunity: true, spendReaction: true, spendAp: true, mode: "ranged", stat: "dex" });
+  assert.equal(f.actor.system.reactions.value, 1); assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.command.value, 4); assert.equal(f.weapon.system.shots, 1);
+  assert.match(f.calls.posts[0].data.content, /1 reaction spent/);
+  f.ChatMessage.create = async () => { throw new Error("offline"); };
+  await assert.rejects(rollAttack(f.actor, f.weapon, { opportunity: true, spendReaction: true }), /offline/);
+  assert.equal(f.actor.system.reactions.value, 1); assert.equal(f.weapon.system.shots, 1);
+  f.actor.system.reactions.value = 0;
+  await assert.rejects(rollAttack(f.actor, f.weapon, { opportunity: true, spendReaction: true }), /No reactions/);
+});
+
+test("Flicker prevents an opportunity hit while ordinary attacks keep their normal result", async () => {
+  const f = fixture();
+  await rollAttack(f.actor, f.weapon, { opportunity: true }, { name: "Swift", evasion: 0, flicker: true });
+  assert.equal(f.calls.posts[0].data.flags["worlds-beyond"].attack.hands[0].hit, false);
+  assert.match(f.calls.posts[0].data.content, /Flicker/);
+  await rollAttack(f.actor, f.weapon, {}, { name: "Swift", evasion: 0, flicker: true });
+  assert.equal(f.calls.posts[1].data.flags["worlds-beyond"].attack.hands[0].hit, true);
+});
+
+test("potions use bounded DEX-adjusted AP, spend eligible Command first, and refund both AP and quantity on failure", async () => {
+  const f = fixture(); f.potion.system.kind = "potion"; f.actor.system.stats.dex.mod = 99;
+  f.actor.system.ap.value = 0; f.actor.system.command = { value: 3 }; game.combats[0].combatant = { actor: f.actor };
+  f.ChatMessage.create = async () => { throw new Error("offline"); };
+  await assert.rejects(useConsumable(f.actor, f.potion.id), /offline/);
+  assert.equal(f.actor.system.command.value, 3); assert.equal(f.actor.system.ap.value, 0); assert.equal(f.potion.system.quantity, 2);
+  f.ChatMessage.create = async (data, options) => { f.calls.posts.push({ data, options }); return data; };
+  await useConsumable(f.actor, f.potion.id);
+  assert.equal(f.actor.system.command.value, 0); assert.equal(f.potion.system.quantity, 1); assert.match(f.calls.posts[0].data.content, /3 AP spent/);
+  await assert.rejects(useConsumable(f.actor, f.potion.id), /Not enough AP/); assert.equal(f.potion.system.quantity, 1);
+  game.combats = []; await useConsumable(f.actor, f.potion.id); assert.equal(f.potion.system.quantity, 0);
+});
+
+function bonusAbility(f) {
+  const item = { id: "buff", name: "Dexterity buff", type: "ability", effects: new Map([["bonus", { id: "bonus", name: "DEX", system: { changes: [] } }]]),
+    system: { kind: "active", effectsActive: false, apCost: 5, apDiscountStat: "", resourceId: "mana", resourceCost: 10, resourceUnit: "percent", uses: { max: 2, spent: 0 }, cooldown: { rounds: 2, remaining: 0 } },
+    async update(data) { for (const [key, value] of Object.entries(data)) { const parts = key.split('.').slice(1); const last = parts.pop(); const parent = parts.reduce((object, field) => object[field], this.system); parent[last] = value; } return this; }
+  };
+  f.actor.items.set(item.id, item); f.actor.system.mana = { enabled: true, max: 125, value: 125, spent: 0, min: 0 };
+  return item;
+}
+test("ability Use pays exact percent resources and one use, enables bonuses; rapid Use does not double-pay, End is free", async () => {
+  const f = fixture(), item = bonusAbility(f);
+  await Promise.all([useAbility(f.actor, item.id), useAbility(f.actor, item.id)]);
+  assert.equal(f.actor.system.ap.value, 10); assert.equal(f.actor.system.mana.spent, 12.5);
+  assert.equal(item.system.uses.spent, 1); assert.equal(item.system.cooldown.remaining, 2); assert.equal(item.system.effectsActive, true);
+  assert.equal(f.calls.posts.length, 1);
+  await useAbility(f.actor, item.id, { end: true }); assert.equal(item.system.effectsActive, false); assert.equal(f.actor.system.ap.value, 10);
+  await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
+});
+test("failed ability posting refunds AP/resource/uses/cooldown/activation; missing pools and empty uses spend nothing", async () => {
+  const f = fixture(), item = bonusAbility(f); f.ChatMessage.create = async () => undefined;
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/);
+  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.uses.spent, 0); assert.equal(item.system.cooldown.remaining, 0); assert.equal(item.system.effectsActive, false);
+  item.system.resourceId = "resource00000001";
+  await assert.rejects(useAbility(f.actor, item.id), /no longer exists/); assert.equal(f.actor.system.ap.value, 15);
+  item.system.uses.spent = 2;
+  await assert.rejects(useAbility(f.actor, item.id), /No ability uses/); assert.equal(f.calls.posts.length, 0);
+});
+
+test("an ability without bonuses or trackers pays and posts without an empty native update", async () => {
+  const f = fixture(), item = bonusAbility(f);
+  item.effects.clear(); item.system.uses.max = null; item.system.cooldown.rounds = null;
+  item.update = async () => { throw new Error("Unexpected empty update"); };
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 10); assert.equal(f.actor.system.mana.spent, 12.5);
+  assert.equal(f.calls.posts.length, 1); assert.equal(item.system.effectsActive, false);
+});
+
+test("reaction abilities spend a reaction in combat and restore it if posting fails", async () => {
+  const f = fixture(), item = bonusAbility(f); item.system.kind = "reaction"; f.actor.system.reactions = { value: 1 };
+  f.ChatMessage.create = async () => undefined;
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/); assert.equal(f.actor.system.reactions.value, 1);
+  f.actor.system.reactions.value = 0;
+  await assert.rejects(useAbility(f.actor, item.id), /No reactions/); assert.equal(f.actor.system.ap.value, 15);
 });
 
 test("failed attack posting restores AP and loaded shots; cancelled spending posts nothing", async () => {

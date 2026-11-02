@@ -29,12 +29,14 @@
           <input type="number" name="{{resource.inputName}}" value="{{resource.value}}" step="1" aria-label="Current {{resource.label}}" {{#unless @root.editable}}disabled{{/unless}}>
           <span class="wb-resource-max" aria-label="Maximum {{resource.label}}">/ {{resource.max}}</span>
         </span>
+        {{#if resource.command}}<small class="wb-command-pool" data-tooltip="Extra AP from Command; spent first on your turn">+ {{resource.command}} Command AP</small>{{/if}}
       </label>
     </div>
     {{/each}}
   </section>
 
   <div class="wb-wonder-rest">
+    <button type="button" data-action="command" data-tooltip="Spend 5 own AP to give an ally up to 5 Command AP" {{#unless editable}}disabled{{/unless}}>Command</button>
     <button type="button" data-action="longRest" data-tooltip="Restore all resources to maximum" {{#unless editable}}disabled{{/unless}}>Long rest</button>
   </div>
 
@@ -147,6 +149,7 @@
       <label class="wb-override-label"><span>{{detail.label}}</span><input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="1" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
       {{/each}}
       <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Command AP correction</span><input type="number" name="system.command.value" value="{{commandPool.value}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input type="number" name="system.bonuses.movement" value="{{system.bonuses.movement}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
       <label class="wb-override-label"><span>Armor AGL penalty</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
@@ -194,6 +197,7 @@
           </div>
           <div class="wb-row-actions">
             {{#if canAttack}}<button type="button" class="wb-row-attack" data-action="equipment" data-operation="attack" aria-label="Attack with {{name}}" data-tooltip="Attack" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-crosshairs" aria-hidden="true"></i><span>Attack</span></button>{{/if}}
+            {{#if canAttack}}<button type="button" data-action="equipment" data-operation="opportunity" aria-label="Opportunity attack with {{name}}" data-tooltip="Opportunity attack · 1 reaction, no AP" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-bolt" aria-hidden="true"></i><span>React</span></button>{{/if}}
             {{#if canReload}}<button type="button" data-action="equipment" data-operation="reload" aria-label="Reload {{name}}" data-tooltip="Reload" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button>{{/if}}
             {{#if canUse}}<button type="button" class="wb-row-use" data-action="equipment" data-operation="use" aria-label="Use one {{name}}" data-tooltip="Use one" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-flask" aria-hidden="true"></i><span>Use</span></button>{{/if}}
             {{#if canEquip}}<button type="button" class="wb-equip-toggle" data-action="equipment" data-operation="toggle" aria-pressed="{{equipped}}" aria-label="{{#if equipped}}Unequip{{else}}Equip{{/if}} {{name}}" data-tooltip="{{#if equipped}}Equipped · click to unequip{{else}}Equip{{/if}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid {{equipIcon}}" aria-hidden="true"></i></button>{{/if}}
@@ -225,7 +229,7 @@
             <span class="wb-item-title">{{name}} {{#if category}}<span class="wb-quantity">{{category}}</span>{{/if}}</span>
             <span class="wb-item-brief">{{summary}}</span>
           </button></div>
-          <div class="wb-row-actions"><button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
+          <div class="wb-row-actions">{{#if canUse}}<button type="button" class="wb-row-use" data-action="ability" data-operation="{{#if effectsActive}}end{{else}}use{{/if}}" {{#unless @root.editable}}disabled{{/unless}}>{{#if effectsActive}}End{{else}}Use{{/if}}</button>{{/if}}<button type="button" class="wb-item-remove" data-action="ability" data-operation="delete" aria-label="Remove {{name}}" data-tooltip="Remove" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div>
           {{#if hasDetails}}<details class="wb-disclosure wb-ability-details" data-sync="ability-{{id}}"><summary>Details</summary>
             {{#if description}}<p class="wb-ability-text">{{description}}</p>{{/if}}
             {{#if duration}}<p>Duration: {{duration}}</p>{{/if}}{{#if recovery}}<p>Uses recover: {{recovery}}</p>{{/if}}
@@ -238,10 +242,12 @@
     {{else}}<p class="wb-empty">Add an ability or drop one from the Items directory.</p>{{/each}}
   </section>
 
+  </section>
+  <section class="tab wb-sheet-panel {{tabs.effects.cssClass}}" data-group="sheet" data-tab="effects" aria-label="Effects and statuses">
   <section class="wb-effects wb-equipment" aria-label="Effects and forms">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Effects &amp; forms</h2><div class="wb-equipment-actions">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Effects &amp; statuses</h2><div class="wb-equipment-actions">
       {{#if hasForms}}<button type="button" data-action="effect" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base</button>{{/if}}
-      <button type="button" data-action="effect" data-operation="create" data-kind="effect" {{#unless editable}}disabled{{/unless}}>Add effect</button>
+      <button type="button" data-action="effect" data-operation="create" data-kind="effect" {{#unless editable}}disabled{{/unless}}>Add status / effect</button>
       <button type="button" data-action="effect" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
     </div></div>
     {{#each effectGroups}}

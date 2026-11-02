@@ -16,8 +16,9 @@
   {{#if canRange}}<label class="wb-check-toggle"><input type="checkbox" name="longRange"> Past normal range (disadvantage)</label>{{/if}}
   {{#if mount}}<label class="wb-check-toggle"><input type="checkbox" name="mounted"> Mounted</label>
   <label><span>Feet moved in a straight line this turn</span><input type="number" name="mountedFeet" value="0" min="0" step="5"></label>{{/if}}
-  <label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>
-  {{#if target}}<p class="wb-dialog-meta">{{target.name}} · Evasion {{target.evasion}}</p>{{else}}<p class="wb-dialog-meta">No target · compare manually</p>{{/if}}
+  {{#if opportunity}}<label class="wb-check-toggle"><input type="checkbox" name="spendReaction" checked> Spend 1 reaction ({{reactions}} left)</label><p class="wb-dialog-meta">Opportunity attack · No AP · Confirm the trigger and reach at the table.</p>
+  {{else}}<label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>{{/if}}
+  {{#if target}}<p class="wb-dialog-meta">{{target.name}} · Evasion {{target.evasion}}</p>{{#if opportunity}}{{#if target.flicker}}<p class="wb-warning">Flicker: this target cannot be hit by opportunity attacks.</p>{{/if}}{{/if}}{{else}}<p class="wb-dialog-meta">No target · compare manually</p>{{/if}}
   <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
     <label><input type="radio" name="rollMode" value="normal" {{#unless reasons.length}}checked{{/unless}}> Normal</label>

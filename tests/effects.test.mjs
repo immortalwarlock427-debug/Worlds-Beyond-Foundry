@@ -1,10 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { effectTargets, effectContext, effectSnapshot, newEffectChange, effectFormUpdates, formUpdates } from "../module/effects-core.mjs";
+import { effectTargets, effectContext, effectSnapshot, newEffectChange, effectFormUpdates, formUpdates, itemEffectState } from "../module/effects-core.mjs";
 import { coreNumbers } from "../module/core-numbers.mjs";
 const id = "resource00000001";
 const flags = (kind = "effect", source = "") => ({ "worlds-beyond": { managed: true, kind, source } });
 const effect = (id, key, value, options = {}) => ({ id, uuid: `Actor.hero.ActiveEffect.${id}`, name: id, flags: flags(), system: { changes: [{ ...newEffectChange(), key, value }] }, disabled: false, ...options });
+
+test("managed item bonuses follow equipped state or passive/activated abilities without changing native unrelated effects", () => {
+  const item = { documentName: "Item", type: "weapon", name: "Sword", system: { equipped: false } };
+  const bound = effect("Sword bonus", "system.stats.str.value", 3, { parent: item, flags: { "worlds-beyond": { managed: true, itemBound: true } } });
+  assert.equal(itemEffectState(bound), "Not equipped"); item.system.equipped = true; assert.equal(itemEffectState(bound), "");
+  item.type = "ability"; item.system = { kind: "active", effectsActive: false }; assert.equal(itemEffectState(bound), "Ability inactive");
+  item.system.effectsActive = true; assert.equal(itemEffectState(bound), "");
+  item.system = { kind: "passive" }; assert.equal(itemEffectState(bound), "");
+  bound.flags = {}; item.type = "weapon"; item.system.equipped = false; assert.equal(itemEffectState(bound), "");
+});
 
 test("friendly targets cover current stats, movement/defenses and stable custom maximum IDs", () => {
   const system = { customResources: { [id]: { name: "Blood" } } };

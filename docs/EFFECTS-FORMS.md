@@ -1,6 +1,6 @@
 # Effects and forms
 
-Effects & forms on the character sheet uses native Foundry v14 Active Effects. Add an effect or form, name it, enter its source, and add signed bonuses. New records start off. Toggle independent effects freely; choosing a form disables the other forms. Base disables forms while keeping independent effects enabled. Names open the editor; removing a direct actor effect asks for confirmation. Transferred item effects are shown with their source and keep their native editor.
+The Effects & Statuses tab uses native Foundry v14 Active Effects. Add an effect or form, name it, enter its source, and add signed bonuses. New records start off. Toggle independent effects freely; choosing a form disables the other forms. Base disables forms while keeping independent effects enabled. Names open the editor; removing a direct actor effect asks for confirmation. Transferred item effects are shown with their source. Managed item bonuses use the same friendly editor; unrelated native effects keep their native editor.
 
 ## Sheet scope
 
@@ -11,7 +11,7 @@ Effects & forms on the character sheet uses native Foundry v14 Active Effects. A
 - Final maximum/core overrides still replace the calculated result. Clear an override to restore calculation with active bonuses. Extra defense/movement corrections edit stored bonuses independently of effects.
 - Movement adds its bonus after the normal AGL-based rate and cannot go below zero. A final movement override replaces that result.
 
-This step manages sheet bonus sets. Ability execution, payments, automatic durations/recovery, form portraits and gear loadouts remain later work. Native advanced changes remain editable in Foundry's editor and are preserved by the simple editor. Native item-transfer and suppression behavior is retained; equipping is not a new requirement for transferred effects.
+Equipment and ability bonuses now live on their source Items; ability Use pays recorded costs and enables bonuses. Automatic durations/recovery, form portraits, gear loadouts and attack/damage casting remain later work. See [item bonuses and actions](ITEM-BONUSES-ACTIONS.md). Native advanced changes remain editable in Foundry's editor and are preserved by the simple editor. Managed item bonuses are suppressed unless the item is equipped or its ability is passive/active. Unrelated native transferred effects retain their existing behavior.
 
 ## Data and compatibility
 

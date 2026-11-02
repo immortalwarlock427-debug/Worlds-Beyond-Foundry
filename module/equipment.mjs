@@ -3,6 +3,10 @@ import { shotsLeft } from "./attacks.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { itemIcon } from "./item-icons.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
+import { itemEffectRows } from "./effects-core.mjs";
+import { itemEffectAction } from "./effects.mjs";
+import { inCombat, payAp } from "./combat-support.mjs";
+import { actionApCost } from "./attacks.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
@@ -115,7 +119,8 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet", "wb-item-sheet"],
     position: { width: 480, height: "auto" },
-    window: { resizable: true }, form: { submitOnChange: true }
+    window: { resizable: true }, form: { submitOnChange: true },
+    actions: { itemEffect: async function (event, target) { try { return await itemEffectAction(this.item, target, this.isEditable); } catch (error) { ui.notifications.error(error.message); } } }
   };
 
   static PARTS = { sheet: { template: `systems/${SYSTEM_ID}/templates/equipment-sheet.hbs` } };
@@ -124,6 +129,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
     return Object.assign(await super._prepareContext(options), {
       item: this.item, system: wholeDisplay({ ...this.item.system }), editable: this.isEditable,
       artwork: itemIcon(this.item),
+      itemEffects: itemEffectRows(this.item),
       typeLabel: ITEM_TYPES[this.item.type],
       propertySummary: Object.entries(WEAPON_PROPERTIES).filter(([key]) => this.item.system.properties?.[key]).map(([, label]) => label).join(" · ") || "None",
       signatureSummary: Object.entries(SIGNATURE_PROPERTIES).filter(([key]) => this.item.system.signature?.[key]).map(([, label]) => label).join(" · ") || "None",
@@ -144,6 +150,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
 
   async _onRender(context, options) {
     await super._onRender(context, options);
+    for (const button of this.element?.querySelectorAll('[data-action="itemEffect"][data-operation="edit"]') ?? []) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
   }
 }
@@ -221,10 +228,12 @@ export async function useConsumable(actor, id) {
       roll = await new foundry.dice.Roll(formula).evaluate({ allowInteractive: messageMode !== "blind" });
     }
     const amount = roll ? Math.max(0, roll.total) : 0;
+    const apCost = item.system.kind === "potion" && inCombat(actor) ? actionApCost(5, actor.system.stats.dex.mod) : 0;
     const content = `<div class="worlds-beyond wb-consumable-card"><h3>${escapeHTML(item.name)}</h3>`
       + (item.system.description ? `<details class="wb-disclosure wb-help"><summary>Item description</summary><p>${escapeHTML(item.system.description)}</p></details>` : "")
-      + `<p>One used, ${wholeNumber(use.quantity)} left.${roll ? ` Healing: ${wholeNumber(amount)}.` : " Apply any effects at the table."}</p>`
+      + `<p>One used, ${wholeNumber(use.quantity)} left.${apCost ? ` ${apCost} AP spent.` : ""}${roll ? ` Healing: ${wholeNumber(amount)}.` : " Apply any effects at the table."}</p>`
       + (roll ? await roll.render() : "") + "</div>";
+    if (apCost) await payAp(actor, apCost, change);
     await change(() => item.update({ "system.quantity": use.quantity }), () => item.update({ "system.quantity": item.system.quantity + 1 }));
     return createActionMessage({
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),

@@ -6,6 +6,8 @@ import { queuedAction, reversibleAction, createActionMessage } from "./action-su
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
+import { inCombat, availableAp, payAp } from "./combat-support.mjs";
+export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
   attackOutcome, damagePlan, effectiveArmor, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
@@ -20,7 +22,8 @@ export function targetFromToken(token) {
   const actor = token?.actor;
   if (!actor) return null;
   return { name: token.name ?? actor.name, actorUuid: actor.uuid, tokenUuid: token.document?.uuid ?? null,
-    evasion: actor.system?.core?.evasion ?? null, armor: actor.system?.core?.armorRating ?? null };
+    evasion: actor.system?.core?.evasion ?? null, armor: actor.system?.core?.armorRating ?? null,
+    flicker: (actor.system?.stats?.agl?.effective ?? actor.system?.stats?.agl?.value ?? 0) >= 28 };
 }
 
 function currentTarget() {
@@ -28,9 +31,6 @@ function currentTarget() {
 }
 
 // Actions cost AP during a started combat the actor is part of. Outside combat they're free.
-export function inCombat(actor) {
-  return !!game.combats?.some(combat => combat.started && combat.combatants.some(c => c.actor?.uuid === actor.uuid));
-}
 
 function requireLoaded(weapon) {
   if (shotsLeft(weapon) === 0) throw new Error(`${weapon.name} needs reloading first.`);
@@ -46,7 +46,7 @@ function scores(actor) {
   return Object.fromEntries(STATS.map(({ key }) => [key, actor.system.stats[key].effective ?? actor.system.stats[key].value]));
 }
 
-export async function promptAttack(actor, itemId, target = currentTarget()) {
+export async function promptAttack(actor, itemId, target = currentTarget(), { opportunity = false } = {}) {
   const weapon = actor.items.get(itemId);
   if (!actor.isOwner || weapon?.type !== "weapon") return;
   requireWeaponReady(actor, weapon);
@@ -54,27 +54,27 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
   const choices = [...new Set(modes.flatMap(mode => attackStatChoices(weapon, mode)))];
   const best = choices.reduce((a, b) => actor.system.stats[b].mod > actor.system.stats[a].mod ? b : a);
   const reasons = attackDisadvantages({ weapon, scores: scores(actor), heavyArmor: !!actor.system.equipment?.heavyDisadvantage });
-  const partners = dualWieldPartners(weapon, actor.items);
+  const partners = opportunity ? [] : dualWieldPartners(weapon, actor.items);
   const shots = shotsLeft(weapon);
   const content = await foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/attack-dialog.hbs`, wholeDisplay({
-    reasons, target, apLeft: actor.system.ap.value, spendAp: inCombat(actor),
+    reasons, target, apLeft: availableAp(actor), spendAp: !opportunity && inCombat(actor), opportunity, reactions: actor.system.reactions?.value ?? 0,
     partners: partners.map(item => ({ id: item.id, name: item.name })),
     shots, loading: weapon.system.loading,
     modes: modes.map(value => ({ value, label: MODE_LABELS[value] })),
     stats: choices.map(key => {
       const mod = actor.system.stats[key].mod;
-      return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)}) · ${attackApCost(mod)} AP` };
+      return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)})${opportunity ? "" : ` · ${attackApCost(mod)} AP`}` };
     }),
     versatile: !!weapon.system.properties.versatile, damage: weapon.system.damage, versatileDamage: weapon.system.versatileDamage,
     canRange: modes.some(mode => mode !== "melee"), mount: !!weapon.system.properties.mount
   }));
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
-    window: { title: `${weapon.name} attack` }, content, ok: { label: "Attack" }, rejectClose: false,
+    window: { title: `${weapon.name} ${opportunity ? "opportunity attack" : "attack"}` }, content, ok: { label: "Attack" }, rejectClose: false,
     render: (event, dialog) => { bindAttackDialog(dialog.element, actor, weapon); fitDialogDisclosures(dialog); }
   });
   if (!form) return;
-  return rollAttack(actor, weapon, { ...form, mode: form.mode ?? modes[0], stat: form.stat ?? best }, target);
+  return rollAttack(actor, weapon, { ...form, opportunity, mode: form.mode ?? modes[0], stat: form.stat ?? best }, target);
 }
 
 // Keep the listed disadvantage reasons and the pre-selected dice in step with the
@@ -110,7 +110,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
   return queuedAction(actor.uuid, () => reversibleAction(async change => {
     const mode = options.mode ?? "melee";
     requireWeaponReady(actor, weapon, options.grip);
-    const offWeapon = options.hands ? actor.items.get(options.hands) : null;
+    const offWeapon = !options.opportunity && options.hands ? actor.items.get(options.hands) : null;
     const weapons = [weapon, ...(offWeapon && dualWieldPartners(weapon, actor.items).includes(offWeapon) ? [offWeapon] : [])];
     const hands = weapons.map((item, index) => {
       const allowed = attackStatChoices(item, mode);
@@ -120,9 +120,10 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
     for (const { item } of hands) requireLoaded(item);
     // Attacking with both weapons costs the same AP as one attack.
     const cost = attackApCost(hands[0].mod);
-    if (options.spendAp && !(actor.system.ap.value >= cost)) {
-      throw new Error(`Not enough AP: this attack costs ${cost} and you have ${actor.system.ap.value}. Untick Spend AP to roll anyway.`);
+    if (!options.opportunity && options.spendAp && !(availableAp(actor) >= cost)) {
+      throw new Error(`Not enough AP: this attack costs ${cost} and you have ${availableAp(actor)}. Untick Spend AP to roll anyway.`);
     }
+    if (options.opportunity && options.spendReaction && !(actor.system.reactions.value >= 1)) throw new Error("No reactions left. Untick spending for a practice roll.");
     const rollMode = options.rollMode ?? "normal";
     const sections = [];
     const rolls = [];
@@ -135,14 +136,16 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       const natural = roll.dice[0]?.total;
       Object.assign(hand, { total: roll.total, natural });
       Object.assign(hand, attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: critThreshold(hand.item) }));
+      if (options.opportunity && target?.flicker) Object.assign(hand, { hit: false, critical: false });
       const breakdown = describeD20Roll(roll, rollMode);
-      const result = hand.hit === null
+      const result = options.opportunity && target?.flicker ? `${escapeHTML(target.name)} cannot be hit by opportunity attacks (Flicker).` : hand.hit === null
         ? (hand.critical === "if it hits" ? `Natural ${natural}: a critical hit if it hits.` : "Compare with the target's Natural Evasion.")
         : hand.hit ? (hand.critical ? `Critical hit on ${escapeHTML(target.name)}!` : `Hits ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`)
           : `Misses ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`;
       const lines = [
         `${hands.length > 1 ? (hand.hand === "main" ? "Main hand · " : "Off hand · ") : ""}${MODE_LABELS[mode]} attack with ${statLabel(hand.stat)} (${formatModifier(hand.mod)}) · ${checkMode(rollMode).label}`,
         result,
+        options.opportunity && target?.flicker ? "Flicker (AGL 28): this target cannot be hit by opportunity attacks. Resolve any exception manually." : "",
         reasons.length ? `Disadvantage applies: ${reasons.join("; ")}.${rollMode === "disadvantage" ? "" : " This roll did not use it."}` : ""
       ].filter(Boolean);
       sections.push(`<section class="wb-attack-hand" data-hand="${sections.length}">${hands.length > 1 ? `<h4>${escapeHTML(hand.item.name)}</h4>` : ""}`
@@ -150,9 +153,10 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         + (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "") + "</section>");
       rolls.push(roll);
     }
-    if (options.spendAp) await change(
-      () => actor.update({ "system.ap.value": actor.system.ap.value - cost }),
-      () => actor.update({ "system.ap.value": actor.system.ap.value + cost })
+    if (!options.opportunity && options.spendAp) await payAp(actor, cost, change);
+    if (options.opportunity && options.spendReaction) await change(
+      () => actor.update({ "system.reactions.value": actor.system.reactions.value - 1 }),
+      () => actor.update({ "system.reactions.value": actor.system.reactions.value + 1 })
     );
     for (const { item } of hands) {
       const shots = shotsLeft(item);
@@ -162,7 +166,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       );
     }
     const footer = [
-      options.spendAp ? `${cost} AP spent.` : "",
+      options.opportunity ? `Opportunity attack · No AP${options.spendReaction ? " · 1 reaction spent" : " · Practice"}.` : options.spendAp ? `${cost} AP spent.` : "",
       ...hands.filter(({ item }) => shotsLeft(item) !== null).map(({ item }) => `${escapeHTML(item.name)}: ${shotsLeft(item)} of ${item.system.loading} shots left.`)
     ].filter(Boolean);
     const content = `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(hands.map(({ item }) => item.name).join(" + "))}</h3>`
@@ -172,7 +176,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
       content, rolls,
       flags: { [SYSTEM_ID]: { attack: {
-        actorUuid: actor.uuid, attackerName: actor.name, target, overwhelmingForce: scores(actor).str >= 28,
+        actorUuid: actor.uuid, attackerName: actor.name, target, opportunity: !!options.opportunity, overwhelmingForce: scores(actor).str >= 28,
         mounted: !!options.mounted, mountedFeet: Number(options.mountedFeet) || 0,
         hands: hands.map(({ item, hand, stat, mod, hit, critical, total, natural }) => ({
           hand, itemId: item.id, name: item.name, stat, mod, grip: hand === "main" ? options.grip ?? "one" : "one",
@@ -190,11 +194,7 @@ export async function reloadWeapon(actor, itemId) {
     if (!actor.isOwner || weapon?.type !== "weapon" || !(weapon.system.loading > 0)) return;
     const combat = inCombat(actor);
     const cost = actionApCost(RELOAD_AP, actor.system.stats.dex.mod);
-    if (combat && !(actor.system.ap.value >= cost)) throw new Error(`Not enough AP to reload: it costs ${cost} and you have ${actor.system.ap.value}.`);
-    if (combat) await change(
-      () => actor.update({ "system.ap.value": actor.system.ap.value - cost }),
-      () => actor.update({ "system.ap.value": actor.system.ap.value + cost })
-    );
+    if (combat) await payAp(actor, cost, change);
     const previous = weapon.system.shots;
     await change(() => weapon.update({ "system.shots": null }), () => weapon.update({ "system.shots": previous }));
     return createActionMessage({

@@ -9,7 +9,7 @@ class SchemaField { constructor(fields) { this.fields = fields; } }
 globalThis.foundry = {
   data: { fields: { StringField, NumberField, BooleanField, SchemaField } },
   abstract: { TypeDataModel: class {} },
-  applications: { api: { HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class { async _prepareContext() { return {}; } } } }
+  applications: { api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class { async _prepareContext() { return {}; } } } }
 };
 const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
 

@@ -1,4 +1,4 @@
-// Sheet records only. Casting, payments, timers and effects are deferred.
+// Foundry-free ability records and cost previews. Timers remain manual.
 import { STATS } from "./stats.mjs";
 import { actionApCost } from "./attacks.mjs";
 import { numberOr } from "./core-numbers.mjs";
@@ -37,7 +37,7 @@ export function abilityRecord(item, character) {
   if (remaining > 0) parts.push(`${wholeNumber(remaining)} rounds left`);
   else if (cooldown > 0) parts.push(`Ready · ${wholeNumber(cooldown)}-round cooldown`);
   return {
-    id: item.id, name: item.name, img: !item.img || item.img === "icons/svg/item-bag.svg" ? ABILITY_ICON : item.img,
+    id: item.id, name: item.name, effectsActive: !!system.effectsActive, canUse: system.kind !== "passive", img: !item.img || item.img === "icons/svg/item-bag.svg" ? ABILITY_ICON : item.img,
     kind: system.kind || "active", category: system.category || "", description: system.description || "", notes: system.notes || "",
     duration: system.duration || "", recovery: system.uses?.recovery || "", hasDetails: !!(system.description || system.notes || system.duration || system.uses?.recovery),
     summary: parts.join(" · ") || ABILITY_TYPES[system.kind] || "Ability",
