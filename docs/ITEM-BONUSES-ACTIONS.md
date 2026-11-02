@@ -39,6 +39,8 @@ Deferred. The separate React button and opportunity attack mode are removed. Whe
 
 **Character → Command** selects an ally. It costs a fixed **5 own AP**, without CHA discount and without paying from another Command grant. It offers **2 + CHA modifier**, capped at **5** (no positive grant below zero). The ally receives the higher of their remaining grant and the new amount, never their sum.
 
+Select **Character** for the Actors sidebar sheet or **Token copy** for its separate unlinked encounter actor. Sidebar characters appear first; token copies include scene/ID context. The card and notice identify the recipient. A lower offer retaining an older higher balance says so explicitly. See [recipient identity and regression checks](COMMAND-DELIVERY.md).
+
 The main Action Points number includes remaining Command AP, with a green **Includes N Command AP** breakdown. It is not added to the normal maximum, and receiving it never changes or refills stored own AP. Normal attacks, reloads, potions and ability AP payments use it first on the ally's turn. Pending grants are labeled for the ally's turn; off-turn payments cannot spend that portion and explain why when insufficient own AP remains. Manually editing the displayed total corrects own AP while preserving Command; unchanged saves preserve exact hidden fractions. Adjust values includes a separate Command AP correction. The native AP token bar remains the ordinary AP pool.
 
 The grant is ready for the current turn if received then, otherwise the next incoming turn. A pending grant survives that turn's normal refill; it clears at the following turn start. Long rest clears it. This adapts the website's separate grant/fresh-turn tracking to Foundry's combat hook rather than allowing the refill to erase it.

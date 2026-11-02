@@ -527,6 +527,7 @@
 .worlds-beyond.wb-command-card h3,
 .worlds-beyond.wb-ability-card h3,
 .worlds-beyond.wb-consumable-card h3 { font: 18px "Marcellus SC", serif; color: #D6A85C; border: 0; }
+.worlds-beyond.wb-roll-dialog .wb-command-options select { width: 100%; min-width: 0; max-width: 100%; }
 .worlds-beyond.wb-roll-dialog .form-footer button { background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
 .worlds-beyond.wb-roll-dialog .form-footer button:hover,
 .worlds-beyond .wb-defense-actions > button:hover,
