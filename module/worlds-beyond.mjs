@@ -20,6 +20,7 @@ import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
 import { registerFormLoadouts, setCharacterPortrait } from "./form-loadouts.mjs";
 import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
+import { favoriteSlots, configureFavorites, overviewFill } from "./overview.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
 import { registerRecovery } from "./recovery-actions.mjs";
@@ -41,7 +42,7 @@ import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls }
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
-const { NumberField, SchemaField, StringField, BooleanField, TypedObjectField } = foundry.data.fields;
+const { NumberField, SchemaField, StringField, BooleanField, TypedObjectField, ArrayField } = foundry.data.fields;
 const CHARACTER_DETAILS = [
   { key: "class", label: "Class", placeholder: "Class or path" },
   { key: "race", label: "Race", placeholder: "Race or ancestry" },
@@ -84,6 +85,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       ...resource(), enabled: new BooleanField({ initial: false })
     });
     return {
+      favorites: new ArrayField(new StringField({ required: true, nullable: false, blank: true, initial: "" }), { initial: [] }),
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
       details: new SchemaField(Object.fromEntries(CHARACTER_DETAILS.map(({ key }) => [key,
         new StringField({ required: true, nullable: false, blank: true, trim: false, initial: "" })
@@ -189,7 +191,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
 export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet", "wb-character-sheet"],
-    position: { width: 720, height: 780 },
+    position: { width: 880, height: 900 },
     window: { resizable: true },
     form: { submitOnChange: true },
     actions: {
@@ -202,6 +204,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait,
+      viewTab: function (event, target) { this.changeTab(target.dataset.tab, "sheet"); },
+      favorites: async function () { if (!this.isEditable) return; try { await configureFavorites(this.actor); } catch (error) { ui.notifications.error(error.message); } },
+      overviewEdit: function (event, target) {
+        this.changeTab("details", "sheet");
+        const field = target.dataset.field;
+        if (!field) return;
+        const input = Array.from(this.element.querySelectorAll("[name]")).find(input => input.name === field);
+        input?.scrollIntoView({ block: "center" });
+        if (this.isEditable) input?.focus();
+      },
       formView: async function (event, target) {
         const key = target.dataset.view === "resources" ? "_showAllFormResources" : "_showAllFormAbilities";
         this[key] = !this[key]; return this.render({ parts: ["sheet"] });
@@ -217,12 +229,13 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static PARTS = {
     sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [
       '.wb-sheet-panel[data-tab="character"]', '.wb-sheet-panel[data-tab="equipment"]',
+      '.wb-sheet-panel[data-tab="details"]',
       '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="status"]', '.wb-sheet-panel[data-tab="notes"]'
     ] }
   };
   static TABS = {
     sheet: { initial: "character", tabs: [
-      { id: "character", label: "Character" }, { id: "equipment", label: "Equipment" },
+      { id: "character", label: "Character" }, { id: "details", label: "Details" }, { id: "equipment", label: "Equipment" },
       { id: "abilities", label: "Abilities" }, { id: "status", label: "Status" }, { id: "notes", label: "Notes" }
     ] }
   };
@@ -269,8 +282,20 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       };
     });
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
+    const overviewPools = resourceEntries(system).filter(pool => formShowsResource(activeForm, pool.key));
     return Object.assign(context, {
       actor: this.actor,
+      overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(this.actor, effects.savedAbilities),
+      overviewRace: source.details?.race || "Add race",
+      overviewForm: activeForm?.name || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name || "Base form",
+      overviewHealth: { value: wholeNumber(system.health.value), max: wholeNumber(system.health.max), meter: overviewFill(system.health), overflow: system.health.value > system.health.max, low: system.health.max > 0 && system.health.value / system.health.max <= 0.25 },
+      overviewEconomy: wholeDisplay([
+        { label: "Action Points", value: apTotal(system), max: system.ap.max, field: "system.ap.value", icon: "bolt", command: system.command?.value ?? 0 },
+        { label: "Reactions", value: system.reactions.value, max: system.reactions.max, field: "system.reactions.value", icon: "shield-halved" },
+        { label: "Wonder", value: system.wonder.value, max: system.wonder.max, field: "system.wonder.value", icon: "sparkles" }
+      ]), overviewPools: overviewPools.map(pool => ({ ...pool, overflow: pool.value > pool.max })),
+      overviewInitiative: formatModifier(system.stats.wis.mod),
+      overviewStatus: effects.statuses.slice(0, 3).map(row => row.name).join(" · "), overviewStatusCount: effects.statuses.length,
       currentFormName: activeForm?.name ?? "",
       hasHiddenFormAbilities: hiddenAbilities, showAllFormAbilities: !!this._showAllFormAbilities,
       hasHiddenFormResources: resourceEntries(system).some(pool => !formShowsResource(activeForm, pool.key)), showAllFormResources: !!this._showAllFormResources,
@@ -363,7 +388,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await super._onRender(context, options);
     // Native read-only actor sheets disable form buttons; rule references are
     // still viewable and never submit a document update.
-    for (const button of this.element.querySelectorAll('[data-action="milestones"], [data-action="formView"], .wb-sheet-tabs [data-action="tab"]')) button.disabled = false;
+    for (const button of this.element.querySelectorAll('[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name')) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }

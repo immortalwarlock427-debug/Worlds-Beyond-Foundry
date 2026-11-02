@@ -284,7 +284,7 @@ test("read-only actor sheets keep milestone reference buttons usable without ena
   const sheet = new CharacterSheet(); sheet.isEditable = false;
   const reference = { disabled: true }, correction = { disabled: true };
   sheet.element = { querySelectorAll: selector => {
-    assert.equal(selector, '[data-action="milestones"], [data-action="formView"], .wb-sheet-tabs [data-action="tab"]'); return [reference];
+    assert.equal(selector, '[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name'); return [reference];
   } };
   await sheet._onRender({}, {});
   assert.equal(reference.disabled, false); assert.equal(correction.disabled, true);
@@ -310,11 +310,11 @@ test("native tab context keeps the selected view across actor refreshes for owne
   for (const editable of [true, false]) {
     const sheet = new CharacterSheet(); sheet.actor = { items: [], system }; sheet.isEditable = editable;
     assert.equal((await sheet._prepareContext({})).tabs.character.active, true);
-    for (const tab of ["equipment", "abilities", "status", "notes", "character"]) {
+    for (const tab of ["details", "equipment", "abilities", "status", "notes", "character"]) {
       sheet.tabGroups.sheet = tab;
       system.stats.str.effective = 21; system.stats.str.mod = 4;
       const context = await sheet._prepareContext({});
-      assert.deepEqual(Object.keys(context.tabs), ["character", "equipment", "abilities", "status", "notes"]);
+      assert.deepEqual(Object.keys(context.tabs), ["character", "details", "equipment", "abilities", "status", "notes"]);
       assert.equal(Object.values(context.tabs).filter(row => row.active).length, 1);
       assert.equal(context.tabs[tab].active, true);
       assert.equal(context.groups[0].rows.find(row => row.key === "str").value, 21);
