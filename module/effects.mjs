@@ -1,6 +1,7 @@
 import { EFFECT_SCOPE, effectFlags, managedEffect, formEffect, effectChanges, effectTargets, simpleEffectChange, newEffectChange, effectChangeText, effectSnapshot, effectFormUpdates, effectRows, customEffectResource, itemEffectState, boundItem } from "./effects-core.mjs";
 import { queuedAction, reversibleAction } from "./action-support.mjs";
 import { endOtherForms } from "./forms.mjs";
+import { syncFormLoadout } from "./form-loadouts.mjs";
 import { wholeNumber, bindWholeNumbers } from "./number-display.mjs";
 
 const editors = new WeakMap();
@@ -94,6 +95,7 @@ export async function toggleEffect(actor, uuid, { active } = {}) {
   return queuedAction(actor.uuid, () => reversibleAction(async change => {
     if (uuid === "base") {
       await endOtherForms(actor, change);
+      await syncFormLoadout(actor, change);
       return;
     }
     const effect = effectRows(actor).find(row => row.uuid === uuid)?.effect;
@@ -110,6 +112,7 @@ export async function toggleEffect(actor, uuid, { active } = {}) {
     if (!disabled && effect.parent === actor && formEffect(effect)) await endOtherForms(actor, change, { effectId: effect.id });
     const previous = effect.disabled;
     await change(() => effect.update({ disabled }), () => effect.update({ disabled: previous }));
+    if (formEffect(effect)) await syncFormLoadout(actor, change);
   }));
 }
 

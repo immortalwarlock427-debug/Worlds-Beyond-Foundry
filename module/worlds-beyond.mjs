@@ -18,6 +18,8 @@ import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
+import { registerFormLoadouts, setCharacterPortrait } from "./form-loadouts.mjs";
+import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
 import { registerRecovery } from "./recovery-actions.mjs";
@@ -200,6 +202,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait,
+      formView: async function (event, target) {
+        const key = target.dataset.view === "resources" ? "_showAllFormResources" : "_showAllFormAbilities";
+        this[key] = !this[key]; return this.render({ parts: ["sheet"] });
+      },
       resource: CharacterSheet.#onResource,
       ability: CharacterSheet.#onAbility,
       command: async function () { if (!this.isEditable) return; try { await promptCommand(this.actor); } catch (error) { ui.notifications.error(error.message); } },
@@ -226,7 +232,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const system = this.actor.system;
     const source = system.toObject();
     const effects = effectContext(this.actor);
-    const abilities = abilityGroups(this.actor.items ?? [], system);
+    const activeForm = activeLoadoutForm(this.actor);
+    const allAbilities = Array.from(this.actor.items?.values?.() ?? this.actor.items ?? []);
+    const hiddenAbilities = allAbilities.some(item => item.type === "ability" && !formShowsAbility(activeForm, item));
+    const abilities = abilityGroups(this._showAllFormAbilities ? allAbilities : allAbilities.filter(item => item.type !== "ability" || formShowsAbility(activeForm, item)), system);
     for (const row of effects.savedAbilities) {
       let group = abilities.find(group => group.rows[0]?.kind === row.kind);
       if (!group) { group = { label: row.form ? "Forms" : "Active", rows: [] }; abilities.push(group); }
@@ -262,11 +271,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
     return Object.assign(context, {
       actor: this.actor,
+      currentFormName: activeForm?.name ?? "",
+      hasHiddenFormAbilities: hiddenAbilities, showAllFormAbilities: !!this._showAllFormAbilities,
+      hasHiddenFormResources: resourceEntries(system).some(pool => !formShowsResource(activeForm, pool.key)), showAllFormResources: !!this._showAllFormResources,
       commandPool: wholeDisplay(system.command ?? { value: 0, fresh: false }),
       characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
       characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
       system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
-      resourcePools: resourceEntries(system).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
+      resourcePools: resourceEntries(system).filter(pool => this._showAllFormResources || formShowsResource(activeForm, pool.key)).map(pool => ({ ...pool, sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
       activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
       abilityGroups: abilities,
       manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
@@ -351,7 +363,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await super._onRender(context, options);
     // Native read-only actor sheets disable form buttons; rule references are
     // still viewable and never submit a document update.
-    for (const button of this.element.querySelectorAll('[data-action="milestones"], .wb-sheet-tabs [data-action="tab"]')) button.disabled = false;
+    for (const button of this.element.querySelectorAll('[data-action="milestones"], [data-action="formView"], .wb-sheet-tabs [data-action="tab"]')) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
@@ -463,7 +475,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const picker = new FilePicker({
       type: "image",
       current: this.actor.img,
-      callback: path => this.actor.update({ img: path })
+      callback: path => setCharacterPortrait(this.actor, path).catch(error => ui.notifications.error(error.message))
     });
     return picker.browse();
   }
@@ -529,6 +541,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", offerCatalogImport);
 registerFormTriggers();
 registerAbilityTimers();
+registerFormLoadouts();
 registerRecovery();
 Hooks.on("renderItemDirectory", decorateEquipmentDirectory);
 Hooks.on("renderCompendium", decorateEquipmentDirectory);
