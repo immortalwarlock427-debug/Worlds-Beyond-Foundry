@@ -1,9 +1,9 @@
 <div class="wb-body">
   <header class="wb-header">
     <div class="wb-identity">
-      <span class="wb-eyebrow">Worlds Beyond</span>
+      <span class="wb-eyebrow wb-archive-title">Worlds Beyond <span aria-hidden="true">✦</span> Infinite Archive</span>
       <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
-      <div class="wb-identity-tags"><button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i class="fa-solid fa-feather" aria-hidden="true"></i> {{overviewRace}}</button><span aria-hidden="true">·</span><button type="button" data-action="viewTab" data-tab="abilities" title="Abilities and forms"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}}</button></div>
+      <div class="wb-identity-tags"><button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> {{overviewRace}}</button><span aria-hidden="true">·</span><button type="button" data-action="viewTab" data-tab="abilities" title="Abilities and forms"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}}</button></div>
     </div>
     <label class="wb-level">
       <span class="wb-eyebrow">Level</span>
@@ -19,12 +19,16 @@
   <section class="tab wb-sheet-panel {{tabs.character.cssClass}}" data-group="sheet" data-tab="character" aria-label="Character">
     <div class="wb-frontispiece">
       <section class="wb-astral-portrait" aria-label="Character artwork and eight attributes">
-        <div class="wb-orbit-toolbar"><span class="wb-eyebrow">Attributes</span><div><button type="button" data-action="milestones" title="Milestone rules" aria-label="Milestone rules"><i class="fa-solid fa-diamond" aria-hidden="true"></i></button><button type="button" data-action="overviewEdit" data-field="statScores.str" title="Edit attributes" aria-label="Edit attributes"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></div></div>
+        <div class="wb-orbit-toolbar"><span class="wb-eyebrow">Attributes</span><div><button type="button" data-action="archiveAppearance" title="Portrait framing and Base form name" aria-label="Portrait framing and Base form name" {{#unless editable}}disabled{{/unless}}><i class="fa-solid fa-sliders" aria-hidden="true"></i></button><button type="button" data-action="milestones" title="Milestone rules" aria-label="Milestone rules"><i class="fa-solid fa-diamond" aria-hidden="true"></i></button><button type="button" data-action="overviewEdit" data-field="statScores.str" title="Edit attributes" aria-label="Edit attributes"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></div></div>
         <div class="wb-attribute-orbit">
-          <div class="wb-orbit-art"><button type="button" data-action="pickPortrait" title="Change character artwork" aria-label="Change character artwork" {{#unless editable}}disabled{{/unless}}><img src="{{actor.img}}" alt="{{actor.name}}"></button></div>
+          <div class="wb-orbit-art" style="--wb-portrait-y:{{overviewPortraitY}}%"><svg class="wb-celestial-vortex" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+            <circle cx="200" cy="200" r="168" class="wb-vortex-ring"/><circle cx="200" cy="200" r="181" class="wb-vortex-ticks"/>
+            <g class="wb-vortex-arms"><path d="M200 15 C330 8 410 150 350 260 C310 335 215 349 160 305"/><path d="M385 200 C392 330 250 410 140 350 C65 310 51 215 95 160"/><path d="M200 385 C70 392 -10 250 50 140 C90 65 185 51 240 95"/><path d="M15 200 C8 70 150 -10 260 50 C335 90 349 185 305 240"/></g>
+            <g class="wb-vortex-inscriptions"><path d="M200 25 L205 35 L200 45 L195 35 Z M375 200 L365 205 L355 200 L365 195 Z M200 375 L195 365 L200 355 L205 365 Z M25 200 L35 195 L45 200 L35 205 Z"/><circle cx="200" cy="200" r="155"/></g>
+          </svg><button type="button" data-action="pickPortrait" title="Change artwork for the current form" aria-label="Change artwork for the current form" {{#unless editable}}disabled{{/unless}}><img src="{{actor.img}}" alt="{{actor.name}}"></button></div>
           <span class="wb-orbit-star" aria-hidden="true">✦</span>
           {{#each overviewStats}}<button type="button" class="wb-stat-orb wb-orb-{{key}} {{#if manual}}is-manual{{/if}} {{#if adjusted}}is-adjusted{{/if}}" data-action="rollStat" data-stat="{{key}}" title="{{label}} {{value}} · {{modLabel}} · Check or save{{#if sources}} · {{sources}}{{/if}}" aria-label="{{label}} {{value}}, modifier {{modLabel}}. Roll a check or save." {{#unless @root.editable}}disabled{{/unless}}>
-            <span class="wb-orb-abbr">{{abbr}}</span><strong class="wb-orb-value">{{value}}</strong><span class="wb-orb-mod">{{modLabel}}</span><span class="wb-orb-pips" aria-hidden="true">{{#each pips}}<span class="{{#if lit}}is-lit{{/if}}"></span>{{/each}}</span>
+            <span class="wb-orb-abbr">{{abbr}}</span><span class="wb-orb-scoreline"><span class="wb-orb-pip {{#if pips.0.lit}}is-lit{{/if}}" title="21: {{pips.0.name}} · {{pips.0.status}}" aria-hidden="true"></span><strong class="wb-orb-value">{{value}}</strong><span class="wb-orb-pip {{#if pips.1.lit}}is-lit{{/if}}" title="28: {{pips.1.name}} · {{pips.1.status}}" aria-hidden="true"></span></span><span class="wb-orb-mod">{{modLabel}}</span>
           </button>{{/each}}
         </div>
         <div class="wb-portrait-caption"><span class="wb-caption-rule"></span><span>Hit die <strong>{{system.core.hitDie}}</strong></span><span class="wb-caption-rule"></span></div>
@@ -35,10 +39,10 @@
           <span class="wb-overview-number">{{overviewHealth.value}} <small>/ {{overviewHealth.max}}</small></span>
           <span class="wb-overview-meter" role="progressbar" aria-label="Health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{overviewHealth.meter}}" aria-valuetext="{{overviewHealth.value}} / {{overviewHealth.max}} Health"><span style="width:{{overviewHealth.meter}}%"></span></span>
         </button>
-        <div class="wb-overview-economy">{{#each overviewEconomy}}<button type="button" data-action="overviewEdit" data-field="{{field}}" title="Edit {{label}}" class="wb-economy-tile"><span class="wb-eyebrow">{{label}}</span><strong>{{value}}<small>/{{max}}</small></strong>{{#if command}}<span class="wb-command-pool">Includes {{command}} Command</span>{{/if}}</button>{{/each}}</div>
+        <div class="wb-overview-economy">{{#each overviewEconomy}}<button type="button" data-action="overviewEdit" data-field="{{field}}" title="Edit {{label}}" class="wb-economy-tile {{#if overflow}}is-overflow{{/if}}"><span class="wb-eyebrow">{{label}}</span><strong>{{value}}<small>/{{max}}</small></strong><span class="wb-overview-meter wb-segmented-meter" style="--wb-segments:{{segments}}" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meter}}" aria-valuetext="{{value}} / {{max}}"><span style="width:{{meter}}%"></span></span>{{#if command}}<span class="wb-command-pool">Includes {{command}} Command</span>{{/if}}</button>{{/each}}</div>
         <div class="wb-overview-pools">{{#each overviewPools}}<button type="button" class="wb-overview-pool {{#if overflow}}is-overflow{{/if}}" data-action="overviewEdit" data-field="resourceValues.{{key}}" title="Edit {{label}} · {{value}} / {{max}} points">
           <span class="wb-overview-pool-top"><span class="wb-eyebrow">{{label}}</span><strong>{{#if percentUnavailable}}—%{{else}}{{#if percent}}{{inputValue}}%{{else}}{{value}}<small>/{{max}}</small>{{/if}}{{/if}}</strong></span>
-          <span class="wb-overview-meter" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meterPercent}}"><span style="width:{{meterPercent}}%"></span></span>
+          <span class="wb-overview-meter" role="progressbar" aria-label="{{label}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{meterPercent}}" aria-valuetext="{{value}} points; maximum {{max}}"><span style="width:{{meterPercent}}%"></span></span>{{#if overflow}}<small class="wb-overflow-note">Above maximum</small>{{/if}}
         </button>{{/each}}</div>
         <div class="wb-overview-metrics">
           <button type="button" data-action="overviewEdit" title="Armor and evasion details"><span class="wb-eyebrow">Natural Evasion</span><strong>{{system.core.evasion}}</strong></button>
@@ -48,16 +52,17 @@
         </div>
       </section>
     </div>
-    <section class="wb-favorites" aria-label="Four favorite abilities">
-      <div class="wb-section-heading"><h2 class="wb-section-title">Favorite abilities</h2><button type="button" data-action="favorites" title="Choose four favorite abilities" {{#unless editable}}disabled{{/unless}}><i class="fa-regular fa-star" aria-hidden="true"></i> Choose</button></div>
+    <div class="wb-archive-convergence" aria-hidden="true"><span></span><b>✦</b><span></span></div>
+    <section class="wb-archive-foundation" aria-label="Favorite abilities and character utilities"><section class="wb-favorites" aria-label="Four favorite abilities">
+      <div class="wb-section-heading"><h2 class="wb-section-title">Favorite abilities <small>Inscribed in the Archive</small></h2><button type="button" data-action="favorites" title="Choose four favorite abilities" {{#unless editable}}disabled{{/unless}}><i class="fa-regular fa-star" aria-hidden="true"></i> Choose</button></div>
       <div class="wb-favorite-grid">{{#each favoriteSlots}}
-        <article class="wb-favorite-card {{#if empty}}is-empty{{/if}}" {{#unless empty}}data-ability-id="{{id}}" {{#if legacy}}data-effect-uuid="{{uuid}}"{{/if}}{{/unless}}>
+        <article class="wb-favorite-card {{#if empty}}is-empty{{/if}}" {{#unless empty}}data-ability-id="{{id}}" {{#if legacy}}data-effect-uuid="{{uuid}}"{{/if}}{{/unless}}><span class="wb-inscription-seal" aria-hidden="true">{{index}}</span>
           {{#if empty}}<button type="button" class="wb-favorite-empty" data-action="favorites" {{#unless @root.editable}}disabled{{/unless}}><span class="wb-favorite-index">0{{index}}</span><span>{{name}}</span><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
           {{else}}<img src="{{img}}" alt="" loading="lazy"><button type="button" class="wb-favorite-name" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="edit" title="{{summary}}"><strong>{{name}}</strong><small>{{quickSummary}}</small></button><button type="button" class="wb-favorite-use {{#if effectsActive}}is-active{{/if}}" data-action="{{#if legacy}}savedAbility{{else}}ability{{/if}}" data-operation="{{operation}}" aria-label="{{actionLabel}} {{name}}" {{#unless @root.editable}}disabled{{/unless}}>{{actionLabel}}</button>{{/if}}
         </article>
       {{/each}}</div>
     </section>
-    <footer class="wb-overview-footer"><button type="button" class="wb-overview-status" data-action="viewTab" data-tab="status" title="View active Status"><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i><span>{{#if overviewStatusCount}}{{overviewStatus}}{{else}}No active status{{/if}}</span>{{#if overviewStatusCount}}<small>{{overviewStatusCount}}</small>{{/if}}</button><div><button type="button" data-action="command" {{#unless editable}}disabled{{/unless}}>Command</button><button type="button" data-action="longRest" {{#unless editable}}disabled{{/unless}}>Long rest</button></div></footer>
+    <footer class="wb-overview-footer"><button type="button" class="wb-overview-status" data-action="viewTab" data-tab="status" title="View active Status"><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i><span>{{#if overviewStatusCount}}{{overviewStatus}}{{else}}No active status{{/if}}</span>{{#if overviewStatusCount}}<small>{{overviewStatusCount}}</small>{{/if}}</button><div><button type="button" data-action="command" {{#unless editable}}disabled{{/unless}}>Command</button><button type="button" data-action="longRest" {{#unless editable}}disabled{{/unless}}>Long rest</button></div></footer></section>
   </section>
   <section class="tab wb-sheet-panel {{tabs.details.cssClass}}" data-group="sheet" data-tab="details" aria-label="Character controls and detailed values">
   <section class="wb-resources" aria-label="Resources">
@@ -262,7 +267,7 @@
   <section class="wb-abilities wb-equipment" aria-label="Abilities">
     <div class="wb-section-heading"><h2 class="wb-section-title">Abilities</h2>
       <div class="wb-equipment-actions">
-        {{#if hasForms}}<button type="button" data-action="ability" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>Base form</button>{{/if}}
+        {{#if hasForms}}<button type="button" data-action="ability" data-operation="base" aria-pressed="{{#unless hasActiveForm}}true{{else}}false{{/unless}}" {{#unless editable}}disabled{{/unless}}>{{baseFormName}}</button>{{/if}}
         {{#if hasHiddenFormAbilities}}<button type="button" data-action="formView" data-view="abilities" aria-pressed="{{showAllFormAbilities}}">{{#if showAllFormAbilities}}Form abilities{{else}}Show all{{/if}}</button>{{/if}}
         <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
         <button type="button" data-action="ability" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>

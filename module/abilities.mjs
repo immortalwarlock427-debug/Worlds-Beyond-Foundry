@@ -43,6 +43,11 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
     classes: [SYSTEM_ID, "wb-sheet", "wb-item-sheet", "wb-ability-sheet"], position: { width: 480, height: 660 },
     window: { resizable: true }, form: { submitOnChange: true },
     actions: { itemEffect: async function (event, target) { try { return await itemEffectAction(this.item, target, this.isEditable); } catch (error) { ui.notifications.error(error.message); } },
+      pickFormPortrait: function () {
+        if (!this.isEditable || this.item.system.kind !== "form") return;
+        return new foundry.applications.apps.FilePicker.implementation({ type: "image", current: this.item.system.loadout.portrait || this.item.actor?.img,
+          callback: path => this.item.update({ "system.loadout.portrait": path }).catch(error => ui.notifications.error(error.message)) }).browse();
+      },
       copyFormEquipment: async function () { if (!this.isEditable) return; try { await copyFormEquipment(this.item); } catch (error) { ui.notifications.error(error.message); } } }
   };
   static PARTS = { sheet: { template: `systems/${SYSTEM_ID}/templates/ability-sheet.hbs`, scrollable: [""] } };

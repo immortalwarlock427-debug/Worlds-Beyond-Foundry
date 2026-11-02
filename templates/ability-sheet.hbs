@@ -16,7 +16,9 @@
     <label class="wb-trigger-ending">When it stops matching<select name="system.trigger.endMode" {{#unless editable}}disabled{{/unless}}>{{#each triggerEndModes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
   </div><details class="wb-disclosure wb-help"><summary>Trigger help</summary><p>Checks when the resource changes. Blank threshold uses its maximum. Entry costs apply; leave them blank for a free transformation. Enable Allow over maximum on the resource to gain beyond its cap. Multiple matching forms ask you to choose.</p></details></details>{{/if}}
   {{#if isForm}}<details class="wb-disclosure" data-sync="form-loadout"><summary>Form loadout</summary>
+    <button type="button" data-action="pickFormPortrait" {{#unless editable}}disabled{{/unless}}>Choose form portrait</button>
     <label>Portrait path<input type="text" name="system.loadout.portrait" value="{{system.loadout.portrait}}" placeholder="Base portrait" {{#unless editable}}disabled{{/unless}}></label>
+    <label data-tooltip="0 shows the top of the image, 100 the bottom. Blank inherits Base framing. You can also adjust with a preview on Character → Appearance.">Portrait vertical framing (0–100)<input type="number" name="system.loadout.portraitY" value="{{system.loadout.portraitY}}" placeholder="Base framing" min="0" max="100" step="1" {{#unless editable}}disabled{{/unless}}></label>
     {{#if hasActor}}
     <div class="wb-section-heading"><h3 class="wb-section-title">Equipment preset</h3><button type="button" data-action="copyFormEquipment" {{#unless editable}}disabled{{/unless}}>Copy current gear</button></div>
     <label class="wb-equipment-check"><input type="checkbox" name="system.loadout.gearEnabled" {{#if system.loadout.gearEnabled}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Use saved equipment</label>
