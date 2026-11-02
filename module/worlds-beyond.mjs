@@ -300,7 +300,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       actor: this.actor,
       overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(this.actor, effects.savedAbilities),
       overviewClass: source.details?.class?.trim() || "",
-      overviewRace: source.details?.race || "Add race",
+      overviewRace: source.details?.race?.trim() || "",
       baseFormName: appearance.baseFormName,
       canRenameBaseForm: this.isEditable && !effects.hasActiveForm,
       overviewPortraitY: appearance.portraitY,

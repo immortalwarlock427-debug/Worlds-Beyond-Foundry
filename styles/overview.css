@@ -50,7 +50,7 @@
 .worlds-beyond.wb-character-sheet .wb-orb-vit { left: 80%; top: 20%; } .worlds-beyond.wb-character-sheet .wb-orb-agl { left: 90%; top: 50%; }
 .worlds-beyond.wb-character-sheet .wb-orb-int { left: 80%; top: 80%; } .worlds-beyond.wb-character-sheet .wb-orb-wis { left: 50%; top: 90%; }
 .worlds-beyond.wb-character-sheet .wb-orb-cha { left: 20%; top: 80%; } .worlds-beyond.wb-character-sheet .wb-orb-fth { left: 10%; top: 50%; }
-.worlds-beyond.wb-character-sheet .wb-portrait-caption { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--wb-muted); font: 11px var(--wb-font-body); }
+.worlds-beyond.wb-character-sheet .wb-portrait-caption { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 14px; color: var(--wb-muted); font: 11px/1.4 var(--wb-font-body); }
 .worlds-beyond.wb-character-sheet .wb-portrait-caption strong { color: var(--wb-brass); font-weight: 500; margin-left: 4px; }
 .worlds-beyond.wb-character-sheet .wb-caption-rule { height: 1px; width: 18%; background: linear-gradient(90deg, transparent, #D4B06A55, transparent); }
 .worlds-beyond.wb-character-sheet .wb-overview-vitals { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
