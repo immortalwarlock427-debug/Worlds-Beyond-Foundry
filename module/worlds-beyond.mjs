@@ -20,7 +20,7 @@ import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
 import { registerFormLoadouts, setCharacterPortrait } from "./form-loadouts.mjs";
 import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
-import { favoriteSlots, configureFavorites, overviewFill } from "./overview.mjs";
+import { favoriteSlots, configureFavorites, overviewFill, archiveAppearance, configureArchive } from "./overview.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
 import { registerRecovery } from "./recovery-actions.mjs";
@@ -85,6 +85,10 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       ...resource(), enabled: new BooleanField({ initial: false })
     });
     return {
+      appearance: new SchemaField({
+        baseFormName: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
+        portraitY: number(35, { integer: true, min: 0, max: 100 })
+      }),
       favorites: new ArrayField(new StringField({ required: true, nullable: false, blank: true, initial: "" }), { initial: [] }),
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
       details: new SchemaField(Object.fromEntries(CHARACTER_DETAILS.map(({ key }) => [key,
@@ -206,6 +210,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       pickPortrait: CharacterSheet.#onPickPortrait,
       viewTab: function (event, target) { this.changeTab(target.dataset.tab, "sheet"); },
       favorites: async function () { if (!this.isEditable) return; try { await configureFavorites(this.actor); } catch (error) { ui.notifications.error(error.message); } },
+      archiveAppearance: async function () { if (!this.isEditable) return; try { await configureArchive(this.actor); } catch (error) { ui.notifications.error(error.message); } },
       overviewEdit: function (event, target) {
         this.changeTab("details", "sheet");
         const field = target.dataset.field;
@@ -282,18 +287,21 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       };
     });
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
+    const appearance = archiveAppearance(this.actor);
     const overviewPools = resourceEntries(system).filter(pool => formShowsResource(activeForm, pool.key));
     return Object.assign(context, {
       actor: this.actor,
       overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(this.actor, effects.savedAbilities),
       overviewRace: source.details?.race || "Add race",
-      overviewForm: activeForm?.name || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name || "Base form",
+      baseFormName: appearance.baseFormName,
+      overviewPortraitY: appearance.portraitY,
+      overviewForm: activeForm?.name || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name || appearance.baseFormName,
       overviewHealth: { value: wholeNumber(system.health.value), max: wholeNumber(system.health.max), meter: overviewFill(system.health), overflow: system.health.value > system.health.max, low: system.health.max > 0 && system.health.value / system.health.max <= 0.25 },
-      overviewEconomy: wholeDisplay([
+      overviewEconomy: [
         { label: "Action Points", value: apTotal(system), max: system.ap.max, field: "system.ap.value", icon: "bolt", command: system.command?.value ?? 0 },
         { label: "Reactions", value: system.reactions.value, max: system.reactions.max, field: "system.reactions.value", icon: "shield-halved" },
         { label: "Wonder", value: system.wonder.value, max: system.wonder.max, field: "system.wonder.value", icon: "sparkles" }
-      ]), overviewPools: overviewPools.map(pool => ({ ...pool, overflow: pool.value > pool.max })),
+      ].map(pool => ({ ...wholeDisplay(pool), meter: overviewFill(pool), segments: Number.isInteger(pool.max) && pool.max > 0 && pool.max <= 24 ? pool.max : 1, overflow: pool.value > pool.max })), overviewPools: overviewPools.map(pool => ({ ...pool, overflow: pool.value > pool.max })),
       overviewInitiative: formatModifier(system.stats.wis.mod),
       overviewStatus: effects.statuses.slice(0, 3).map(row => row.name).join(" · "), overviewStatusCount: effects.statuses.length,
       currentFormName: activeForm?.name ?? "",

@@ -22,7 +22,7 @@ export const hasPhysicalLoadout = form => !!(form?.system.loadout?.portrait || f
 export function formLoadoutFormUpdates(system, data) {
   const loadout = data.system?.loadout, saved = system.loadout ?? {};
   if (!loadout) return data;
-  for (const [key, fallback] of [["portrait", ""], ["gearEnabled", false]]) if (loadout[key] === (saved[key] ?? fallback)) delete loadout[key];
+  for (const [key, fallback] of [["portrait", ""], ["portraitY", null], ["gearEnabled", false]]) if (loadout[key] === (saved[key] ?? fallback)) delete loadout[key];
   for (const key of ["equipment", "abilities", "resources"]) {
     if (!loadout[key]) continue;
     for (const [id, value] of Object.entries(loadout[key])) if (value === (saved[key]?.[id] ?? (key !== "equipment"))) delete loadout[key][id];

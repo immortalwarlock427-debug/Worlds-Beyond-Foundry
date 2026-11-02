@@ -39,6 +39,19 @@ const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
 const { createAbility, AbilitySheet } = await import("../module/abilities.mjs");
 
+test("form portrait picker writes only that form's image and skips non-form/read-only sheets", async () => {
+  let settings, opened = 0; const updates = [];
+  foundry.applications.apps = { FilePicker: { implementation: class { constructor(options) { settings = options; } browse() { opened++; } } } };
+  const item = { system: { kind: 'form', loadout: { portrait: 'form.png' } }, actor: { img: 'base.png' }, async update(data) { updates.push(data); return this; } };
+  const pick = AbilitySheet.DEFAULT_OPTIONS.actions.pickFormPortrait;
+  pick.call({ item, isEditable: false }); assert.equal(opened, 0);
+  item.system.kind = 'active'; pick.call({ item, isEditable: true }); assert.equal(opened, 0);
+  item.system.kind = 'form'; pick.call({ item, isEditable: true });
+  assert.equal(opened, 1); assert.equal(settings.type, 'image'); assert.equal(settings.current, 'form.png');
+  await settings.callback('forms/monstrous.webp'); assert.deepEqual(updates, [{ 'system.loadout.portrait': 'forms/monstrous.webp' }]);
+  assert.equal(item.actor.img, 'base.png');
+});
+
 test("stat awards prepare from stored bases without accumulating or rewriting reset history", () => {
   const source = { level: 8, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: true, resetValue: 18 }])),
     advancement: { level4: { str: 2, dex: 2 }, level8: { str: 2, vit: 2 } } };

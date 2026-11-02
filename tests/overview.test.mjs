@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { overviewFill, favoriteSlots, favoriteSelection, configureFavorites } from "../module/overview.mjs";
+import { overviewFill, favoriteSlots, favoriteSelection, configureFavorites, archiveAppearance, configureArchive } from "../module/overview.mjs";
 function fixture() {
   const posts = [], dialogs = [];
   const actor = { uuid: 'Actor.favorites', documentName: 'Actor', type: 'character', isOwner: true, effects: [], items: new Map(),
@@ -45,4 +45,51 @@ test("observer/lost permission, removed selections and ignored updates cannot re
   f=fixture();foundry.applications.api.DialogV2.input=async()=>{f.actor.isOwner=false;return{slot0:'spell'};};await configureFavorites(f.actor);assert.equal(f.posts.length,0);
   f=fixture();foundry.applications.api.DialogV2.input=async()=>{f.actor.items.delete('spell');return{slot0:'spell'};};await assert.rejects(configureFavorites(f.actor),/no longer exists/);assert.equal(f.posts.length,0);
   f=fixture();foundry.applications.api.DialogV2.input=async()=>({slot0:'spell'});f.actor.update=async()=>f.actor;await assert.rejects(configureFavorites(f.actor),/not saved/);
+});
+
+function appearanceFixture() {
+  const f = fixture(); f.actor.img = 'portrait".png'; f.actor.system.appearance = { baseFormName: '', portraitY: 35 };
+  f.actor.update = async data => { f.posts.push(data); for (const [path, value] of Object.entries(data)) f.actor.system.appearance[path.split('.').pop()] = value; return f.actor; };
+  const form = f.actor.items.get('form'); form.system.loadout = { portraitY: null };
+  form.update = async data => { f.posts.push(data); form.system.loadout.portraitY = data['system.loadout.portraitY']; return form; };
+  return { ...f, form };
+}
+test("archive appearance inherits Base framing, uses separate form framing and preserves data on reads", () => {
+  const { actor, form } = appearanceFixture(), before = structuredClone(actor.system);
+  assert.deepEqual(archiveAppearance(actor), { baseFormName: 'Base Form', portraitY: 35, formId: '' });
+  form.system.effectsActive = true; assert.equal(archiveAppearance(actor).portraitY, 35);
+  form.system.loadout.portraitY = 70; assert.equal(archiveAppearance(actor).portraitY, 70);
+  form.system.effectsActive = false; assert.equal(archiveAppearance(actor).portraitY, 35);
+  assert.deepEqual(actor.system, before);
+});
+test("appearance saves only Base label/framing, supports reset label and cancellation, escaping previews", async () => {
+  const f = appearanceFixture(); await configureArchive(f.actor); assert.equal(f.posts.length, 0);
+  assert.match(f.dialogs[0].content, /portrait&quot;.png/);
+  foundry.applications.api.DialogV2.input = async () => ({ baseFormName: ' Human Form ', portraitY: '62.8' });
+  await configureArchive(f.actor); assert.deepEqual(f.posts, [{ 'system.appearance.baseFormName': 'Human Form', 'system.appearance.portraitY': 62 }]);
+  await configureArchive(f.actor); assert.equal(f.posts.length, 1);
+  foundry.applications.api.DialogV2.input = async () => ({ baseFormName: '', portraitY: '62' });
+  await configureArchive(f.actor); assert.equal(archiveAppearance(f.actor).baseFormName, 'Base Form');
+});
+test("form framing never rewrites Base crop, artwork, stats or balances; changed forms require reopening", async () => {
+  const f = appearanceFixture(); f.form.system.effectsActive = true;
+  foundry.applications.api.DialogV2.input = async () => ({ baseFormName: '', portraitY: '80' });
+  await configureArchive(f.actor); assert.deepEqual(f.posts, [{ 'system.loadout.portraitY': 80 }]);
+  assert.equal(f.actor.system.appearance.portraitY, 35); assert.equal(f.actor.img, 'portrait".png');
+  foundry.applications.api.DialogV2.input = async () => { f.form.system.effectsActive = false; return { baseFormName: 'Changed', portraitY: '10' }; };
+  await assert.rejects(configureArchive(f.actor), /current form changed/); assert.equal(f.posts.length, 1);
+});
+test("appearance rejects invalid framing and ignored saves, compensates partial saves, and respects lost permission", async () => {
+  let f = appearanceFixture(); f.actor.isOwner = false; await configureArchive(f.actor); assert.equal(f.dialogs.length, 0);
+  f = appearanceFixture(); foundry.applications.api.DialogV2.input = async () => ({ baseFormName: '', portraitY: '101' });
+  await assert.rejects(configureArchive(f.actor), /between 0 and 100/); assert.equal(f.posts.length, 0);
+  f = appearanceFixture(); foundry.applications.api.DialogV2.input = async () => { f.actor.isOwner = false; return { baseFormName: 'Hidden', portraitY: '80' }; };
+  await configureArchive(f.actor); assert.equal(f.posts.length, 0);
+  f = appearanceFixture(); foundry.applications.api.DialogV2.input = async () => ({ baseFormName: 'Human Form', portraitY: '80' });
+  f.actor.update = async () => f.actor; await assert.rejects(configureArchive(f.actor), /not saved/);
+  f = appearanceFixture(); f.form.system.effectsActive = true;
+  foundry.applications.api.DialogV2.input = async () => ({ baseFormName: 'Human Form', portraitY: '80' });
+  f.form.update = async () => { throw new Error('form update failed'); };
+  await assert.rejects(configureArchive(f.actor), /form update failed/);
+  assert.equal(f.actor.system.appearance.baseFormName, '', 'Base label is restored if form framing fails');
 });

@@ -1,6 +1,7 @@
 import { abilityRecord } from "./abilities-core.mjs";
-import { queuedAction } from "./action-support.mjs";
+import { queuedAction, reversibleAction } from "./action-support.mjs";
 import { effectContext } from "./effects-core.mjs";
+import { activeLoadoutForm } from "./form-loadout-core.mjs";
 const list = items => Array.from(items?.values?.() ?? items ?? []);
 export const overviewFill = pool => pool?.max > 0 && Number.isFinite(pool.value) ? Math.max(0, Math.min(100, pool.value / pool.max * 100)) : 0;
 function choices(actor) {
@@ -48,4 +49,46 @@ export async function configureFavorites(actor) {
     if (!result || JSON.stringify(actor.system.favorites) !== JSON.stringify(favorites)) throw new Error("Favorites were not saved. Try again.");
     return result;
   });
+}
+
+const framing = value => Number.isFinite(value) ? Math.max(0, Math.min(100, Math.floor(value))) : 35;
+export function archiveAppearance(actor) {
+  const form = activeLoadoutForm(actor);
+  return { baseFormName: actor.system.appearance?.baseFormName?.trim() || "Base Form",
+    portraitY: framing(form?.system.loadout?.portraitY ?? actor.system.appearance?.portraitY), formId: form?.id ?? "" };
+}
+export async function configureArchive(actor) {
+  if (!actor.isOwner || actor.type !== "character") return;
+  const before = archiveAppearance(actor), form = activeLoadoutForm(actor);
+  const content = `<div class="wb-archive-settings"><div class="wb-portrait-preview"><img src="${escape(actor.img)}" alt="Portrait framing preview" style="object-position:50% ${before.portraitY}%"></div>
+    <label>Base form name<input type="text" name="baseFormName" value="${escape(actor.system.appearance?.baseFormName ?? "")}" placeholder="Base Form"></label>
+    <label>Portrait framing · ${escape(form?.name || before.baseFormName)}<input type="range" name="portraitY" value="${before.portraitY}" min="0" max="100" step="1"></label>
+    <div class="wb-framing-labels"><span>Top of image</span><output>${before.portraitY}%</output><span>Bottom of image</span></div>
+    <p class="wb-item-brief">Framing is saved separately for Base and each form. Click the portrait to choose artwork; a form's image returns to Base on End.</p></div>`;
+  const result = await foundry.applications.api.DialogV2.input({ classes: ["worlds-beyond", "wb-roll-dialog"], position: { width: 380 }, window: { title: "Archive appearance" }, content,
+    render: (_event, dialog) => { const root = dialog.element, slider = root.querySelector('[name="portraitY"]');
+      slider.addEventListener("input", () => { root.querySelector(".wb-portrait-preview img").style.objectPosition = `50% ${slider.value}%`; root.querySelector("output").value = `${slider.value}%`; }); },
+    ok: { label: "Save appearance" }, rejectClose: false });
+  if (!result) return;
+  return queuedAction(actor.uuid, () => reversibleAction(async change => {
+    if (!actor.isOwner) return;
+    if (archiveAppearance(actor).formId !== before.formId) throw new Error("The current form changed. Open appearance again to frame that form.");
+    const y = Number(result.portraitY);
+    if (!Number.isFinite(y) || y < 0 || y > 100) throw new Error("Choose portrait framing between 0 and 100.");
+    const name = String(result.baseFormName ?? "").trim(), updates = {}, restore = {};
+    if (name !== (actor.system.appearance?.baseFormName ?? "")) { updates["system.appearance.baseFormName"] = name; restore["system.appearance.baseFormName"] = actor.system.appearance?.baseFormName ?? ""; }
+    if (!form && framing(y) !== before.portraitY) { updates["system.appearance.portraitY"] = framing(y); restore["system.appearance.portraitY"] = actor.system.appearance?.portraitY ?? 35; }
+    if (Object.keys(updates).length) {
+      await change(() => actor, () => actor.update(restore));
+      await actor.update(updates);
+      if (archiveAppearance(actor).baseFormName !== (name || "Base Form") || (!form && archiveAppearance(actor).portraitY !== framing(y))) throw new Error("Appearance was not saved. Try again.");
+    }
+    if (form && framing(y) !== before.portraitY) {
+      const saved = form.system.loadout?.portraitY ?? null;
+      await change(() => form, () => form.update({ "system.loadout.portraitY": saved }));
+      await form.update({ "system.loadout.portraitY": framing(y) });
+      if (form.system.loadout.portraitY !== framing(y)) throw new Error("Form framing was not saved. Try again.");
+    }
+    return actor;
+  }));
 }

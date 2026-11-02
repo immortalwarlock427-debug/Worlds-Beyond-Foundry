@@ -5,9 +5,10 @@ const SCOPE = "worlds-beyond", KEY = "formLoadoutState";
 const operation = { worldsBeyondFormLoadout: true };
 
 export function formLoadoutSchema() {
-  const { SchemaField, StringField, BooleanField, TypedObjectField } = foundry.data.fields;
+  const { SchemaField, StringField, BooleanField, TypedObjectField, NumberField } = foundry.data.fields;
   const map = () => new TypedObjectField(new BooleanField({ required: true, nullable: false, initial: false }));
   return new SchemaField({ portrait: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
+    portraitY: new NumberField({ required: true, nullable: true, initial: null, integer: true, min: 0, max: 100 }),
     gearEnabled: new BooleanField({ initial: false }), equipment: map(), abilities: map(), resources: map() });
 }
 export function formLoadoutContext(item) {
