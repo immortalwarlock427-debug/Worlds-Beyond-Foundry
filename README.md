@@ -6,6 +6,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 
 - **Character overview:** a large circular portrait with eight stat medallions, live Health/resources/AP/reactions/Wonder, defenses/movement/initiative and four source-linked favorite abilities. Name/level/race/form stay prominent. Stat circles roll; value cards jump to the existing editors in Details. See [overview setup and validation](docs/CHARACTER-OVERVIEW.md).
 - **Infinite Archive polish:** spiral portrait engraving, unclipped medallions, visible resource meters and a connected four-seal favorite foundation. Appearance offers a renameable Base Form and live vertical framing per form; Form loadout has a portrait picker. Existing rules, balances and quick actions are preserved.
+- **Matching ledger tabs:** Details, Equipment, Abilities, Status and Notes share framed navy/brass sections, readable controls, clear equipped/active states and a numbered Notes chronicle. All original fields/actions remain. See [sheet organization and validation](docs/SHEET-TABS.md).
 
 - A **character** actor with a level and the eight stats: Strength, Dexterity, Vitality, Agility, Intelligence, Wisdom, Charisma and Faith.
 - **Roll & assign** generates eight 2d6 + 1d12 scores or accepts typed scores, with swappable destinations and an explicit Apply. **Stat points** tracks 4-point awards at levels 4/8/12/16/19, at most 2 per stat per award, separately from bases and gear. See [stat setup](docs/STAT-SETUP.md).
