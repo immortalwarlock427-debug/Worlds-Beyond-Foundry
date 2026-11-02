@@ -3,6 +3,7 @@ import { STATS } from "./stats.mjs";
 import { actionApCost } from "./attacks.mjs";
 import { numberOr } from "./core-numbers.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { recoveryChoices } from "./consumable-benefits.mjs";
 
 export const ABILITY_TYPES = Object.freeze({ active: "Active", passive: "Passive", reaction: "Reaction", form: "Form", other: "Other" });
 export const ABILITY_COST_UNITS = Object.freeze({ points: "Points", percent: "% of maximum" });
@@ -33,6 +34,12 @@ export function abilityRecord(item, character) {
   const parts = [];
   if (ap !== null) parts.push(`${wholeNumber(ap)} AP`);
   if (cost !== null && system.resourceId) parts.push(`${wholeNumber(cost)}${system.resourceUnit === "percent" ? "%" : ""} ${resource.label}`);
+  const restoration = String(system.restoration?.amount ?? "").trim();
+  if (restoration && system.kind !== "passive") {
+    const target = system.restoration.target ?? "health";
+    const label = recoveryChoices(character, target).find(choice => choice.value === target)?.label ?? "Resource";
+    parts.push(`Restore ${restoration}${system.restoration.unit === "percent" ? "%" : ""} ${label}`);
+  }
   if (uses.tracked) parts.push(`${wholeNumber(uses.value)} / ${wholeNumber(uses.max)} uses`);
   if (remaining > 0) parts.push(`${wholeNumber(remaining)} rounds left`);
   else if (cooldown > 0) parts.push(`Ready · ${wholeNumber(cooldown)}-round cooldown`);

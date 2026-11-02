@@ -44,12 +44,14 @@ The user requested item/ability bonuses, Command and potion AP after the base sh
 
 ### Remaining sheet mechanics before wider combat
 
-- **Ability resolution:** healing/resource gains and damage/save/target outcomes on abilities, extending the existing cost/self-bonus records. A simple area ability editor and optional visuals follow later.
+- **Ability restoration — implemented, awaiting validation:** self healing/resource gains with fixed amounts, dice or percentage, combined with existing costs and bonuses. Full pure-restoration uses spend nothing; failed actions roll back gains and costs. See [ABILITY-RESTORATION.md](ABILITY-RESTORATION.md).
 - **Lifetimes and recovery:** ability/consumable durations, cooldown countdown, uses recharge, resource regeneration and configured rest recovery. These counters remain manual today.
 - **Form loadouts:** portraits, gear, available abilities and resource visibility per form, without losing balances or base data.
-- **Richer bonuses and conditions:** advantage/dice adjustments and damage defenses beyond the current numeric targets; condition presets only after their Notion rules are settled. Add reusable feature templates as their rules become available.
+- **Final sheet validation:** verify existing-character saves, base/effective stats, resource bounds and payments, inventory, ability/consumable benefits, forms, active Status and narrow/read-only sheets in the live client. Resolve sheet defects before expanding combat.
 
-Movement AP, opportunity prompts, automatic damage/defenses and wider token combat remain below, after sheet validation.
+The base sheet completion gate is restoration, lifetimes/recovery, form loadouts and the final validation pass above. Explicitly tell the user when these are complete and work is about to move into combat, spell effects or module integrations. No module installation is part of this sheet task.
+
+Ability damage/save/target resolution, movement AP, opportunity prompts and automatic damage/defenses belong to the later combat phase. Richer advantage/dice adjustments, damage defenses and condition presets follow their settled Notion rules there. A simple area ability editor and optional visuals also follow later.
 
 ### Deferred combat work and wider roadmap
 

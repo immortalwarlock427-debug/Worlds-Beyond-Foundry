@@ -18,10 +18,15 @@ export function recoveryChoices(system, selected = "health") {
 
 export function restorationPlan(system, key, amount) {
   const pool = recoveryPool(system, key);
-  if (!pool) throw new Error("That restoration resource is missing or hidden. Choose an available resource on the consumable.");
+  if (!pool) throw new Error("That restoration resource is missing or hidden. Choose an available resource on the item.");
   amount = numberOr(amount, 0);
   if (amount < 0) throw new Error("Restoration cannot be negative.");
   const previous = pool.health ? numberOr(pool.damage, 0) : numberOr(pool.spent, pool.max - pool.value);
   const next = pool.allowOverflow ? previous - amount : previous <= 0 ? previous : Math.max(0, previous - amount);
   return { label: pool.label, path: `${pool.path}.${pool.health ? "damage" : "spent"}`, previous, next, restored: previous - next };
+}
+
+export function restorationAmount(total, unit, maximum) {
+  const rolled = Math.max(0, numberOr(total, 0));
+  return unit === "percent" ? rolled * Math.max(0, numberOr(maximum, 0)) / 100 : rolled;
 }

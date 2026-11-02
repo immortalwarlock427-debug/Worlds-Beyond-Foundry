@@ -1,12 +1,12 @@
 import { ABILITY_TYPES, ABILITY_STATS, ABILITY_COST_UNITS, ABILITY_ICON, abilityRecord, abilityResources, abilityFormUpdates } from "./abilities-core.mjs";
-import { wholeDisplay, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
+import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { itemEffectRows } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
-import { inCombat, payAp } from "./combat-support.mjs";
+import { inCombat, payAp, planApPayment } from "./combat-support.mjs";
 import { adjustedResourceSpent, customResourceId } from "./resources.mjs";
 import { endOtherForms } from "./forms.mjs";
-import { recoveryChoices } from "./consumable-benefits.mjs";
+import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
 import { TRIGGER_MODES, TRIGGER_COMPARISONS, TRIGGER_END_MODES } from "./form-trigger-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -22,6 +22,7 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
       kind: text("active", { choices: ABILITY_TYPES, blank: false }), category: text(), description: text(), notes: text(), duration: text(),
       apCost: number(null, { min: 0 }), apDiscountStat: text("", { choices: ABILITY_STATS }),
       resourceId: text(), resourceCost: number(null, { min: 0 }), resourceUnit: text("points", { choices: ABILITY_COST_UNITS, blank: false }),
+      restoration: new SchemaField({ target: text("health"), amount: text(), unit: text("points", { choices: ABILITY_COST_UNITS, blank: false }) }),
       uses: new SchemaField({ max: number(null, { min: 0 }), spent: number(0), recovery: text() }),
       cooldown: new SchemaField({ rounds: number(null, { min: 0 }), remaining: number(0, { min: 0 }) })
     };
@@ -45,6 +46,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       record: wholeDisplay(abilityRecord(this.item, character)),
       kinds: choices(Object.fromEntries(Object.entries(ABILITY_TYPES).filter(([key]) => key !== "form")), system.kind), stats: choices(ABILITY_STATS, system.apDiscountStat),
       units: choices(ABILITY_COST_UNITS, system.resourceUnit), resources: abilityResources(character, system.resourceId),
+      restorationResources: recoveryChoices(character, system.restoration?.target ?? "health"), restorationUnits: choices(ABILITY_COST_UNITS, system.restoration?.unit ?? "points"),
       hasActor: !!character,
       triggerModes: choices(TRIGGER_MODES, system.trigger?.mode ?? "manual"), triggerComparisons: choices(TRIGGER_COMPARISONS, system.trigger?.comparison ?? "above"), triggerEndModes: choices(TRIGGER_END_MODES, system.trigger?.endMode ?? "prompt"),
       triggerResources: [{ value: "", label: "Choose resource", selected: !system.trigger?.resourceId }, ...recoveryChoices(character, system.trigger?.resourceId || "")]
@@ -89,6 +91,19 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
     const record = abilityRecord(item, actor.system);
     if (record.uses.tracked && !(record.uses.value >= 1)) throw new Error("No ability uses left. Correct the tracker if needed.");
     if (record.remaining > 0) throw new Error("This ability is on cooldown. Correct the tracker if needed.");
+    const bonusRows = itemEffectRows(item), hasBonuses = bonusRows.length > 0;
+    const otherBenefit = item.system.kind === "form" || bonusRows.some(row => !row.disabled);
+    const benefit = item.system.restoration, formula = String(benefit?.amount ?? "").trim();
+    const target = benefit?.target ?? "health", restorePool = formula ? recoveryPool(actor.system, target) : null;
+    if (formula) {
+      if (!restorePool) throw new Error("This ability's restoration resource is missing or hidden. Choose an available resource.");
+      if (!foundry.dice.Roll.validate(formula)) throw new Error("Enter a restoration amount or complete dice such as 20 or 2d6+2.");
+      if (benefit.unit === "percent" && !(restorePool.max > 0) && !otherBenefit) throw new Error("Set a positive resource maximum before using percentage restoration.");
+      if (!otherBenefit && restorationPlan(actor.system, target, 1).restored === 0) {
+        ui.notifications.info(target === "health" ? "You are at full health. Nothing was spent." : `Your ${restorePool.label} is full. Nothing was spent.`);
+        return;
+      }
+    }
     const cost = Number(item.system.resourceCost) || 0, key = item.system.resourceId;
     const path = ["mana", "holyPower"].includes(key) ? `system.${key}` : `system.customResources.${key}`;
     const pool = ["mana", "holyPower"].includes(key) ? actor.system[key] : actor.system.customResources?.[key];
@@ -104,20 +119,32 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
     const reaction = inCombat(actor) && item.system.kind === "reaction";
     if (reaction && !(actor.system.reactions.value >= 1)) throw new Error("No reactions left. Correct the tracker if needed.");
     const messageMode = game.settings.get("core", "messageMode");
+    if (ap) planApPayment(actor, ap);
+    let roll = null, rollHTML = "", amount = 0;
+    if (formula) {
+      roll = await new foundry.dice.Roll(formula).evaluate({ allowInteractive: messageMode !== "blind" });
+      amount = restorationAmount(roll.total, benefit.unit, restorePool.max);
+      if (!amount && !otherBenefit) { ui.notifications.info("No restoration was rolled. Nothing was spent."); return; }
+      rollHTML = await roll.render();
+    }
     if (ap) await payAp(actor, ap, change, { updateOptions });
     const previousSpent = pool?.spent;
     if (spent !== undefined) await change(() => actor.update({ [`${path}.spent`]: spent }, updateOptions), () => actor.update({ [`${path}.spent`]: previousSpent }, updateOptions));
     if (reaction) await change(() => actor.update({ "system.reactions.value": actor.system.reactions.value - 1 }), () => actor.update({ "system.reactions.value": actor.system.reactions.value + 1 }));
+    // Re-read expenditure after costs: paying and restoring the same pool must
+    // not overwrite the payment. Percentage amounts use the pre-use maximum.
+    const restoration = formula ? restorationPlan(actor.system, target, amount) : null;
+    if (restoration?.restored) await change(() => actor.update({ [restoration.path]: restoration.next }, updateOptions), () => actor.update({ [restoration.path]: restoration.previous }, updateOptions));
     const previous = { "system.effectsActive": false, "system.uses.spent": item.system.uses.spent, "system.cooldown.remaining": item.system.cooldown.remaining };
     if (item.system.kind === "form") await endOtherForms(actor, change, { itemId: item.id });
-    const hasBonuses = itemEffectRows(item).length > 0;
     const staysActive = hasBonuses || item.system.kind === "form";
     const updates = { "system.effectsActive": staysActive, "system.uses.spent": item.system.uses.spent + (record.uses.tracked ? 1 : 0), "system.cooldown.remaining": item.system.cooldown.rounds ?? 0 };
     // Native updates can return undefined when there is no diff. A simple ability
     // without bonuses or trackers still posts and pays its configured costs.
     if (Object.keys(updates).some(key => updates[key] !== previous[key])) await change(() => item.update(updates), () => item.update(previous));
     return createActionMessage({ speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-      content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${ap} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${hasBonuses ? " Bonuses enabled until ended." : ""}</p><details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(item.system.description)}</p></details></div>`
+      content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}<details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(item.system.description)}</p></details></div>`,
+      rolls: roll ? [roll] : []
     }, { messageMode });
   }));
 }

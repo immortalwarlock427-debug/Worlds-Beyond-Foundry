@@ -45,6 +45,8 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 - System chat cards share the navy/brass theme, including attacks, damage, reloads and consumables. Equipment uses grouped rows with fitting icons, key stats, clear equipped states and compact actions. See [chat and equipment polish](docs/VISUAL-POLISH.md).
 - All 70 catalog entries have unique image paths: 63 stock matches and 7 user-supplied illustrations. Old default images and matching placeholders resolve in inventories, editor previews and Item directories/compendiums; custom images stay chosen. See [equipment artwork](docs/EQUIPMENT-ART.md).
 
+- **Ability restoration:** open an ability's Restoration section to restore Health, Mana, Holy power or an owned custom resource using points, dice or a percentage of maximum. Use pays its costs and applies restoration and bonuses together. Pure restoration at full spends nothing; End does not undo healing. See [ability restoration](docs/ABILITY-RESTORATION.md).
+
 ## Installing
 
 Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the folder name must be `worlds-beyond`), restart Foundry, and create a new world with the Worlds Beyond system.
