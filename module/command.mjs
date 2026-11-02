@@ -1,8 +1,9 @@
-import { commandAmount } from "./ap.mjs";
+import { commandAmount, apTotal } from "./ap.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { payAp, inCombat, commandReady } from "./combat-support.mjs";
 import { wholeNumber } from "./number-display.mjs";
 const SCOPE = "worlds-beyond";
+const mountedCommands = new Set();
 const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 export function commandCandidates(actor) {
@@ -41,25 +42,51 @@ export async function commandAlly(actor, ally) {
     }, { messageMode: game.settings.get("core", "messageMode") });
     // Delivery failures do not refund a successfully posted offer: the recipient
     // or GM can retry it without charging the commander a second time.
-    if (ally.isOwner) try { await receiveCommand(message); } catch (error) { ui.notifications.warn(`Command posted; apply it from chat: ${error.message}`); }
+    if (ally.isOwner || game.user?.isActiveGM) try { await applyCommandGrant(ally, amount, message.uuid ?? message.id); }
+    catch (error) { ui.notifications.warn(`Command posted; apply it from chat: ${error.message}`); }
     return message;
   }));
 }
 
 export async function receiveCommand(message) {
   const data = message.getFlag(SCOPE, "command");
-  if (!data || !Number.isInteger(data.amount) || data.amount < 1 || data.amount > 5) return;
+  if (!data) throw new Error("This card has no Command offer. Use Command again from the sender's sheet.");
+  const amount = Number(data.amount);
+  if (!Number.isInteger(amount) || amount < 1 || amount > 5) throw new Error("This card has an invalid Command amount. Use Command again from the sender's sheet.");
   const actor = await foundry.utils.fromUuid(data.targetUuid);
-  if (!actor?.isOwner || actor.type !== "character") return;
+  if (!actor || actor.type !== "character") throw new Error("This Command's recipient no longer exists. Choose the ally again.");
+  if (!actor.isOwner && !game.user?.isActiveGM) return;
+  return applyCommandGrant(actor, amount, message.uuid ?? message.id);
+}
+
+export async function applyCommandGrant(actor, amount, receipt) {
+  if (!actor.isOwner && !game.user?.isActiveGM) return;
+  if (!receipt || !Number.isInteger(amount) || amount < 1 || amount > 5) throw new Error("Command needs a valid amount and delivery receipt.");
   return queuedAction(actor.uuid, async () => {
-    const receipt = message.uuid ?? message.id;
     const flags = actor.getFlag(SCOPE, "commandClaims");
     const claimed = Array.isArray(flags) ? flags : [];
-    if (claimed.includes(receipt)) return;
-    const value = Math.max(actor.system.command?.value ?? 0, data.amount);
+    if (claimed.includes(receipt)) return actor;
+    const value = Math.max(actor.system.command?.value ?? 0, amount);
     const fresh = !inCombat(actor) || !commandReady(actor);
-    if (!await actor.update({ "system.command.value": value, "system.command.fresh": fresh, [`flags.${SCOPE}.commandClaims`]: [...claimed, receipt] })) throw new Error("Command delivery was cancelled. Retry from chat.");
+    const received = [...claimed, receipt];
+    await actor.update({ "system.command.value": value, "system.command.fresh": fresh, [`flags.${SCOPE}.commandClaims`]: received });
+    if (actor.system.command?.value !== value || !actor.getFlag(SCOPE, "commandClaims")?.includes(receipt)) throw new Error("Command delivery was cancelled or not retained. Retry from chat.");
+    actor.render?.(false);
+    refreshCommandControls(actor);
+    ui.notifications.info?.(`${actor.name}: ${wholeNumber(apTotal(actor.system))} AP total, including ${wholeNumber(value)} Command AP.`);
+    return actor;
   });
+}
+
+export function refreshCommandControls(actor) {
+  for (const entry of mountedCommands) {
+    const button = entry.button.deref();
+    if (!button) { mountedCommands.delete(entry); continue; }
+    if (actor?.uuid !== entry.actorUuid) continue;
+    const claims = actor.getFlag(SCOPE, "commandClaims");
+    const claimed = Array.isArray(claims) && claims.includes(entry.receipt);
+    button.textContent = claimed ? "Command received" : "Receive Command AP"; button.disabled = claimed;
+  }
 }
 
 export function decorateCommand(message, html) {
@@ -69,8 +96,10 @@ export function decorateCommand(message, html) {
   const actor = foundry.utils.fromUuidSync(data.targetUuid);
   if (!actor?.isOwner) return;
   const button = document.createElement("button"); button.type = "button"; button.className = "wb-command-receive";
-  const claimed = (actor.getFlag(SCOPE, "commandClaims") ?? []).includes(message.uuid ?? message.id);
+  const claims = actor.getFlag(SCOPE, "commandClaims");
+  const claimed = Array.isArray(claims) && claims.includes(message.uuid ?? message.id);
   button.textContent = claimed ? "Command received" : "Receive Command AP"; button.disabled = claimed;
-  button.addEventListener("click", async () => { button.disabled = true; try { await receiveCommand(message); button.textContent = "Command received"; } catch (error) { button.disabled = false; ui.notifications.error(error.message); } });
+  mountedCommands.add({ button: new WeakRef(button), actorUuid: actor.uuid, receipt: message.uuid ?? message.id });
+  button.addEventListener("click", async () => { button.disabled = true; try { const result = await receiveCommand(message); if (!result) throw new Error("Only this ally's owner or the active GM can receive Command AP."); refreshCommandControls(result); } catch (error) { button.disabled = false; ui.notifications.error(error.message); } });
   content.append(button);
 }

@@ -523,6 +523,8 @@
 .worlds-beyond.wb-roll-dialog .wb-check-options .wb-disclosure { font-size: 14px; }
 .worlds-beyond .wb-result { font-weight: 700; color: #E7E4D8; }
 .worlds-beyond.wb-attack-card h3,
+.worlds-beyond.wb-command-card h3,
+.worlds-beyond.wb-ability-card h3,
 .worlds-beyond.wb-consumable-card h3 { font: 18px "Marcellus SC", serif; color: #D6A85C; border: 0; }
 .worlds-beyond.wb-roll-dialog .form-footer button { background: #1A2136; color: #D6A85C; border: 1px solid #D6A85C; }
 .worlds-beyond.wb-roll-dialog .form-footer button:hover,

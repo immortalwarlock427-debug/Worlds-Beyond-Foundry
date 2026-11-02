@@ -11,7 +11,7 @@ import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
-import { promptCommand, receiveCommand, decorateCommand } from "./command.mjs";
+import { promptCommand, receiveCommand, decorateCommand, refreshCommandControls } from "./command.mjs";
 import { apTotal } from "./ap.mjs";
 import { commandReady } from "./combat-support.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
@@ -541,6 +541,7 @@ Hooks.on("createChatMessage", message => {
   if (game.user.isActiveGM && message.getFlag(SYSTEM_ID, "command")) receiveCommand(message).catch(error => ui.notifications.warn(`Command is waiting in chat: ${error.message}`));
 });
 Hooks.on("updateActor", refreshWonderControls);
+Hooks.on("updateActor", refreshCommandControls);
 Hooks.on("createChatMessage", refreshWonderControls);
 
 Hooks.on("combatTurnChange", refillTurnResources);
