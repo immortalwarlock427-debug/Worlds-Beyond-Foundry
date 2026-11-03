@@ -360,9 +360,34 @@ export async function createEquipment(actor, type) {
 }
 
 export async function toggleEquipment(actor, id) {
-  const item = actor.items.get(id);
-  if (!actor.isOwner || !item || !Object.hasOwn(EQUIPMENT_TYPES, item.type)) return;
-  return item.update({ "system.equipped": !item.system.equipped });
+  return queuedAction(actor.uuid, () =>
+    reversibleAction(async change => {
+      const item = actor.items.get(id);
+      if (!actor.isOwner || !item || !Object.hasOwn(EQUIPMENT_TYPES, item.type)) return;
+      const equipped = !item.system.equipped;
+      const cost =
+        inCombat(actor) && !(item.type === "weapon" && item.system.signature?.quickdraw) ? actionApCost(2, actor.system.stats.dex.mod) : 0;
+      const before = Array.from(actor.items.values())
+        .filter(entry => Object.hasOwn(EQUIPMENT_TYPES, entry.type))
+        .map(entry => ({ _id: entry.id, "system.equipped": !!entry.system.equipped }));
+      await payAp(actor, cost, change);
+      // Register before the batch: native hand normalization may also stow other
+      // items, and a partially failed operation must restore those as well.
+      await change(
+        () => actor,
+        async () => {
+          const restore = before.filter(
+            entry => actor.items.has(entry._id) && !!actor.items.get(entry._id).system.equipped !== entry["system.equipped"]
+          );
+          if (restore.length) await actor.updateEmbeddedDocuments("Item", restore, { worldsBeyondFormRestore: true });
+          return actor;
+        }
+      );
+      const result = await item.update({ "system.equipped": equipped });
+      if (!result || !!item.system.equipped !== equipped) throw new Error("Equipment change was not saved. Try again.");
+      return result;
+    })
+  );
 }
 
 const escapeHTML = value =>

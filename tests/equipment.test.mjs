@@ -163,7 +163,17 @@ test("creation embeds an item on the correct actor and opens its sheet", async (
 
 test("equip changes only the chosen owned item's flag without changing stats or imposing slot limits", async () => {
   const updates = [];
-  const item = { type: "armor", system: { equipped: false }, update: data => updates.push(data) };
+  globalThis.game = { combats: [] };
+  const item = {
+    id: "a",
+    type: "armor",
+    system: { equipped: false },
+    update(data) {
+      updates.push(data);
+      this.system.equipped = data["system.equipped"];
+      return this;
+    }
+  };
   const actor = { isOwner: true, items: new Map([["a", item]]) };
   await toggleEquipment(actor, "a");
   item.system.equipped = true;
@@ -173,6 +183,66 @@ test("equip changes only the chosen owned item's flag without changing stats or 
   actor.isOwner = false;
   await toggleEquipment(actor, "a");
   assert.equal(updates.length, 2);
+});
+
+test("combat gear switches pay DEX-adjusted AP once, honor Quickdraw, and restore conflicts on failure", async () => {
+  const make = (id, type, equipped) => ({
+    id,
+    type,
+    system: { equipped, signature: {} },
+    async update(data) {
+      this.system.equipped = data["system.equipped"];
+      if (this.system.equipped && this.type === "weapon") old.system.equipped = false;
+      if (fail) throw new Error("save failed");
+      return this;
+    }
+  });
+  let fail = false;
+  const old = make("old", "weapon", true),
+    sword = make("sword", "weapon", false),
+    armor = make("armor", "armor", false),
+    shield = make("shield", "shield", false);
+  const actor = {
+    uuid: "Actor.gear",
+    isOwner: true,
+    items: new Map([old, sword, armor, shield].map(item => [item.id, item])),
+    system: { ap: { value: 10 }, command: { value: 0 }, stats: { dex: { mod: 0 } } },
+    async update(data) {
+      for (const [path, value] of Object.entries(data)) this.system[path.split(".")[1]].value = value;
+      return this;
+    },
+    async updateEmbeddedDocuments(_type, data) {
+      for (const entry of data) this.items.get(entry._id).system.equipped = entry["system.equipped"];
+      return data;
+    }
+  };
+  globalThis.game = { combats: [{ started: true, combatants: [{ actor }], combatant: { actor } }] };
+  await toggleEquipment(actor, "sword");
+  assert.equal(actor.system.ap.value, 8);
+  assert.equal(old.system.equipped, false);
+  actor.system.stats.dex.mod = 6;
+  await toggleEquipment(actor, "armor");
+  assert.equal(actor.system.ap.value, 7);
+  actor.system.stats.dex.mod = -6;
+  await toggleEquipment(actor, "shield");
+  assert.equal(actor.system.ap.value, 4);
+  sword.system.signature.quickdraw = true;
+  await toggleEquipment(actor, "sword");
+  assert.equal(actor.system.ap.value, 4);
+  sword.system.signature.quickdraw = false;
+  old.system.equipped = true;
+  fail = true;
+  await assert.rejects(toggleEquipment(actor, "sword"), /save failed/);
+  assert.equal(actor.system.ap.value, 4);
+  assert.equal(old.system.equipped, true);
+  assert.equal(sword.system.equipped, false);
+  fail = false;
+  actor.system.ap.value = 0;
+  await assert.rejects(toggleEquipment(actor, "sword"), /Not enough AP/);
+  assert.equal(old.system.equipped, true);
+  globalThis.game.combats = [];
+  await toggleEquipment(actor, "sword");
+  assert.equal(actor.system.ap.value, 0);
 });
 
 test("each equipment model exposes only its common and type-specific fields", () => {
