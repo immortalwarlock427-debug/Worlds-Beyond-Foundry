@@ -221,6 +221,86 @@ test("synthetic forms update only their own unlinked token and restore even-grow
   assert.equal(t.tokens[2].width, 1);
 });
 
+test("animated tokens are checked against stored values, not mid-animation display values", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  // Model v14: the stored source changes at once, while the prepared values
+  // keep showing the old size and art until the animation finishes.
+  const token = t.tokens[2];
+  token._source = { x: token.x, y: token.y, width: 1, height: 1, texture: { ...token.texture } };
+  token.update = async (changes, options) => {
+    t.calls.push({ id: token.id, changes, options });
+    apply(token._source, changes);
+    if (!options.animate) apply(token, changes);
+    return token;
+  };
+  f.actor.isToken = true;
+  f.actor.token = token;
+  await useAbility(f.actor, f.first.id);
+  assert.equal(token._source.width, 2);
+  assert.equal(token._source.texture.src, "monstrous.webp");
+  assert.equal(token._source.texture.scaleX, 1.15);
+  assert.equal(f.first.system.effectsActive, true);
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(token._source.width, 1);
+  assert.equal(token._source.texture.src, "copy.webp");
+  assert.equal(token._source.texture.scaleX, 1.2);
+  assert.equal(token._source.texture.scaleY, 0.8);
+});
+
+test("unlinked token actors keep their own form receipt while the sidebar actor is transformed", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  const token = t.tokens[2];
+  // Model v14 ActorDelta: the token actor's flags are the sidebar flags with the
+  // token's own stored flags merged on top, so sidebar keys can never be dropped.
+  const sidebar = {
+    "worlds-beyond": {
+      formLoadoutState: {
+        currentId: "first",
+        basePortrait: "base.png",
+        baseEquipment: { sword: true },
+        gearEnabled: true,
+        tokenState: {
+          seconds: 1.5,
+          targets: { prototype: { base: { src: "prototype.webp" }, fields: { src: true }, offsetX: 0, offsetY: 0 } }
+        }
+      }
+    }
+  };
+  token.delta = { _source: { flags: {} } };
+  const view = () => {
+    f.actor.flags = structuredClone(sidebar);
+    merge(f.actor.flags, structuredClone(token.delta._source.flags));
+  };
+  view();
+  const update = f.actor.update;
+  f.actor.update = async (changes, options) => {
+    const own = {},
+      rest = {};
+    for (const [path, value] of Object.entries(changes)) {
+      if (path.startsWith("flags.")) own[path.slice(6)] = value;
+      else rest[path] = value;
+    }
+    apply(token.delta._source.flags, own);
+    const result = await update.call(f.actor, rest, options);
+    view();
+    return result;
+  };
+  f.actor.isToken = true;
+  f.actor.token = token;
+  await useAbility(f.actor, f.first.id);
+  const receipt = () => token.delta._source.flags["worlds-beyond"].formLoadoutState;
+  assert.equal(receipt().currentId, "first");
+  assert.equal(receipt().tokenState.targets.prototype, undefined);
+  assert.equal(token.width, 2);
+  assert.equal(f.actor.img, "first.png");
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(token.width, 1);
+  assert.equal(token.texture.src, "copy.webp");
+  assert.equal(receipt().currentId, "");
+});
+
 test("failed token updates compensate prior tokens, prototype, form bonuses and costs", async () => {
   const f = fixture(),
     t = tokenFixture(f);

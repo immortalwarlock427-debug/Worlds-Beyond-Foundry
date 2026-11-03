@@ -1,6 +1,9 @@
 import { hasTokenLoadout, tokenAppearance, tokenTransform } from "./form-token-core.mjs";
 const operation = () => ({ worldsBeyondFormLoadout: true });
 const keyFor = token => `${token.parent?.id ?? "scene"}_${token.id}`;
+// v14 interpolates a token's prepared width, scale and texture while it animates.
+// The stored source holds the committed values, so plans and checks read it.
+const stored = token => token?._source ?? token;
 
 // All updates use fresh operation objects; native v14 mutates them with parent metadata.
 export async function syncFormTokens(actor, form, change, previous) {
@@ -19,18 +22,19 @@ export async function syncFormTokens(actor, form, change, previous) {
   }
   const seconds = active ? (config.transitionSeconds ?? 0) : (previous?.seconds ?? 0);
   const records = {};
-  const prototype = actor.prototypeToken && tokenAppearance(actor.prototypeToken);
+  const prototype = actor.prototypeToken && tokenAppearance(stored(actor.prototypeToken));
   for (const target of targets) {
-    const token = target.document();
+    const token = target.document(),
+      data = stored(token);
     let saved = previous?.targets?.[target.key];
     // Tokens created from an already transformed prototype inherit its form values.
-    if (!saved && previous?.targets?.prototype && prototype && target.placed && foundry.utils.equals(tokenAppearance(token), prototype))
+    if (!saved && previous?.targets?.prototype && prototype && target.placed && foundry.utils.equals(tokenAppearance(data), prototype))
       saved = { ...previous.targets.prototype, offsetX: 0, offsetY: 0 };
     if (!active && !saved) continue;
-    const plan = tokenTransform(token, config, saved, target.placed ? (token.parent?.grid?.size ?? 0) : 0, !active);
+    const plan = tokenTransform(data, config, saved, target.placed ? (token.parent?.grid?.size ?? 0) : 0, !active);
     if (active) records[target.key] = plan.record;
     if (!Object.keys(plan.updates).length) continue;
-    const restore = Object.fromEntries(Object.keys(plan.updates).map(path => [path, foundry.utils.getProperty(token, path)]));
+    const restore = Object.fromEntries(Object.keys(plan.updates).map(path => [path, foundry.utils.getProperty(data, path)]));
     const write = (updates, animate) =>
       target.placed
         ? target.document().update(updates, {
@@ -52,7 +56,10 @@ export async function syncFormTokens(actor, form, change, previous) {
       () => write(restore, false)
     );
     const result = await write(plan.updates, true);
-    if (!result || Object.entries(plan.updates).some(([path, value]) => foundry.utils.getProperty(target.document(), path) !== value))
+    if (
+      !result ||
+      Object.entries(plan.updates).some(([path, value]) => foundry.utils.getProperty(stored(target.document()), path) !== value)
+    )
       throw new Error("The form's token transformation was cancelled or not retained.");
   }
   return active ? { targets: records, seconds } : undefined;
