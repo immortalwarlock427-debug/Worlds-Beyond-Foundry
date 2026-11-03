@@ -82,7 +82,7 @@ Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the f
 - `module/catalog.mjs`: Foundry-free weapon/armor/shield tables transcribed from Notion
 - `module/catalog-import.mjs`: GM import of the catalog into a world compendium
 - `module/worlds-beyond.mjs`: data model, character sheet and registration
-- `templates/character-sheet.hbs`: sheet markup
+- `templates/character-*.hbs`: native header/tab parts and small Details partials
 - `styles/worlds-beyond.css`: sheet styles
 - `tests/`: rules and sheet/token/roll adapter tests (`node --test`)
 - `docs/ROADMAP.md`: what gets built next, in order
