@@ -31,6 +31,7 @@
           aria-pressed="{{showAllFormAbilities}}"
         >{{#if showAllFormAbilities}}Form abilities{{else}}Show all{{/if}}</button>{{/if}}
         <button type="button" data-action="ability" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add ability</button>
+        <button type="button" data-action="ability" data-operation="spell" {{#unless editable}}disabled{{/unless}}>Add spell</button>
         <button type="button" data-action="ability" data-operation="create" data-kind="form" {{#unless editable}}disabled{{/unless}}>Add form</button>
       </div>
     </div>
