@@ -167,7 +167,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
   prepareBaseData() {
     // Permanent increases join the base before Foundry applies Active Effects.
     // Only the allocation is persisted, never the augmented value.
-    const source = this.toObject();
+    const source = this._source; // Read persisted values without copying or changing them.
     const increases = statIncreases(source.level, source.advancement);
     for (const { key } of STATS) this.stats[key].value = source.stats[key].value + increases[key];
   }
@@ -336,7 +336,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       context,
       prepareCharacterSheetContext({
         actor: this.actor,
-        source: system.toObject(),
+        source: system._source,
         editable: this.isEditable,
         equipment,
         equipmentGroups: groupEquipmentRows(equipment),
@@ -348,7 +348,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   _processFormData(event, form, formData) {
-    const systemSource = this.actor.system.toObject?.();
+    const systemSource = this.actor.system._source;
     const shownAp = apTotal(this.actor.system);
     const data = wholeFormUpdates(super._processFormData(event, form, formData), form, {
       system: {
