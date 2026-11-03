@@ -442,6 +442,23 @@ test("creating an ability uses native embedded Items and never changes actor res
   assert.equal(calls.length, 4);
 });
 
+test("currency edits round down and unchanged coin controls do not resubmit the balances", () => {
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
+  sheet.actor.system.currency = { gc: 1500, pc: 2 };
+  useSource(sheet.actor.system, { currency: { gc: 1500, pc: 2 } });
+  const form = {
+    querySelectorAll: selector => (selector === "[data-stat-score]" ? [] : ["gc", "pc"].map(key => ({ name: `system.currency.${key}` })))
+  };
+  const edited = sheet._processFormData(null, form, { object: { system: { currency: { gc: 1600.9, pc: 3.8 } } } });
+  assert.deepEqual(edited.system.currency, { gc: 1600, pc: 3 });
+  const unchanged = sheet._processFormData(null, form, { object: { name: "Renamed", system: { currency: { gc: 1500, pc: 2 } } } });
+  assert.deepEqual(unchanged.system.currency, {});
+  assert.equal(edited.system.health, undefined);
+  assert.equal(edited.system.ap, undefined);
+  assert.deepEqual(sheet.actor.system._source.currency, { gc: 1500, pc: 2 });
+});
+
 test("manual defense corrections bind to stored bonuses rather than active effect totals", async () => {
   const sheet = new CharacterSheet();
   sheet.actor = actor();

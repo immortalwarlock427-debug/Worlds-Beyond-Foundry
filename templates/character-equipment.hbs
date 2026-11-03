@@ -28,6 +28,32 @@
         aria-hidden="true"
       ><span></span></span>
     </div>
+    <section class="wb-currency" aria-label="Currency">
+      <h3 class="wb-eyebrow"><i class="fa-solid fa-coins" aria-hidden="true"></i> Currency</h3>
+      <label><span class="wb-eyebrow">Gold coins (gc)</span>
+        <input
+          type="number"
+          name="system.currency.gc"
+          value="{{currency.gc}}"
+          min="0"
+          step="1"
+          aria-label="Gold coins (gc)"
+          {{#unless editable}}disabled{{/unless}}
+        >
+      </label>
+      <label><span class="wb-eyebrow">Platinum coins (pc)</span>
+        <input
+          type="number"
+          name="system.currency.pc"
+          value="{{currency.pc}}"
+          min="0"
+          step="1"
+          aria-label="Platinum coins (pc)"
+          {{#unless editable}}disabled{{/unless}}
+        >
+      </label>
+      <p class="wb-currency-summary"><span>Total <strong>{{currency.total}} gc</strong></span><span>1 pc = {{currency.goldPerPlatinum}} gc</span></p>
+    </section>
     {{#each equipmentGroups}}
     <section class="wb-equipment-group">
       <h3 class="wb-equipment-group-title">{{label}} <span>{{rows.length}}</span></h3>

@@ -153,6 +153,10 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       ),
       bonuses: new SchemaField({ armor: number(), evasion: number(), movement: number() }),
       inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
+      currency: new SchemaField({
+        gc: number(0, { integer: true, min: 0 }),
+        pc: number(0, { integer: true, min: 0 })
+      }),
       overrides: new SchemaField({
         hitDie: new StringField({ required: true, nullable: false, initial: "", blank: true }),
         evasion: override(),

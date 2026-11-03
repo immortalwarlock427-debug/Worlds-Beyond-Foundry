@@ -76,6 +76,15 @@ function fixture() {
   return { actor, system, source, input, ability, render: extra => prepareCharacterSheetContext({ ...input, ...extra }) };
 }
 
+test("Equipment shows both coin balances and their combined gold value without changing them", () => {
+  const f = fixture();
+  f.system.currency = Object.freeze({ gc: 1500, pc: 2 });
+  const view = f.render();
+  assert.deepEqual(view.currency, { gc: 1500, pc: 2, total: 3500, goldPerPlatinum: 1000 });
+  assert.deepEqual(f.system.currency, { gc: 1500, pc: 2 });
+  assert.equal(view.resources.find(row => row.key === "ap").value, 14);
+});
+
 test("sheet presenters preserve earned bases, adjustments, reset scores and literal notes without writing frozen data", () => {
   const f = fixture(),
     before = structuredClone({ system: f.system, source: f.source });
