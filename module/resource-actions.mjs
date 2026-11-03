@@ -4,6 +4,7 @@ import {
   customResourceId,
   magicPool,
   customPool,
+  applyFormMaximum,
   adjustedResourceSpent,
   poolSpentForCurrent,
   resourcePresentation,
@@ -70,9 +71,10 @@ export async function resourceAction(actor, key, action, amount) {
       if (!result) throw new Error("The resource was not removed.");
       return result;
     }
-    const pool = magic
+    const normal = magic
       ? magicPool(actor.system.level, actor.system.stats[magic.stat].effective ?? actor.system.stats[magic.stat].value, data)
       : customPool(data, actor.system);
+    const pool = applyFormMaximum(normal, data.spent, data.normalMax != null ? data.max : null, data.formName);
     // DOM amounts are strings; internal numeric costs may retain fractional points.
     const enteredAmount = typeof amount === "string" && amount.trim() !== "" ? Math.floor(Number(amount)) : (amount ?? data.amount);
     const spent = adjustedResourceSpent(pool, action, action === "recover" ? data.regen : enteredAmount);

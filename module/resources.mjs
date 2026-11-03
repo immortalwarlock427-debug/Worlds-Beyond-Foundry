@@ -41,6 +41,11 @@ export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   };
 }
 
+export function applyFormMaximum(pool, spent, maximum, formName) {
+  if (maximum == null) return pool;
+  return { ...pool, normalMax: pool.max, max: maximum, value: maximum - numberOr(spent, 0), formName };
+}
+
 export function resourcePresentation(pool) {
   const percent = pool.display === "percent";
   const minimum = numberOr(pool.min, 0);

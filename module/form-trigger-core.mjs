@@ -10,7 +10,7 @@ export function triggerCondition(system, trigger = {}) {
   if (!trigger.mode || trigger.mode === "manual") return null;
   const pool = recoveryPool(system, trigger.resourceId);
   if (!pool) return null;
-  const threshold = numberOr(trigger.threshold, pool.max);
+  const threshold = numberOr(trigger.threshold, pool.normalMax ?? pool.max);
   const value = numberOr(pool.value, pool.health ? pool.max - pool.damage : null);
   if (!Number.isFinite(value) || !Number.isFinite(threshold)) return null;
   switch (trigger.comparison) {

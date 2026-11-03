@@ -97,6 +97,7 @@ function coreBreakdowns({ system, effects, statSources }) {
 }
 
 function resourceSources(pool, { system, effects, statSources }) {
+  if (pool.normalMax != null) return `${pool.formName} form maximum: ${pool.max} · Outside forms: ${pool.normalMax}`;
   const stat = pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat;
   return [
     pool.maxOverride != null
@@ -202,6 +203,7 @@ export function detailsContext(state) {
       .filter(pool => showAllFormResources || formShowsResource(activeForm, pool.key))
       .map(pool => ({
         ...pool,
+        storedBonus: (pool.custom ? source.customResources?.[pool.key]?.bonus : source[pool.key]?.bonus) ?? 0,
         ...barColorContext(pool),
         sources: resourceSources(pool, { system, effects, statSources })
       })),

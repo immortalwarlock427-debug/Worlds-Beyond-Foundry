@@ -51,6 +51,12 @@ export function formLoadoutFormUpdates(system, data) {
       if (value === (saved[key]?.[id] ?? key !== "equipment")) delete loadout[key][id];
     if (!Object.keys(loadout[key]).length) delete loadout[key];
   }
+  for (const [key, value] of Object.entries(loadout.resourceMaxima ?? {})) {
+    const maximum = value == null || value === "" ? null : Number(value);
+    if (maximum === (saved.resourceMaxima?.[key] ?? null)) delete loadout.resourceMaxima[key];
+    else loadout.resourceMaxima[key] = maximum;
+  }
+  if (loadout.resourceMaxima && !Object.keys(loadout.resourceMaxima).length) delete loadout.resourceMaxima;
   if (!Object.keys(loadout).length) delete data.system.loadout;
   return data;
 }

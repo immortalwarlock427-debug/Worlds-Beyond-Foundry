@@ -41,7 +41,7 @@
       type="number"
       name="system.trigger.threshold"
       value="{{system.trigger.threshold}}"
-      placeholder="Resource maximum"
+      placeholder="Resource maximum (outside forms)"
       step="1"
       {{#unless editable}}disabled{{/unless}}
     ></label>
@@ -49,7 +49,7 @@
       value="{{value}}"
       {{#if selected}}selected{{/if}}
     >{{label}}</option>{{/each}}</select></label>
-  </div><details class="wb-disclosure wb-help"><summary>Trigger help</summary><p>Checks when the resource changes. Blank threshold uses its maximum. Entry costs apply; leave them blank for a free transformation. Enable Allow over maximum on the resource to gain beyond its cap. Multiple matching forms ask you to choose.</p></details></details>{{/if}}
+  </div><details class="wb-disclosure wb-help"><summary>Trigger help</summary><p>Checks when the resource changes. Blank threshold uses the resource maximum outside forms. Entry costs apply; leave them blank for a free transformation. Enable Allow over maximum on the resource to gain beyond its cap. Multiple matching forms ask you to choose.</p></details></details>{{/if}}
   {{#if isForm}}<details class="wb-disclosure" data-sync="form-loadout"><summary>Form loadout</summary>
     <button type="button" data-action="pickFormPortrait" {{#unless editable}}disabled{{/unless}}>Choose form portrait</button>
     <label>Portrait path<input
@@ -147,7 +147,15 @@
       name="system.loadout.resources.{{id}}"
       {{#if selected}}checked{{/if}}
       {{#unless @root.editable}}disabled{{/unless}}
-    > {{name}}</label>{{/each}}</div></details>
+    > {{name}}</label><label>Maximum in this form · {{name}}<input
+      type="number"
+      min="0"
+      step="1"
+      name="system.loadout.resourceMaxima.{{id}}"
+      value="{{maximum}}"
+      placeholder="Normal maximum"
+      {{#unless @root.editable}}disabled{{/unless}}
+    ></label>{{/each}}</div></details>
     {{else}}<p class="wb-item-brief">Configure equipment, abilities and resources on a character's copy.</p>{{/if}}
     <details class="wb-disclosure wb-help"><summary>Loadout help</summary><p>Base portrait and gear return on End. Copy current gear or select a preset; an enabled empty preset stows all equipment. Changes made to equipped gear in a saved form are remembered when leaving it. Shared inventory, shots, uses and resource expenditure are preserved. Hand conflicts follow the existing equipment rules.</p><p>Token width and height are grid squares: enter 2 in both for 2×2. An unlinked token is a separate character copy: double-click that map token and Use the form from its own sheet. Using a sidebar character changes its prototype and linked map tokens. Blank token settings leave those aspects unchanged.</p><p>Abilities/resources shown are presentation choices. Show all reveals them for editing. Active abilities stay visible to End; hiding a record does not end its bonuses, stop recovery or block costs. Forms always remain available. For stat changes, use Bonuses.</p></details>
   </details>{{/if}}
