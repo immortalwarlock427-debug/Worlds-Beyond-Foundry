@@ -11,6 +11,14 @@ const setProperty = (object, path, value) => {
   const target = keys.reduce((parent, key) => (parent[key] ??= {}), object);
   target[last] = value;
 };
+// Native DataModel source is non-enumerable. A read-only prep/save must not serialize it.
+function useSource(model, source) {
+  Object.defineProperty(model, "_source", { value: source });
+  model.toObject = () => {
+    throw new Error("Unexpected full source copy");
+  };
+}
+
 class ActorStub {
   async onUpdateEffectDurations(...args) {
     this.durationCallback = args;
@@ -139,7 +147,7 @@ test("stat awards prepare from stored bases without accumulating or rewriting re
   const original = structuredClone(source);
   const model = new CharacterData();
   model.stats = structuredClone(source.stats);
-  model.toObject = () => structuredClone(source);
+  useSource(model, source);
   model.prepareBaseData();
   assert.equal(model.stats.str.value, 23);
   assert.equal(model.stats.dex.value, 21);
@@ -168,7 +176,6 @@ test("sheet shows effective stats and colors changes while editing only persiste
     items: [],
     system: {
       stats,
-      toObject: () => ({ stats: source }),
       health: {},
       ap: {},
       reactions: {},
@@ -178,6 +185,7 @@ test("sheet shows effective stats and colors changes while editing only persiste
     }
   };
   sheet.isEditable = true;
+  useSource(sheet.actor.system, { stats: source });
   const context = await sheet._prepareContext({});
   const rows = context.groups.flatMap(group => group.rows);
   const agl = rows.find(row => row.key === "agl");
@@ -218,7 +226,6 @@ test("earned points belong to the normal editable base; only gear/effects add th
     system: {
       level: 12,
       stats,
-      toObject: () => structuredClone(source),
       health: {},
       ap: {},
       reactions: {},
@@ -227,6 +234,7 @@ test("earned points belong to the normal editable base; only gear/effects add th
       overrides: {}
     }
   };
+  useSource(sheet.actor.system, source);
   const rows = (await sheet._prepareContext({})).groups.flatMap(group => group.rows);
   for (const [key, base, adjusted, manual] of [
     ["str", 21, false, false],
@@ -370,7 +378,7 @@ test("the AP field includes Command while saves preserve separate balances and h
   sheet.actor.system.stats = Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12 }]));
   sheet.actor.system.core = { automatic: {} };
   sheet.actor.system.overrides = {};
-  sheet.actor.system.toObject = () => ({ stats: sheet.actor.system.stats });
+  useSource(sheet.actor.system, { stats: sheet.actor.system.stats });
   const context = await sheet._prepareContext({});
   const ap = context.resources.find(row => row.key === "ap");
   assert.equal(ap.value, 7);
@@ -438,7 +446,7 @@ test("manual defense corrections bind to stored bonuses rather than active effec
   const sheet = new CharacterSheet();
   sheet.actor = actor();
   sheet.actor.system.bonuses = { armor: 4, evasion: 3, movement: 5 };
-  sheet.actor.system.toObject = () => ({ bonuses: { armor: 1, evasion: 0, movement: 0 } });
+  useSource(sheet.actor.system, { bonuses: { armor: 1, evasion: 0, movement: 0 } });
   const form = {
     querySelectorAll: selector =>
       selector.includes("data-stat-score") ? [] : ["armor", "evasion", "movement"].map(key => ({ name: `system.bonuses.${key}` }))
@@ -486,7 +494,7 @@ test("ability controls allow read-only viewing and require permission plus confi
 test("form submission saves deliberate base edits and never saves displayed effect scores", () => {
   const sheet = new CharacterSheet();
   sheet.actor = actor();
-  sheet.actor.system.toObject = () => ({ stats: { agl: { value: 21, manual: false, resetValue: null } } });
+  useSource(sheet.actor.system, { stats: { agl: { value: 21, manual: false, resetValue: null } } });
   const input = { dataset: { statScore: "agl", base: "21", pendingBase: "22" } };
   const form = { querySelectorAll: () => [input] };
   const data = sheet._processFormData(null, form, { object: { statScores: { agl: 24 } } });
@@ -528,7 +536,7 @@ test("narrative edits preserve literal text and spacing while unrelated saves om
     backstory: "First line\n\nSecond line",
     notes: "Mana 120.4; 1.5×"
   };
-  sheet.actor.system.toObject = () => ({ details: structuredClone(original) });
+  useSource(sheet.actor.system, { details: original });
   const untouched = sheet._processFormData(null, null, { object: { name: "Renamed", system: { details: structuredClone(original) } } });
   assert.deepEqual(untouched.system.details, {});
   const literal = "  </textarea><script>literal</script>\n\nKeep 120.4 and 1.5×  ";
@@ -545,7 +553,6 @@ test("native tab context keeps the selected view across actor refreshes for owne
   const source = { stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12 }])) };
   const system = {
     stats: Object.fromEntries(Object.entries(source.stats).map(([key, stat]) => [key, { ...stat, effective: 12, mod: 0, milestones: 0 }])),
-    toObject: () => structuredClone(source),
     health: {},
     ap: {},
     reactions: {},
@@ -553,6 +560,7 @@ test("native tab context keeps the selected view across actor refreshes for owne
     overrides: {},
     core: { automatic: {} }
   };
+  useSource(system, source);
   for (const editable of [true, false]) {
     const sheet = new CharacterSheet();
     sheet.actor = { items: [], system };
@@ -624,7 +632,7 @@ test("repeated edits retain the original reset score; clearing restores it witho
   const sheet = new CharacterSheet();
   sheet.actor = actor();
   const source = { value: 22, manual: true, resetValue: 21 };
-  sheet.actor.system.toObject = () => ({ stats: { agl: source } });
+  useSource(sheet.actor.system, { stats: { agl: source } });
   const input = { dataset: { statScore: "agl", base: "22", pendingBase: "25" } };
   const form = { querySelectorAll: () => [input] };
   let result = sheet._processFormData(null, form, { object: { statScores: { agl: 27 } } });
@@ -645,7 +653,7 @@ test("editing the advanced base subtracts earned points exactly once; clearing p
     stats: { agl: { value: 17, manual: false, resetValue: null } },
     advancement: { level4: { agl: 2 }, level8: { agl: 2 } }
   };
-  sheet.actor.system.toObject = () => structuredClone(source);
+  useSource(sheet.actor.system, source);
   const input = { dataset: { statScore: "agl", base: "21", pendingBase: "22" } };
   const form = { querySelectorAll: () => [input] };
   let result = sheet._processFormData(null, form, { object: { statScores: { agl: 24 } } });
