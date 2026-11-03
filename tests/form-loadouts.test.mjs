@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { isDeepStrictEqual } from "node:util";
+import { itemEffectState } from "../module/effects-core.mjs";
 import {
   activeLoadoutForm,
   equipmentPlan,
@@ -18,9 +20,15 @@ const { captureFormTriggers, processFormTriggers } = await import("../module/for
 const { returnToBase } = await import("../module/forms.mjs");
 const get = (data, path) => path.split(".").reduce((value, key) => value?.[key], data);
 class DeleteField {}
+class ReplaceField {
+  constructor(value) {
+    this.value = structuredClone(value);
+  }
+}
 function merge(target, data) {
   for (const [key, value] of Object.entries(data)) {
     if (value instanceof DeleteField) delete target[key];
+    else if (value instanceof ReplaceField) target[key] = structuredClone(value.value);
     else if (value && typeof value === "object" && !Array.isArray(value)) merge((target[key] ??= {}), value);
     else target[key] = value;
   }
@@ -105,8 +113,8 @@ function fixture() {
     actors: [actor]
   };
   Object.assign(foundry, {
-    data: { operators: { ForcedDeletion: DeleteField } },
-    utils: { getProperty: get },
+    data: { operators: { ForcedDeletion: DeleteField, ForcedReplacement: ReplaceField } },
+    utils: { getProperty: get, equals: isDeepStrictEqual },
     documents: { ChatMessage: { implementation: { getSpeaker: () => ({}), create: async data => ({ id: "post", ...data }) } } }
   });
   globalThis.ui = { notifications: { error: text => errors.push(text), info() {}, warn() {} } };
@@ -229,6 +237,42 @@ test("v14 form rollback restores gear, portrait, Base receipt and AP without ree
   assert.equal(f.first.system.uses.spent, 1);
   assert.equal(f.actor.getFlag("worlds-beyond", "formLoadoutState"), undefined);
   assert.deepEqual(native.warnings, []);
+});
+
+test("deleting equipped inventory between switches prunes receipts and all presets", async () => {
+  const f = fixture();
+  await useAbility(f.actor, f.first.id);
+  assert.equal(f.actor.getFlag("worlds-beyond", "formLoadoutState").baseEquipment.sword, true);
+  f.first.system.loadout.equipment.sword = true;
+  f.actor.items.delete("sword");
+  await useAbility(f.actor, f.second.id);
+  assert.equal(Object.hasOwn(f.actor.getFlag("worlds-beyond", "formLoadoutState").baseEquipment, "sword"), false);
+  for (const form of [f.first, f.second]) assert.equal(Object.hasOwn(form.system.loadout.equipment, "sword"), false);
+  await returnToBase(f.actor);
+  assert.equal(f.actor.img, "base.png");
+  assert.equal(f.first.system.effectsActive, false);
+  assert.equal(f.second.system.effectsActive, false);
+});
+
+test("receipt verification ignores key order and a failed switch suppresses the new form's bonuses", async () => {
+  const f = fixture(),
+    update = f.actor.update;
+  f.actor.update = async (...args) => {
+    const result = await update.apply(f.actor, args);
+    const state = f.actor.getFlag("worlds-beyond", "formLoadoutState");
+    if (state) f.actor.flags["worlds-beyond"].formLoadoutState = Object.fromEntries(Object.entries(state).reverse());
+    return result;
+  };
+  await useAbility(f.actor, f.first.id);
+  const effect = { parent: f.second, flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [] } };
+  f.second.effects.set("bonus", effect);
+  foundry.documents.ChatMessage.implementation.create = async () => {
+    throw new Error("offline");
+  };
+  await assert.rejects(useAbility(f.actor, f.second.id), /offline/);
+  assert.equal(f.first.system.effectsActive, true);
+  assert.equal(f.second.system.effectsActive, false);
+  assert.equal(itemEffectState(effect), "Ability inactive");
 });
 
 test("paid forms switch gear/portrait and Base restores originals while balances, shots and uses stay shared", async () => {

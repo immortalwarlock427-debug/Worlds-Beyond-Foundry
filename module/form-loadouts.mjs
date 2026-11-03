@@ -41,12 +41,24 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
   const form = activeLoadoutForm(actor),
     saved = actor.getFlag?.(SCOPE, KEY);
   const previous = saved ? structuredClone(saved) : undefined;
+  const cleanGear = profile => Object.fromEntries(Object.entries(profile ?? {}).filter(([id]) => formGear(actor.items.get(id) ?? {})));
+  // Replace maps so removed IDs cannot survive Foundry's merge updates.
+  for (const item of itemList(actor.items).filter(item => item.type === "ability" && item.system.kind === "form")) {
+    const old = item.system.loadout?.equipment;
+    if (!old) continue;
+    const clean = cleanGear(old);
+    if (!foundry.utils.equals(old, clean))
+      await change(
+        () => item.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(clean) }, operation()),
+        () => item.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(old) }, operation())
+      );
+  }
   const nextId = hasPhysicalLoadout(form) ? form.id : "";
-  if (!previous?.currentId && !nextId) return;
-  if (!edited && previous?.currentId === nextId) return;
+  if (!previous && !nextId) return;
+  if (!edited && previous?.currentId === nextId && foundry.utils.equals(previous.baseEquipment, cleanGear(previous.baseEquipment))) return;
   const prior = actor.items.get(previous?.currentId);
   const currentGear = equipmentSnapshot(actor);
-  let baseEquipment = previous?.baseEquipment ?? currentGear,
+  let baseEquipment = cleanGear(previous?.baseEquipment ?? currentGear),
     basePortrait = previous?.basePortrait ?? actor.img;
   if (!previous?.currentId) {
     baseEquipment = currentGear;
@@ -55,17 +67,9 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
     if (previous.gearEnabled) {
       const old = { ...(prior.system.loadout.equipment ?? {}) };
       if (Object.entries(currentGear).some(([id, value]) => old[id] !== value)) {
-        const restore = {
-          ...Object.fromEntries(
-            Object.keys(currentGear)
-              .filter(id => !Object.hasOwn(old, id))
-              .map(id => [id, new foundry.data.operators.ForcedDeletion()])
-          ),
-          ...old
-        };
         await change(
-          () => prior.update({ "system.loadout.equipment": currentGear }, operation()),
-          () => prior.update({ "system.loadout.equipment": restore }, operation())
+          () => prior.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(currentGear) }, operation()),
+          () => prior.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(old) }, operation())
         );
       }
     } else baseEquipment = currentGear;
@@ -93,14 +97,19 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
   const state = { currentId: nextId, basePortrait, baseEquipment, gearEnabled: !!(nextId && form.system.loadout.gearEnabled) };
   const changes = {};
   if (actor.img !== img) changes.img = img;
-  if (JSON.stringify(previous) !== JSON.stringify(state)) changes[`flags.${SCOPE}.${KEY}`] = state;
+  if (!foundry.utils.equals(previous, state)) changes[`flags.${SCOPE}.${KEY}`] = new foundry.data.operators.ForcedReplacement(state);
   if (!Object.keys(changes).length) return;
-  const restore = { img: actor.img, [`flags.${SCOPE}.${KEY}`]: previous ?? new foundry.data.operators.ForcedDeletion() };
+  const restore = {
+    img: actor.img,
+    [`flags.${SCOPE}.${KEY}`]: previous
+      ? new foundry.data.operators.ForcedReplacement(previous)
+      : new foundry.data.operators.ForcedDeletion()
+  };
   await change(
     () => actor.update(changes, operation()),
     () => actor.update(restore, operation())
   );
-  if (actor.img !== img || JSON.stringify(actor.getFlag(SCOPE, KEY)) !== JSON.stringify(state))
+  if (actor.img !== img || !foundry.utils.equals(actor.getFlag(SCOPE, KEY), state))
     throw new Error("The form's portrait or restore state was not retained.");
 }
 
