@@ -2,6 +2,28 @@
 
 Forms can remember a portrait and equipped gear from the character's shared inventory. They can also choose which ability and resource rows appear. Existing forms keep their current behavior until configured. Stat changes still belong in the form's Bonuses section.
 
+## Token transformation
+
+Form loadout includes optional token art, width/height in grid squares, art scale and transformation seconds beside the portrait settings. `tokenImg` defaults blank; `tokenWidth`, `tokenHeight` and `tokenScale` default null; `transitionSeconds` defaults 0. Blank fields leave that aspect unchanged. Zero seconds applies immediately. Geometry, scale and timing explicitly retain decimals (for example scale 1.15 and 1.5 seconds); ordinary character numbers still use whole-number presentation.
+
+Linked actors update their prototype and every active linked token. Each token retains its own Base appearance, footprint, scale and alignment offsets in the restore receipt. Synthetic actors update only their exact unlinked token. End/Base, expiry and form deletion restore the owned overrides, including previously changed tokens on other scenes. Manual movement during a form is preserved. Tokens inheriting an already transformed prototype use its recorded Base. Fields a form never overrides remain free for manual changes.
+
+For an unlinked map token, double-click the token and use its own sheet. The Actors sidebar character is a different document and deliberately does not change unlinked token artwork. A 2×2 footprint uses width 2 and height 2; art scale changes the image inside that footprint.
+
+The Ability editor uses one scrolling panel and restores open disclosures before native focus/scroll restoration. Equipment preset changes keep the checkbox in place instead of jumping to the end of the editor. A browser regression using the installed v14 mixin verifies checkbox focus, open state and identical vertical position after replacement at 1280/1000/760 px.
+
+Each even integer width/height change centers that axis; odd or fractional changes keep its top-left grid anchor. Base reverses the accumulated alignment offsets, so sequential form switches and later movement do not introduce drift. Native rollback restores exact pre-switch values immediately and suppresses the failed form's bonuses through its restored activation state. Resource-triggered forms call this same path.
+
+Foundry v14's [TokenAnimationData](https://foundryvtt.com/api/v14/interfaces/foundry.types.TokenAnimationData.html) includes width, height and texture scale. [TokenAnimationOptions](https://foundryvtt.com/api/v14/interfaces/foundry.types.TokenAnimationOptions.html) supports duration in milliseconds and the native fade transition. Installed build 365's animation implementation was inspected for these fields and texture transitions. The system passes those native options; no animation module or midpoint swap is required.
+
+While a token animates, v14 interpolates its prepared `width`, `height` and `texture` values; the stored `_source` already holds the final values. Plans, restore receipts and the post-update check read the stored source. Reading prepared values right after an animated update made every placed-token transformation look cancelled and roll back.
+
+An unlinked token's actor shows the sidebar actor's flags with the token's own flags merged on top, and it can't remove sidebar keys. Token actors therefore read and verify only the receipt stored on their own token (`token.delta`). Before this change, a transformed sidebar actor leaked its receipt into its unlinked tokens, so their form switches failed with "The form's portrait or restore state was not retained."
+
+Restore receipts and equipment presets use native `ForcedReplacement` operations. Deleted inventory IDs are pruned from all form presets and Base equipment snapshots; receipt verification uses v14's key-order-independent `foundry.utils.equals`. Failed switches restore gear, token appearance, activation/bonus state, costs and the prior receipt using the existing compensation transaction.
+
+Offline validation: 408 portable tests cover geometry/anchoring, fractional settings, linked/synthetic targets, native animation options, triggers, deleted equipment, key order and failed-switch compensation/bonus suppression. Installed v14.365 fields and operators verify defaults, exact save/reload, observer controls and replacement semantics. The Form editor was inspected at desktop/window widths 1280/1000/760 px with scrolling and exact 1.15/1.5 values. Live Roman validation and removal of the old macro follow installation; that macro is retained until the replacement works.
+
 ## Configure a character's form
 
 1. Open **Abilities → your form → Form loadout**. Enter a Portrait path, or change the character header portrait while that form is active. Blank uses the remembered Base portrait. This changes the Actor portrait; map-token artwork is separate.

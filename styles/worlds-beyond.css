@@ -301,7 +301,8 @@
 .worlds-beyond .wb-ability-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .worlds-beyond .wb-ability-fieldset { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--wb-rule); border-radius: 4px; }
 .worlds-beyond .wb-ability-fieldset legend { color: var(--wb-brass); font-family: var(--wb-font-label); padding: 0 6px; }
-.worlds-beyond .wb-ability-form { min-height: 0; overflow-y: auto; }
+.worlds-beyond.wb-ability-sheet .window-content { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.worlds-beyond .wb-ability-form { flex: 1; min-height: 0; overflow-y: auto; }
 .worlds-beyond .wb-ability-form > .wb-disclosure > .wb-equipment-fields { margin-inline: 0; }
 .worlds-beyond .wb-row-actions > .wb-effect-toggle { width: auto; }
 .worlds-beyond .wb-row-actions > .wb-effect-toggle[aria-pressed="true"] { background: var(--wb-verdigris); color: var(--wb-bg); border-color: var(--wb-verdigris); }

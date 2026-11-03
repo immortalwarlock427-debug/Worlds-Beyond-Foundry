@@ -1,11 +1,19 @@
 import { activeLoadoutForm, equipmentSnapshot, equipmentPlan, formGear, hasPhysicalLoadout } from "./form-loadout-core.mjs";
 import { itemList } from "./loadout.mjs";
 import { queuedAction, reversibleAction } from "./action-support.mjs";
+import { syncFormTokens } from "./form-tokens.mjs";
 const SCOPE = "worlds-beyond",
   KEY = "formLoadoutState";
 // v14 mutates each operation with parentUuid and hook snapshots. Never reuse it
 // across Item/Actor writes, compensation, or another character's transaction.
 const operation = () => ({ worldsBeyondFormLoadout: true });
+// An unlinked token's actor merges its own flags over the sidebar actor's, so it
+// inherits the sidebar receipt and can never drop keys from it. Token actors read
+// and verify only the receipt stored on their own token.
+const receipt = actor =>
+  actor.isToken && actor.token?.delta
+    ? foundry.utils.getProperty(actor.token.delta._source ?? actor.token.delta, `flags.${SCOPE}.${KEY}`)
+    : actor.getFlag?.(SCOPE, KEY);
 
 export function formLoadoutSchema() {
   const { SchemaField, StringField, BooleanField, TypedObjectField, NumberField } = foundry.data.fields;
@@ -13,6 +21,11 @@ export function formLoadoutSchema() {
   return new SchemaField({
     portrait: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
     portraitY: new NumberField({ required: true, nullable: true, initial: null, integer: true, min: 0, max: 100 }),
+    tokenImg: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
+    tokenWidth: new NumberField({ required: true, nullable: true, initial: null, positive: true }),
+    tokenHeight: new NumberField({ required: true, nullable: true, initial: null, positive: true }),
+    tokenScale: new NumberField({ required: true, nullable: true, initial: null, positive: true }),
+    transitionSeconds: new NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
     gearEnabled: new BooleanField({ initial: false }),
     equipment: map(),
     abilities: map(),
@@ -39,14 +52,25 @@ export function formLoadoutContext(item) {
 // and a small restore receipt change; inventory records and balances stay shared.
 export async function syncFormLoadout(actor, change, { edited = false, gearEdited = edited } = {}) {
   const form = activeLoadoutForm(actor),
-    saved = actor.getFlag?.(SCOPE, KEY);
+    saved = receipt(actor);
   const previous = saved ? structuredClone(saved) : undefined;
+  const cleanGear = profile => Object.fromEntries(Object.entries(profile ?? {}).filter(([id]) => formGear(actor.items.get(id) ?? {})));
+  // Replace maps so removed IDs cannot survive Foundry's merge updates.
+  for (const item of itemList(actor.items).filter(item => item.type === "ability" && item.system.kind === "form")) {
+    const old = item.system.loadout?.equipment;
+    if (!old) continue;
+    const clean = cleanGear(old);
+    if (!foundry.utils.equals(old, clean))
+      await change(
+        () => item.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(clean) }, operation()),
+        () => item.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(old) }, operation())
+      );
+  }
   const nextId = hasPhysicalLoadout(form) ? form.id : "";
-  if (!previous?.currentId && !nextId) return;
-  if (!edited && previous?.currentId === nextId) return;
+  if (!previous && !nextId) return;
   const prior = actor.items.get(previous?.currentId);
   const currentGear = equipmentSnapshot(actor);
-  let baseEquipment = previous?.baseEquipment ?? currentGear,
+  let baseEquipment = cleanGear(previous?.baseEquipment ?? currentGear),
     basePortrait = previous?.basePortrait ?? actor.img;
   if (!previous?.currentId) {
     baseEquipment = currentGear;
@@ -55,17 +79,9 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
     if (previous.gearEnabled) {
       const old = { ...(prior.system.loadout.equipment ?? {}) };
       if (Object.entries(currentGear).some(([id, value]) => old[id] !== value)) {
-        const restore = {
-          ...Object.fromEntries(
-            Object.keys(currentGear)
-              .filter(id => !Object.hasOwn(old, id))
-              .map(id => [id, new foundry.data.operators.ForcedDeletion()])
-          ),
-          ...old
-        };
         await change(
-          () => prior.update({ "system.loadout.equipment": currentGear }, operation()),
-          () => prior.update({ "system.loadout.equipment": restore }, operation())
+          () => prior.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(currentGear) }, operation()),
+          () => prior.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(old) }, operation())
         );
       }
     } else baseEquipment = currentGear;
@@ -90,17 +106,29 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
       throw new Error("The form's equipment switch was cancelled or not retained.");
   }
   const img = nextId && form.system.loadout.portrait ? form.system.loadout.portrait : basePortrait;
-  const state = { currentId: nextId, basePortrait, baseEquipment, gearEnabled: !!(nextId && form.system.loadout.gearEnabled) };
+  const tokenState = await syncFormTokens(actor, form, change, previous?.tokenState);
+  const state = {
+    currentId: nextId,
+    basePortrait,
+    baseEquipment,
+    gearEnabled: !!(nextId && form.system.loadout.gearEnabled),
+    ...(tokenState ? { tokenState } : {})
+  };
   const changes = {};
   if (actor.img !== img) changes.img = img;
-  if (JSON.stringify(previous) !== JSON.stringify(state)) changes[`flags.${SCOPE}.${KEY}`] = state;
+  if (!foundry.utils.equals(previous, state)) changes[`flags.${SCOPE}.${KEY}`] = new foundry.data.operators.ForcedReplacement(state);
   if (!Object.keys(changes).length) return;
-  const restore = { img: actor.img, [`flags.${SCOPE}.${KEY}`]: previous ?? new foundry.data.operators.ForcedDeletion() };
+  const restore = {
+    img: actor.img,
+    [`flags.${SCOPE}.${KEY}`]: previous
+      ? new foundry.data.operators.ForcedReplacement(previous)
+      : new foundry.data.operators.ForcedDeletion()
+  };
   await change(
     () => actor.update(changes, operation()),
     () => actor.update(restore, operation())
   );
-  if (actor.img !== img || JSON.stringify(actor.getFlag(SCOPE, KEY)) !== JSON.stringify(state))
+  if (actor.img !== img || !foundry.utils.equals(receipt(actor), state))
     throw new Error("The form's portrait or restore state was not retained.");
 }
 
@@ -132,7 +160,9 @@ export function registerFormLoadouts() {
       Object.hasOwn(changes.system?.loadout ?? {}, key) ||
       Object.keys(changes).some(path => path === `system.loadout.${key}` || path.startsWith(`system.loadout.${key}.`));
     return reconcile(item.actor, options, userId, {
-      edited: ["portrait", "gearEnabled", "equipment"].some(changed),
+      edited: ["portrait", "tokenImg", "tokenWidth", "tokenHeight", "tokenScale", "transitionSeconds", "gearEnabled", "equipment"].some(
+        changed
+      ),
       gearEdited: ["gearEnabled", "equipment"].some(changed)
     });
   });
@@ -146,7 +176,7 @@ export function registerFormLoadouts() {
   Hooks.on("deleteActiveEffect", (effect, options, userId) => clock(effect, {}, options, userId));
   const resume = () => {
     const actors = new Set([...game.actors, ...(globalThis.canvas?.tokens?.placeables ?? []).map(token => token.actor)].filter(Boolean));
-    for (const actor of actors) if (actor.getFlag?.(SCOPE, KEY)?.currentId) reconcile(actor, {}, game.user?.id);
+    for (const actor of actors) if (receipt(actor)?.currentId) reconcile(actor, {}, game.user?.id);
   };
   Hooks.once("ready", resume);
   Hooks.on("canvasReady", resume);

@@ -1,6 +1,7 @@
 // Form presentation and equipment plans, without Foundry or stored mutations.
 import { abilityActive } from "./ability-timers-core.mjs";
 import { itemList, stowedConflicts } from "./loadout.mjs";
+import { hasTokenLoadout } from "./form-token-core.mjs";
 export const formGear = item => ["weapon", "armor", "shield"].includes(item.type);
 export const activeLoadoutForm = actor =>
   itemList(actor?.items).find(item => item.type === "ability" && item.system.kind === "form" && abilityActive(item)) ?? null;
@@ -24,7 +25,8 @@ export function formShowsAbility(form, item) {
   return item.system.kind === "form" || abilityActive(item) || form?.system.loadout?.abilities?.[item.id] !== false;
 }
 export const formShowsResource = (form, key) => form?.system.loadout?.resources?.[key] !== false;
-export const hasPhysicalLoadout = form => !!(form?.system.loadout?.portrait || form?.system.loadout?.gearEnabled);
+export const hasPhysicalLoadout = form =>
+  !!(form?.system.loadout?.portrait || form?.system.loadout?.gearEnabled || hasTokenLoadout(form?.system.loadout));
 
 // Item sheets submit all controls. An untouched checkbox must not turn a
 // portrait/notes edit into a new preset or write default visibility memberships.
@@ -35,6 +37,11 @@ export function formLoadoutFormUpdates(system, data) {
   for (const [key, fallback] of [
     ["portrait", ""],
     ["portraitY", null],
+    ["tokenImg", ""],
+    ["tokenWidth", null],
+    ["tokenHeight", null],
+    ["tokenScale", null],
+    ["transitionSeconds", 0],
     ["gearEnabled", false]
   ])
     if (loadout[key] === (saved[key] ?? fallback)) delete loadout[key];

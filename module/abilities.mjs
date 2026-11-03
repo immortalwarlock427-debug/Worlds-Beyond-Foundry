@@ -97,6 +97,14 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
           callback: path => this.item.update({ "system.loadout.portrait": path }).catch(error => ui.notifications.error(error.message))
         }).browse();
       },
+      pickFormToken: function () {
+        if (!this.isEditable || this.item.system.kind !== "form") return;
+        return new foundry.applications.apps.FilePicker.implementation({
+          type: "image",
+          current: this.item.system.loadout.tokenImg || this.item.actor?.token?.texture.src || this.item.actor?.prototypeToken?.texture.src,
+          callback: path => this.item.update({ "system.loadout.tokenImg": path }).catch(error => ui.notifications.error(error.message))
+        }).browse();
+      },
       copyFormEquipment: async function () {
         if (!this.isEditable) return;
         try {
@@ -109,6 +117,16 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   };
   static PARTS = { sheet: { template: `systems/${SYSTEM_ID}/templates/ability-sheet.hbs`, scrollable: [""] } };
 
+  _syncPartState(partId, newElement, priorElement, state) {
+    // Native v14 restores scroll before reopening details. A closed loadout is
+    // shorter, so the saved position is clamped and its focused field jumps.
+    for (const [id, open] of Object.entries(state.details ?? {})) {
+      const details = newElement.querySelector(`details[data-sync="${id}"]`);
+      if (details) details.open = open;
+    }
+    super._syncPartState(partId, newElement, priorElement, state);
+  }
+
   async _prepareContext(options) {
     const system = this.item.system,
       character = this.item.actor?.system;
@@ -116,11 +134,14 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       Object.entries(definitions).map(([value, label]) => ({ value, label, selected: value === selected }));
     return Object.assign(await super._prepareContext(options), {
       item: this.item,
-      system: wholeDisplay({
-        ...system,
-        effectsActive: abilityActive(this.item),
-        cooldown: { ...system.cooldown, remaining: cooldownRemaining(this.item) }
-      }),
+      system: {
+        ...wholeDisplay({
+          ...system,
+          effectsActive: abilityActive(this.item),
+          cooldown: { ...system.cooldown, remaining: cooldownRemaining(this.item) }
+        }),
+        loadout: { ...system.loadout }
+      },
       editable: this.isEditable,
       durationUnits: choices(BONUS_DURATION_UNITS, system.activeDuration?.units ?? "rounds"),
       useRecoveryChoices: choices(USES_RECOVERY, system.uses?.resetOn ?? "manual"),

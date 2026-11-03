@@ -9,6 +9,8 @@ Version 0.22.0 follows the user's request to hide fractional totals and floor de
 - Unchanged displayed totals are omitted from full-form updates, preserving fractional Health damage, AP/current pools, overrides, item fields and resource expenditure when saving unrelated changes. Percentage mode uses the original display unit and revised limits when a deliberate edit is converted back to points. Changing display does not quantize the underlying balance.
 - Rendering does not update actors/items. No persisted fields are renamed, removed or changed to integer schemas. Existing rules' rounding, action costs, manual corrections, limits and resource rest behavior are retained. No migration runs.
 
+Form token width/height, art scale and transformation seconds are explicit decimal exceptions. Their numeric controls use `data-allow-decimal`, skip whole-number input/form normalization and retain their exact values in the Form editor's display context. For example 1.15 scale and 1.5 seconds save/reload unchanged.
+
 ## Validation
 
 Portable tests cover positive/negative floors, text/formula preservation, event binding/Enter submission, unchanged full-form saves, deliberate entries, stat effects, visible/hidden chat totals and retained resource fractions. Offline checks use Foundry v14.365's actual schema and strict Handlebars libraries for character/equipment rendering and full-form processing. They reproduce 120.4 → 120 and 119.9 → 119 without writing source data.

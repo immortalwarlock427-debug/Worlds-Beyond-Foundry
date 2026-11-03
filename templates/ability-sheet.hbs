@@ -69,6 +69,55 @@
       step="1"
       {{#unless editable}}disabled{{/unless}}
     ></label>
+    <button type="button" data-action="pickFormToken" {{#unless editable}}disabled{{/unless}}>Choose form token art</button>
+    <label>Token art path<input
+      type="text"
+      name="system.loadout.tokenImg"
+      value="{{system.loadout.tokenImg}}"
+      placeholder="Unchanged"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <div class="wb-equipment-fields">
+      <label>Token width (squares)<input
+        type="number"
+        name="system.loadout.tokenWidth"
+        value="{{system.loadout.tokenWidth}}"
+        placeholder="Unchanged"
+        min="0.01"
+        step="any"
+        data-allow-decimal
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label>Token height (squares)<input
+        type="number"
+        name="system.loadout.tokenHeight"
+        value="{{system.loadout.tokenHeight}}"
+        placeholder="Unchanged"
+        min="0.01"
+        step="any"
+        data-allow-decimal
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label>Token art scale<input
+        type="number"
+        name="system.loadout.tokenScale"
+        value="{{system.loadout.tokenScale}}"
+        placeholder="Unchanged"
+        min="0.01"
+        step="any"
+        data-allow-decimal
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label>Transformation (seconds)<input
+        type="number"
+        name="system.loadout.transitionSeconds"
+        value="{{system.loadout.transitionSeconds}}"
+        min="0"
+        step="any"
+        data-allow-decimal
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+    </div>
     {{#if hasActor}}
     <div class="wb-section-heading"><h3 class="wb-section-title">Equipment preset</h3><button
       type="button"
@@ -100,7 +149,7 @@
       {{#unless @root.editable}}disabled{{/unless}}
     > {{name}}</label>{{/each}}</div></details>
     {{else}}<p class="wb-item-brief">Configure equipment, abilities and resources on a character's copy.</p>{{/if}}
-    <details class="wb-disclosure wb-help"><summary>Loadout help</summary><p>Base portrait and gear return on End. Copy current gear or select a preset; an enabled empty preset stows all equipment. Changes made to equipped gear in a saved form are remembered when leaving it. Shared inventory, shots, uses and resource expenditure are preserved. Hand conflicts follow the existing equipment rules.</p><p>Abilities/resources shown are presentation choices. Show all reveals them for editing. Active abilities stay visible to End; hiding a record does not end its bonuses, stop recovery or block costs. Forms always remain available. For stat changes, use Bonuses.</p></details>
+    <details class="wb-disclosure wb-help"><summary>Loadout help</summary><p>Base portrait and gear return on End. Copy current gear or select a preset; an enabled empty preset stows all equipment. Changes made to equipped gear in a saved form are remembered when leaving it. Shared inventory, shots, uses and resource expenditure are preserved. Hand conflicts follow the existing equipment rules.</p><p>Token width and height are grid squares: enter 2 in both for 2×2. An unlinked token is a separate character copy: double-click that map token and Use the form from its own sheet. Using a sidebar character changes its prototype and linked map tokens. Blank token settings leave those aspects unchanged.</p><p>Abilities/resources shown are presentation choices. Show all reveals them for editing. Active abilities stay visible to End; hiding a record does not end its bonuses, stop recovery or block costs. Forms always remain available. For stat changes, use Bonuses.</p></details>
   </details>{{/if}}
   <fieldset class="wb-ability-fieldset"><legend>Costs</legend><div class="wb-equipment-fields">
     <label>Base AP<input

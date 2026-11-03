@@ -96,6 +96,26 @@ test("form visibility refreshes the affected native parts without replacing unre
   assert.deepEqual(renders.pop().parts, ["character", "details"]);
 });
 
+test("form editor preserves fractional token size, scale and transformation seconds", async () => {
+  const sheet = new AbilitySheet();
+  sheet.item = {
+    name: "Monstrous",
+    type: "ability",
+    system: {
+      kind: "form",
+      uses: {},
+      cooldown: {},
+      loadout: Object.freeze({ tokenWidth: 2.5, tokenHeight: 2, tokenScale: 1.15, transitionSeconds: 1.5 })
+    },
+    effects: new Map()
+  };
+  sheet.isEditable = true;
+  const context = await sheet._prepareContext({});
+  assert.equal(context.system.loadout.tokenWidth, 2.5);
+  assert.equal(context.system.loadout.tokenScale, 1.15);
+  assert.equal(context.system.loadout.transitionSeconds, 1.5);
+});
+
 test("form portrait picker writes only that form's image and skips non-form/read-only sheets", async () => {
   let settings,
     opened = 0;

@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { isDeepStrictEqual } from "node:util";
+import { itemEffectState } from "../module/effects-core.mjs";
 import {
   activeLoadoutForm,
   equipmentPlan,
@@ -18,9 +20,15 @@ const { captureFormTriggers, processFormTriggers } = await import("../module/for
 const { returnToBase } = await import("../module/forms.mjs");
 const get = (data, path) => path.split(".").reduce((value, key) => value?.[key], data);
 class DeleteField {}
+class ReplaceField {
+  constructor(value) {
+    this.value = structuredClone(value);
+  }
+}
 function merge(target, data) {
   for (const [key, value] of Object.entries(data)) {
     if (value instanceof DeleteField) delete target[key];
+    else if (value instanceof ReplaceField) target[key] = structuredClone(value.value);
     else if (value && typeof value === "object" && !Array.isArray(value)) merge((target[key] ??= {}), value);
     else target[key] = value;
   }
@@ -105,14 +113,231 @@ function fixture() {
     actors: [actor]
   };
   Object.assign(foundry, {
-    data: { operators: { ForcedDeletion: DeleteField } },
-    utils: { getProperty: get },
+    data: { operators: { ForcedDeletion: DeleteField, ForcedReplacement: ReplaceField } },
+    utils: { getProperty: get, equals: isDeepStrictEqual },
     documents: { ChatMessage: { implementation: { getSpeaker: () => ({}), create: async data => ({ id: "post", ...data }) } } }
   });
   globalThis.ui = { notifications: { error: text => errors.push(text), info() {}, warn() {} } };
   return { actor, item, first, second, sword, axe, shield, calls, errors };
 }
 const sync = (actor, options) => reversibleAction(change => syncFormLoadout(actor, change, options));
+
+function tokenFixture(f) {
+  f.actor.prototypeToken = { width: 1, height: 1, texture: { src: "prototype.webp", scaleX: 1, scaleY: 1 } };
+  const calls = [],
+    tokens = [];
+  for (const [id, linked] of [
+    ["one", true],
+    ["two", true],
+    ["copy", false]
+  ]) {
+    const token = {
+      id,
+      actorLink: linked,
+      parent: { id: "scene", grid: { size: 100 } },
+      x: 300,
+      y: 400,
+      width: 1,
+      height: 1,
+      texture: { src: id + ".webp", scaleX: 1.2, scaleY: 0.8 },
+      async update(changes, options) {
+        assert.equal(options.parentUuid, undefined, "fresh token operation");
+        options.parentUuid = "Scene.scene";
+        calls.push({ id, changes, options });
+        if (token.failOnce) {
+          token.failOnce = false;
+          return null;
+        }
+        apply(token, changes);
+        return token;
+      }
+    };
+    tokens.push(token);
+  }
+  f.actor.getActiveTokens = (linked, document) => {
+    assert.equal(linked, true);
+    assert.equal(document, true);
+    return tokens.filter(t => t.actorLink);
+  };
+  f.actor.getDependentTokens = () => tokens.filter(t => t.actorLink);
+  Object.assign(f.first.system.loadout, {
+    tokenImg: "monstrous.webp",
+    tokenWidth: 2,
+    tokenHeight: 2,
+    tokenScale: 1.15,
+    transitionSeconds: 1.5
+  });
+  return { tokens, calls };
+}
+
+test("linked forms transform the prototype and active linked tokens, then Base restores each original", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  await useAbility(f.actor, f.first.id);
+  assert.equal(f.actor.prototypeToken.width, 2);
+  assert.equal(f.actor.prototypeToken.texture.scaleX, 1.15);
+  for (const token of t.tokens.slice(0, 2)) {
+    assert.equal(token.width, 2);
+    assert.equal(token.height, 2);
+    assert.equal(token.texture.src, "monstrous.webp");
+    assert.equal(token.x, 300);
+    assert.equal(token.y, 400);
+  }
+  assert.equal(t.tokens[2].texture.src, "copy.webp");
+  assert.equal(t.calls[0].options.animate, true);
+  assert.equal(t.calls[0].options.animation.duration, 1500);
+  assert.equal(t.calls[0].options.animation.transition, "fade");
+  f.actor.flags = JSON.parse(JSON.stringify(f.actor.flags));
+  await returnToBase(f.actor);
+  assert.equal(f.actor.prototypeToken.texture.src, "prototype.webp");
+  assert.equal(f.actor.prototypeToken.width, 1);
+  for (const token of t.tokens) {
+    assert.equal(token.texture.src, token.id + ".webp");
+    assert.equal(token.width, 1);
+    assert.equal(token.texture.scaleX, 1.2);
+    assert.equal(token.texture.scaleY, 0.8);
+  }
+});
+
+test("synthetic forms update only their own unlinked token and restore even-growth offsets after movement", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  f.actor.isToken = true;
+  f.actor.token = t.tokens[2];
+  f.actor.getActiveTokens = () => {
+    throw new Error("Must not visit sibling tokens");
+  };
+  f.first.system.loadout.tokenWidth = 3;
+  f.first.system.loadout.tokenHeight = 3;
+  await useAbility(f.actor, f.first.id);
+  assert.equal(t.tokens[2].x, 200);
+  assert.equal(t.tokens[2].y, 300);
+  t.tokens[2].x += 100;
+  assert.equal(f.actor.prototypeToken.width, 1);
+  assert.equal(t.tokens[0].width, 1);
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(t.tokens[2].x, 400);
+  assert.equal(t.tokens[2].y, 400);
+  assert.equal(t.tokens[2].width, 1);
+});
+
+test("animated tokens are checked against stored values, not mid-animation display values", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  // Model v14: the stored source changes at once, while the prepared values
+  // keep showing the old size and art until the animation finishes.
+  const token = t.tokens[2];
+  token._source = { x: token.x, y: token.y, width: 1, height: 1, texture: { ...token.texture } };
+  token.update = async (changes, options) => {
+    t.calls.push({ id: token.id, changes, options });
+    apply(token._source, changes);
+    if (!options.animate) apply(token, changes);
+    return token;
+  };
+  f.actor.isToken = true;
+  f.actor.token = token;
+  await useAbility(f.actor, f.first.id);
+  assert.equal(token._source.width, 2);
+  assert.equal(token._source.texture.src, "monstrous.webp");
+  assert.equal(token._source.texture.scaleX, 1.15);
+  assert.equal(f.first.system.effectsActive, true);
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(token._source.width, 1);
+  assert.equal(token._source.texture.src, "copy.webp");
+  assert.equal(token._source.texture.scaleX, 1.2);
+  assert.equal(token._source.texture.scaleY, 0.8);
+});
+
+test("unlinked token actors keep their own form receipt while the sidebar actor is transformed", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  const token = t.tokens[2];
+  // Model v14 ActorDelta: the token actor's flags are the sidebar flags with the
+  // token's own stored flags merged on top, so sidebar keys can never be dropped.
+  const sidebar = {
+    "worlds-beyond": {
+      formLoadoutState: {
+        currentId: "first",
+        basePortrait: "base.png",
+        baseEquipment: { sword: true },
+        gearEnabled: true,
+        tokenState: {
+          seconds: 1.5,
+          targets: { prototype: { base: { src: "prototype.webp" }, fields: { src: true }, offsetX: 0, offsetY: 0 } }
+        }
+      }
+    }
+  };
+  token.delta = { _source: { flags: {} } };
+  const view = () => {
+    f.actor.flags = structuredClone(sidebar);
+    merge(f.actor.flags, structuredClone(token.delta._source.flags));
+  };
+  view();
+  const update = f.actor.update;
+  f.actor.update = async (changes, options) => {
+    const own = {},
+      rest = {};
+    for (const [path, value] of Object.entries(changes)) {
+      if (path.startsWith("flags.")) own[path.slice(6)] = value;
+      else rest[path] = value;
+    }
+    apply(token.delta._source.flags, own);
+    const result = await update.call(f.actor, rest, options);
+    view();
+    return result;
+  };
+  f.actor.isToken = true;
+  f.actor.token = token;
+  await useAbility(f.actor, f.first.id);
+  const receipt = () => token.delta._source.flags["worlds-beyond"].formLoadoutState;
+  assert.equal(receipt().currentId, "first");
+  assert.equal(receipt().tokenState.targets.prototype, undefined);
+  assert.equal(token.width, 2);
+  assert.equal(f.actor.img, "first.png");
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(token.width, 1);
+  assert.equal(token.texture.src, "copy.webp");
+  assert.equal(receipt().currentId, "");
+});
+
+test("failed token updates compensate prior tokens, prototype, form bonuses and costs", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  t.tokens[1].failOnce = true;
+  const effect = { parent: f.first, flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [] } };
+  f.first.effects.set("bonus", effect);
+  await assert.rejects(useAbility(f.actor, f.first.id), /transformation/);
+  assert.equal(f.first.system.effectsActive, false);
+  assert.equal(itemEffectState(effect), "Ability inactive");
+  assert.equal(f.actor.prototypeToken.width, 1);
+  assert.equal(f.actor.prototypeToken.texture.src, "prototype.webp");
+  for (const token of t.tokens) assert.equal(token.texture.src, token.id + ".webp");
+  assert.equal(f.actor.system.ap.value, 17);
+  assert.ok(t.calls.some(call => call.options.animate === false));
+});
+
+test("resource-triggered forms use the same animation and blank defaults leave token art untouched", async () => {
+  let f = fixture(),
+    t = tokenFixture(f),
+    native = nativeOperations(f);
+  f.actor.system.customResources[native.resource] = { value: 100, max: 100, spent: 0 };
+  f.first.system.trigger = { mode: "automatic", resourceId: native.resource, comparison: "above", threshold: 100, endMode: "automatic" };
+  await f.actor.update({ [`system.customResources.${native.resource}.spent`]: -1 });
+  await native.drain();
+  assert.equal(t.tokens[0].width, 2);
+  assert.equal(t.calls[0].options.animation.duration, 1500);
+  await f.actor.update({ [`system.customResources.${native.resource}.spent`]: 0 });
+  await native.drain();
+  assert.equal(t.tokens[0].width, 1);
+  f = fixture();
+  t = tokenFixture(f);
+  f.first.system.loadout = { tokenImg: "", tokenWidth: null, tokenHeight: null, tokenScale: null, transitionSeconds: 0 };
+  f.first.system.effectsActive = true;
+  await sync(f.actor);
+  assert.equal(f.calls.length, 0);
+  assert.equal(t.calls.length, 0);
+});
 
 // v14 mutates operation objects: embedded writes add parentUuid, and subsequent
 // root writes resolve that UUID even after Document.update sets parent to null.
@@ -229,6 +454,42 @@ test("v14 form rollback restores gear, portrait, Base receipt and AP without ree
   assert.equal(f.first.system.uses.spent, 1);
   assert.equal(f.actor.getFlag("worlds-beyond", "formLoadoutState"), undefined);
   assert.deepEqual(native.warnings, []);
+});
+
+test("deleting equipped inventory between switches prunes receipts and all presets", async () => {
+  const f = fixture();
+  await useAbility(f.actor, f.first.id);
+  assert.equal(f.actor.getFlag("worlds-beyond", "formLoadoutState").baseEquipment.sword, true);
+  f.first.system.loadout.equipment.sword = true;
+  f.actor.items.delete("sword");
+  await useAbility(f.actor, f.second.id);
+  assert.equal(Object.hasOwn(f.actor.getFlag("worlds-beyond", "formLoadoutState").baseEquipment, "sword"), false);
+  for (const form of [f.first, f.second]) assert.equal(Object.hasOwn(form.system.loadout.equipment, "sword"), false);
+  await returnToBase(f.actor);
+  assert.equal(f.actor.img, "base.png");
+  assert.equal(f.first.system.effectsActive, false);
+  assert.equal(f.second.system.effectsActive, false);
+});
+
+test("receipt verification ignores key order and a failed switch suppresses the new form's bonuses", async () => {
+  const f = fixture(),
+    update = f.actor.update;
+  f.actor.update = async (...args) => {
+    const result = await update.apply(f.actor, args);
+    const state = f.actor.getFlag("worlds-beyond", "formLoadoutState");
+    if (state) f.actor.flags["worlds-beyond"].formLoadoutState = Object.fromEntries(Object.entries(state).reverse());
+    return result;
+  };
+  await useAbility(f.actor, f.first.id);
+  const effect = { parent: f.second, flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [] } };
+  f.second.effects.set("bonus", effect);
+  foundry.documents.ChatMessage.implementation.create = async () => {
+    throw new Error("offline");
+  };
+  await assert.rejects(useAbility(f.actor, f.second.id), /offline/);
+  assert.equal(f.first.system.effectsActive, true);
+  assert.equal(f.second.system.effectsActive, false);
+  assert.equal(itemEffectState(effect), "Ability inactive");
 });
 
 test("paid forms switch gear/portrait and Base restores originals while balances, shots and uses stay shared", async () => {
