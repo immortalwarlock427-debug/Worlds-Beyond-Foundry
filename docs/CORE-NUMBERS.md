@@ -51,3 +51,21 @@ In-world regression checklist:
 - [ ] Correct Health below zero and above max on the sheet and token HUD; check AP/reactions likewise. Changing unrelated fields must not heal or refill pools.
 - [ ] Confirm Health/AP bars on new tokens and select them on an existing token. Check linked and unlinked tokens, saving and reloading, and updates visible to another connected player.
 - [ ] Check the sheet at 320/390 px and desktop width: no horizontal overflow, reachable controls, scrolling and focus. Check observer/read-only views and stat click-to-roll.
+
+## Resistance tracking
+
+Details → Resistances → Edit offers Bludgeoning, Piercing, Slashing and Fire checkboxes, plus one custom resistance per line. Saving trims surrounding whitespace and deduplicates names without case sensitivity. Clear all choices/lines and save to remove the list. Read-only viewers see the entries without edit controls. Character shows a compact summary when the list has entries.
+
+`system.resistances` is a blank-default array of strings. Existing actors need no migration; native array replacement removes deselected entries. The editor updates only this field. Ordinary sheet saves, rest actions, equipment changes and form switches do not change it. These are manually recorded character resistances; automatic grants from equipment/abilities and damage application are future combat work. Conditional custom entries remain labels for the table to interpret.
+
+Sources checked 2026-11-03:
+
+- [Defenses](https://www.notion.so/406c72092efb81088e3be6e9d3b2c44d): resistance halves damage, rounded down, before Armor Rating.
+- [Weapons Explained](https://www.notion.so/351c72092efb81608515cad619890c48): Bludgeoning, Piercing and Slashing in weapon tables.
+- [Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38): Burning deals Fire damage.
+
+Game Systems has no exhaustive damage-type list. These presets are confirmed examples, with custom entries for other types; the website's broader suggestions were reviewed but not treated as Notion rules. `isResistant` provides an exact individual-type lookup for later integration with the existing `hitDamage` helper. No combat path invokes that lookup yet, and combined damage labels are not split or inferred.
+
+Validation: Node tests cover normalization, custom entries, cancellation, clearing, save failures, permissions and an exact-type lookup feeding the existing damage helper. Offline checks use installed Foundry v14.365 data models for default/update/clear/reload persistence and strict templates, plus desktop browser renders for owner/observer and long entries. Live Foundry interaction and multiplayer transport remain user validation.
+
+Live check: save Fire and a custom type, reopen the sheet and refresh; confirm both summaries. Remove Fire, then clear all entries; confirm the overview summary disappears. Health/AP and other values should remain unchanged throughout.

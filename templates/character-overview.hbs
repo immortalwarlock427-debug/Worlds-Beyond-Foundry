@@ -127,6 +127,10 @@
           <button type="button" data-action="overviewEdit" title="Movement details"><span class="wb-eyebrow">Movement / AP</span><strong>{{system.core.movement}} <small>ft</small></strong></button>
           <div><span class="wb-eyebrow">Initiative</span><strong>{{overviewInitiative}}</strong><small>1d20 + WIS</small></div>
         </div>
+        {{#if resistances}}<div class="wb-resistance-overview">
+          <span class="wb-eyebrow">Resistances</span>
+          <ul class="wb-resistance-list">{{#each resistances}}<li>{{this}}</li>{{/each}}</ul>
+        </div>{{/if}}
       </section>
     </div>
     <div class="wb-archive-convergence" aria-hidden="true"><span></span><b>✦</b><span></span></div>
