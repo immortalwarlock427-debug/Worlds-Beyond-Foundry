@@ -1,33 +1,30 @@
-import { STATS, MILESTONE_SCORES, statModifier, milestonesReached, formatModifier } from "./stats.mjs";
+import { STATS, statModifier, milestonesReached } from "./stats.mjs";
 import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./core-numbers.mjs";
 import { CharacterActor } from "./character-actor.mjs";
 import { CharacterCombatant } from "./character-combatant.mjs";
 import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
-import { MAGIC_RESOURCES, RESOURCE_SCALING, RESOURCE_DISPLAYS, customResourceId, magicPool, customPool, resourceEntries } from "./resources.mjs";
+import { MAGIC_RESOURCES, RESOURCE_SCALING, RESOURCE_DISPLAYS, customResourceId, magicPool, customPool } from "./resources.mjs";
 import { addResource, resourceAction, resourceFormUpdates } from "./resource-actions.mjs";
 import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
-import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
+import { wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
 import { promptCommand, receiveCommand, decorateCommand, refreshCommandControls } from "./command.mjs";
 import { apTotal } from "./ap.mjs";
 import { commandReady } from "./combat-support.mjs";
-import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
 import { registerFormLoadouts, setCharacterPortrait } from "./form-loadouts.mjs";
-import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
-import { favoriteSlots, configureFavorites, overviewFill, archiveAppearance, configureArchive } from "./overview.mjs";
-import { barColorContext, barColorFormUpdates } from "./bar-colors.mjs";
+import { configureFavorites, configureArchive } from "./overview.mjs";
+import { barColorFormUpdates } from "./bar-colors.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
 import { registerRecovery } from "./recovery-actions.mjs";
-import { milestoneGroups } from "./milestones.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
-import { STAT_AWARD_LEVELS, statAwards, statIncreases } from "./stat-advancement.mjs";
+import { STAT_AWARD_LEVELS, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
 import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
 import { decorateSystemMessage } from "./chat-style.mjs";
@@ -39,19 +36,12 @@ import { registerEquipmentItem } from "./equipment-item.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
+import { CHARACTER_DETAILS, prepareCharacterSheetContext } from "./character-context.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 const { NumberField, SchemaField, StringField, BooleanField, TypedObjectField, ArrayField } = foundry.data.fields;
-const CHARACTER_DETAILS = [
-  { key: "class", label: "Class", placeholder: "Class or path" },
-  { key: "race", label: "Race", placeholder: "Race or ancestry" },
-  { key: "background", label: "Background", rows: 3, placeholder: "Origins, occupation or upbringing" },
-  { key: "appearance", label: "Appearance", rows: 3, placeholder: "Features, clothing and distinguishing details" },
-  { key: "backstory", label: "Backstory", rows: 6, wide: true, placeholder: "Where you came from, what changed and what you want" },
-  { key: "notes", label: "Notes", rows: 6, wide: true, placeholder: "Session notes, connections, languages and reminders" }
-];
 
 /* -------------------------------------------- */
 /*  Data model                                  */
@@ -264,106 +254,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const system = this.actor.system;
-    const source = system.toObject();
-    const effects = effectContext(this.actor);
-    const activeForm = activeLoadoutForm(this.actor);
-    const allAbilities = Array.from(this.actor.items?.values?.() ?? this.actor.items ?? []);
-    const hiddenAbilities = allAbilities.some(item => item.type === "ability" && !formShowsAbility(activeForm, item));
-    const abilities = abilityGroups(this._showAllFormAbilities ? allAbilities : allAbilities.filter(item => item.type !== "ability" || formShowsAbility(activeForm, item)), system);
-    for (const row of effects.savedAbilities) {
-      let group = abilities.find(group => group.rows[0]?.kind === row.kind);
-      if (!group) { group = { label: row.form ? "Forms" : "Active", rows: [] }; abilities.push(group); }
-      group.rows.push(row);
-    }
-    const milestones = Object.fromEntries(milestoneGroups(system).map(group => [group.key, group.rows]));
-    const statSources = key => [effects.sources[`system.stats.${key}.value`], key === "agl" && system.equipment?.agilityPenalty ? `Armor: −${wholeNumber(system.equipment.agilityPenalty)}` : ""].filter(Boolean).join(" · ");
-    const increases = statIncreases(system.level, source.advancement);
-    const rows = STATS.map(def => {
-      const stat = system.stats[def.key];
-      const stored = source.stats[def.key];
-      const increase = increases[def.key];
-      const baseValue = stored.value + increase;
-      const value = stat.effective ?? stat.value;
-      return {
-        ...def,
-        value, baseValue,
-        sources: statSources(def.key),
-        defaultValue: (stored.resetValue ?? (stored.manual ? 12 : stored.value)) + increase,
-        adjusted: value !== baseValue,
-        manual: !!source.stats[def.key].manual,
-        modLabel: formatModifier(stat.mod),
-        negative: stat.mod < 0,
-        pips: def.milestones.map((name, i) => ({
-          name,
-          score: MILESTONE_SCORES[i],
-          lit: milestones[def.key][i].unlocked,
-          status: milestones[def.key][i].status,
-          summary: milestones[def.key][i].summary
-        }))
-      };
-    });
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
-    const appearance = archiveAppearance(this.actor);
-    const overviewPools = resourceEntries(system).filter(pool => formShowsResource(activeForm, pool.key));
-    return Object.assign(context, {
-      actor: this.actor,
-      overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(this.actor, effects.savedAbilities),
-      overviewClass: source.details?.class?.trim() || "",
-      overviewRace: source.details?.race?.trim() || "",
-      baseFormName: appearance.baseFormName,
-      canRenameBaseForm: this.isEditable && !effects.hasActiveForm,
-      overviewPortraitY: appearance.portraitY,
-      overviewForm: activeForm?.name || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name || appearance.baseFormName,
-      overviewHealth: { ...barColorContext(system.health), value: wholeNumber(system.health.value), max: wholeNumber(system.health.max), meter: overviewFill(system.health), overflow: system.health.value > system.health.max, low: system.health.max > 0 && system.health.value / system.health.max <= 0.25 },
-      overviewEconomy: [
-        { label: "Action Points", value: apTotal(system), max: system.ap.max, barColors: system.ap.barColors, field: "system.ap.value", icon: "bolt", command: system.command?.value ?? 0 },
-        { label: "Reactions", value: system.reactions.value, max: system.reactions.max, barColors: system.reactions.barColors, field: "system.reactions.value", icon: "shield-halved" },
-        { label: "Wonder", value: system.wonder.value, max: system.wonder.max, barColors: system.wonder.barColors, field: "system.wonder.value", icon: "sparkles" }
-      ].map(pool => ({ ...wholeDisplay(pool), ...barColorContext(pool), meter: overviewFill(pool), segments: Number.isInteger(pool.max) && pool.max > 0 && pool.max <= 24 ? pool.max : 1, overflow: pool.value > pool.max })), overviewPools: overviewPools.map(pool => ({ ...pool, ...barColorContext(pool), overflow: pool.value > pool.max })),
-      overviewInitiative: formatModifier(system.stats.wis.mod),
-      overviewStatus: effects.statuses.slice(0, 3).map(row => row.name).join(" · "), overviewStatusCount: effects.statuses.length,
-      currentFormName: activeForm?.name ?? "",
-      hasHiddenFormAbilities: hiddenAbilities, showAllFormAbilities: !!this._showAllFormAbilities,
-      hasHiddenFormResources: resourceEntries(system).some(pool => !formShowsResource(activeForm, pool.key)), showAllFormResources: !!this._showAllFormResources,
-      commandPool: wholeDisplay(system.command ?? { value: 0, fresh: false }),
-      characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
-      characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · "),
-      system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
-      resourcePools: resourceEntries(system).filter(pool => this._showAllFormResources || formShowsResource(activeForm, pool.key)).map(pool => ({ ...pool, ...barColorContext(pool), sources: [effects.sources[`${pool.path}.bonus`], statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)].filter(Boolean).join(" · ") })),
-      activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm,
-      abilityGroups: abilities,
-      manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
-      editable: this.isEditable,
-      unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
-      hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
-        || Object.values(system.overrides ?? {}).some(value => value != null && value !== "")
-        || Object.values(source.bonuses ?? system.bonuses ?? {}).some(value => !!value),
-      resources: wholeDisplay([
-        { key: "health", label: "Health", inputName: "healthCurrent", ...system.health, sources: statSources("vit") },
-        { key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap, value: apTotal(system), command: wholeNumber(system.command?.value ?? 0),
-          commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false },
-        { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
-        { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
-      ]).map(pool => ({ ...pool, ...barColorContext(pool) })),
-      defyFate: system.stats.fth.value >= 21,
-      worn: wholeDisplay(system.equipment),
-      equipment: wholeDisplay(equipment), equipmentGroups: wholeDisplay(groupEquipmentRows(equipment)),
-      carrying: wholeDisplay(system.carrying),
-      block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
-      dodgeMod: formatModifier(system.stats.agl?.mod ?? 0),
-      parryMod: formatModifier(system.stats.dex?.mod ?? 0),
-      coreDetails: [
-        { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
-        { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
-        { key: "armorRating", label: "Armor Rating", value: system.core.armorRating, type: "number" },
-        { key: "movement", label: "Movement / AP", value: system.core.movement, unit: "ft", type: "number" }
-      ].map(detail => wholeDisplay({ ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key],
-        sources: [effects.sources[`system.bonuses.${({ armorRating: "armor", evasion: "evasion", movement: "movement" })[detail.key]}`], statSources(["evasion", "movement"].includes(detail.key) ? "agl" : "vit")].filter(Boolean).join(" · ") })),
-      groups: wholeDisplay([
-        { title: "Physical", rows: rows.filter(r => r.group === "physical") },
-        { title: "Mental", rows: rows.filter(r => r.group === "mental") }
-      ])
-    });
+    return Object.assign(context, prepareCharacterSheetContext({
+      actor: this.actor, source: system.toObject(), editable: this.isEditable,
+      equipment, equipmentGroups: groupEquipmentRows(equipment),
+      showAllFormAbilities: this._showAllFormAbilities,
+      showAllFormResources: this._showAllFormResources,
+      commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false
+    }));
   }
 
   _processFormData(event, form, formData) {

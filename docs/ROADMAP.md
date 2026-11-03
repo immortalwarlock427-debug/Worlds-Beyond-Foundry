@@ -32,7 +32,7 @@ Website features map to Foundry like this:
 
 ### Current priority: base character-sheet review
 
-The user supplied Claude's review checklist against main d202d91. Work follows its order, with one PR per item: damage-order correction, text/Class header fixes, then structure work before missing features. Items marked Ask first require a user decision, and the later combat section remains deferred. Review items 1 and 2 are merged: damage order is in [ATTACKS.md](ATTACKS.md#order-of-a-hit), with plain guidance and Class in the header. Item 3's native template split is implemented for validation in [SHEET-TABS.md](SHEET-TABS.md#native-template-parts): seven parts, two small Details partials and unchanged layout/controls. Separating the shared context helpers is next; formatting and source-copy optimization remain afterward.
+The user supplied Claude's review checklist against main d202d91. Work follows its order, with one PR per item: damage-order correction, text/Class header fixes, then structure work before missing features. Items marked Ask first require a user decision, and the later combat section remains deferred. Review items 1 and 2 and the native template split are merged; see [ATTACKS.md](ATTACKS.md#order-of-a-hit) and [SHEET-TABS.md](SHEET-TABS.md#native-template-parts). Item 3's read-only context helpers are implemented for validation: one presenter per header/tab, shared stat/resource projections and unchanged output. Formatting and source-copy optimization are next.
 
 The user's Character-tab refinement is implemented for visual review: the layered void vortex fades at its bounds, and a follow-up connects resource fragments and four favorite seals, restores favorite icons at every width and tightens spacing. See [CHARACTER-OVERVIEW.md](CHARACTER-OVERVIEW.md); controls/data remain unchanged. Form portraits/framing, Base naming, meters, quieter native title, race icon and typography are already implemented. Review item 2 above resumes the base-sheet checklist after this requested polish.
 
@@ -76,4 +76,4 @@ Ability damage/save/target resolution, movement AP, opportunity prompts and auto
 ## Open questions
 
 - **Compendiums and folder depth — resolved.** The user connected the system folder itself to Claude, so nesting is counted from `worlds-beyond\` and compendium packs (`packs/<name>/…`) can be copied into Foundry. Packs can live in the repo as normal.
-- **Phones.** The table plays in person with each player on a phone. Foundry runs in a phone browser, but its interface is cramped. Sheets need a narrow layout. The canvas will stay clunky on phones.
+- **Desktop priority — resolved.** On 2026-11-02 the user deprioritized phone support. Focus development and validation on desktop Foundry and ordinary window resizing. Preserve the existing narrow layout; additional phone-specific work can wait.
