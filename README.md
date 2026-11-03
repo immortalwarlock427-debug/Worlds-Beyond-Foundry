@@ -60,7 +60,7 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system.
 
 **Recovery settings:** abilities offer explicit uses-reset policies; optional resources offer fixed-point manual/own-turn recovery and long-rest opt-out. Existing records retain manual turn defaults. See [recovery configuration and validation](docs/RECOVERY.md).
 
-**Form loadouts:** Form editors can save portraits and equipped gear from the same inventory, plus ability/resource visibility. Use switches the preset; End/Base restores the original portrait/gear. Gear edits are remembered per saved form, with shared balances/counters and Show all access. Existing forms remain unchanged until configured. See [form loadouts and validation](docs/FORM-LOADOUTS.md).
+**Form loadouts:** Form editors can save portraits, token art/size/scale with native timed transitions, and equipped gear from the same inventory, plus ability/resource visibility. Use switches the preset; End/Base restores the original portrait/gear. Gear edits are remembered per saved form, with shared balances/counters and Show all access. Existing forms remain unchanged until configured. See [form loadouts and validation](docs/FORM-LOADOUTS.md).
 
 ## Installing
 

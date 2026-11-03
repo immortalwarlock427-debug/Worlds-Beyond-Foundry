@@ -122,6 +122,143 @@ function fixture() {
 }
 const sync = (actor, options) => reversibleAction(change => syncFormLoadout(actor, change, options));
 
+function tokenFixture(f) {
+  f.actor.prototypeToken = { width: 1, height: 1, texture: { src: "prototype.webp", scaleX: 1, scaleY: 1 } };
+  const calls = [],
+    tokens = [];
+  for (const [id, linked] of [
+    ["one", true],
+    ["two", true],
+    ["copy", false]
+  ]) {
+    const token = {
+      id,
+      actorLink: linked,
+      parent: { id: "scene", grid: { size: 100 } },
+      x: 300,
+      y: 400,
+      width: 1,
+      height: 1,
+      texture: { src: id + ".webp", scaleX: 1.2, scaleY: 0.8 },
+      async update(changes, options) {
+        assert.equal(options.parentUuid, undefined, "fresh token operation");
+        options.parentUuid = "Scene.scene";
+        calls.push({ id, changes, options });
+        if (token.failOnce) {
+          token.failOnce = false;
+          return null;
+        }
+        apply(token, changes);
+        return token;
+      }
+    };
+    tokens.push(token);
+  }
+  f.actor.getActiveTokens = (linked, document) => {
+    assert.equal(linked, true);
+    assert.equal(document, true);
+    return tokens.filter(t => t.actorLink);
+  };
+  f.actor.getDependentTokens = () => tokens.filter(t => t.actorLink);
+  Object.assign(f.first.system.loadout, {
+    tokenImg: "monstrous.webp",
+    tokenWidth: 2,
+    tokenHeight: 2,
+    tokenScale: 1.15,
+    transitionSeconds: 1.5
+  });
+  return { tokens, calls };
+}
+
+test("linked forms transform the prototype and active linked tokens, then Base restores each original", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  await useAbility(f.actor, f.first.id);
+  assert.equal(f.actor.prototypeToken.width, 2);
+  assert.equal(f.actor.prototypeToken.texture.scaleX, 1.15);
+  for (const token of t.tokens.slice(0, 2)) {
+    assert.equal(token.width, 2);
+    assert.equal(token.height, 2);
+    assert.equal(token.texture.src, "monstrous.webp");
+    assert.equal(token.x, 300);
+    assert.equal(token.y, 400);
+  }
+  assert.equal(t.tokens[2].texture.src, "copy.webp");
+  assert.equal(t.calls[0].options.animate, true);
+  assert.equal(t.calls[0].options.animation.duration, 1500);
+  assert.equal(t.calls[0].options.animation.transition, "fade");
+  f.actor.flags = JSON.parse(JSON.stringify(f.actor.flags));
+  await returnToBase(f.actor);
+  assert.equal(f.actor.prototypeToken.texture.src, "prototype.webp");
+  assert.equal(f.actor.prototypeToken.width, 1);
+  for (const token of t.tokens) {
+    assert.equal(token.texture.src, token.id + ".webp");
+    assert.equal(token.width, 1);
+    assert.equal(token.texture.scaleX, 1.2);
+    assert.equal(token.texture.scaleY, 0.8);
+  }
+});
+
+test("synthetic forms update only their own unlinked token and restore even-growth offsets after movement", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  f.actor.isToken = true;
+  f.actor.token = t.tokens[2];
+  f.actor.getActiveTokens = () => {
+    throw new Error("Must not visit sibling tokens");
+  };
+  f.first.system.loadout.tokenWidth = 3;
+  f.first.system.loadout.tokenHeight = 3;
+  await useAbility(f.actor, f.first.id);
+  assert.equal(t.tokens[2].x, 200);
+  assert.equal(t.tokens[2].y, 300);
+  t.tokens[2].x += 100;
+  assert.equal(f.actor.prototypeToken.width, 1);
+  assert.equal(t.tokens[0].width, 1);
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(t.tokens[2].x, 400);
+  assert.equal(t.tokens[2].y, 400);
+  assert.equal(t.tokens[2].width, 1);
+});
+
+test("failed token updates compensate prior tokens, prototype, form bonuses and costs", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  t.tokens[1].failOnce = true;
+  const effect = { parent: f.first, flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [] } };
+  f.first.effects.set("bonus", effect);
+  await assert.rejects(useAbility(f.actor, f.first.id), /transformation/);
+  assert.equal(f.first.system.effectsActive, false);
+  assert.equal(itemEffectState(effect), "Ability inactive");
+  assert.equal(f.actor.prototypeToken.width, 1);
+  assert.equal(f.actor.prototypeToken.texture.src, "prototype.webp");
+  for (const token of t.tokens) assert.equal(token.texture.src, token.id + ".webp");
+  assert.equal(f.actor.system.ap.value, 17);
+  assert.ok(t.calls.some(call => call.options.animate === false));
+});
+
+test("resource-triggered forms use the same animation and blank defaults leave token art untouched", async () => {
+  let f = fixture(),
+    t = tokenFixture(f),
+    native = nativeOperations(f);
+  f.actor.system.customResources[native.resource] = { value: 100, max: 100, spent: 0 };
+  f.first.system.trigger = { mode: "automatic", resourceId: native.resource, comparison: "above", threshold: 100, endMode: "automatic" };
+  await f.actor.update({ [`system.customResources.${native.resource}.spent`]: -1 });
+  await native.drain();
+  assert.equal(t.tokens[0].width, 2);
+  assert.equal(t.calls[0].options.animation.duration, 1500);
+  await f.actor.update({ [`system.customResources.${native.resource}.spent`]: 0 });
+  await native.drain();
+  assert.equal(t.tokens[0].width, 1);
+  f = fixture();
+  t = tokenFixture(f);
+  f.first.system.loadout = { tokenImg: "", tokenWidth: null, tokenHeight: null, tokenScale: null, transitionSeconds: 0 };
+  f.first.system.effectsActive = true;
+  await sync(f.actor);
+  assert.equal(f.calls.length, 0);
+  assert.equal(t.calls.length, 0);
+});
+
 // v14 mutates operation objects: embedded writes add parentUuid, and subsequent
 // root writes resolve that UUID even after Document.update sets parent to null.
 // Model that lifecycle, including the real resource-trigger hook callbacks.

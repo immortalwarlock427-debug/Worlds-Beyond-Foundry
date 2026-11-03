@@ -97,6 +97,14 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
           callback: path => this.item.update({ "system.loadout.portrait": path }).catch(error => ui.notifications.error(error.message))
         }).browse();
       },
+      pickFormToken: function () {
+        if (!this.isEditable || this.item.system.kind !== "form") return;
+        return new foundry.applications.apps.FilePicker.implementation({
+          type: "image",
+          current: this.item.system.loadout.tokenImg || this.item.actor?.token?.texture.src || this.item.actor?.prototypeToken?.texture.src,
+          callback: path => this.item.update({ "system.loadout.tokenImg": path }).catch(error => ui.notifications.error(error.message))
+        }).browse();
+      },
       copyFormEquipment: async function () {
         if (!this.isEditable) return;
         try {
@@ -116,11 +124,14 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       Object.entries(definitions).map(([value, label]) => ({ value, label, selected: value === selected }));
     return Object.assign(await super._prepareContext(options), {
       item: this.item,
-      system: wholeDisplay({
-        ...system,
-        effectsActive: abilityActive(this.item),
-        cooldown: { ...system.cooldown, remaining: cooldownRemaining(this.item) }
-      }),
+      system: {
+        ...wholeDisplay({
+          ...system,
+          effectsActive: abilityActive(this.item),
+          cooldown: { ...system.cooldown, remaining: cooldownRemaining(this.item) }
+        }),
+        loadout: { ...system.loadout }
+      },
       editable: this.isEditable,
       durationUnits: choices(BONUS_DURATION_UNITS, system.activeDuration?.units ?? "rounds"),
       useRecoveryChoices: choices(USES_RECOVERY, system.uses?.resetOn ?? "manual"),

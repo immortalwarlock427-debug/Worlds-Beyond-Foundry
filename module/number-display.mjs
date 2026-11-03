@@ -22,7 +22,7 @@ function write(data, path, value, remove = false) {
 // A displayed whole value must not overwrite an unchanged fractional source.
 export function wholeFormUpdates(data, form, original) {
   for (const input of form?.querySelectorAll('input[type="number"][name]') ?? []) {
-    if (input.disabled || !input.name) continue;
+    if (input.disabled || !input.name || input.dataset?.allowDecimal !== undefined) continue;
     const value = read(data, input.name);
     if (value == null || String(value).trim() === "" || !Number.isFinite(Number(value))) continue;
     const next = Math.floor(Number(value)),
@@ -37,7 +37,7 @@ export function bindWholeNumbers(element) {
   if (!element?.addEventListener || bound.has(element)) return;
   bound.add(element);
   const normalize = input => {
-    if (input.disabled || input.readOnly || input.value.trim() === "") return;
+    if (input.disabled || input.readOnly || input.dataset?.allowDecimal !== undefined || input.value.trim() === "") return;
     const value = Number(input.value);
     if (Number.isFinite(value)) input.value = String(Math.floor(value));
   };

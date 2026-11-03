@@ -65,6 +65,19 @@ test("numeric change/submit binding floors before validation, retains blanks, an
   assert.equal(inputs[0].value, "7");
 });
 
+test("explicit token geometry/time controls preserve decimals in both form processing and input binding", () => {
+  const input = { name: "system.loadout.tokenScale", value: "1.15", dataset: { allowDecimal: "" } };
+  const handlers = {},
+    root = { addEventListener: (name, fn) => (handlers[name] = fn), querySelectorAll: () => [input] };
+  const data = { system: { loadout: { tokenScale: 1.15 } } };
+  wholeFormUpdates(data, root, {});
+  assert.equal(data.system.loadout.tokenScale, 1.15);
+  bindWholeNumbers(root);
+  handlers.submit();
+  handlers.keydown({ key: "Enter" });
+  assert.equal(input.value, "1.15");
+});
+
 test("visible system dice totals and d20 equations floor without changing rolls or formula text", () => {
   const totals = [{ textContent: "14.2" }, { textContent: "-0.2" }];
   const html = { querySelector: () => ({}), classList: { add() {} }, querySelectorAll: () => totals };

@@ -1,6 +1,7 @@
 import { activeLoadoutForm, equipmentSnapshot, equipmentPlan, formGear, hasPhysicalLoadout } from "./form-loadout-core.mjs";
 import { itemList } from "./loadout.mjs";
 import { queuedAction, reversibleAction } from "./action-support.mjs";
+import { syncFormTokens } from "./form-tokens.mjs";
 const SCOPE = "worlds-beyond",
   KEY = "formLoadoutState";
 // v14 mutates each operation with parentUuid and hook snapshots. Never reuse it
@@ -13,6 +14,11 @@ export function formLoadoutSchema() {
   return new SchemaField({
     portrait: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
     portraitY: new NumberField({ required: true, nullable: true, initial: null, integer: true, min: 0, max: 100 }),
+    tokenImg: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
+    tokenWidth: new NumberField({ required: true, nullable: true, initial: null, positive: true }),
+    tokenHeight: new NumberField({ required: true, nullable: true, initial: null, positive: true }),
+    tokenScale: new NumberField({ required: true, nullable: true, initial: null, positive: true }),
+    transitionSeconds: new NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
     gearEnabled: new BooleanField({ initial: false }),
     equipment: map(),
     abilities: map(),
@@ -55,7 +61,6 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
   }
   const nextId = hasPhysicalLoadout(form) ? form.id : "";
   if (!previous && !nextId) return;
-  if (!edited && previous?.currentId === nextId && foundry.utils.equals(previous.baseEquipment, cleanGear(previous.baseEquipment))) return;
   const prior = actor.items.get(previous?.currentId);
   const currentGear = equipmentSnapshot(actor);
   let baseEquipment = cleanGear(previous?.baseEquipment ?? currentGear),
@@ -94,7 +99,14 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
       throw new Error("The form's equipment switch was cancelled or not retained.");
   }
   const img = nextId && form.system.loadout.portrait ? form.system.loadout.portrait : basePortrait;
-  const state = { currentId: nextId, basePortrait, baseEquipment, gearEnabled: !!(nextId && form.system.loadout.gearEnabled) };
+  const tokenState = await syncFormTokens(actor, form, change, previous?.tokenState);
+  const state = {
+    currentId: nextId,
+    basePortrait,
+    baseEquipment,
+    gearEnabled: !!(nextId && form.system.loadout.gearEnabled),
+    ...(tokenState ? { tokenState } : {})
+  };
   const changes = {};
   if (actor.img !== img) changes.img = img;
   if (!foundry.utils.equals(previous, state)) changes[`flags.${SCOPE}.${KEY}`] = new foundry.data.operators.ForcedReplacement(state);
@@ -141,7 +153,9 @@ export function registerFormLoadouts() {
       Object.hasOwn(changes.system?.loadout ?? {}, key) ||
       Object.keys(changes).some(path => path === `system.loadout.${key}` || path.startsWith(`system.loadout.${key}.`));
     return reconcile(item.actor, options, userId, {
-      edited: ["portrait", "gearEnabled", "equipment"].some(changed),
+      edited: ["portrait", "tokenImg", "tokenWidth", "tokenHeight", "tokenScale", "transitionSeconds", "gearEnabled", "equipment"].some(
+        changed
+      ),
       gearEdited: ["gearEnabled", "equipment"].some(changed)
     });
   });
