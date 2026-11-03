@@ -7,6 +7,7 @@ The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) is a separa
 Before changing sheet presentation or interaction, consult the website's current UI source to match its behavior and palette. Show one stat score: effective at rest, base while editing. Earned level-up stat points are part of that base and keep its normal color. Gear/effect adjustments use teal, direct edits gold, and a manually edited score with a gear/effect adjustment purple. Notion remains the rules authority.
 
 - **Trust-based character sheet:** players may customize and correct values. Don't add anti-cheat or unsolicited gameplay restrictions.
+- **Desktop priority:** the user deprioritized phone support on 2026-11-02. Validate desktop Foundry and ordinary window resizing. Keep the existing narrow layout, with phone-specific work deferred.
 - **Requested Wonder behavior:** using Wonder requires at least one current use and consumes each roll result only once. Its new reroll result may use Wonder again. Keep the sheet's manual pool corrections editable.
 - Reflect the actual rules in Notion. Critically evaluate changes and explain contradictions and consequences. Use 1.5× or 150% notation.
 - Build in small steps: get one part of the sheet working and looking right in Foundry before adding the next.

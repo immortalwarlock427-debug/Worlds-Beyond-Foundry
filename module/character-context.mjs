@@ -1,0 +1,195 @@
+// Read-only sheet presenters. Inputs may be native documents or plain test data;
+// this module needs no Foundry globals and never saves or prepares a document.
+import { STATS, MILESTONE_SCORES, formatModifier } from "./stats.mjs";
+import { MAGIC_RESOURCES, resourceEntries } from "./resources.mjs";
+import { wholeDisplay, wholeNumber } from "./number-display.mjs";
+import { apTotal } from "./ap.mjs";
+import { abilityGroups } from "./abilities-core.mjs";
+import { effectContext } from "./effects-core.mjs";
+import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
+import { favoriteSlots, overviewFill, archiveAppearance } from "./overview.mjs";
+import { barColorContext } from "./bar-colors.mjs";
+import { milestoneGroups } from "./milestones.mjs";
+import { statAwards, statIncreases } from "./stat-advancement.mjs";
+
+export const CHARACTER_DETAILS = [
+  { key: "class", label: "Class", placeholder: "Class or path" },
+  { key: "race", label: "Race", placeholder: "Race or ancestry" },
+  { key: "background", label: "Background", rows: 3, placeholder: "Origins, occupation or upbringing" },
+  { key: "appearance", label: "Appearance", rows: 3, placeholder: "Features, clothing and distinguishing details" },
+  { key: "backstory", label: "Backstory", rows: 6, wide: true, placeholder: "Where you came from, what changed and what you want" },
+  { key: "notes", label: "Notes", rows: 6, wide: true, placeholder: "Session notes, connections, languages and reminders" }
+];
+
+function attributeRows({ system, source, statSources }) {
+  const milestones = Object.fromEntries(milestoneGroups(system).map(group => [group.key, group.rows]));
+  const increases = statIncreases(system.level, source.advancement);
+  return STATS.map(def => {
+    const stat = system.stats[def.key], stored = source.stats[def.key], increase = increases[def.key];
+    const baseValue = stored.value + increase, value = stat.effective ?? stat.value;
+    return {
+      ...def, value, baseValue, sources: statSources(def.key),
+      defaultValue: (stored.resetValue ?? (stored.manual ? 12 : stored.value)) + increase,
+      adjusted: value !== baseValue, manual: !!stored.manual,
+      modLabel: formatModifier(stat.mod), negative: stat.mod < 0,
+      pips: def.milestones.map((name, i) => ({
+        name, score: MILESTONE_SCORES[i], lit: milestones[def.key][i].unlocked,
+        status: milestones[def.key][i].status, summary: milestones[def.key][i].summary
+      }))
+    };
+  });
+}
+
+export function headerContext({ source, effects, activeForm, appearance, editable }) {
+  return {
+    overviewClass: source.details?.class?.trim() || "",
+    overviewRace: source.details?.race?.trim() || "",
+    baseFormName: appearance.baseFormName,
+    canRenameBaseForm: editable && !effects.hasActiveForm,
+    overviewForm: activeForm?.name
+      || effects.savedAbilities.find(row => row.form && row.effectsActive)?.name
+      || appearance.baseFormName
+  };
+}
+
+export function characterContext({ actor, system, effects, activeForm, appearance, rows, pools }) {
+  const health = system.health;
+  return {
+    overviewStats: wholeDisplay(rows), favoriteSlots: favoriteSlots(actor, effects.savedAbilities),
+    overviewPortraitY: appearance.portraitY,
+    overviewHealth: {
+      ...barColorContext(health), value: wholeNumber(health.value), max: wholeNumber(health.max),
+      meter: overviewFill(health), overflow: health.value > health.max,
+      low: health.max > 0 && health.value / health.max <= 0.25
+    },
+    overviewEconomy: [
+      {
+        label: "Action Points", value: apTotal(system), max: system.ap.max, barColors: system.ap.barColors,
+        field: "system.ap.value", icon: "bolt", command: system.command?.value ?? 0
+      },
+      {
+        label: "Reactions", value: system.reactions.value, max: system.reactions.max,
+        barColors: system.reactions.barColors, field: "system.reactions.value", icon: "shield-halved"
+      },
+      {
+        label: "Wonder", value: system.wonder.value, max: system.wonder.max,
+        barColors: system.wonder.barColors, field: "system.wonder.value", icon: "sparkles"
+      }
+    ].map(pool => ({
+      ...wholeDisplay(pool), ...barColorContext(pool), meter: overviewFill(pool),
+      segments: Number.isInteger(pool.max) && pool.max > 0 && pool.max <= 24 ? pool.max : 1,
+      overflow: pool.value > pool.max
+    })),
+    overviewPools: pools.filter(pool => formShowsResource(activeForm, pool.key)).map(pool => ({
+      ...pool, ...barColorContext(pool), overflow: pool.value > pool.max
+    })),
+    overviewInitiative: formatModifier(system.stats.wis.mod),
+    overviewStatus: effects.statuses.slice(0, 3).map(row => row.name).join(" · "),
+    overviewStatusCount: effects.statuses.length
+  };
+}
+
+export function detailsContext(state) {
+  const { system, source, effects, activeForm, rows, pools, statSources, showAllFormResources, commandPending } = state;
+  return {
+    hasHiddenFormResources: pools.some(pool => !formShowsResource(activeForm, pool.key)),
+    showAllFormResources: !!showAllFormResources,
+    commandPool: wholeDisplay(system.command ?? { value: 0, fresh: false }),
+    resourcePools: pools.filter(pool => showAllFormResources || formShowsResource(activeForm, pool.key)).map(pool => ({
+      ...pool, ...barColorContext(pool),
+      sources: [
+        effects.sources[`${pool.path}.bonus`],
+        statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)
+      ].filter(Boolean).join(" · ")
+    })),
+    manaEnabled: !!system.mana?.enabled, holyPowerEnabled: !!system.holyPower?.enabled,
+    unspentStatPoints: statAwards(system.level, source.advancement).reduce((sum, award) => sum + award.remaining, 0),
+    hasAdjustments: ["health", "ap", "reactions", "wonder"].some(key => system[key]?.maxOverride != null)
+      || Object.values(system.overrides ?? {}).some(value => value != null && value !== "")
+      || Object.values(source.bonuses ?? system.bonuses ?? {}).some(value => !!value),
+    resources: wholeDisplay([
+      { key: "health", label: "Health", inputName: "healthCurrent", ...system.health, sources: statSources("vit") },
+      {
+        key: "ap", label: "Action Points", inputName: "system.ap.value", ...system.ap, value: apTotal(system),
+        command: wholeNumber(system.command?.value ?? 0), commandPending
+      },
+      { key: "reactions", label: "Reactions", inputName: "system.reactions.value", ...system.reactions, sources: statSources("agl") },
+      { key: "wonder", label: "Wonder", inputName: "system.wonder.value", ...system.wonder, sources: statSources("fth") }
+    ]).map(pool => ({ ...pool, ...barColorContext(pool) })),
+    defyFate: system.stats.fth.value >= 21,
+    worn: wholeDisplay(system.equipment),
+    block: system.block && { ...system.block, strMod: formatModifier(system.stats.str?.mod ?? 0) },
+    dodgeMod: formatModifier(system.stats.agl?.mod ?? 0),
+    parryMod: formatModifier(system.stats.dex?.mod ?? 0),
+    coreDetails: [
+      { key: "hitDie", label: "Hit die", value: system.core.hitDie, type: "text" },
+      { key: "evasion", label: "Natural Evasion", value: system.core.evasion, type: "number" },
+      { key: "armorRating", label: "Armor Rating", value: system.core.armorRating, type: "number" },
+      { key: "movement", label: "Movement / AP", value: system.core.movement, unit: "ft", type: "number" }
+    ].map(detail => wholeDisplay({
+      ...detail, override: system.overrides[detail.key], automatic: system.core.automatic[detail.key],
+      sources: [
+        effects.sources[`system.bonuses.${({ armorRating: "armor", evasion: "evasion", movement: "movement" })[detail.key]}`],
+        statSources(["evasion", "movement"].includes(detail.key) ? "agl" : "vit")
+      ].filter(Boolean).join(" · ")
+    })),
+    groups: wholeDisplay([
+      { title: "Physical", rows: rows.filter(row => row.group === "physical") },
+      { title: "Mental", rows: rows.filter(row => row.group === "mental") }
+    ])
+  };
+}
+
+export function equipmentContext({ system, equipment, equipmentGroups }) {
+  return {
+    equipment: wholeDisplay(equipment), equipmentGroups: wholeDisplay(equipmentGroups),
+    carrying: wholeDisplay(system.carrying)
+  };
+}
+
+export function abilitiesContext({ actor, system, effects, activeForm, showAllFormAbilities }) {
+  const all = Array.from(actor.items?.values?.() ?? actor.items ?? []);
+  const hidden = all.some(item => item.type === "ability" && !formShowsAbility(activeForm, item));
+  const visible = showAllFormAbilities ? all
+    : all.filter(item => item.type !== "ability" || formShowsAbility(activeForm, item));
+  const groups = abilityGroups(visible, system);
+  for (const row of effects.savedAbilities) {
+    let group = groups.find(group => group.rows[0]?.kind === row.kind);
+    if (!group) { group = { label: row.form ? "Forms" : "Active", rows: [] }; groups.push(group); }
+    group.rows.push(row);
+  }
+  return {
+    currentFormName: activeForm?.name ?? "", hasHiddenFormAbilities: hidden,
+    showAllFormAbilities: !!showAllFormAbilities, abilityGroups: groups
+  };
+}
+
+export function statusContext({ effects }) {
+  return { activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm };
+}
+
+export function notesContext({ source }) {
+  return {
+    characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
+    characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · ")
+  };
+}
+
+export function prepareCharacterSheetContext(input) {
+  const { actor, source, editable } = input, system = actor.system;
+  const effects = effectContext(actor), activeForm = activeLoadoutForm(actor);
+  const statSources = key => [
+    effects.sources[`system.stats.${key}.value`],
+    key === "agl" && system.equipment?.agilityPenalty ? `Armor: −${wholeNumber(system.equipment.agilityPenalty)}` : ""
+  ].filter(Boolean).join(" · ");
+  const state = {
+    ...input, system, effects, activeForm, statSources,
+    appearance: archiveAppearance(actor), pools: resourceEntries(system)
+  };
+  state.rows = attributeRows(state);
+  return {
+    actor, system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }), editable,
+    ...headerContext(state), ...characterContext(state), ...detailsContext(state),
+    ...equipmentContext(state), ...abilitiesContext(state), ...statusContext(state), ...notesContext(state)
+  };
+}
