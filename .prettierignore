@@ -1,0 +1,5 @@
+# Preserve Foundry Handlebars text/attribute whitespace; edit these directly.
+templates/**
+icons/**
+packs/**
+fonts/**

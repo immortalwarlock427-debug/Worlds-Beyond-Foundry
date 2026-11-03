@@ -2,7 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { inventory, carriedSlots, defaultSlots, blockDice } from "../module/equipment-core.mjs";
 
-const item = (id, type, system = {}) => ({ id, type, system: { quantity: 1, slots: defaultSlots(type, system), perSlot: 1, equipped: false, ...system } });
+const item = (id, type, system = {}) => ({
+  id,
+  type,
+  system: { quantity: 1, slots: defaultSlots(type, system), perSlot: 1, equipped: false, ...system }
+});
 
 test("capacity is 10 + STR modifier, a backpack adds 6 and the override replaces it", () => {
   assert.equal(inventory({ strengthMod: 3 }).capacity, 13);
@@ -18,12 +22,14 @@ test("most items take 1 slot, shields and Two-handed weapons take 2", () => {
   assert.equal(defaultSlots("shield"), 2);
   assert.equal(defaultSlots("armor"), 1);
   assert.equal(defaultSlots("gear"), 1);
-  const result = inventory({ items: [
-    item("sword", "weapon"),
-    item("greatsword", "weapon", { properties: { twoHanded: true } }),
-    item("shield", "shield"),
-    item("rope", "gear")
-  ] });
+  const result = inventory({
+    items: [
+      item("sword", "weapon"),
+      item("greatsword", "weapon", { properties: { twoHanded: true } }),
+      item("shield", "shield"),
+      item("rope", "gear")
+    ]
+  });
   assert.equal(result.used, 6);
   assert.deepEqual(result.perItem, { sword: 1, greatsword: 2, shield: 2, rope: 1 });
 });

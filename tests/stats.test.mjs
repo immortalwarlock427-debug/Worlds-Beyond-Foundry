@@ -5,9 +5,22 @@ import { statModifier, milestonesReached, formatModifier } from "../module/stats
 
 // The modifier chart from the Notion Stats page, as [low, high, modifier].
 const CHART = [
-  [3, 5, -3], [6, 8, -2], [9, 11, -1], [12, 12, 0], [13, 15, 1], [16, 18, 2],
-  [19, 21, 3], [22, 24, 4], [25, 27, 5], [28, 30, 6], [31, 33, 7], [34, 36, 8],
-  [37, 39, 9], [40, 42, 10], [43, 45, 11], [46, 48, 12]
+  [3, 5, -3],
+  [6, 8, -2],
+  [9, 11, -1],
+  [12, 12, 0],
+  [13, 15, 1],
+  [16, 18, 2],
+  [19, 21, 3],
+  [22, 24, 4],
+  [25, 27, 5],
+  [28, 30, 6],
+  [31, 33, 7],
+  [34, 36, 8],
+  [37, 39, 9],
+  [40, 42, 10],
+  [43, 45, 11],
+  [46, 48, 12]
 ];
 
 test("non-STR/DEX stats follow the modifier chart", () => {

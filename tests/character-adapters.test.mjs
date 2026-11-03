@@ -8,13 +8,21 @@ const getProperty = (object, path) => path.split(".").reduce((value, key) => val
 const setProperty = (object, path, value) => {
   const keys = path.split(".");
   const last = keys.pop();
-  const target = keys.reduce((parent, key) => parent[key] ??= {}, object);
+  const target = keys.reduce((parent, key) => (parent[key] ??= {}), object);
   target[last] = value;
 };
 class ActorStub {
-  async onUpdateEffectDurations(...args) { this.durationCallback = args; }
-  async update(data) { this.lastUpdate = data; return this; }
-  async modifyTokenAttribute(...args) { this.fallback = args; return this; }
+  async onUpdateEffectDurations(...args) {
+    this.durationCallback = args;
+  }
+  async update(data) {
+    this.lastUpdate = data;
+    return this;
+  }
+  async modifyTokenAttribute(...args) {
+    this.fallback = args;
+    return this;
+  }
 }
 class SheetStub {
   tabGroups = Object.fromEntries(Object.entries(this.constructor.TABS ?? {}).map(([group, config]) => [group, config.initial]));
@@ -22,26 +30,52 @@ class SheetStub {
     const entries = Object.entries(this.constructor.TABS ?? {});
     if (entries.length !== 1) return {};
     const [group, config] = entries[0];
-    return { tabs: Object.fromEntries(config.tabs.map(tab => [tab.id, { ...tab, group, active: this.tabGroups[group] === tab.id, cssClass: this.tabGroups[group] === tab.id ? "active" : "" }])) };
+    return {
+      tabs: Object.fromEntries(
+        config.tabs.map(tab => [
+          tab.id,
+          { ...tab, group, active: this.tabGroups[group] === tab.id, cssClass: this.tabGroups[group] === tab.id ? "active" : "" }
+        ])
+      )
+    };
   }
   async _onRender() {}
-  _processFormData(event, form, formData) { return structuredClone(formData.object); }
+  _processFormData(event, form, formData) {
+    return structuredClone(formData.object);
+  }
 }
 globalThis.foundry = {
   documents: { Actor: ActorStub, Combatant: class {} },
-  abstract: { TypeDataModel: class { async _preCreate() {} } },
+  abstract: {
+    TypeDataModel: class {
+      async _preCreate() {}
+    }
+  },
   data: { fields: {} },
-  applications: { api: { HandlebarsApplicationMixin: base => base, ApplicationV2: class {}, DocumentSheetV2: SheetStub }, sheets: { ActorSheetV2: SheetStub, ItemSheetV2: SheetStub } },
+  applications: {
+    api: { HandlebarsApplicationMixin: base => base, ApplicationV2: class {}, DocumentSheetV2: SheetStub },
+    sheets: { ActorSheetV2: SheetStub, ItemSheetV2: SheetStub }
+  },
   utils: { getProperty, setProperty, hasProperty: (object, path) => getProperty(object, path) !== undefined }
 };
-globalThis.Hooks = { once() {}, on() {}, call() { return true; } };
+globalThis.Hooks = {
+  once() {},
+  on() {},
+  call() {
+    return true;
+  }
+};
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
 const { createAbility, AbilitySheet } = await import("../module/abilities.mjs");
 
 test("form visibility refreshes the affected native parts without replacing unrelated tab drafts", async () => {
-  const sheet = new CharacterSheet(), renders = [];
-  sheet.render = async options => { renders.push(options); return sheet; };
+  const sheet = new CharacterSheet(),
+    renders = [];
+  sheet.render = async options => {
+    renders.push(options);
+    return sheet;
+  };
   const toggle = CharacterSheet.DEFAULT_OPTIONS.actions.formView;
   await toggle.call(sheet, null, { dataset: { view: "abilities" } });
   assert.equal(sheet._showAllFormAbilities, true);
@@ -55,21 +89,53 @@ test("form visibility refreshes the affected native parts without replacing unre
 });
 
 test("form portrait picker writes only that form's image and skips non-form/read-only sheets", async () => {
-  let settings, opened = 0; const updates = [];
-  foundry.applications.apps = { FilePicker: { implementation: class { constructor(options) { settings = options; } browse() { opened++; } } } };
-  const item = { system: { kind: 'form', loadout: { portrait: 'form.png' } }, actor: { img: 'base.png' }, async update(data) { updates.push(data); return this; } };
+  let settings,
+    opened = 0;
+  const updates = [];
+  foundry.applications.apps = {
+    FilePicker: {
+      implementation: class {
+        constructor(options) {
+          settings = options;
+        }
+        browse() {
+          opened++;
+        }
+      }
+    }
+  };
+  const item = {
+    system: { kind: "form", loadout: { portrait: "form.png" } },
+    actor: { img: "base.png" },
+    async update(data) {
+      updates.push(data);
+      return this;
+    }
+  };
   const pick = AbilitySheet.DEFAULT_OPTIONS.actions.pickFormPortrait;
-  pick.call({ item, isEditable: false }); assert.equal(opened, 0);
-  item.system.kind = 'active'; pick.call({ item, isEditable: true }); assert.equal(opened, 0);
-  item.system.kind = 'form'; pick.call({ item, isEditable: true });
-  assert.equal(opened, 1); assert.equal(settings.type, 'image'); assert.equal(settings.current, 'form.png');
-  await settings.callback('forms/monstrous.webp'); assert.deepEqual(updates, [{ 'system.loadout.portrait': 'forms/monstrous.webp' }]);
-  assert.equal(item.actor.img, 'base.png');
+  pick.call({ item, isEditable: false });
+  assert.equal(opened, 0);
+  item.system.kind = "active";
+  pick.call({ item, isEditable: true });
+  assert.equal(opened, 0);
+  item.system.kind = "form";
+  pick.call({ item, isEditable: true });
+  assert.equal(opened, 1);
+  assert.equal(settings.type, "image");
+  assert.equal(settings.current, "form.png");
+  await settings.callback("forms/monstrous.webp");
+  assert.deepEqual(updates, [{ "system.loadout.portrait": "forms/monstrous.webp" }]);
+  assert.equal(item.actor.img, "base.png");
 });
 
 test("stat awards prepare from stored bases without accumulating or rewriting reset history", () => {
-  const source = { level: 8, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: true, resetValue: 18 }])),
-    advancement: { level4: { str: 2, dex: 2 }, level8: { str: 2, vit: 2 } } };
+  const source = {
+    level: 8,
+    stats: Object.fromEntries(
+      ["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: true, resetValue: 18 }])
+    ),
+    advancement: { level4: { str: 2, dex: 2 }, level8: { str: 2, vit: 2 } }
+  };
   const original = structuredClone(source);
   const model = new CharacterData();
   model.stats = structuredClone(source.stats);
@@ -88,12 +154,29 @@ test("stat awards prepare from stored bases without accumulating or rewriting re
 });
 
 test("sheet shows effective stats and colors changes while editing only persisted base scores", async () => {
-  const stats = Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0, milestones: 0 }]));
+  const stats = Object.fromEntries(
+    ["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0, milestones: 0 }])
+  );
   const source = structuredClone(stats);
-  stats.agl.effective = 9; stats.agl.mod = -1;
-  stats.vit.value = 15; stats.vit.effective = 15; stats.vit.mod = 1;
+  stats.agl.effective = 9;
+  stats.agl.mod = -1;
+  stats.vit.value = 15;
+  stats.vit.effective = 15;
+  stats.vit.mod = 1;
   const sheet = new CharacterSheet();
-  sheet.actor = { items: [], system: { stats, toObject: () => ({ stats: source }), health: {}, ap: {}, reactions: {}, wonder: {}, core: { automatic: {} }, overrides: {} } };
+  sheet.actor = {
+    items: [],
+    system: {
+      stats,
+      toObject: () => ({ stats: source }),
+      health: {},
+      ap: {},
+      reactions: {},
+      wonder: {},
+      core: { automatic: {} },
+      overrides: {}
+    }
+  };
   sheet.isEditable = true;
   const context = await sheet._prepareContext({});
   const rows = context.groups.flatMap(group => group.rows);
@@ -115,19 +198,43 @@ test("sheet shows effective stats and colors changes while editing only persiste
 
 test("earned points belong to the normal editable base; only gear/effects add the adjusted color", async () => {
   const source = {
-    stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: false, resetValue: null }])),
+    stats: Object.fromEntries(
+      ["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 19, manual: false, resetValue: null }])
+    ),
     advancement: { level4: { str: 2, vit: 2 }, level8: { dex: 2, wis: 2 }, level12: { agl: 2 } }
   };
   source.stats.dex = { value: 20, manual: true, resetValue: 19 };
   source.stats.wis = { value: 20, manual: true, resetValue: 19 };
   const stats = structuredClone(source.stats);
   for (const stat of Object.values(stats)) Object.assign(stat, { effective: stat.value, mod: 0, milestones: 0 });
-  stats.str.effective = 21; stats.dex.effective = 22;
-  stats.vit.effective = 23; stats.wis.effective = 24;
-  const sheet = new CharacterSheet(); sheet.isEditable = true;
-  sheet.actor = { items: [], system: { level: 12, stats, toObject: () => structuredClone(source), health: {}, ap: {}, reactions: {}, wonder: {}, core: { automatic: {} }, overrides: {} } };
+  stats.str.effective = 21;
+  stats.dex.effective = 22;
+  stats.vit.effective = 23;
+  stats.wis.effective = 24;
+  const sheet = new CharacterSheet();
+  sheet.isEditable = true;
+  sheet.actor = {
+    items: [],
+    system: {
+      level: 12,
+      stats,
+      toObject: () => structuredClone(source),
+      health: {},
+      ap: {},
+      reactions: {},
+      wonder: {},
+      core: { automatic: {} },
+      overrides: {}
+    }
+  };
   const rows = (await sheet._prepareContext({})).groups.flatMap(group => group.rows);
-  for (const [key, base, adjusted, manual] of [["str", 21, false, false], ["dex", 22, false, true], ["vit", 21, true, false], ["wis", 22, true, true], ["agl", 21, true, false]]) {
+  for (const [key, base, adjusted, manual] of [
+    ["str", 21, false, false],
+    ["dex", 22, false, true],
+    ["vit", 21, true, false],
+    ["wis", 22, true, true],
+    ["agl", 21, true, false]
+  ]) {
     const row = rows.find(stat => stat.key === key);
     assert.equal(row.baseValue, base);
     assert.equal(row.adjusted, adjusted);
@@ -140,21 +247,37 @@ test("earned points belong to the normal editable base; only gear/effects add th
 function actor() {
   const actor = new CharacterActor();
   actor.type = "character";
-  actor.system = { health: { value: 41, max: 60 }, ap: { value: 4, max: 15 }, reactions: { value: 0, max: 1 }, wonder: { value: 0, max: 2 } };
-  actor.clone = data => ({ system: { health: { max: coreNumbers({
-    level: data.system?.level ?? 5,
-    stats: data.system?.stats ?? { vit: { value: 12 } },
-    overrides: { healthMax: data.system?.health?.maxOverride }
-  }).healthMax } } });
+  actor.system = {
+    health: { value: 41, max: 60 },
+    ap: { value: 4, max: 15 },
+    reactions: { value: 0, max: 1 },
+    wonder: { value: 0, max: 2 }
+  };
+  actor.clone = data => ({
+    system: {
+      health: {
+        max: coreNumbers({
+          level: data.system?.level ?? 5,
+          stats: data.system?.stats ?? { vit: { value: 12 } },
+          overrides: { healthMax: data.system?.health?.maxOverride }
+        }).healthMax
+      }
+    }
+  });
   return actor;
 }
 
 test("native duration refresh rerenders existing character views without writing actor data", async () => {
-  const a = actor(), effects = [{ id: "tonic" }], context = { round: 3 };
-  a.render = (...args) => { a.renderArgs = args; };
+  const a = actor(),
+    effects = [{ id: "tonic" }],
+    context = { round: 3 };
+  a.render = (...args) => {
+    a.renderArgs = args;
+  };
   await a.onUpdateEffectDurations(effects, "turnStart", context);
   assert.deepEqual(a.durationCallback, [effects, "turnStart", context]);
-  assert.deepEqual(a.renderArgs, [false, { renderContext: "updateEffectDurations" }]); assert.equal(a.lastUpdate, undefined);
+  assert.deepEqual(a.renderArgs, [false, { renderContext: "updateEffectDurations" }]);
+  assert.equal(a.lastUpdate, undefined);
 });
 
 test("token Health damage, healing and absolute correction preserve the same deficit as the sheet", async () => {
@@ -183,15 +306,20 @@ test("token updates respect cancellation through Foundry's modifyTokenAttribute 
   try {
     await a.modifyTokenAttribute("health", 20);
     assert.equal(a.lastUpdate, undefined);
-  } finally { Hooks.call = () => true; }
+  } finally {
+    Hooks.call = () => true;
+  }
 });
 
 test("full sheet submission does not turn a VIT change into healing or refill spent pools", () => {
   const sheet = new CharacterSheet();
   sheet.actor = actor();
-  const result = sheet._processFormData(null, null, { object: {
-    healthCurrent: "41", system: { stats: { vit: { value: 16 } }, ap: { value: "4" }, reactions: { value: "0" }, wonder: { value: "0" } }
-  } });
+  const result = sheet._processFormData(null, null, {
+    object: {
+      healthCurrent: "41",
+      system: { stats: { vit: { value: 16 } }, ap: { value: "4" }, reactions: { value: "0" }, wonder: { value: "0" } }
+    }
+  });
   assert.equal(result.healthCurrent, undefined);
   assert.equal(result.system.health?.damage, undefined);
   assert.equal(result.system.ap.value, undefined);
@@ -203,9 +331,12 @@ test("full sheet submission does not turn a VIT change into healing or refill sp
 test("simultaneous max and current Health corrections use the new maximum, including zero", () => {
   const sheet = new CharacterSheet();
   sheet.actor = actor();
-  const result = sheet._processFormData(null, null, { object: {
-    healthCurrent: 0, system: { health: { maxOverride: 100 }, ap: { value: 0 } }
-  } });
+  const result = sheet._processFormData(null, null, {
+    object: {
+      healthCurrent: 0,
+      system: { health: { maxOverride: 100 }, ap: { value: 0 } }
+    }
+  });
   assert.equal(result.system.health.damage, 100);
   assert.equal(result.system.ap.value, 0);
   const cleared = sheet._processFormData(null, null, { object: { healthCurrent: "" } });
@@ -213,61 +344,105 @@ test("simultaneous max and current Health corrections use the new maximum, inclu
 });
 
 test("whole displayed Health and AP preserve hidden fractions; deliberate numeric edits floor", () => {
-  const sheet = new CharacterSheet(); sheet.actor = actor();
-  Object.assign(sheet.actor.system.health, { value: 120.4, max: 125 }); sheet.actor.system.ap.value = 4.9;
-  const form = { querySelectorAll: selector => selector.includes("data-stat-score") ? [] : ["healthCurrent", "system.ap.value"].map(name => ({ name })) };
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
+  Object.assign(sheet.actor.system.health, { value: 120.4, max: 125 });
+  sheet.actor.system.ap.value = 4.9;
+  const form = {
+    querySelectorAll: selector => (selector.includes("data-stat-score") ? [] : ["healthCurrent", "system.ap.value"].map(name => ({ name })))
+  };
   const untouched = sheet._processFormData(null, form, { object: { name: "Renamed", healthCurrent: 120, system: { ap: { value: 4 } } } });
-  assert.equal(untouched.system.health?.damage, undefined); assert.equal(untouched.system.ap.value, undefined);
+  assert.equal(untouched.system.health?.damage, undefined);
+  assert.equal(untouched.system.ap.value, undefined);
   const edited = sheet._processFormData(null, form, { object: { healthCurrent: 119.9, system: { ap: { value: 3.9 } } } });
-  assert.equal(edited.system.health.damage, sheet.actor.clone(edited).system.health.max - 119); assert.equal(edited.system.ap.value, 3);
+  assert.equal(edited.system.health.damage, sheet.actor.clone(edited).system.health.max - 119);
+  assert.equal(edited.system.ap.value, 3);
 });
 
 test("the AP field includes Command while saves preserve separate balances and hidden fractions", async () => {
   globalThis.game = { combats: [] };
-  const sheet = new CharacterSheet(); sheet.actor = actor(); sheet.actor.uuid = "Actor.hero"; sheet.actor.items = [];
-  sheet.actor.system.ap.value = 4.9; sheet.actor.system.command = { value: 3, fresh: true };
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
+  sheet.actor.uuid = "Actor.hero";
+  sheet.actor.items = [];
+  sheet.actor.system.ap.value = 4.9;
+  sheet.actor.system.command = { value: 3, fresh: true };
   sheet.actor.system.stats = Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12 }]));
-  sheet.actor.system.core = { automatic: {} }; sheet.actor.system.overrides = {};
+  sheet.actor.system.core = { automatic: {} };
+  sheet.actor.system.overrides = {};
   sheet.actor.system.toObject = () => ({ stats: sheet.actor.system.stats });
   const context = await sheet._prepareContext({});
   const ap = context.resources.find(row => row.key === "ap");
-  assert.equal(ap.value, 7); assert.equal(ap.command, 3); assert.equal(ap.max, 15);
-  const form = { querySelectorAll: selector => selector.includes("data-stat-score") ? [] : [{ name: "system.ap.value" }] };
+  assert.equal(ap.value, 7);
+  assert.equal(ap.command, 3);
+  assert.equal(ap.max, 15);
+  const form = { querySelectorAll: selector => (selector.includes("data-stat-score") ? [] : [{ name: "system.ap.value" }]) };
   const unchanged = sheet._processFormData(null, form, { object: { system: { ap: { value: 7 } } } });
-  assert.equal(unchanged.system.ap.value, undefined); assert.equal(sheet.actor.system.ap.value, 4.9);
+  assert.equal(unchanged.system.ap.value, undefined);
+  assert.equal(sheet.actor.system.ap.value, 4.9);
   const edited = sheet._processFormData(null, form, { object: { system: { ap: { value: 6.9 } } } });
-  assert.equal(edited.system.ap.value, 3); assert.equal(edited.system.command, undefined);
-  const cleared = sheet._processFormData(null, form, { object: { system: { ap: { value: "" } } } }); assert.equal(cleared.system.ap.value, null);
-  const both = sheet._processFormData(null, form, { object: { system: { ap: { value: 9 }, command: { value: 2 } } } }); assert.equal(both.system.ap.value, 7);
+  assert.equal(edited.system.ap.value, 3);
+  assert.equal(edited.system.command, undefined);
+  const cleared = sheet._processFormData(null, form, { object: { system: { ap: { value: "" } } } });
+  assert.equal(cleared.system.ap.value, null);
+  const both = sheet._processFormData(null, form, { object: { system: { ap: { value: 9 }, command: { value: 2 } } } });
+  assert.equal(both.system.ap.value, 7);
 });
 
 test("Form editors have a fixed type and ordinary ability editors offer only active/passive/reaction/other", async () => {
   for (const kind of ["form", "active", "passive", "reaction", "other"]) {
-    const sheet = new AbilitySheet(); sheet.isEditable = true;
+    const sheet = new AbilitySheet();
+    sheet.isEditable = true;
     sheet.item = { type: "ability", system: { kind }, effects: [] };
     const context = await sheet._prepareContext({});
     assert.equal(context.isForm, kind === "form");
-    assert.deepEqual(context.kinds.map(choice => choice.value), ["active", "passive", "reaction", "other"]);
+    assert.deepEqual(
+      context.kinds.map(choice => choice.value),
+      ["active", "passive", "reaction", "other"]
+    );
   }
 });
 
 test("creating an ability uses native embedded Items and never changes actor resources", async () => {
   const calls = [];
   const record = { sheet: { render: options => calls.push(options) } };
-  const owner = { type: "character", isOwner: true, createEmbeddedDocuments: async (...args) => { calls.push(args); return [record]; } };
+  const owner = {
+    type: "character",
+    isOwner: true,
+    createEmbeddedDocuments: async (...args) => {
+      calls.push(args);
+      return [record];
+    }
+  };
   assert.equal(await createAbility(owner), record);
   assert.deepEqual(calls[0], ["Item", [{ name: "New ability", type: "ability", img: "icons/svg/book.svg", system: { kind: "active" } }]]);
   assert.deepEqual(calls[1], { force: true });
   await createAbility(owner, "form");
-  assert.deepEqual(calls[2], ["Item", [{ name: "New form", type: "ability", img: "icons/svg/book.svg", system: { kind: "form", trigger: { mode: "prompt", endMode: "prompt" } } }]]);
-  owner.isOwner = false; await createAbility(owner); assert.equal(calls.length, 4);
+  assert.deepEqual(calls[2], [
+    "Item",
+    [
+      {
+        name: "New form",
+        type: "ability",
+        img: "icons/svg/book.svg",
+        system: { kind: "form", trigger: { mode: "prompt", endMode: "prompt" } }
+      }
+    ]
+  ]);
+  owner.isOwner = false;
+  await createAbility(owner);
+  assert.equal(calls.length, 4);
 });
 
 test("manual defense corrections bind to stored bonuses rather than active effect totals", async () => {
-  const sheet = new CharacterSheet(); sheet.actor = actor();
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
   sheet.actor.system.bonuses = { armor: 4, evasion: 3, movement: 5 };
   sheet.actor.system.toObject = () => ({ bonuses: { armor: 1, evasion: 0, movement: 0 } });
-  const form = { querySelectorAll: selector => selector.includes("data-stat-score") ? [] : ["armor", "evasion", "movement"].map(key => ({ name: `system.bonuses.${key}` })) };
+  const form = {
+    querySelectorAll: selector =>
+      selector.includes("data-stat-score") ? [] : ["armor", "evasion", "movement"].map(key => ({ name: `system.bonuses.${key}` }))
+  };
   const unchanged = sheet._processFormData(null, form, { object: { system: { bonuses: { armor: 1, evasion: 0, movement: 0 } } } });
   assert.equal(unchanged.system.bonuses.armor, undefined);
   assert.equal(unchanged.system.bonuses.evasion, undefined);
@@ -277,20 +452,35 @@ test("manual defense corrections bind to stored bonuses rather than active effec
 });
 
 test("ability controls allow read-only viewing and require permission plus confirmation for deletion", async () => {
-  const calls = [], sheet = new CharacterSheet(); let confirm = false;
+  const calls = [],
+    sheet = new CharacterSheet();
+  let confirm = false;
   const oldDialog = foundry.applications.api.DialogV2;
-  foundry.applications.api.DialogV2 = { confirm: async () => { calls.push("confirm"); return confirm; } };
-  sheet.actor = { items: new Map([["a", { type: "ability", sheet: { render: () => calls.push("view") }, delete: async () => calls.push("delete") }]]) };
+  foundry.applications.api.DialogV2 = {
+    confirm: async () => {
+      calls.push("confirm");
+      return confirm;
+    }
+  };
+  sheet.actor = {
+    items: new Map([["a", { type: "ability", sheet: { render: () => calls.push("view") }, delete: async () => calls.push("delete") }]])
+  };
   const target = operation => ({ dataset: { operation }, closest: () => ({ dataset: { abilityId: "a" } }) });
   const action = CharacterSheet.DEFAULT_OPTIONS.actions.ability;
   try {
     sheet.isEditable = false;
-    await action.call(sheet, null, target("edit")); await action.call(sheet, null, target("delete"));
+    await action.call(sheet, null, target("edit"));
+    await action.call(sheet, null, target("delete"));
     assert.deepEqual(calls, ["view"]);
     sheet.isEditable = true;
-    await action.call(sheet, null, target("delete")); assert.deepEqual(calls, ["view", "confirm"]);
-    confirm = true; await action.call(sheet, null, target("delete")); assert.deepEqual(calls, ["view", "confirm", "confirm", "delete"]);
-  } finally { foundry.applications.api.DialogV2 = oldDialog; }
+    await action.call(sheet, null, target("delete"));
+    assert.deepEqual(calls, ["view", "confirm"]);
+    confirm = true;
+    await action.call(sheet, null, target("delete"));
+    assert.deepEqual(calls, ["view", "confirm", "confirm", "delete"]);
+  } finally {
+    foundry.applications.api.DialogV2 = oldDialog;
+  }
 });
 
 test("form submission saves deliberate base edits and never saves displayed effect scores", () => {
@@ -309,38 +499,69 @@ test("form submission saves deliberate base edits and never saves displayed effe
 });
 
 test("read-only actor sheets keep milestone reference buttons usable without enabling edits", async () => {
-  const sheet = new CharacterSheet(); sheet.isEditable = false;
-  const reference = { disabled: true }, correction = { disabled: true };
-  sheet.element = { querySelectorAll: selector => {
-    assert.equal(selector, '[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name'); return [reference];
-  } };
+  const sheet = new CharacterSheet();
+  sheet.isEditable = false;
+  const reference = { disabled: true },
+    correction = { disabled: true };
+  sheet.element = {
+    querySelectorAll: selector => {
+      assert.equal(
+        selector,
+        '[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name'
+      );
+      return [reference];
+    }
+  };
   await sheet._onRender({}, {});
-  assert.equal(reference.disabled, false); assert.equal(correction.disabled, true);
+  assert.equal(reference.disabled, false);
+  assert.equal(correction.disabled, true);
 });
 
 test("narrative edits preserve literal text and spacing while unrelated saves omit unchanged details", () => {
-  const sheet = new CharacterSheet(); sheet.actor = actor();
-  const original = { class: "Mage", race: "Human", background: "  From home  ", appearance: "", backstory: "First line\n\nSecond line", notes: "Mana 120.4; 1.5×" };
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
+  const original = {
+    class: "Mage",
+    race: "Human",
+    background: "  From home  ",
+    appearance: "",
+    backstory: "First line\n\nSecond line",
+    notes: "Mana 120.4; 1.5×"
+  };
   sheet.actor.system.toObject = () => ({ details: structuredClone(original) });
   const untouched = sheet._processFormData(null, null, { object: { name: "Renamed", system: { details: structuredClone(original) } } });
   assert.deepEqual(untouched.system.details, {});
   const literal = "  </textarea><script>literal</script>\n\nKeep 120.4 and 1.5×  ";
-  const edited = sheet._processFormData(null, null, { object: { system: { details: { ...original, notes: literal, class: "", backstory: "" } } } });
+  const edited = sheet._processFormData(null, null, {
+    object: { system: { details: { ...original, notes: literal, class: "", backstory: "" } } }
+  });
   assert.deepEqual(edited.system.details, { notes: literal, class: "", backstory: "" });
-  assert.equal(edited.system.health, undefined); assert.equal(edited.system.stats, undefined);
+  assert.equal(edited.system.health, undefined);
+  assert.equal(edited.system.stats, undefined);
   assert.equal(original.notes, "Mana 120.4; 1.5×");
 });
 
 test("native tab context keeps the selected view across actor refreshes for owners and observers", async () => {
   const source = { stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12 }])) };
-  const system = { stats: Object.fromEntries(Object.entries(source.stats).map(([key, stat]) => [key, { ...stat, effective: 12, mod: 0, milestones: 0 }])),
-    toObject: () => structuredClone(source), health: {}, ap: {}, reactions: {}, wonder: {}, overrides: {}, core: { automatic: {} } };
+  const system = {
+    stats: Object.fromEntries(Object.entries(source.stats).map(([key, stat]) => [key, { ...stat, effective: 12, mod: 0, milestones: 0 }])),
+    toObject: () => structuredClone(source),
+    health: {},
+    ap: {},
+    reactions: {},
+    wonder: {},
+    overrides: {},
+    core: { automatic: {} }
+  };
   for (const editable of [true, false]) {
-    const sheet = new CharacterSheet(); sheet.actor = { items: [], system }; sheet.isEditable = editable;
+    const sheet = new CharacterSheet();
+    sheet.actor = { items: [], system };
+    sheet.isEditable = editable;
     assert.equal((await sheet._prepareContext({})).tabs.character.active, true);
     for (const tab of ["details", "equipment", "abilities", "status", "notes", "character"]) {
       sheet.tabGroups.sheet = tab;
-      system.stats.str.effective = 21; system.stats.str.mod = 4;
+      system.stats.str.effective = 21;
+      system.stats.str.mod = 4;
       const context = await sheet._prepareContext({});
       assert.deepEqual(Object.keys(context.tabs), ["character", "details", "equipment", "abilities", "status", "notes"]);
       assert.equal(Object.values(context.tabs).filter(row => row.active).length, 1);
@@ -352,18 +573,38 @@ test("native tab context keeps the selected view across actor refreshes for owne
 });
 
 test("Status End ends the originating ability rather than disabling its bonus definition, and observers cannot end it", async () => {
-  const item = { id: "power", uuid: "Actor.hero.Item.power", documentName: "Item", type: "ability", name: "Power", system: { kind: "active", effectsActive: true },
-    async update(data) { this.system.effectsActive = data["system.effectsActive"]; return this; } };
-  const effect = { id: "bonus", uuid: `${item.uuid}.ActiveEffect.bonus`, parent: item, name: "Strength", disabled: false,
-    flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [{ key: "system.stats.str.value", value: 3, type: "add", phase: "initial" }] } };
+  const item = {
+    id: "power",
+    uuid: "Actor.hero.Item.power",
+    documentName: "Item",
+    type: "ability",
+    name: "Power",
+    system: { kind: "active", effectsActive: true },
+    async update(data) {
+      this.system.effectsActive = data["system.effectsActive"];
+      return this;
+    }
+  };
+  const effect = {
+    id: "bonus",
+    uuid: `${item.uuid}.ActiveEffect.bonus`,
+    parent: item,
+    name: "Strength",
+    disabled: false,
+    flags: { "worlds-beyond": { managed: true, itemBound: true } },
+    system: { changes: [{ key: "system.stats.str.value", value: 3, type: "add", phase: "initial" }] }
+  };
   const owner = { uuid: "Actor.hero", isOwner: true, system: {}, items: new Map([[item.id, item]]), allApplicableEffects: () => [effect] };
-  const sheet = new CharacterSheet(); sheet.actor = owner; sheet.isEditable = false;
+  const sheet = new CharacterSheet();
+  sheet.actor = owner;
+  sheet.isEditable = false;
   const target = { dataset: { operation: "end" }, closest: () => ({ dataset: { effectUuid: effect.uuid } }) };
   await CharacterSheet.DEFAULT_OPTIONS.actions.status.call(sheet, null, target);
   assert.equal(item.system.effectsActive, true);
   sheet.isEditable = true;
   await CharacterSheet.DEFAULT_OPTIONS.actions.status.call(sheet, null, target);
-  assert.equal(item.system.effectsActive, false); assert.equal(effect.disabled, false);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(effect.disabled, false);
   // A stale second click cannot turn the source back on.
   await CharacterSheet.DEFAULT_OPTIONS.actions.status.call(sheet, null, target);
   assert.equal(item.system.effectsActive, false);
@@ -379,9 +620,9 @@ test("new actors get Health/AP token defaults while imported bar settings are pr
   assert.deepEqual(changes.pop(), {});
 });
 
-
 test("repeated edits retain the original reset score; clearing restores it without writing effects", () => {
-  const sheet = new CharacterSheet(); sheet.actor = actor();
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
   const source = { value: 22, manual: true, resetValue: 21 };
   sheet.actor.system.toObject = () => ({ stats: { agl: source } });
   const input = { dataset: { statScore: "agl", base: "22", pendingBase: "25" } };
@@ -397,15 +638,21 @@ test("repeated edits retain the original reset score; clearing restores it witho
 });
 
 test("editing the advanced base subtracts earned points exactly once; clearing preserves points and reset history", () => {
-  const sheet = new CharacterSheet(); sheet.actor = actor(); sheet.actor.system.level = 8;
-  const source = { stats: { agl: { value: 17, manual: false, resetValue: null } }, advancement: { level4: { agl: 2 }, level8: { agl: 2 } } };
+  const sheet = new CharacterSheet();
+  sheet.actor = actor();
+  sheet.actor.system.level = 8;
+  const source = {
+    stats: { agl: { value: 17, manual: false, resetValue: null } },
+    advancement: { level4: { agl: 2 }, level8: { agl: 2 } }
+  };
   sheet.actor.system.toObject = () => structuredClone(source);
   const input = { dataset: { statScore: "agl", base: "21", pendingBase: "22" } };
   const form = { querySelectorAll: () => [input] };
   let result = sheet._processFormData(null, form, { object: { statScores: { agl: 24 } } });
   assert.deepEqual(result.system.stats.agl, { value: 18, manual: true, resetValue: 17 });
   source.stats.agl = { ...result.system.stats.agl };
-  input.dataset.base = "22"; input.dataset.pendingBase = "";
+  input.dataset.base = "22";
+  input.dataset.pendingBase = "";
   result = sheet._processFormData(null, form, { object: { statScores: { agl: "" } } });
   assert.deepEqual(result.system.stats.agl, { value: 17, manual: false, resetValue: null });
   assert.deepEqual(source.advancement, { level4: { agl: 2 }, level8: { agl: 2 } });

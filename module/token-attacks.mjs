@@ -4,9 +4,16 @@ const pending = new Set();
 
 export function clickAttacker(target, event = {}) {
   if (game.activeTool !== "select" || event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) return null;
-  if (!target.actor || !target.isVisible || !target.layer.active || target.layer._draggedToken
-    || globalThis.canvas?.regions?._placementContext || globalThis.canvas?.controls?.ruler?.active
-    || CONFIG.Canvas.rulerClass.canMeasure) return null;
+  if (
+    !target.actor ||
+    !target.isVisible ||
+    !target.layer.active ||
+    target.layer._draggedToken ||
+    globalThis.canvas?.regions?._placementContext ||
+    globalThis.canvas?.controls?.ruler?.active ||
+    CONFIG.Canvas.rulerClass.canMeasure
+  )
+    return null;
   const controlled = canvas.tokens.controlled;
   if (controlled.length !== 1 || controlled[0] === target) return null;
   const actor = controlled[0].actor;
@@ -17,8 +24,11 @@ export async function promptTokenAttack(actor, targetToken) {
   if (!actor?.isOwner || actor.type !== "character" || !targetToken?.isVisible) return;
   if (pending.has(actor.uuid)) return;
   pending.add(actor.uuid);
-  try { return await chooseTokenAttack(actor, targetToken); }
-  finally { pending.delete(actor.uuid); }
+  try {
+    return await chooseTokenAttack(actor, targetToken);
+  } finally {
+    pending.delete(actor.uuid);
+  }
 }
 
 async function chooseTokenAttack(actor, targetToken) {
@@ -31,10 +41,15 @@ async function chooseTokenAttack(actor, targetToken) {
   let weapon = weapons[0];
   if (weapons.length > 1) {
     const choice = await foundry.applications.api.DialogV2.input({
-      classes: ["worlds-beyond", "wb-roll-dialog"], position: { width: 380 }, rejectClose: false,
-      window: { title: `Attack ${target.name}` }, ok: { label: "Choose attack" },
+      classes: ["worlds-beyond", "wb-roll-dialog"],
+      position: { width: 380 },
+      rejectClose: false,
+      window: { title: `Attack ${target.name}` },
+      ok: { label: "Choose attack" },
       content: await foundry.applications.handlebars.renderTemplate("systems/worlds-beyond/templates/token-attack-dialog.hbs", {
-        attacker: actor.name, target: target.name, weapons: weapons.map(item => ({ id: item.id, name: item.name }))
+        attacker: actor.name,
+        target: target.name,
+        weapons: weapons.map(item => ({ id: item.id, name: item.name }))
       })
     });
     if (!choice) return;

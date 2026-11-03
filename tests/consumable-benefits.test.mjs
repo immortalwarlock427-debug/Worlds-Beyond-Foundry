@@ -4,7 +4,11 @@ import { restorationPlan, recoveryChoices } from "../module/consumable-benefits.
 import { adjustedResourceSpent, customPool } from "../module/resources.mjs";
 import { triggerCondition, triggerSnapshot, triggerTransitions } from "../module/form-trigger-core.mjs";
 const id = "resource00000001";
-const system = { health: { max: 100, value: 90, damage: 10 }, mana: { enabled: true, max: 125, value: 90, spent: 35 }, customResources: { [id]: { name: "Blood", max: 100, value: 100, spent: 0, allowOverflow: true } } };
+const system = {
+  health: { max: 100, value: 90, damage: 10 },
+  mana: { enabled: true, max: 125, value: 90, spent: 35 },
+  customResources: { [id]: { name: "Blood", max: 100, value: 100, spent: 0, allowOverflow: true } }
+};
 
 test("restoration plans support Health, enabled magic and stable custom pools, preserving source data and manual overheal", () => {
   const before = structuredClone(system);
@@ -21,16 +25,19 @@ test("restoration plans support Health, enabled magic and stable custom pools, p
 
 test("resource overflow is opt-in; Restore can cross 100 without changing the normal maximum and Fill returns to 100", () => {
   const pool = customPool({ baseMax: 100, spent: 0, allowOverflow: true });
-  const spent = adjustedResourceSpent(pool, "restore", 5); assert.equal(spent, -5);
+  const spent = adjustedResourceSpent(pool, "restore", 5);
+  assert.equal(spent, -5);
   assert.equal(customPool({ baseMax: 100, spent, allowOverflow: true }).value, 105);
-  assert.equal(pool.max, 100); assert.equal(adjustedResourceSpent(pool, "fill"), 0);
+  assert.equal(pool.max, 100);
+  assert.equal(adjustedResourceSpent(pool, "fill"), 0);
   assert.equal(adjustedResourceSpent({ ...pool, allowOverflow: false }, "restore", 5), 0);
 });
 
 test("form triggers distinguish strictly over 100, dynamic maxima, other comparisons and missing pools", () => {
   const trigger = { mode: "automatic", resourceId: id, comparison: "above", threshold: 100 };
   assert.equal(triggerCondition(system, trigger), false);
-  const over = structuredClone(system); over.customResources[id].value = 105;
+  const over = structuredClone(system);
+  over.customResources[id].value = 105;
   assert.equal(triggerCondition(over, trigger), true);
   assert.equal(triggerCondition(over, { ...trigger, threshold: null }), true);
   assert.equal(triggerCondition(system, { ...trigger, comparison: "atLeast" }), true);
@@ -41,12 +48,24 @@ test("form triggers distinguish strictly over 100, dynamic maxima, other compari
 });
 
 test("crossings enter once, manual End above threshold does not re-enter, and optional automatic ending is separate", () => {
-  const form = { id: "beast", type: "ability", system: { kind: "form", effectsActive: false, trigger: { mode: "automatic", resourceId: id, comparison: "above", threshold: 100, endMode: "automatic" } } };
-  const actor = { system: structuredClone(system), items: [form] }, before = triggerSnapshot(actor);
+  const form = {
+    id: "beast",
+    type: "ability",
+    system: {
+      kind: "form",
+      effectsActive: false,
+      trigger: { mode: "automatic", resourceId: id, comparison: "above", threshold: 100, endMode: "automatic" }
+    }
+  };
+  const actor = { system: structuredClone(system), items: [form] },
+    before = triggerSnapshot(actor);
   actor.system.customResources[id].value = 105;
   assert.deepEqual(triggerTransitions(actor, before).enter, [form]);
-  const above = triggerSnapshot(actor); assert.deepEqual(triggerTransitions(actor, above).enter, []);
-  form.system.effectsActive = true; actor.system.customResources[id].value = 100;
+  const above = triggerSnapshot(actor);
+  assert.deepEqual(triggerTransitions(actor, above).enter, []);
+  form.system.effectsActive = true;
+  actor.system.customResources[id].value = 100;
   assert.deepEqual(triggerTransitions(actor, above).end, [form]);
-  form.system.trigger.endMode = "stay"; assert.deepEqual(triggerTransitions(actor, above).end, []);
+  form.system.trigger.endMode = "stay";
+  assert.deepEqual(triggerTransitions(actor, above).end, []);
 });

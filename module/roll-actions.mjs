@@ -9,9 +9,8 @@ import { recoverActor } from "./recovery-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const actorOperations = new Map();
-const renderTemplate = (name, context) => foundry.applications.handlebars.renderTemplate(
-  `systems/${SYSTEM_ID}/templates/${name}.hbs`, context
-);
+const renderTemplate = (name, context) =>
+  foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/${name}.hbs`, context);
 
 export async function promptStatCheck(actor, statKey) {
   const stat = STATS.find(stat => stat.key === statKey);
@@ -20,7 +19,10 @@ export async function promptStatCheck(actor, statKey) {
     classes: [SYSTEM_ID, "wb-roll-dialog"],
     position: { width: 360 },
     window: { title: `${stat.label} roll` },
-    content: await renderTemplate("check-dialog", { label: stat.label, heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage }),
+    content: await renderTemplate("check-dialog", {
+      label: stat.label,
+      heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage
+    }),
     ok: { label: "Roll" },
     render: (event, dialog) => fitDialogDisclosures(dialog),
     rejectClose: false
@@ -39,26 +41,41 @@ export async function rollStatCheck(actor, statKey, { kind = "check", mode = "no
   await roll.evaluate({ allowInteractive: messageMode !== "blind" });
   const context = { kind, label, mode, actorUuid: actor.uuid };
   const content = await rollCard(roll, context);
-  return roll.toMessage({
-    speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-    content,
-    flags: { [SYSTEM_ID]: { check: context } }
-  }, { messageMode });
+  return roll.toMessage(
+    {
+      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+      content,
+      flags: { [SYSTEM_ID]: { check: context } }
+    },
+    { messageMode }
+  );
 }
 
 export async function rollCard(roll, context, { note = "", success = false } = {}) {
-  const defense = context.defense?.type === "dodge" ? {
-    ...context.defense, ...dodgeOutcome(context.defense, roll.total, success),
-    hasTarget: context.defense.target !== null, reroll: !!context.previousMessageId,
-    overriddenDisadvantage: context.defense.heavyArmor && context.mode !== "disadvantage"
-  } : context.defense?.type === "parry" ? {
-    ...context.defense, ...parryOutcome(context.defense, roll.total, success),
-    parry: true, hasTarget: context.defense.target !== null, reroll: !!context.previousMessageId
-  } : null;
+  const defense =
+    context.defense?.type === "dodge"
+      ? {
+          ...context.defense,
+          ...dodgeOutcome(context.defense, roll.total, success),
+          hasTarget: context.defense.target !== null,
+          reroll: !!context.previousMessageId,
+          overriddenDisadvantage: context.defense.heavyArmor && context.mode !== "disadvantage"
+        }
+      : context.defense?.type === "parry"
+        ? {
+            ...context.defense,
+            ...parryOutcome(context.defense, roll.total, success),
+            parry: true,
+            hasTarget: context.defense.target !== null,
+            reroll: !!context.previousMessageId
+          }
+        : null;
   return renderTemplate("roll-card", {
     label: context.label,
     modeLabel: context.mode ? checkMode(context.mode).label : "Initiative",
-    note, success, defense: defense && { ...defense, target: wholeNumber(defense.target) },
+    note,
+    success,
+    defense: defense && { ...defense, target: wholeNumber(defense.target) },
     rollHTML: await roll.render()
   });
 }
@@ -98,14 +115,18 @@ function actorOperation(actor, operation) {
 
 export async function longRest(actor) {
   if (!actor.isOwner) return;
-  return actorOperation(actor, () => recoverActor(actor, "longRest", { updates: {
-    "system.health.damage": 0,
-    "system.ap.value": null,
-    "system.reactions.value": null,
-    "system.wonder.value": null,
-    ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
-    ...resourceRestUpdates(actor.system)
-  } }));
+  return actorOperation(actor, () =>
+    recoverActor(actor, "longRest", {
+      updates: {
+        "system.health.damage": 0,
+        "system.ap.value": null,
+        "system.reactions.value": null,
+        "system.wonder.value": null,
+        ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
+        ...resourceRestUpdates(actor.system)
+      }
+    })
+  );
 }
 
 export async function useWonder(message) {
@@ -124,9 +145,7 @@ export async function useWonder(message) {
     const roll = success ? original : original.clone();
     if (!success) await roll.evaluate({ allowInteractive: !message.blind });
     const nextContext = { ...context, success, previousMessageId: message.id };
-    const note = success
-      ? "Defy Fate · 1 Wonder spent."
-      : `Wonder · previous total ${original.total} · 1 use spent.`;
+    const note = success ? "Defy Fate · 1 Wonder spent." : `Wonder · previous total ${original.total} · 1 use spent.`;
     const content = await rollCard(roll, nextContext, { note, success });
     // Prepare the dice and content before spending; no pool changes on a failed roll/render.
     requireWonder(actor, message);
@@ -141,19 +160,28 @@ export async function useWonder(message) {
     try {
       // Copy the exact audience. Calling toMessage here could use a different current chat mode.
       result = await foundry.documents.ChatMessage.implementation.create({
-        author: game.user.id, speaker: message.speaker,
-        whisper: [...message.whisper], blind: message.blind,
-        rolls: [roll], content,
+        author: game.user.id,
+        speaker: message.speaker,
+        whisper: [...message.whisper],
+        blind: message.blind,
+        rolls: [roll],
+        content,
         flags: { [SYSTEM_ID]: { check: nextContext } }
       });
       if (!result) throw new Error("The Wonder result was not posted.");
     } catch (error) {
       // Keep manual changes made in the meantime; refund only this use.
-      const refunded = await actor.update({
-        "system.wonder.value": actor.system.wonder.value + 1,
-        [`flags.${SYSTEM_ID}.wonderUsed.-=${message.id}`]: null
-      }).catch(() => null);
-      if (!refunded) throw new Error("The result was not posted. Restore 1 Wonder use on the sheet and make a new roll; this result is still marked used.", { cause: error });
+      const refunded = await actor
+        .update({
+          "system.wonder.value": actor.system.wonder.value + 1,
+          [`flags.${SYSTEM_ID}.wonderUsed.-=${message.id}`]: null
+        })
+        .catch(() => null);
+      if (!refunded)
+        throw new Error(
+          "The result was not posted. Restore 1 Wonder use on the sheet and make a new roll; this result is still marked used.",
+          { cause: error }
+        );
       throw error;
     }
 
@@ -161,8 +189,11 @@ export async function useWonder(message) {
       const combat = game.combats.get(context.combatId);
       const combatant = combat?.combatants.get(context.combatantId);
       if (combatant?.actor?.uuid === actor.uuid) {
-        try { await combat.setInitiative(combatant.id, roll.total); }
-        catch { ui.notifications.warn(`Wonder rolled ${roll.total}. Update initiative in the combat tracker manually.`); }
+        try {
+          await combat.setInitiative(combatant.id, roll.total);
+        } catch {
+          ui.notifications.warn(`Wonder rolled ${roll.total}. Update initiative in the combat tracker manually.`);
+        }
       } else ui.notifications.warn(`Wonder rolled ${roll.total}. The original combatant no longer exists; apply it manually if needed.`);
     }
     return result;
@@ -189,21 +220,30 @@ export function decorateRollMessage(message, html) {
     for (const label of html.querySelectorAll(".dice-tooltip .part-formula")) label.textContent = breakdown.diceLabel;
   }
   const actor = speakerActor(message);
-  if (!actor?.isOwner || actor.type !== "character" || actor.uuid !== context.actorUuid || context.success
-    || !wonderAction(context.kind, actor.system.stats.fth.value)) return;
+  if (
+    !actor?.isOwner ||
+    actor.type !== "character" ||
+    actor.uuid !== context.actorUuid ||
+    context.success ||
+    !wonderAction(context.kind, actor.system.stats.fth.value)
+  )
+    return;
   const content = html.querySelector(".message-content");
   if (!content || content.querySelector(".wb-wonder-action")) return;
   const button = document.createElement("button");
   button.type = "button";
   button.className = "wb-wonder-action";
   button.dataset.messageId = message.id;
-  button.title = "Spend 1 Wonder use. At FTH 21, declare a failed check/save successful; initiative still rerolls. Uses can be corrected on the sheet.";
+  button.title =
+    "Spend 1 Wonder use. At FTH 21, declare a failed check/save successful; initiative still rerolls. Uses can be corrected on the sheet.";
   button.addEventListener("click", async () => {
     button.dataset.busy = "true";
     button.disabled = true;
-    try { await useWonder(message); }
-    catch (error) { ui.notifications.error(error.message); }
-    finally {
+    try {
+      await useWonder(message);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    } finally {
       delete button.dataset.busy;
       refreshWonderControls();
     }

@@ -15,9 +15,13 @@ export async function importCatalog() {
   if (!game.user.isGM) throw new Error("Only a GM can import the catalog.");
   const { CompendiumCollection } = foundry.documents.collections;
   const collection = `world.${CATALOG_PACK.name}`;
-  const pack = game.packs.get(collection) ?? await CompendiumCollection.createCompendium({
-    name: CATALOG_PACK.name, label: CATALOG_PACK.label, type: "Item"
-  });
+  const pack =
+    game.packs.get(collection) ??
+    (await CompendiumCollection.createCompendium({
+      name: CATALOG_PACK.name,
+      label: CATALOG_PACK.label,
+      type: "Item"
+    }));
   if (pack.locked) await pack.configure({ locked: false });
 
   const folders = CATALOG_FOLDERS.map(({ key, ...folder }) => folder);
@@ -50,16 +54,24 @@ export async function offerCatalogImport() {
     rejectClose: false
   });
   if (!confirmed) return game.settings.set(SYSTEM_ID, SETTING, CATALOG_VERSION);
-  try { await importCatalog(); }
-  catch (error) { ui.notifications.error(`Catalog import failed: ${error.message}`); console.error(error); }
+  try {
+    await importCatalog();
+  } catch (error) {
+    ui.notifications.error(`Catalog import failed: ${error.message}`);
+    console.error(error);
+  }
 }
 
 // "Import catalog" button under Configure Settings → Worlds Beyond. Foundry opens a
 // settings menu by rendering its class, so rendering runs the import instead of a window.
 export class CatalogImportMenu extends foundry.applications.api.ApplicationV2 {
   async render() {
-    try { await importCatalog(); }
-    catch (error) { ui.notifications.error(`Catalog import failed: ${error.message}`); console.error(error); }
+    try {
+      await importCatalog();
+    } catch (error) {
+      ui.notifications.error(`Catalog import failed: ${error.message}`);
+      console.error(error);
+    }
     return this;
   }
 }

@@ -11,7 +11,18 @@ test("check modes select one d20, the higher of two, or the lower of two", () =>
 });
 
 test("Wonder max follows FTH's modifier with no negative automatic uses", () => {
-  for (const [faith, max] of [[3, 0], [11, 0], [12, 0], [13, 1], [15, 1], [16, 2], [20, 3], [21, 3], [22, 4], [28, 6]]) {
+  for (const [faith, max] of [
+    [3, 0],
+    [11, 0],
+    [12, 0],
+    [13, 1],
+    [15, 1],
+    [16, 2],
+    [20, 3],
+    [21, 3],
+    [22, 4],
+    [28, 6]
+  ]) {
     assert.deepEqual(wonderPool(faith), { max, value: max });
   }
 });
@@ -37,18 +48,45 @@ test("Defy Fate changes only checks/saves at current FTH 21; initiative always r
 });
 
 test("readable results separate the kept die, original bonus and total", () => {
-  const roll = { total: 13, dice: [{ faces: 20, results: [{ result: 3, active: false, discarded: true }, { result: 9, active: true }] }] };
+  const roll = {
+    total: 13,
+    dice: [
+      {
+        faces: 20,
+        results: [
+          { result: 3, active: false, discarded: true },
+          { result: 9, active: true }
+        ]
+      }
+    ]
+  };
   assert.deepEqual(describeD20Roll(roll, "advantage"), {
-    equation: "9 + 4 = 13", diceText: "Rolled 3 and 9 · kept 9 (higher)", diceLabel: "2d20 · keep highest"
+    equation: "9 + 4 = 13",
+    diceText: "Rolled 3 and 9 · kept 9 (higher)",
+    diceLabel: "2d20 · keep highest"
   });
   roll.total = 7;
-  roll.dice[0].results = [{ result: 3, active: true }, { result: 9, active: false, discarded: true }];
+  roll.dice[0].results = [
+    { result: 3, active: true },
+    { result: 9, active: false, discarded: true }
+  ];
   assert.equal(describeD20Roll(roll, "disadvantage").equation, "3 + 4 = 7");
   assert.equal(describeD20Roll(roll, "disadvantage").diceText, "Rolled 3 and 9 · kept 3 (lower)");
 });
 
 test("readable results handle ties, negative/zero modifiers and unevaluated dice", () => {
-  const roll = { total: 5, dice: [{ faces: 20, results: [{ result: 7, active: true }, { result: 7, active: false }] }] };
+  const roll = {
+    total: 5,
+    dice: [
+      {
+        faces: 20,
+        results: [
+          { result: 7, active: true },
+          { result: 7, active: false }
+        ]
+      }
+    ]
+  };
   assert.equal(describeD20Roll(roll, "advantage").equation, "7 − 2 = 5");
   roll.total = 7;
   roll.dice[0].results.pop();

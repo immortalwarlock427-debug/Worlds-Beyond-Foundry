@@ -22,7 +22,10 @@ test("every weapon uses only keys the item model defines", () => {
     assert.ok(Object.hasOwn(WEAPON_FAMILIES, item.system.family), item.name);
     assert.deepEqual(Object.keys(item.system.properties).sort(), Object.keys(WEAPON_PROPERTIES).sort(), item.name);
     assert.deepEqual(Object.keys(item.system.signature).sort(), Object.keys(SIGNATURE_PROPERTIES).sort(), item.name);
-    assert.ok(CATALOG_FOLDERS.some(folder => folder._id === item.folder), item.name);
+    assert.ok(
+      CATALOG_FOLDERS.some(folder => folder._id === item.folder),
+      item.name
+    );
   }
   assert.deepEqual(Object.keys(SIGNATURE_TEXT).sort(), Object.keys(SIGNATURE_PROPERTIES).sort());
 });
@@ -57,14 +60,17 @@ test("weapon rows follow the classification contract in docs/EQUIPMENT.md", () =
   assert.equal(byName("Mace").system.damageType, "Bludgeoning, Piercing");
 
   for (const name of ["Warbow", "Arbalest"]) assert.deepEqual([byName(name).system.family, byName(name).system.ranged], ["paragon", true]);
-  for (const name of ["Katar", "Odachi", "Guandao"]) assert.deepEqual([byName(name).system.family, byName(name).system.ranged], ["paragon", false]);
+  for (const name of ["Katar", "Odachi", "Guandao"])
+    assert.deepEqual([byName(name).system.family, byName(name).system.ranged], ["paragon", false]);
   assert.equal(byName("Arbalest").system.damage, "3d12");
   assert.match(byName("Kusarigama").system.description, /^Sweep:.*\nHook:/s);
 });
 
 test("armor and shields match Notion's tables", () => {
-  const sum = type => items.filter(item => item.type === "armor" && item.system.armorType === type)
-    .reduce((total, item) => ({ ar: total.ar + item.system.armorRating, ne: total.ne + item.system.evasionBonus }), { ar: 0, ne: 0 });
+  const sum = type =>
+    items
+      .filter(item => item.type === "armor" && item.system.armorType === type)
+      .reduce((total, item) => ({ ar: total.ar + item.system.armorRating, ne: total.ne + item.system.evasionBonus }), { ar: 0, ne: 0 });
   assert.deepEqual(sum("light"), { ar: 1, ne: 3 });
   assert.deepEqual(sum("medium"), { ar: 4, ne: 0 });
   assert.deepEqual(sum("heavy"), { ar: 6, ne: 0 });

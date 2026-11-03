@@ -1,70 +1,273 @@
 <div class="wb-body wb-equipment-form wb-ability-form">
   <header class="wb-item-heading"><img class="wb-item-icon" src="{{record.img}}" alt=""><div><span class="wb-eyebrow">{{#if isForm}}Form{{else}}Ability{{/if}}</span>
-    <input class="wb-name" type="text" name="name" value="{{item.name}}" aria-label="{{#if isForm}}Form{{else}}Ability{{/if}} name" {{#unless editable}}disabled{{/unless}}>
+    <input
+      class="wb-name"
+      type="text"
+      name="name"
+      value="{{item.name}}"
+      aria-label="{{#if isForm}}Form{{else}}Ability{{/if}} name"
+      {{#unless editable}}disabled{{/unless}}
+    >
   </div></header>
   <div class="wb-equipment-fields">
     {{#if isForm}}<div><span class="wb-eyebrow">Type</span><p class="wb-item-brief">Form</p></div>
-    {{else}}<label>Type<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each kinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>{{/if}}
-    <label>Category<input type="text" name="system.category" value="{{system.category}}" placeholder="Spell, class feature…" {{#unless editable}}disabled{{/unless}}></label>
+    {{else}}<label>Type<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each kinds}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>{{/if}}
+    <label>Category<input
+      type="text"
+      name="system.category"
+      value="{{system.category}}"
+      placeholder="Spell, class feature…"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
   </div>
   <label>Description<textarea name="system.description" rows="4" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label>
   {{#if isForm}}<details class="wb-disclosure" data-sync="form-trigger"><summary>Trigger</summary><div class="wb-equipment-fields">
-    <label>Activation<select name="system.trigger.mode" {{#unless editable}}disabled{{/unless}}>{{#each triggerModes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Resource<select name="system.trigger.resourceId" {{#unless editable}}disabled{{/unless}}>{{#each triggerResources}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>When Current is<select name="system.trigger.comparison" {{#unless editable}}disabled{{/unless}}>{{#each triggerComparisons}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Threshold (points)<input type="number" name="system.trigger.threshold" value="{{system.trigger.threshold}}" placeholder="Resource maximum" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label class="wb-trigger-ending">When it stops matching<select name="system.trigger.endMode" {{#unless editable}}disabled{{/unless}}>{{#each triggerEndModes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Activation<select name="system.trigger.mode" {{#unless editable}}disabled{{/unless}}>{{#each triggerModes}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Resource<select name="system.trigger.resourceId" {{#unless editable}}disabled{{/unless}}>{{#each triggerResources}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>When Current is<select name="system.trigger.comparison" {{#unless editable}}disabled{{/unless}}>{{#each triggerComparisons}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Threshold (points)<input
+      type="number"
+      name="system.trigger.threshold"
+      value="{{system.trigger.threshold}}"
+      placeholder="Resource maximum"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label class="wb-trigger-ending">When it stops matching<select name="system.trigger.endMode" {{#unless editable}}disabled{{/unless}}>{{#each triggerEndModes}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
   </div><details class="wb-disclosure wb-help"><summary>Trigger help</summary><p>Checks when the resource changes. Blank threshold uses its maximum. Entry costs apply; leave them blank for a free transformation. Enable Allow over maximum on the resource to gain beyond its cap. Multiple matching forms ask you to choose.</p></details></details>{{/if}}
   {{#if isForm}}<details class="wb-disclosure" data-sync="form-loadout"><summary>Form loadout</summary>
     <button type="button" data-action="pickFormPortrait" {{#unless editable}}disabled{{/unless}}>Choose form portrait</button>
-    <label>Portrait path<input type="text" name="system.loadout.portrait" value="{{system.loadout.portrait}}" placeholder="Base portrait" {{#unless editable}}disabled{{/unless}}></label>
-    <label data-tooltip="0 shows the top of the image, 100 the bottom. Blank inherits Base framing. You can also adjust with a preview on Character → Appearance.">Portrait vertical framing (0–100)<input type="number" name="system.loadout.portraitY" value="{{system.loadout.portraitY}}" placeholder="Base framing" min="0" max="100" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Portrait path<input
+      type="text"
+      name="system.loadout.portrait"
+      value="{{system.loadout.portrait}}"
+      placeholder="Base portrait"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label data-tooltip="0 shows the top of the image, 100 the bottom. Blank inherits Base framing. You can also adjust with a preview on Character → Appearance.">Portrait vertical framing (0–100)<input
+      type="number"
+      name="system.loadout.portraitY"
+      value="{{system.loadout.portraitY}}"
+      placeholder="Base framing"
+      min="0"
+      max="100"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
     {{#if hasActor}}
-    <div class="wb-section-heading"><h3 class="wb-section-title">Equipment preset</h3><button type="button" data-action="copyFormEquipment" {{#unless editable}}disabled{{/unless}}>Copy current gear</button></div>
-    <label class="wb-equipment-check"><input type="checkbox" name="system.loadout.gearEnabled" {{#if system.loadout.gearEnabled}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Use saved equipment</label>
-    <div class="wb-form-loadout-list">{{#each formLoadout.equipment}}<label><input type="checkbox" name="system.loadout.equipment.{{id}}" {{#if selected}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{name}}</label>{{else}}<span class="wb-empty">No equippable items.</span>{{/each}}</div>
-    <details class="wb-disclosure" data-sync="form-abilities"><summary>Abilities shown</summary><div class="wb-form-loadout-list">{{#each formLoadout.abilities}}<label><input type="checkbox" name="system.loadout.abilities.{{id}}" {{#if selected}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{name}}</label>{{else}}<span class="wb-empty">No other abilities.</span>{{/each}}</div></details>
-    <details class="wb-disclosure" data-sync="form-resources"><summary>Resources shown</summary><div class="wb-form-loadout-list">{{#each formLoadout.resources}}<label><input type="checkbox" name="system.loadout.resources.{{id}}" {{#if selected}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{name}}</label>{{/each}}</div></details>
+    <div class="wb-section-heading"><h3 class="wb-section-title">Equipment preset</h3><button
+      type="button"
+      data-action="copyFormEquipment"
+      {{#unless editable}}disabled{{/unless}}
+    >Copy current gear</button></div>
+    <label class="wb-equipment-check"><input
+      type="checkbox"
+      name="system.loadout.gearEnabled"
+      {{#if system.loadout.gearEnabled}}checked{{/if}}
+      {{#unless editable}}disabled{{/unless}}
+    > Use saved equipment</label>
+    <div class="wb-form-loadout-list">{{#each formLoadout.equipment}}<label><input
+      type="checkbox"
+      name="system.loadout.equipment.{{id}}"
+      {{#if selected}}checked{{/if}}
+      {{#unless @root.editable}}disabled{{/unless}}
+    > {{name}}</label>{{else}}<span class="wb-empty">No equippable items.</span>{{/each}}</div>
+    <details class="wb-disclosure" data-sync="form-abilities"><summary>Abilities shown</summary><div class="wb-form-loadout-list">{{#each formLoadout.abilities}}<label><input
+      type="checkbox"
+      name="system.loadout.abilities.{{id}}"
+      {{#if selected}}checked{{/if}}
+      {{#unless @root.editable}}disabled{{/unless}}
+    > {{name}}</label>{{else}}<span class="wb-empty">No other abilities.</span>{{/each}}</div></details>
+    <details class="wb-disclosure" data-sync="form-resources"><summary>Resources shown</summary><div class="wb-form-loadout-list">{{#each formLoadout.resources}}<label><input
+      type="checkbox"
+      name="system.loadout.resources.{{id}}"
+      {{#if selected}}checked{{/if}}
+      {{#unless @root.editable}}disabled{{/unless}}
+    > {{name}}</label>{{/each}}</div></details>
     {{else}}<p class="wb-item-brief">Configure equipment, abilities and resources on a character's copy.</p>{{/if}}
     <details class="wb-disclosure wb-help"><summary>Loadout help</summary><p>Base portrait and gear return on End. Copy current gear or select a preset; an enabled empty preset stows all equipment. Changes made to equipped gear in a saved form are remembered when leaving it. Shared inventory, shots, uses and resource expenditure are preserved. Hand conflicts follow the existing equipment rules.</p><p>Abilities/resources shown are presentation choices. Show all reveals them for editing. Active abilities stay visible to End; hiding a record does not end its bonuses, stop recovery or block costs. Forms always remain available. For stat changes, use Bonuses.</p></details>
   </details>{{/if}}
   <fieldset class="wb-ability-fieldset"><legend>Costs</legend><div class="wb-equipment-fields">
-    <label>Base AP<input type="number" name="system.apCost" value="{{system.apCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>AP discount stat<select name="system.apDiscountStat" {{#unless editable}}disabled{{/unless}}>{{#each stats}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Resource<select name="system.resourceId" {{#unless editable}}disabled{{/unless}}>{{#each resources}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Resource cost<input type="number" name="system.resourceCost" value="{{system.resourceCost}}" placeholder="Not tracked" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Cost unit<select name="system.resourceUnit" {{#unless editable}}disabled{{/unless}}>{{#each units}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Base AP<input
+      type="number"
+      name="system.apCost"
+      value="{{system.apCost}}"
+      placeholder="Not tracked"
+      min="0"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>AP discount stat<select name="system.apDiscountStat" {{#unless editable}}disabled{{/unless}}>{{#each stats}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Resource<select name="system.resourceId" {{#unless editable}}disabled{{/unless}}>{{#each resources}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Resource cost<input
+      type="number"
+      name="system.resourceCost"
+      value="{{system.resourceCost}}"
+      placeholder="Not tracked"
+      min="0"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Cost unit<select name="system.resourceUnit" {{#unless editable}}disabled{{/unless}}>{{#each units}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
   </div><p class="wb-item-brief">{{#if record.apAdjusted}}Current cost: {{record.ap}} AP{{else}}{{#unless hasActor}}AP discounts preview on a character.{{/unless}}{{/if}}</p></fieldset>
   {{#unless passive}}<details class="wb-disclosure" data-sync="ability-restoration"><summary>Restoration</summary><div class="wb-equipment-fields">
-    <label>Restore<select name="system.restoration.target" {{#unless editable}}disabled{{/unless}}>{{#each restorationResources}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Amount or dice<input type="text" name="system.restoration.amount" value="{{system.restoration.amount}}" placeholder="20 or 2d6+2; blank for none" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Unit<select name="system.restoration.unit" {{#unless editable}}disabled{{/unless}}>{{#each restorationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Restore<select name="system.restoration.target" {{#unless editable}}disabled{{/unless}}>{{#each restorationResources}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Amount or dice<input
+      type="text"
+      name="system.restoration.amount"
+      value="{{system.restoration.amount}}"
+      placeholder="20 or 2d6+2; blank for none"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Unit<select name="system.restoration.unit" {{#unless editable}}disabled{{/unless}}>{{#each restorationUnits}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
   </div><p class="wb-item-brief">Applied once on Use. Uses the resource's overflow setting; percentage amounts use its maximum. A pure restoration ability spends nothing if the pool is already full.</p></details>{{/unless}}
   <section class="wb-item-bonuses" aria-label="Item bonuses">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button type="button" data-action="itemEffect" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
+    <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button
+      type="button"
+      data-action="itemEffect"
+      data-operation="create"
+      {{#unless editable}}disabled{{/unless}}
+    >Add bonus</button></div>
     {{#each itemEffects}}
     <div class="wb-item-bonus-row" data-item-effect-id="{{id}}">
       <button type="button" class="wb-bonus-name" data-action="itemEffect" data-operation="edit"><strong>{{name}}</strong><span>{{summary}}</span></button>
       <span class="wb-item-brief">{{state}}</span>
-      <button type="button" data-action="itemEffect" data-operation="toggle" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-power-off" aria-hidden="true"></i></button>
-      <button type="button" data-action="itemEffect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+      <button
+        type="button"
+        data-action="itemEffect"
+        data-operation="toggle"
+        aria-label="Toggle {{name}}"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ><i
+        class="fa-solid fa-power-off"
+        aria-hidden="true"
+      ></i></button>
+      <button
+        type="button"
+        data-action="itemEffect"
+        data-operation="delete"
+        aria-label="Remove {{name}}"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ><i
+        class="fa-solid fa-trash-can"
+        aria-hidden="true"
+      ></i></button>
     </div>
     {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
   </section>
-  {{#if passive}}<p class="wb-item-brief">Passive bonuses apply while this ability is on your character.</p>{{else}}<label class="wb-equipment-check" data-tooltip="Manual correction; Use on the character pays costs"><input type="checkbox" name="system.effectsActive" {{#if system.effectsActive}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Bonuses active (manual correction)</label>{{/if}}
+  {{#if passive}}<p class="wb-item-brief">Passive bonuses apply while this ability is on your character.</p>{{else}}<label
+    class="wb-equipment-check"
+    data-tooltip="Manual correction; Use on the character pays costs"
+  ><input
+    type="checkbox"
+    name="system.effectsActive"
+    {{#if system.effectsActive}}checked{{/if}}
+    {{#unless editable}}disabled{{/unless}}
+  > Bonuses active (manual correction)</label>{{/if}}
   {{#unless passive}}<details class="wb-disclosure" data-sync="ability-duration"><summary>Active duration</summary><div class="wb-equipment-fields">
-    <label>Duration<input type="number" name="system.activeDuration.value" value="{{system.activeDuration.value}}" min="0" step="1" placeholder="Until ended" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Unit<select name="system.activeDuration.units" {{#unless editable}}disabled{{/unless}}>{{#each durationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Duration<input
+      type="number"
+      name="system.activeDuration.value"
+      value="{{system.activeDuration.value}}"
+      min="0"
+      step="1"
+      placeholder="Until ended"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Unit<select name="system.activeDuration.units" {{#unless editable}}disabled{{/unless}}>{{#each durationUnits}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
   </div><p class="wb-item-brief">Starts on Use; expires bonuses or the form. Blank/0 keeps manual End. Rounds need a started encounter; minutes/hours follow Foundry game time. Instant restoration stays applied.</p></details>{{/unless}}
   <details class="wb-disclosure" data-sync="ability-trackers"><summary>Uses &amp; cooldown</summary><div class="wb-equipment-fields">
-    <label>Maximum uses<input type="number" name="system.uses.max" value="{{system.uses.max}}" placeholder="Unlimited" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    {{#if record.uses.tracked}}<label>Uses left<input type="number" name="usesCurrent" value="{{record.uses.value}}" step="1" data-tooltip="Clear to restore to maximum" {{#unless editable}}disabled{{/unless}}></label>{{/if}}
-    <label>Uses reset<select name="system.uses.resetOn" {{#unless editable}}disabled{{/unless}}>{{#each useRecoveryChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Recovery notes<input type="text" name="system.uses.recovery" value="{{system.uses.recovery}}" placeholder="Special recovery conditions…" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Cooldown (rounds)<input type="number" name="system.cooldown.rounds" value="{{system.cooldown.rounds}}" placeholder="None" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Cooldown remaining<input type="number" name="system.cooldown.remaining" value="{{system.cooldown.remaining}}" min="0" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    {{#unless passive}}<label class="wb-equipment-check"><input type="checkbox" name="system.cooldown.automatic" {{#if system.cooldown.automatic}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Count cooldown automatically</label>{{/unless}}
-    <label>Duration notes<input type="text" name="system.duration" value="{{system.duration}}" placeholder="Special ending conditions…" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Maximum uses<input
+      type="number"
+      name="system.uses.max"
+      value="{{system.uses.max}}"
+      placeholder="Unlimited"
+      min="0"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    {{#if record.uses.tracked}}<label>Uses left<input
+      type="number"
+      name="usesCurrent"
+      value="{{record.uses.value}}"
+      step="1"
+      data-tooltip="Clear to restore to maximum"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>{{/if}}
+    <label>Uses reset<select name="system.uses.resetOn" {{#unless editable}}disabled{{/unless}}>{{#each useRecoveryChoices}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Recovery notes<input
+      type="text"
+      name="system.uses.recovery"
+      value="{{system.uses.recovery}}"
+      placeholder="Special recovery conditions…"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Cooldown (rounds)<input
+      type="number"
+      name="system.cooldown.rounds"
+      value="{{system.cooldown.rounds}}"
+      placeholder="None"
+      min="0"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Cooldown remaining<input
+      type="number"
+      name="system.cooldown.remaining"
+      value="{{system.cooldown.remaining}}"
+      min="0"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    {{#unless passive}}<label class="wb-equipment-check"><input
+      type="checkbox"
+      name="system.cooldown.automatic"
+      {{#if system.cooldown.automatic}}checked{{/if}}
+      {{#unless editable}}disabled{{/unless}}
+    > Count cooldown automatically</label>{{/unless}}
+    <label>Duration notes<input
+      type="text"
+      name="system.duration"
+      value="{{system.duration}}"
+      placeholder="Special ending conditions…"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
   </div></details>
   <details class="wb-disclosure" data-sync="ability-notes"><summary>Notes &amp; image</summary>
     <label>Notes<textarea name="system.notes" rows="3" {{#unless editable}}disabled{{/unless}}>{{system.notes}}</textarea></label>

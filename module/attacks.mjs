@@ -59,11 +59,13 @@ export function shotsLeft(weapon) {
 // Automatic reasons for disadvantage. The player still picks the final roll mode.
 export function attackDisadvantages({ weapon, scores = {}, mode = "melee", longRange = false, mounted = false, heavyArmor = false } = {}) {
   const system = weapon.system ?? weapon;
-  const str = Number(scores.str ?? 12), dex = Number(scores.dex ?? 12);
+  const str = Number(scores.str ?? 12),
+    dex = Number(scores.dex ?? 12);
   const reasons = [];
   if (system.family === "heavy" && str < MILESTONE) reasons.push("Heavy weapon without 21 Strength");
   if (system.family === "finesse" && dex < MILESTONE) reasons.push("Finesse weapon without 21 Dexterity");
-  if (system.family === "paragon" && (str < MILESTONE || dex < MILESTONE)) reasons.push("Paragon weapon without both 21 Strength and 21 Dexterity");
+  if (system.family === "paragon" && (str < MILESTONE || dex < MILESTONE))
+    reasons.push("Paragon weapon without both 21 Strength and 21 Dexterity");
   if (system.properties?.mount && !mounted) reasons.push("Mount weapon while not mounted");
   if (longRange && mode !== "melee") reasons.push("Attacking past normal range");
   if (heavyArmor) reasons.push("Heavy armor without 21 Strength");
@@ -93,7 +95,9 @@ const TERM = /^([+-]?)(\d*)d(\d+)$|^([+-]?)(\d+)$/i;
 
 // Repeat a listed damage expression `times` times, e.g. 2d6 × 2 → 4d6.
 export function scaleDice(expression, times = 1) {
-  const compact = String(expression ?? "").replace(/\s+/g, "").replace(/−/g, "-");
+  const compact = String(expression ?? "")
+    .replace(/\s+/g, "")
+    .replace(/−/g, "-");
   if (!compact) return { formula: "", maximum: 0, valid: true };
   const terms = compact.match(/[+-]?[^+-]+/g) ?? [];
   let maximum = 0;
@@ -118,7 +122,16 @@ export function scaleDice(expression, times = 1) {
 // Everything a damage roll needs, without rolling.
 // An off-hand hit from attacking with both weapons deals half damage, rounded down,
 // and adds no modifier.
-export function damagePlan({ weapon, level = 1, modifier = 0, grip = "one", critical = false, mountedFeet = 0, mounted = false, offhand = false }) {
+export function damagePlan({
+  weapon,
+  level = 1,
+  modifier = 0,
+  grip = "one",
+  critical = false,
+  mountedFeet = 0,
+  mounted = false,
+  offhand = false
+}) {
   const system = weapon.system ?? weapon;
   const twoHandedGrip = system.properties?.versatile && grip === "two";
   const listed = twoHandedGrip && system.versatileDamage ? system.versatileDamage : system.damage;
@@ -126,19 +139,21 @@ export function damagePlan({ weapon, level = 1, modifier = 0, grip = "one", crit
   const dice = scaleDice(listed, times);
   const doubled = system.family === "heavy" || system.family === "paragon";
   const statBonus = offhand ? 0 : (doubled ? 2 : 1) * modifier;
-  const mountBonus = !offhand && system.properties?.mount && mounted ? Math.max(0, Math.min(Math.floor((Number(mountedFeet) || 0) / 10), modifier)) : 0;
+  const mountBonus =
+    !offhand && system.properties?.mount && mounted ? Math.max(0, Math.min(Math.floor((Number(mountedFeet) || 0) / 10), modifier)) : 0;
   const flat = statBonus + mountBonus;
-  const signed = value => value < 0 ? ` - ${Math.abs(value)}` : ` + ${value}`;
+  const signed = value => (value < 0 ? ` - ${Math.abs(value)}` : ` + ${value}`);
   // A critical hit deals the maximum of its damage, then rolls the damage dice again.
-  const formula = !dice.formula ? "" : critical
-    ? `${dice.formula}${signed(dice.maximum)}${flat ? signed(flat) : ""}`
-    : `${dice.formula}${flat ? signed(flat) : ""}`;
+  const formula = !dice.formula
+    ? ""
+    : critical
+      ? `${dice.formula}${signed(dice.maximum)}${flat ? signed(flat) : ""}`
+      : `${dice.formula}${flat ? signed(flat) : ""}`;
   const twoHanded = !!(system.properties?.twoHanded || twoHandedGrip);
   const notes = [];
   if (twoHanded && system.signature?.puncture) {
     notes.push("Two-handed Puncture: half the target's Armor Rating counts, rounded up, then ignore 2 more.");
-  }
-  else if (twoHanded) notes.push("Two-handed: this hit ignores half the target's Armor Rating, rounded down.");
+  } else if (twoHanded) notes.push("Two-handed: this hit ignores half the target's Armor Rating, rounded down.");
   else if (system.signature?.puncture) notes.push("Puncture: this hit ignores 2 of the target's Armor Rating.");
   if (offhand) notes.unshift("Off-hand hit: half damage, rounded down, with no modifier.");
   return { formula, valid: dice.valid, listed, times, statBonus, mountBonus, critical: !!critical, twoHanded, offhand, notes };
@@ -157,8 +172,13 @@ export function effectiveArmor(armorRating, { twoHanded = false, puncture = fals
 // resolved separately. The breakdown keeps pre-Block numbers distinct from the
 // final Overwhelming Force floor; this helper never changes an actor's Health.
 export function hitDamage({
-  damage = 0, resistant = false, armor = 0, twoHanded = false,
-  puncture = false, overwhelming = false, block = 0
+  damage = 0,
+  resistant = false,
+  armor = 0,
+  twoHanded = false,
+  puncture = false,
+  overwhelming = false,
+  block = 0
 } = {}) {
   const original = finalDamage(damage);
   const afterResistance = resistant ? Math.floor(original / 2) : original;
@@ -168,8 +188,14 @@ export function hitDamage({
   const afterBlock = Math.max(0, afterArmor - blocked);
   const minimum = overwhelming ? Math.floor(original / 2) : 0;
   return {
-    original, afterResistance, armor: armorUsed, afterArmor, block: blocked,
-    afterBlock, minimum, total: Math.max(afterBlock, minimum)
+    original,
+    afterResistance,
+    armor: armorUsed,
+    afterArmor,
+    block: blocked,
+    afterBlock,
+    minimum,
+    total: Math.max(afterBlock, minimum)
   };
 }
 

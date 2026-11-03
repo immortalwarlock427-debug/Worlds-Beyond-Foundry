@@ -2,16 +2,45 @@
   <header class="wb-item-heading"><img class="wb-item-icon" src="{{effect.img}}" alt=""><div><span class="wb-eyebrow">{{#if form}}Form{{else}}{{#if itemBonus}}Bonus{{else}}Saved ability{{/if}}{{/if}}</span>
     <input class="wb-name" type="text" name="name" value="{{effect.name}}" aria-label="Name" {{#unless editable}}disabled{{/unless}}>
   </div></header>
-  <label>Source<input type="text" name="flags.worlds-beyond.source" value="{{source}}" placeholder="Ability, item or other source" {{#unless editable}}disabled{{/unless}}></label>
-  <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses &amp; penalties</h2><button type="button" data-action="addBonus" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
+  <label>Source<input
+    type="text"
+    name="flags.worlds-beyond.source"
+    value="{{source}}"
+    placeholder="Ability, item or other source"
+    {{#unless editable}}disabled{{/unless}}
+  ></label>
+  <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses &amp; penalties</h2><button
+    type="button"
+    data-action="addBonus"
+    {{#unless editable}}disabled{{/unless}}
+  >Add bonus</button></div>
   <div class="wb-effect-changes">
     {{#each rows}}
     <div class="wb-effect-change">
       {{#if editable}}
-      <label>Changes<select name="effectRows.{{index}}.key" {{#unless @root.editable}}disabled{{/unless}}>{{#each choices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-      <label>Amount<input type="number" name="effectRows.{{index}}.value" value="{{value}}" step="1" {{#unless @root.editable}}disabled{{/unless}}></label>
+      <label>Changes<select name="effectRows.{{index}}.key" {{#unless @root.editable}}disabled{{/unless}}>{{#each choices}}<option
+        value="{{value}}"
+        {{#if selected}}selected{{/if}}
+      >{{label}}</option>{{/each}}</select></label>
+      <label>Amount<input
+        type="number"
+        name="effectRows.{{index}}.value"
+        value="{{value}}"
+        step="1"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ></label>
       {{else}}<p class="wb-item-brief">{{text}} · edit in Foundry editor</p>{{/if}}
-      <button type="button" class="wb-item-remove" data-action="removeBonus" data-index="{{index}}" aria-label="Remove bonus {{index}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+      <button
+        type="button"
+        class="wb-item-remove"
+        data-action="removeBonus"
+        data-index="{{index}}"
+        aria-label="Remove bonus {{index}}"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ><i
+        class="fa-solid fa-trash-can"
+        aria-hidden="true"
+      ></i></button>
     </div>
     {{else}}<p class="wb-empty">No bonuses. Add one to adjust a stat or other value.</p>{{/each}}
   </div>

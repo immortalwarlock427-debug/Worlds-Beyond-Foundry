@@ -2,7 +2,7 @@
 
 ## Native template parts
 
-CharacterSheet uses seven ApplicationV2 parts: `header` (identity and navigation), `character`, `details`, `equipment`, `abilities`, `status` and `notes`. Each tab owns its root scroll position with `scrollable: [""]`. Details preloads two static Handlebars partials for resources and values/help. All nine files are directly under `templates/` and under 10 KB; no build step is added.
+CharacterSheet uses seven ApplicationV2 parts: `header` (identity and navigation), `character`, `details`, `equipment`, `abilities`, `status` and `notes`. Each tab owns its root scroll position with `scrollable: [""]`. Details preloads two static Handlebars partials for resources and values/help. All nine files are directly under `templates/` and below 12 KB after expanding attribute lists for readability; no build step is added.
 
 The existing `wb-body` layout class moves to Foundry's window-content container using `window.contentClasses`. A display-contents heading wrapper supplies the one root element required by native part rendering while keeping header/navigation geometry unchanged. All original tab classes, action attributes and field names remain. The former monolithic `character-sheet.hbs` is no longer loaded.
 
@@ -11,6 +11,8 @@ Show all abilities refreshes only the Abilities part. Show all resources refresh
 `module/character-context.mjs` prepares read-only presentation data through separate header, Character, Details, Equipment, Abilities, Status and Notes helpers. Stat rows and resource projections are shared. The sheet adapter supplies the saved source snapshot, prepared equipment rows and combat-dependent Command readiness. The presenters import existing rules functions, require no Foundry globals and never save or prepare a document. Context keys and values are preserved; source-copy optimization remains a separate review item.
 
 Desktop Foundry and ordinary window resizing are now the validation priority, following the user's 2026-11-02 preference. Existing narrow styling remains; historical phone checks below describe prior testing and additional phone work is deferred.
+
+JavaScript modules and tests use the checked-in Prettier configuration (version 3.6.2, two spaces, 140-column target). Long template opening tags place attributes on separate lines; Handlebars expressions, values and surrounding text are preserved. Long literal strings remain intact. The formatting pass compares semantic JavaScript ASTs for all 100 modules/tests and exact template text/attribute tokens for all 23 templates. All 385 portable tests, 48 native-model context/control comparisons and 192 offline desktop DOM/layout comparisons pass, including native focus/scroll/disclosure restoration and Notes draft retention. Live document actions remain for user testing. Source-copy optimization follows separately.
 
 The context extraction passes five Foundry-free presenter tests and compares its complete output with the previous sheet method in 48 native-model cases, including modified/manual stats and fractional Command/resource values. Across 192 desktop/window comparisons at 1280/1000/880/760 px, the same templates, DOM and control geometry remain unchanged. Native scroll/focus/disclosure synchronization and preservation of an unrelated Notes draft still pass. Real document/socket behavior remains for the user's live check.
 

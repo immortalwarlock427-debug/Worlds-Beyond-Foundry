@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { wornEquipment } from "../module/equipment-core.mjs";
 import { coreNumbers } from "../module/core-numbers.mjs";
 
-const armor = (piece, armorType, armorRating, evasionBonus = 0) => ({ type: "armor", system: { equipped: true, piece, armorType, armorRating, evasionBonus } });
+const armor = (piece, armorType, armorRating, evasionBonus = 0) => ({
+  type: "armor",
+  system: { equipped: true, piece, armorType, armorRating, evasionBonus }
+});
 const shield = (armorRating = 1) => ({ type: "shield", system: { equipped: true, armorRating, blockDie: "1d10" } });
 
 test("light, medium and heavy sets match Notion and heaviest piece controls evasion", () => {
@@ -26,7 +29,14 @@ test("light, medium and heavy sets match Notion and heaviest piece controls evas
 });
 
 test("heavy penalties use armor pieces only, cap at three and honor STR 21 and manual zero", () => {
-  for (const [ar, expected] of [[2, 0], [3, 0], [4, 1], [5, 2], [6, 3], [20, 3]]) {
+  for (const [ar, expected] of [
+    [2, 0],
+    [3, 0],
+    [4, 1],
+    [5, 2],
+    [6, 3],
+    [20, 3]
+  ]) {
     const result = wornEquipment({ items: [armor("chest", "heavy", ar), shield(10)], strength: 21 });
     assert.equal(result.agilityPenalty, expected);
     assert.equal(result.heavyDisadvantage, false);

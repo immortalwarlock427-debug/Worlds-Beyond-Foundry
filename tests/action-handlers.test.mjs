@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-globalThis.foundry = { abstract: { TypeDataModel: class {} }, applications: { api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class {} } } };
+globalThis.foundry = {
+  abstract: { TypeDataModel: class {} },
+  applications: { api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class {} } }
+};
 const { rollAttack, reloadWeapon, rollDamage, decorateAttackMessage } = await import("../module/attack-actions.mjs");
 const { useConsumable, applyConsumableHealing, decorateConsumableMessage } = await import("../module/equipment.mjs");
 const { useAbility } = await import("../module/abilities.mjs");
@@ -12,48 +15,127 @@ const { abilityActive, cooldownRemaining } = await import("../module/ability-tim
 
 function fixture(mode = "public") {
   const calls = { evaluations: [], posts: [], flags: [], updates: [] };
-  const item = (id, type, system) => ({ id, name: id, type, system, async update(data) {
-    for (const [key, value] of Object.entries(data)) this.system[key.slice(7)] = value;
-    return this;
-  } });
-  const weapon = item("gun", "weapon", { equipped: true, loading: 6, shots: 2, family: "none", ranged: true, damage: "1d6", damageType: "Piercing", properties: {}, signature: {} });
-  const potion = item("potion", "consumable", { quantity: 2, healingDice: "1d6", description: "" });
-  const actor = { uuid: "Actor.hero", isOwner: true, items: new Map([[weapon.id, weapon], [potion.id, potion]]), system: {
-    level: 1, ap: { value: 15 }, health: { damage: 10 }, equipment: {}, stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0 }]))
-  }, async update(data) {
-    calls.updates.push(data);
-    for (const [key, value] of Object.entries(data)) { const keys = key.split('.').slice(1), field = keys.pop(); keys.reduce((entry, name) => entry[name] ??= {}, this.system)[field] = value; }
-    for (const pool of [this.system.mana, this.system.holyPower, ...Object.values(this.system.customResources ?? {})]) if (pool?.max != null && pool.spent != null) pool.value = pool.max - pool.spent;
-    return this;
-  } };
-  class Roll {
-    static validate() { return true; }
-    constructor(formula, data = {}) { this.formula = formula; this.data = data; }
-    async evaluate(options) {
-      calls.evaluations.push(options); this.total = 10;
-      this.dice = [{ faces: this.formula.includes("d20") ? 20 : 6, total: 10, results: [{ result: 10, active: true }] }]; return this;
+  const item = (id, type, system) => ({
+    id,
+    name: id,
+    type,
+    system,
+    async update(data) {
+      for (const [key, value] of Object.entries(data)) this.system[key.slice(7)] = value;
+      return this;
     }
-    async render() { return "<div class='dice-roll'>10</div>"; }
+  });
+  const weapon = item("gun", "weapon", {
+    equipped: true,
+    loading: 6,
+    shots: 2,
+    family: "none",
+    ranged: true,
+    damage: "1d6",
+    damageType: "Piercing",
+    properties: {},
+    signature: {}
+  });
+  const potion = item("potion", "consumable", { quantity: 2, healingDice: "1d6", description: "" });
+  const actor = {
+    uuid: "Actor.hero",
+    isOwner: true,
+    items: new Map([
+      [weapon.id, weapon],
+      [potion.id, potion]
+    ]),
+    system: {
+      level: 1,
+      ap: { value: 15 },
+      health: { damage: 10 },
+      equipment: {},
+      stats: Object.fromEntries(
+        ["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(key => [key, { value: 12, effective: 12, mod: 0 }])
+      )
+    },
+    async update(data) {
+      calls.updates.push(data);
+      for (const [key, value] of Object.entries(data)) {
+        const keys = key.split(".").slice(1),
+          field = keys.pop();
+        keys.reduce((entry, name) => (entry[name] ??= {}), this.system)[field] = value;
+      }
+      for (const pool of [this.system.mana, this.system.holyPower, ...Object.values(this.system.customResources ?? {})])
+        if (pool?.max != null && pool.spent != null) pool.value = pool.max - pool.spent;
+      return this;
+    }
+  };
+  class Roll {
+    static validate() {
+      return true;
+    }
+    constructor(formula, data = {}) {
+      this.formula = formula;
+      this.data = data;
+    }
+    async evaluate(options) {
+      calls.evaluations.push(options);
+      this.total = 10;
+      this.dice = [{ faces: this.formula.includes("d20") ? 20 : 6, total: 10, results: [{ result: 10, active: true }] }];
+      return this;
+    }
+    async render() {
+      return "<div class='dice-roll'>10</div>";
+    }
   }
   const ChatMessage = {
     getSpeaker: () => ({ actor: "hero" }),
     async create(data, options) {
       calls.posts.push({ data, options });
-      return { id: `posted${calls.posts.length}`, uuid: `ChatMessage.posted${calls.posts.length}`, isContentVisible: true, ...data, getFlag: (scope, key) => data.flags?.[scope]?.[key],
-        async setFlag(scope, key, value) { data.flags[scope][key] = structuredClone(value); return this; } };
+      return {
+        id: `posted${calls.posts.length}`,
+        uuid: `ChatMessage.posted${calls.posts.length}`,
+        isContentVisible: true,
+        ...data,
+        getFlag: (scope, key) => data.flags?.[scope]?.[key],
+        async setFlag(scope, key, value) {
+          data.flags[scope][key] = structuredClone(value);
+          return this;
+        }
+      };
     }
   };
-  Object.assign(foundry, { dice: { Roll }, documents: { ChatMessage: { implementation: ChatMessage } }, utils: { fromUuid: async () => actor, fromUuidSync: () => actor } });
+  Object.assign(foundry, {
+    dice: { Roll },
+    documents: { ChatMessage: { implementation: ChatMessage } },
+    utils: { fromUuid: async () => actor, fromUuidSync: () => actor }
+  });
   globalThis.game = { settings: { get: () => mode }, user: { targets: [] }, combats: [{ started: true, combatants: [{ actor }] }] };
-  calls.info = []; globalThis.ui = { notifications: { error() {}, warn() {}, info(message) { calls.info.push(message); } } };
+  calls.info = [];
+  globalThis.ui = {
+    notifications: {
+      error() {},
+      warn() {},
+      info(message) {
+        calls.info.push(message);
+      }
+    }
+  };
   const flags = {
-    attack: { actorUuid: actor.uuid, hands: [{ hand: "main", itemId: weapon.id, mod: 0, stat: "dex", hit: true, critical: false, damageRolled: false }] },
+    attack: {
+      actorUuid: actor.uuid,
+      hands: [{ hand: "main", itemId: weapon.id, mod: 0, stat: "dex", hit: true, critical: false, damageRolled: false }]
+    },
     consumable: { actorUuid: actor.uuid, amount: 6, applied: false }
   };
   const message = {
-    id: "source", uuid: "ChatMessage.source", isContentVisible: true, speaker: { actor: "hero" }, whisper: ["gm"], blind: true,
+    id: "source",
+    uuid: "ChatMessage.source",
+    isContentVisible: true,
+    speaker: { actor: "hero" },
+    whisper: ["gm"],
+    blind: true,
     getFlag: (scope, key) => flags[key],
-    async setFlag(scope, key, data) { calls.flags.push(structuredClone(data)); Object.assign(flags[key], structuredClone(data)); return this; }
+    async setFlag(scope, key, data) {
+      calls.flags.push(structuredClone(data));
+      Object.assign(flags[key], structuredClone(data));
+      return this;
+    }
   };
   return { actor, weapon, potion, calls, message, flags, Roll, ChatMessage };
 }
@@ -64,95 +146,187 @@ test("attack/reload/consumable cards pass all four v14 visibility modes; blind d
     await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex", spendAp: true });
     await reloadWeapon(f.actor, f.weapon.id);
     await useConsumable(f.actor, f.potion.id);
-    assert.deepEqual(f.calls.posts.map(post => post.options), Array(3).fill({ messageMode: mode }));
+    assert.deepEqual(
+      f.calls.posts.map(post => post.options),
+      Array(3).fill({ messageMode: mode })
+    );
     assert.ok(f.calls.evaluations.every(options => options.allowInteractive === (mode !== "blind")));
   }
 });
 
 test("ordinary attacks still spend AP without spending reactions", async () => {
-  const f = fixture(); f.actor.system.reactions = { value: 2 };
+  const f = fixture();
+  f.actor.system.reactions = { value: 2 };
   await rollAttack(f.actor, f.weapon, { spendAp: true, mode: "ranged", stat: "dex" }, { name: "Swift", evasion: 0 });
-  assert.equal(f.actor.system.ap.value, 5); assert.equal(f.actor.system.reactions.value, 2);
+  assert.equal(f.actor.system.ap.value, 5);
+  assert.equal(f.actor.system.reactions.value, 2);
   assert.equal(f.calls.posts[0].data.flags["worlds-beyond"].attack.hands[0].hit, true);
   assert.doesNotMatch(f.calls.posts[0].data.content, /Opportunity|reaction spent/);
 });
 
 test("potions use bounded DEX-adjusted AP, spend eligible Command first, and refund both AP and quantity on failure", async () => {
-  const f = fixture(); f.potion.system.kind = "potion"; f.actor.system.stats.dex.mod = 99;
-  f.actor.system.ap.value = 0; f.actor.system.command = { value: 3 }; game.combats[0].combatant = { actor: f.actor };
-  f.ChatMessage.create = async () => { throw new Error("offline"); };
+  const f = fixture();
+  f.potion.system.kind = "potion";
+  f.actor.system.stats.dex.mod = 99;
+  f.actor.system.ap.value = 0;
+  f.actor.system.command = { value: 3 };
+  game.combats[0].combatant = { actor: f.actor };
+  f.ChatMessage.create = async () => {
+    throw new Error("offline");
+  };
   await assert.rejects(useConsumable(f.actor, f.potion.id), /offline/);
-  assert.equal(f.actor.system.command.value, 3); assert.equal(f.actor.system.ap.value, 0); assert.equal(f.potion.system.quantity, 2);
-  f.ChatMessage.create = async (data, options) => { f.calls.posts.push({ data, options }); return data; };
+  assert.equal(f.actor.system.command.value, 3);
+  assert.equal(f.actor.system.ap.value, 0);
+  assert.equal(f.potion.system.quantity, 2);
+  f.ChatMessage.create = async (data, options) => {
+    f.calls.posts.push({ data, options });
+    return data;
+  };
   await useConsumable(f.actor, f.potion.id);
-  assert.equal(f.actor.system.command.value, 0); assert.equal(f.potion.system.quantity, 1); assert.match(f.calls.posts[0].data.content, /3 AP spent/);
-  await assert.rejects(useConsumable(f.actor, f.potion.id), /Not enough AP/); assert.equal(f.potion.system.quantity, 1);
-  game.combats = []; await useConsumable(f.actor, f.potion.id); assert.equal(f.potion.system.quantity, 0);
+  assert.equal(f.actor.system.command.value, 0);
+  assert.equal(f.potion.system.quantity, 1);
+  assert.match(f.calls.posts[0].data.content, /3 AP spent/);
+  await assert.rejects(useConsumable(f.actor, f.potion.id), /Not enough AP/);
+  assert.equal(f.potion.system.quantity, 1);
+  game.combats = [];
+  await useConsumable(f.actor, f.potion.id);
+  assert.equal(f.potion.system.quantity, 0);
 });
 
 test("full health prevents healing consumables before dice, item or AP spending, including manual overheal", async () => {
-  const f = fixture(); f.potion.system.kind = "potion";
+  const f = fixture();
+  f.potion.system.kind = "potion";
   for (const damage of [0, -3]) {
-    f.actor.system.health.damage = damage; await useConsumable(f.actor, f.potion.id);
-    assert.equal(f.potion.system.quantity, 2); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.health.damage, damage);
+    f.actor.system.health.damage = damage;
+    await useConsumable(f.actor, f.potion.id);
+    assert.equal(f.potion.system.quantity, 2);
+    assert.equal(f.actor.system.ap.value, 15);
+    assert.equal(f.actor.system.health.damage, damage);
   }
-  assert.equal(f.calls.posts.length, 0); assert.equal(f.calls.evaluations.length, 0);
+  assert.equal(f.calls.posts.length, 0);
+  assert.equal(f.calls.evaluations.length, 0);
   assert.ok(f.calls.info.every(message => /You are at full health/.test(message)));
 });
 
 test("reaching full health before Apply refunds the original item and both AP portions once", async () => {
-  const f = fixture(); f.potion.system.kind = "potion"; f.actor.system.ap.value = 2; f.actor.system.command = { value: 3 };
+  const f = fixture();
+  f.potion.system.kind = "potion";
+  f.actor.system.ap.value = 2;
+  f.actor.system.command = { value: 3 };
   game.combats[0].combatant = { actor: f.actor };
   const message = await useConsumable(f.actor, f.potion.id);
-  assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.command.value, 0); assert.equal(f.potion.system.quantity, 1);
+  assert.equal(f.actor.system.ap.value, 0);
+  assert.equal(f.actor.system.command.value, 0);
+  assert.equal(f.potion.system.quantity, 1);
   f.actor.system.health.damage = 0;
   await Promise.all([applyConsumableHealing(message), applyConsumableHealing(message)]);
-  assert.equal(f.actor.system.ap.value, 2); assert.equal(f.actor.system.command.value, 3); assert.equal(f.potion.system.quantity, 2);
+  assert.equal(f.actor.system.ap.value, 2);
+  assert.equal(f.actor.system.command.value, 3);
+  assert.equal(f.potion.system.quantity, 2);
   assert.equal(message.getFlag("worlds-beyond", "consumable").refunded, true);
   assert.match(f.calls.info[0], /full health.*refunded/);
 });
 
 test("a cancelled full-health refund restores the receipt and item count so retry refunds only once", async () => {
-  const f = fixture(); f.potion.system.kind = "potion";
-  const message = await useConsumable(f.actor, f.potion.id); f.actor.system.health.damage = 0;
-  const update = f.actor.update; f.actor.update = async () => undefined;
+  const f = fixture();
+  f.potion.system.kind = "potion";
+  const message = await useConsumable(f.actor, f.potion.id);
+  f.actor.system.health.damage = 0;
+  const update = f.actor.update;
+  f.actor.update = async () => undefined;
   await assert.rejects(applyConsumableHealing(message), /cancelled/);
-  assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.potion.system.quantity, 1);
+  assert.equal(f.actor.system.ap.value, 10);
   assert.equal(message.getFlag("worlds-beyond", "consumable").refunded, false);
-  f.actor.update = update; await applyConsumableHealing(message);
-  assert.equal(f.potion.system.quantity, 2); assert.equal(f.actor.system.ap.value, 15);
+  f.actor.update = update;
+  await applyConsumableHealing(message);
+  assert.equal(f.potion.system.quantity, 2);
+  assert.equal(f.actor.system.ap.value, 15);
 });
 
 test("partially needed healing applies only the deficit and keeps the paid cost instead of refunding after success", async () => {
-  const f = fixture(); f.potion.system.kind = "potion"; f.actor.system.health.damage = 3;
+  const f = fixture();
+  f.potion.system.kind = "potion";
+  f.actor.system.health.damage = 3;
   const message = await useConsumable(f.actor, f.potion.id);
-  await applyConsumableHealing(message); await applyConsumableHealing(message);
-  assert.equal(f.actor.system.health.damage, 0); assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
-  const data = message.getFlag("worlds-beyond", "consumable"); assert.equal(data.healed, 3); assert.equal(data.applied, true); assert.equal(data.refunded, false);
+  await applyConsumableHealing(message);
+  await applyConsumableHealing(message);
+  assert.equal(f.actor.system.health.damage, 0);
+  assert.equal(f.potion.system.quantity, 1);
+  assert.equal(f.actor.system.ap.value, 10);
+  const data = message.getFlag("worlds-beyond", "consumable");
+  assert.equal(data.healed, 3);
+  assert.equal(data.applied, true);
+  assert.equal(data.refunded, false);
 });
 
 function potionBonuses(f) {
-  f.potion.effects = new Map(["str", "dex"].map(key => [key, { name: `${key} tonic`, disabled: false, flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [{ key: `system.stats.${key}.value`, type: "add", phase: "initial", value: 2 }] } }]));
+  f.potion.effects = new Map(
+    ["str", "dex"].map(key => [
+      key,
+      {
+        name: `${key} tonic`,
+        disabled: false,
+        flags: { "worlds-beyond": { managed: true, itemBound: true } },
+        system: { changes: [{ key: `system.stats.${key}.value`, type: "add", phase: "initial", value: 2 }] }
+      }
+    ])
+  );
   f.actor.effects = new Map();
   f.actor.allApplicableEffects = () => f.actor.effects.values();
-  f.actor.createEmbeddedDocuments = async (type, data) => data.map((entry, index) => {
-    const effect = { ...structuredClone(entry), id: `bonus${index}`, uuid: `Actor.hero.ActiveEffect.bonus${index}`, parent: f.actor,
-      async update(data) { Object.assign(this, data); return this; } };
-    f.actor.effects.set(effect.id, effect); return effect;
-  });
-  f.actor.deleteEmbeddedDocuments = async (type, ids) => ids.map(id => { const effect = f.actor.effects.get(id); f.actor.effects.delete(id); return effect; });
+  f.actor.createEmbeddedDocuments = async (type, data) =>
+    data.map((entry, index) => {
+      const effect = {
+        ...structuredClone(entry),
+        id: `bonus${index}`,
+        uuid: `Actor.hero.ActiveEffect.bonus${index}`,
+        parent: f.actor,
+        async update(data) {
+          Object.assign(this, data);
+          return this;
+        }
+      };
+      f.actor.effects.set(effect.id, effect);
+      return effect;
+    });
+  f.actor.deleteEmbeddedDocuments = async (type, ids) =>
+    ids.map(id => {
+      const effect = f.actor.effects.get(id);
+      f.actor.effects.delete(id);
+      return effect;
+    });
 }
 
 test("timed potion definitions snapshot on Use but their native clock starts on Apply for the drinker", async () => {
-  const f = fixture(); potionBonuses(f); f.potion.system.bonusDuration = { value: 3, units: "rounds" };
-  const combat = game.combats[0]; combat.id = "encounter"; combat.round = 4; combat.turn = 1;
-  combat.combatants = [{ id: "other", actor: { uuid: "Actor.other" } }, { id: "drinker", actor: f.actor }];
+  const f = fixture();
+  potionBonuses(f);
+  f.potion.system.bonusDuration = { value: 3, units: "rounds" };
+  const combat = game.combats[0];
+  combat.id = "encounter";
+  combat.round = 4;
+  combat.turn = 1;
+  combat.combatants = [
+    { id: "other", actor: { uuid: "Actor.other" } },
+    { id: "drinker", actor: f.actor }
+  ];
   game.time = { worldTime: 100 };
-  foundry.documents.ActiveEffect = { implementation: { getEffectStart: c => ({ time: game.time.worldTime, combat: c?.id ?? null, combatant: "other", round: c?.round ?? null, turn: c?.turn ?? null }) } };
+  foundry.documents.ActiveEffect = {
+    implementation: {
+      getEffectStart: c => ({
+        time: game.time.worldTime,
+        combat: c?.id ?? null,
+        combatant: "other",
+        round: c?.round ?? null,
+        turn: c?.turn ?? null
+      })
+    }
+  };
   const message = await useConsumable(f.actor, f.potion.id);
   assert.match(f.calls.posts[0].data.content, /\+2 STR · \+2 DEX · 3 rounds/);
   assert.equal(message.getFlag("worlds-beyond", "consumable").bonuses[0].start, undefined);
-  f.potion.system.bonusDuration.value = 99; game.time.worldTime = 200; combat.round = 6;
+  f.potion.system.bonusDuration.value = 99;
+  game.time.worldTime = 200;
+  combat.round = 6;
   await Promise.all([applyConsumableHealing(message), applyConsumableHealing(message)]);
   assert.equal(f.actor.effects.size, 2);
   for (const effect of f.actor.effects.values()) {
@@ -167,299 +341,606 @@ test("timed potion definitions snapshot on Use but their native clock starts on 
 });
 
 test("round timers fail before spending without an encounter; time-based timers remain available", async () => {
-  const f = fixture(); potionBonuses(f); game.combats = []; f.potion.system.bonusDuration = { value: 2, units: "rounds" };
+  const f = fixture();
+  potionBonuses(f);
+  game.combats = [];
+  f.potion.system.bonusDuration = { value: 2, units: "rounds" };
   await assert.rejects(useConsumable(f.actor, f.potion.id), /started encounter/);
-  assert.equal(f.potion.system.quantity, 2); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.calls.posts.length, 0);
-  game.time = { worldTime: 0 }; foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: game.time.worldTime, combat: null }) } };
+  assert.equal(f.potion.system.quantity, 2);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.calls.posts.length, 0);
+  game.time = { worldTime: 0 };
+  foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: game.time.worldTime, combat: null }) } };
   f.potion.system.bonusDuration.units = "minutes";
-  const message = await useConsumable(f.actor, f.potion.id); game.time.worldTime = 50;
+  const message = await useConsumable(f.actor, f.potion.id);
+  game.time.worldTime = 50;
   await applyConsumableHealing(message);
   assert.equal(f.actor.effects.values().next().value.start.time, 50);
   assert.equal(f.actor.effects.values().next().value.duration.expiry, null);
 });
 
 test("an encounter ending before Apply leaves a timed card retryable and restores any healing attempt", async () => {
-  const f = fixture(); potionBonuses(f); f.potion.system.bonusDuration = { value: 2, units: "rounds" };
+  const f = fixture();
+  potionBonuses(f);
+  f.potion.system.bonusDuration = { value: 2, units: "rounds" };
   foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: 0 }) } };
-  const message = await useConsumable(f.actor, f.potion.id); game.combats = [];
+  const message = await useConsumable(f.actor, f.potion.id);
+  game.combats = [];
   await assert.rejects(applyConsumableHealing(message), /started encounter/);
-  assert.equal(message.getFlag("worlds-beyond", "consumable").applied, false); assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.effects.size, 0);
+  assert.equal(message.getFlag("worlds-beyond", "consumable").applied, false);
+  assert.equal(f.actor.system.health.damage, 10);
+  assert.equal(f.actor.effects.size, 0);
 });
 
 test("consumables restore a chosen magic pool by percentage, preserve fractions, and reject missing resources before spending", async () => {
-  const f = fixture(); f.potion.system.kind = "potion"; f.potion.system.restoreTarget = "mana"; f.potion.system.restoreUnit = "percent";
+  const f = fixture();
+  f.potion.system.kind = "potion";
+  f.potion.system.restoreTarget = "mana";
+  f.potion.system.restoreUnit = "percent";
   f.actor.system.mana = { enabled: true, max: 125, value: 90, spent: 35 };
   const message = await useConsumable(f.actor, f.potion.id); // mocked roll is 10 → 10% of 125
   await applyConsumableHealing(message);
-  assert.equal(f.actor.system.mana.spent, 22.5); assert.equal(f.actor.system.health.damage, 10);
+  assert.equal(f.actor.system.mana.spent, 22.5);
+  assert.equal(f.actor.system.health.damage, 10);
   f.potion.system.restoreTarget = "resource00000001";
   await assert.rejects(useConsumable(f.actor, f.potion.id), /available restoration resource/);
-  assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.potion.system.quantity, 1);
+  assert.equal(f.actor.system.ap.value, 10);
 });
 
 test("stat tonics work at full Health, stay in Status rather than Abilities, and end all bonuses from one use together", async () => {
-  const f = fixture(); f.potion.system.kind = "potion"; f.potion.name = "Power tonic"; f.actor.system.health.damage = 0;
+  const f = fixture();
+  f.potion.system.kind = "potion";
+  f.potion.name = "Power tonic";
+  f.actor.system.health.damage = 0;
   potionBonuses(f);
-  const message = await useConsumable(f.actor, f.potion.id); assert.equal(f.actor.effects.size, 0);
+  const message = await useConsumable(f.actor, f.potion.id);
+  assert.equal(f.actor.effects.size, 0);
   await Promise.all([applyConsumableHealing(message), applyConsumableHealing(message)]);
-  assert.equal(f.actor.effects.size, 2); assert.equal(f.potion.system.quantity, 1); assert.equal(f.actor.system.ap.value, 10);
-  const context = effectContext(f.actor); assert.equal(context.statuses.length, 1); assert.equal(context.statuses[0].name, "Power tonic"); assert.equal(context.savedAbilities.length, 0);
-  f.actor.items.delete(f.potion.id); assert.equal(effectContext(f.actor).statuses.length, 1);
+  assert.equal(f.actor.effects.size, 2);
+  assert.equal(f.potion.system.quantity, 1);
+  assert.equal(f.actor.system.ap.value, 10);
+  const context = effectContext(f.actor);
+  assert.equal(context.statuses.length, 1);
+  assert.equal(context.statuses[0].name, "Power tonic");
+  assert.equal(context.savedAbilities.length, 0);
+  f.actor.items.delete(f.potion.id);
+  assert.equal(effectContext(f.actor).statuses.length, 1);
   const { toggleEffect } = await import("../module/effects.mjs");
-  f.actor.type = "character"; await toggleEffect(f.actor, context.statuses[0].uuid, { active: false });
-  assert.equal(effectContext(f.actor).statuses.length, 0); assert.ok(Array.from(f.potion.effects.values()).every(effect => !effect.disabled));
+  f.actor.type = "character";
+  await toggleEffect(f.actor, context.statuses[0].uuid, { active: false });
+  assert.equal(effectContext(f.actor).statuses.length, 0);
+  assert.ok(Array.from(f.potion.effects.values()).every(effect => !effect.disabled));
 });
 
 test("partial bonus creation cancels all benefits and leaves the paid card retryable without duplicated restoration", async () => {
-  const f = fixture(); potionBonuses(f);
+  const f = fixture();
+  potionBonuses(f);
   const message = await useConsumable(f.actor, f.potion.id);
-  const create = f.actor.createEmbeddedDocuments; f.actor.createEmbeddedDocuments = (type, data) => create(type, data.slice(0, 1));
+  const create = f.actor.createEmbeddedDocuments;
+  f.actor.createEmbeddedDocuments = (type, data) => create(type, data.slice(0, 1));
   await assert.rejects(applyConsumableHealing(message), /not all applied/);
-  assert.equal(f.actor.effects.size, 0); assert.equal(f.actor.system.health.damage, 10); assert.equal(message.getFlag("worlds-beyond", "consumable").applied, false);
-  f.actor.createEmbeddedDocuments = create; await applyConsumableHealing(message);
-  assert.equal(f.actor.effects.size, 2); assert.equal(f.actor.system.health.damage, 0);
+  assert.equal(f.actor.effects.size, 0);
+  assert.equal(f.actor.system.health.damage, 10);
+  assert.equal(message.getFlag("worlds-beyond", "consumable").applied, false);
+  f.actor.createEmbeddedDocuments = create;
+  await applyConsumableHealing(message);
+  assert.equal(f.actor.effects.size, 2);
+  assert.equal(f.actor.system.health.damage, 0);
 });
 
 function bonusAbility(f) {
-  const item = { id: "buff", name: "Dexterity buff", type: "ability", effects: new Map([["bonus", { id: "bonus", name: "DEX", system: { changes: [] } }]]),
-    system: { kind: "active", effectsActive: false, apCost: 5, apDiscountStat: "", resourceId: "mana", resourceCost: 10, resourceUnit: "percent", uses: { max: 2, spent: 0 }, cooldown: { rounds: 2, remaining: 0 } },
-    async update(data) { for (const [key, value] of Object.entries(data)) { const parts = key.split('.').slice(1); const last = parts.pop(); const parent = parts.reduce((object, field) => object[field], this.system); parent[last] = value; } return this; }
+  const item = {
+    id: "buff",
+    name: "Dexterity buff",
+    type: "ability",
+    effects: new Map([["bonus", { id: "bonus", name: "DEX", system: { changes: [] } }]]),
+    system: {
+      kind: "active",
+      effectsActive: false,
+      apCost: 5,
+      apDiscountStat: "",
+      resourceId: "mana",
+      resourceCost: 10,
+      resourceUnit: "percent",
+      uses: { max: 2, spent: 0 },
+      cooldown: { rounds: 2, remaining: 0 }
+    },
+    async update(data) {
+      for (const [key, value] of Object.entries(data)) {
+        const parts = key.split(".").slice(1);
+        const last = parts.pop();
+        const parent = parts.reduce((object, field) => object[field], this.system);
+        parent[last] = value;
+      }
+      return this;
+    }
   };
-  f.actor.items.set(item.id, item); f.actor.system.mana = { enabled: true, max: 125, value: 125, spent: 0, min: 0 };
+  f.actor.items.set(item.id, item);
+  f.actor.system.mana = { enabled: true, max: 125, value: 125, spent: 0, min: 0 };
   return item;
 }
 
 function timedAbility(f) {
-  const item = bonusAbility(f); item.actor = f.actor; item.documentName = "Item";
-  f.actor.type = "character"; item.system.timers = { durationId: "", cooldownId: "" };
-  item.system.activeDuration = { value: 3, units: "rounds" }; item.system.cooldown.automatic = true;
-  game.time = { worldTime: 0 }; game.users = { activeGM: { isSelf: true } };
-  const combat = game.combats[0]; combat.id = "combat"; combat.round = 1; combat.combatants[0].id = "hero";
-  foundry.documents.ActiveEffect = { implementation: { getEffectStart: () => ({ time: game.time.worldTime, combat: combat.id, round: combat.round }) } };
+  const item = bonusAbility(f);
+  item.actor = f.actor;
+  item.documentName = "Item";
+  f.actor.type = "character";
+  item.system.timers = { durationId: "", cooldownId: "" };
+  item.system.activeDuration = { value: 3, units: "rounds" };
+  item.system.cooldown.automatic = true;
+  game.time = { worldTime: 0 };
+  game.users = { activeGM: { isSelf: true } };
+  const combat = game.combats[0];
+  combat.id = "combat";
+  combat.round = 1;
+  combat.combatants[0].id = "hero";
+  foundry.documents.ActiveEffect = {
+    implementation: { getEffectStart: () => ({ time: game.time.worldTime, combat: combat.id, round: combat.round }) }
+  };
   let sequence = 0;
-  item.createEmbeddedDocuments = async (type, data) => data.map(entry => {
-    const effect = { ...structuredClone(entry), id: `clock${++sequence}`, parent: item,
-      async update(data) { Object.assign(this, structuredClone(data)); return this; }, async delete() { item.effects.delete(this.id); return this; } };
-    item.effects.set(effect.id, effect); return effect;
-  });
+  item.createEmbeddedDocuments = async (type, data) =>
+    data.map(entry => {
+      const effect = {
+        ...structuredClone(entry),
+        id: `clock${++sequence}`,
+        parent: item,
+        async update(data) {
+          Object.assign(this, structuredClone(data));
+          return this;
+        },
+        async delete() {
+          item.effects.delete(this.id);
+          return this;
+        }
+      };
+      item.effects.set(effect.id, effect);
+      return effect;
+    });
   item.deleteEmbeddedDocuments = async (type, ids) => Promise.all(ids.map(id => item.effects.get(id).delete()));
   return item;
 }
 
 test("ability duration and automatic cooldown start together; End stops duration but never clears cooldown", async () => {
-  const f = fixture(), item = timedAbility(f);
-  await useAbility(f.actor, item.id); const duration = item.effects.get(item.system.timers.durationId), cooldown = item.effects.get(item.system.timers.cooldownId);
-  assert.equal(duration.duration.value, 3); assert.equal(cooldown.duration.value, 2); assert.equal(duration.start.combatant, "hero");
-  assert.equal(f.actor.system.ap.value, 10); assert.equal(item.effects.size, 3); assert.equal(effectContext(f.actor).savedAbilities.length, 0);
-  await useAbility(f.actor, item.id, { end: true }); assert.equal(duration.disabled, true); assert.equal(item.system.effectsActive, false); assert.equal(cooldown.disabled, false);
+  const f = fixture(),
+    item = timedAbility(f);
+  await useAbility(f.actor, item.id);
+  const duration = item.effects.get(item.system.timers.durationId),
+    cooldown = item.effects.get(item.system.timers.cooldownId);
+  assert.equal(duration.duration.value, 3);
+  assert.equal(cooldown.duration.value, 2);
+  assert.equal(duration.start.combatant, "hero");
+  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(item.effects.size, 3);
+  assert.equal(effectContext(f.actor).savedAbilities.length, 0);
+  await useAbility(f.actor, item.id, { end: true });
+  assert.equal(duration.disabled, true);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(cooldown.disabled, false);
   await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
-  cooldown.duration.expired = true; await reconcileAbilityTimers(item); assert.equal(item.system.cooldown.remaining, 0);
-  const oldId = duration.id; await useAbility(f.actor, item.id); assert.notEqual(item.system.timers.durationId, oldId);
+  cooldown.duration.expired = true;
+  await reconcileAbilityTimers(item);
+  assert.equal(item.system.cooldown.remaining, 0);
+  const oldId = duration.id;
+  await useAbility(f.actor, item.id);
+  assert.notEqual(item.system.timers.durationId, oldId);
   assert.equal(item.effects.size, 3, "Successful activation cleans superseded internal clocks");
-  await reconcileAbilityTimers(item, duration); assert.equal(item.system.effectsActive, true, "A stale expiry from the previous activation cannot end this one");
+  await reconcileAbilityTimers(item, duration);
+  assert.equal(item.system.effectsActive, true, "A stale expiry from the previous activation cannot end this one");
 });
 
 test("expired native clocks immediately remove bonuses and reconcile persistent fields only on the active GM", async () => {
-  const f = fixture(), item = timedAbility(f); await useAbility(f.actor, item.id);
+  const f = fixture(),
+    item = timedAbility(f);
+  await useAbility(f.actor, item.id);
   for (const effect of item.effects.values()) if (effect.duration) effect.duration.expired = true;
-  assert.equal(abilityActive(item), false); assert.equal(cooldownRemaining(item), 0);
-  game.users.activeGM.isSelf = false; await reconcileAbilityTimers(item); assert.equal(item.system.effectsActive, true);
-  game.users.activeGM.isSelf = true; await Promise.all([reconcileAbilityTimers(item), reconcileAbilityTimers(item)]);
-  assert.equal(item.system.effectsActive, false); assert.equal(item.system.cooldown.remaining, 0); assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(abilityActive(item), false);
+  assert.equal(cooldownRemaining(item), 0);
+  game.users.activeGM.isSelf = false;
+  await reconcileAbilityTimers(item);
+  assert.equal(item.system.effectsActive, true);
+  game.users.activeGM.isSelf = true;
+  await Promise.all([reconcileAbilityTimers(item), reconcileAbilityTimers(item)]);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(item.system.cooldown.remaining, 0);
+  assert.equal(f.actor.system.ap.value, 10);
 });
 
 test("failed timed ability posting refunds costs/trackers and removes both newly created clocks", async () => {
-  const f = fixture(), item = timedAbility(f); f.ChatMessage.create = async () => undefined;
+  const f = fixture(),
+    item = timedAbility(f);
+  f.ChatMessage.create = async () => undefined;
   await assert.rejects(useAbility(f.actor, item.id), /not posted/);
-  assert.equal(item.effects.size, 1); assert.deepEqual(item.system.timers, { durationId: "", cooldownId: "" });
-  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.effectsActive, false); assert.equal(item.system.uses.spent, 0);
+  assert.equal(item.effects.size, 1);
+  assert.deepEqual(item.system.timers, { durationId: "", cooldownId: "" });
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(item.system.uses.spent, 0);
 });
 
 test("partial clock creation rolls back the first clock; native delete-on-expiry clears current flags only", async () => {
-  let f = fixture(), item = timedAbility(f), create = item.createEmbeddedDocuments, calls = 0;
-  item.createEmbeddedDocuments = (...args) => ++calls === 2 ? [] : create(...args);
-  await assert.rejects(useAbility(f.actor, item.id), /cancelled/); assert.equal(item.effects.size, 1); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
-  f = fixture(); item = timedAbility(f); await useAbility(f.actor, item.id);
-  const expired = item.effects.get(item.system.timers.durationId); await expired.delete();
-  assert.equal(abilityActive(item), false); await reconcileAbilityTimers(item, expired);
-  assert.equal(item.system.effectsActive, false); assert.equal(item.system.timers.durationId, ""); assert.equal(cooldownRemaining(item), 2);
+  let f = fixture(),
+    item = timedAbility(f),
+    create = item.createEmbeddedDocuments,
+    calls = 0;
+  item.createEmbeddedDocuments = (...args) => (++calls === 2 ? [] : create(...args));
+  await assert.rejects(useAbility(f.actor, item.id), /cancelled/);
+  assert.equal(item.effects.size, 1);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  f = fixture();
+  item = timedAbility(f);
+  await useAbility(f.actor, item.id);
+  const expired = item.effects.get(item.system.timers.durationId);
+  await expired.delete();
+  assert.equal(abilityActive(item), false);
+  await reconcileAbilityTimers(item, expired);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(item.system.timers.durationId, "");
+  assert.equal(cooldownRemaining(item), 2);
 });
 
 test("timed no-bonus forms can expire; Base form cancels its duration, and missing encounters spend nothing", async () => {
-  const f = fixture(), item = timedAbility(f); item.effects.clear(); item.system.kind = "form"; item.system.cooldown.automatic = false;
-  await useAbility(f.actor, item.id); assert.equal(abilityActive(item), true);
+  const f = fixture(),
+    item = timedAbility(f);
+  item.effects.clear();
+  item.system.kind = "form";
+  item.system.cooldown.automatic = false;
+  await useAbility(f.actor, item.id);
+  assert.equal(abilityActive(item), true);
   assert.equal(effectContext(f.actor).statuses[0].source, "Form");
-  await returnToBase(f.actor); assert.equal(abilityActive(item), false); assert.equal(item.effects.get(item.system.timers.durationId).disabled, true);
-  const next = fixture(), noEncounter = timedAbility(next); game.combats = [];
-  await assert.rejects(useAbility(next.actor, noEncounter.id), /started encounter/); assert.equal(next.actor.system.ap.value, 15); assert.equal(noEncounter.effects.size, 1);
+  await returnToBase(f.actor);
+  assert.equal(abilityActive(item), false);
+  assert.equal(item.effects.get(item.system.timers.durationId).disabled, true);
+  const next = fixture(),
+    noEncounter = timedAbility(next);
+  game.combats = [];
+  await assert.rejects(useAbility(next.actor, noEncounter.id), /started encounter/);
+  assert.equal(next.actor.system.ap.value, 15);
+  assert.equal(noEncounter.effects.size, 1);
 });
 test("ability Use pays exact percent resources and one use, enables bonuses; rapid Use does not double-pay, End is free", async () => {
-  const f = fixture(), item = bonusAbility(f);
+  const f = fixture(),
+    item = bonusAbility(f);
   await Promise.all([useAbility(f.actor, item.id), useAbility(f.actor, item.id)]);
-  assert.equal(f.actor.system.ap.value, 10); assert.equal(f.actor.system.mana.spent, 12.5);
-  assert.equal(item.system.uses.spent, 1); assert.equal(item.system.cooldown.remaining, 2); assert.equal(item.system.effectsActive, true);
+  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.actor.system.mana.spent, 12.5);
+  assert.equal(item.system.uses.spent, 1);
+  assert.equal(item.system.cooldown.remaining, 2);
+  assert.equal(item.system.effectsActive, true);
   assert.equal(f.calls.posts.length, 1);
-  await useAbility(f.actor, item.id, { end: true }); assert.equal(item.system.effectsActive, false); assert.equal(f.actor.system.ap.value, 10);
+  await useAbility(f.actor, item.id, { end: true });
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, 10);
   await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
 });
 
 test("ability Use pays AP without an encounter and insufficient AP leaves all costs and bonuses untouched", async () => {
-  const f = fixture(), item = bonusAbility(f); game.combats = [];
+  const f = fixture(),
+    item = bonusAbility(f);
+  game.combats = [];
   f.actor.system.ap.value = 4;
   await assert.rejects(useAbility(f.actor, item.id), /Not enough AP/);
-  assert.equal(f.actor.system.ap.value, 4); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.effectsActive, false);
-  f.actor.system.ap.value = 5; await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.mana.spent, 12.5); assert.equal(item.system.effectsActive, true);
+  assert.equal(f.actor.system.ap.value, 4);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.uses.spent, 0);
+  assert.equal(item.system.effectsActive, false);
+  f.actor.system.ap.value = 5;
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 0);
+  assert.equal(f.actor.system.mana.spent, 12.5);
+  assert.equal(item.system.effectsActive, true);
 });
 
 test("healing abilities apply on Use, cap at the deficit, pay once per use and stay usable without active bonus state", async () => {
-  const f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.cooldown.rounds = null;
-  item.system.restoration = { target: "health", amount: "2d6", unit: "points" }; f.actor.system.health.damage = 15;
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.effects.clear();
+  item.system.cooldown.rounds = null;
+  item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+  f.actor.system.health.damage = 15;
   await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.health.damage, 5); assert.equal(f.actor.system.ap.value, 10); assert.equal(item.system.uses.spent, 1); assert.equal(item.system.effectsActive, false);
-  assert.match(f.calls.posts[0].data.content, /Restored 10 Health/); assert.equal(f.calls.posts[0].data.rolls.length, 1);
+  assert.equal(f.actor.system.health.damage, 5);
+  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(item.system.uses.spent, 1);
+  assert.equal(item.system.effectsActive, false);
+  assert.match(f.calls.posts[0].data.content, /Restored 10 Health/);
+  assert.equal(f.calls.posts[0].data.rolls.length, 1);
   await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.health.damage, 0); assert.equal(f.actor.system.ap.value, 5); assert.equal(item.system.uses.spent, 2);
+  assert.equal(f.actor.system.health.damage, 0);
+  assert.equal(f.actor.system.ap.value, 5);
+  assert.equal(item.system.uses.spent, 2);
   assert.match(f.calls.posts[1].data.content, /Restored 5 Health/);
 });
 
 test("a full restoration target spends no AP, resource, use or cooldown; mixed buffs and forms still activate", async () => {
-  let f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "10", unit: "points" }; f.actor.system.health.damage = 0;
+  let f = fixture(),
+    item = bonusAbility(f);
+  item.effects.clear();
+  item.system.restoration = { target: "health", amount: "10", unit: "points" };
+  f.actor.system.health.damage = 0;
   await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.cooldown.remaining, 0); assert.equal(f.calls.posts.length, 0); assert.equal(f.calls.evaluations.length, 0);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.uses.spent, 0);
+  assert.equal(item.system.cooldown.remaining, 0);
+  assert.equal(f.calls.posts.length, 0);
+  assert.equal(f.calls.evaluations.length, 0);
   assert.match(f.calls.info[0], /full health.*Nothing was spent/);
-  f = fixture(); item = bonusAbility(f); item.system.restoration = { target: "health", amount: "10", unit: "points" }; f.actor.system.health.damage = 0;
-  await useAbility(f.actor, item.id); assert.equal(item.system.effectsActive, true); assert.equal(f.actor.system.ap.value, 10); assert.equal(f.actor.system.health.damage, 0);
-  await useAbility(f.actor, item.id, { end: true }); assert.equal(f.actor.system.health.damage, 0); assert.equal(f.actor.system.ap.value, 10);
-  f = fixture(); item = bonusAbility(f); item.effects.clear(); item.system.kind = "form"; item.system.restoration = { target: "health", amount: "10", unit: "points" }; f.actor.system.health.damage = 0;
-  await useAbility(f.actor, item.id); assert.equal(item.system.effectsActive, true); assert.equal(f.actor.system.ap.value, 10);
+  f = fixture();
+  item = bonusAbility(f);
+  item.system.restoration = { target: "health", amount: "10", unit: "points" };
+  f.actor.system.health.damage = 0;
+  await useAbility(f.actor, item.id);
+  assert.equal(item.system.effectsActive, true);
+  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.actor.system.health.damage, 0);
+  await useAbility(f.actor, item.id, { end: true });
+  assert.equal(f.actor.system.health.damage, 0);
+  assert.equal(f.actor.system.ap.value, 10);
+  f = fixture();
+  item = bonusAbility(f);
+  item.effects.clear();
+  item.system.kind = "form";
+  item.system.restoration = { target: "health", amount: "10", unit: "points" };
+  f.actor.system.health.damage = 0;
+  await useAbility(f.actor, item.id);
+  assert.equal(item.system.effectsActive, true);
+  assert.equal(f.actor.system.ap.value, 10);
 });
 
 test("percentage restoration uses the pre-use maximum and preserves payment when restoring the cost's own pool", async () => {
-  const f = fixture(), item = bonusAbility(f); item.effects.clear(); f.actor.system.mana.spent = 20; f.actor.system.mana.value = 105;
-  item.system.resourceCost = 10; item.system.resourceUnit = "points";
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.effects.clear();
+  f.actor.system.mana.spent = 20;
+  f.actor.system.mana.value = 105;
+  item.system.resourceCost = 10;
+  item.system.resourceUnit = "points";
   item.system.restoration = { target: "mana", amount: "10", unit: "percent" };
   await useAbility(f.actor, item.id); // 20 spent + 10 cost - 12.5 restored
-  assert.equal(f.actor.system.mana.spent, 17.5); assert.equal(f.actor.system.mana.value, 107.5);
-  assert.match(f.calls.posts[0].data.content, /Restored 12 Mana/); assert.doesNotMatch(f.calls.posts[0].data.content, /12\.5/);
-  item.system.cooldown.remaining = 0; f.ChatMessage.create = async () => undefined;
+  assert.equal(f.actor.system.mana.spent, 17.5);
+  assert.equal(f.actor.system.mana.value, 107.5);
+  assert.match(f.calls.posts[0].data.content, /Restored 12 Mana/);
+  assert.doesNotMatch(f.calls.posts[0].data.content, /12\.5/);
+  item.system.cooldown.remaining = 0;
+  f.ChatMessage.create = async () => undefined;
   await assert.rejects(useAbility(f.actor, item.id), /not posted/);
-  assert.equal(f.actor.system.mana.spent, 17.5); assert.equal(f.actor.system.ap.value, 10); assert.equal(item.system.uses.spent, 1);
+  assert.equal(f.actor.system.mana.spent, 17.5);
+  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(item.system.uses.spent, 1);
 });
 
 test("custom-resource restoration respects stable IDs, overflow and missing/hidden target validation before payment", async () => {
-  const f = fixture(), item = bonusAbility(f); item.effects.clear(); const id = "resource00000001";
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.effects.clear();
+  const id = "resource00000001";
   f.actor.system.customResources = { [id]: { name: "Blood <test>", max: 100, spent: 0, value: 100, allowOverflow: true } };
   item.system.restoration = { target: id, amount: "10", unit: "points" };
   await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.customResources[id].spent, -10); assert.equal(f.actor.system.customResources[id].value, 110);
+  assert.equal(f.actor.system.customResources[id].spent, -10);
+  assert.equal(f.actor.system.customResources[id].value, 110);
   assert.match(f.calls.posts[0].data.content, /Blood &lt;test&gt;/);
-  item.system.cooldown.remaining = 0; delete f.actor.system.customResources[id]; const ap = f.actor.system.ap.value;
-  await assert.rejects(useAbility(f.actor, item.id), /restoration resource is missing or hidden/); assert.equal(f.actor.system.ap.value, ap);
+  item.system.cooldown.remaining = 0;
+  delete f.actor.system.customResources[id];
+  const ap = f.actor.system.ap.value;
+  await assert.rejects(useAbility(f.actor, item.id), /restoration resource is missing or hidden/);
+  assert.equal(f.actor.system.ap.value, ap);
 });
 
 test("failed restorative ability posting rolls back the gain, both costs, activation, use and cooldown", async () => {
-  const f = fixture(), item = bonusAbility(f); item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
   f.ChatMessage.create = async () => undefined;
   await assert.rejects(useAbility(f.actor, item.id), /not posted/);
-  assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
-  assert.equal(item.system.effectsActive, false); assert.equal(item.system.uses.spent, 0); assert.equal(item.system.cooldown.remaining, 0);
+  assert.equal(f.actor.system.health.damage, 10);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(item.system.uses.spent, 0);
+  assert.equal(item.system.cooldown.remaining, 0);
 });
 
 test("restoration dice honor all chat modes; insufficient AP and dice/render failures spend nothing", async () => {
   for (const mode of ["public", "gm", "blind", "self"]) {
-    const f = fixture(mode), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+    const f = fixture(mode),
+      item = bonusAbility(f);
+    item.effects.clear();
+    item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
     await useAbility(f.actor, item.id);
-    assert.equal(f.calls.posts[0].options.messageMode, mode); assert.equal(f.calls.evaluations[0].allowInteractive, mode !== "blind");
+    assert.equal(f.calls.posts[0].options.messageMode, mode);
+    assert.equal(f.calls.evaluations[0].allowInteractive, mode !== "blind");
   }
   for (const failure of ["AP", "evaluate", "render"]) {
-    const f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
+    const f = fixture(),
+      item = bonusAbility(f);
+    item.effects.clear();
+    item.system.restoration = { target: "health", amount: "2d6", unit: "points" };
     if (failure === "AP") f.actor.system.ap.value = 4;
-    else f.Roll.prototype[failure] = async () => { throw new Error(failure); };
+    else
+      f.Roll.prototype[failure] = async () => {
+        throw new Error(failure);
+      };
     await assert.rejects(useAbility(f.actor, item.id), failure === "AP" ? /Not enough AP/ : new RegExp(failure));
-    assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(f.calls.posts.length, 0);
+    assert.equal(f.actor.system.health.damage, 10);
+    assert.equal(f.actor.system.mana.spent, 0);
+    assert.equal(item.system.uses.spent, 0);
+    assert.equal(f.calls.posts.length, 0);
     if (failure === "AP") assert.equal(f.calls.evaluations.length, 0);
   }
 });
 
 test("Health overflow is respected and zero-result restoration leaves every cost untouched", async () => {
-  let f = fixture(), item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "10", unit: "points" };
-  f.actor.system.health = { damage: 0, max: 100, allowOverflow: true }; await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.health.damage, -10); assert.equal(f.actor.system.ap.value, 10);
-  f = fixture(); item = bonusAbility(f); item.effects.clear(); item.system.restoration = { target: "health", amount: "0", unit: "points" };
-  f.Roll.prototype.evaluate = async () => ({ total: 0 }); await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.health.damage, 10); assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0); assert.equal(item.system.uses.spent, 0); assert.equal(f.calls.posts.length, 0);
+  let f = fixture(),
+    item = bonusAbility(f);
+  item.effects.clear();
+  item.system.restoration = { target: "health", amount: "10", unit: "points" };
+  f.actor.system.health = { damage: 0, max: 100, allowOverflow: true };
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.health.damage, -10);
+  assert.equal(f.actor.system.ap.value, 10);
+  f = fixture();
+  item = bonusAbility(f);
+  item.effects.clear();
+  item.system.restoration = { target: "health", amount: "0", unit: "points" };
+  f.Roll.prototype.evaluate = async () => ({ total: 0 });
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.health.damage, 10);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.uses.spent, 0);
+  assert.equal(f.calls.posts.length, 0);
   assert.match(f.calls.info[0], /No restoration was rolled/);
 });
 
 test("ability payments spend Command first on the actor's turn and explain pending AP on other turns", async () => {
-  const f = fixture(), item = bonusAbility(f); f.actor.system.ap.value = 1; f.actor.system.command = { value: 4 };
+  const f = fixture(),
+    item = bonusAbility(f);
+  f.actor.system.ap.value = 1;
+  f.actor.system.command = { value: 4 };
   await assert.rejects(useAbility(f.actor, item.id), /Command AP can only be spent on your turn/);
-  assert.equal(f.actor.system.ap.value, 1); assert.equal(f.actor.system.command.value, 4); assert.equal(item.system.effectsActive, false);
-  game.combats[0].combatant = { actor: f.actor }; await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.ap.value, 0); assert.equal(f.actor.system.command.value, 0); assert.equal(item.system.effectsActive, true);
+  assert.equal(f.actor.system.ap.value, 1);
+  assert.equal(f.actor.system.command.value, 4);
+  assert.equal(item.system.effectsActive, false);
+  game.combats[0].combatant = { actor: f.actor };
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 0);
+  assert.equal(f.actor.system.command.value, 0);
+  assert.equal(item.system.effectsActive, true);
 });
 test("Status shows an ability once only while its bonuses are active, and keeps disabled bonus definitions hidden", async () => {
-  const f = fixture(), item = bonusAbility(f); item.name = "Power"; item.documentName = "Item"; item.uuid = "Actor.hero.Item.buff";
-  for (const id of ["str", "dex", "off"]) item.effects.set(id, { id, uuid: `${item.uuid}.ActiveEffect.${id}`, name: id, parent: item, disabled: id === "off",
-    flags: { "worlds-beyond": { managed: true, itemBound: true } }, system: { changes: [{ key: `system.stats.${id}.value`, value: 2, type: "add", phase: "initial" }] } });
-  item.effects.delete("bonus"); f.actor.allApplicableEffects = () => item.effects.values();
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.name = "Power";
+  item.documentName = "Item";
+  item.uuid = "Actor.hero.Item.buff";
+  for (const id of ["str", "dex", "off"])
+    item.effects.set(id, {
+      id,
+      uuid: `${item.uuid}.ActiveEffect.${id}`,
+      name: id,
+      parent: item,
+      disabled: id === "off",
+      flags: { "worlds-beyond": { managed: true, itemBound: true } },
+      system: { changes: [{ key: `system.stats.${id}.value`, value: 2, type: "add", phase: "initial" }] }
+    });
+  item.effects.delete("bonus");
+  f.actor.allApplicableEffects = () => item.effects.values();
   assert.deepEqual(effectContext(f.actor).statuses, []);
   await useAbility(f.actor, item.id);
   const rows = effectContext(f.actor).statuses;
-  assert.equal(rows.length, 1); assert.equal(rows[0].name, "Power"); assert.equal(rows[0].abilityId, item.id); assert.equal(rows[0].canEnd, true);
-  assert.match(rows[0].summary, /Strength score \+2.*Dexterity score \+2/); assert.doesNotMatch(rows[0].summary, /off/);
-  await useAbility(f.actor, item.id, { end: true }); assert.deepEqual(effectContext(f.actor).statuses, []);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].name, "Power");
+  assert.equal(rows[0].abilityId, item.id);
+  assert.equal(rows[0].canEnd, true);
+  assert.match(rows[0].summary, /Strength score \+2.*Dexterity score \+2/);
+  assert.doesNotMatch(rows[0].summary, /off/);
+  await useAbility(f.actor, item.id, { end: true });
+  assert.deepEqual(effectContext(f.actor).statuses, []);
   item.system.kind = "passive";
   assert.equal(effectContext(f.actor).statuses[0].canEnd, false);
-  f.actor.allApplicableEffects = () => []; assert.deepEqual(effectContext(f.actor).statuses, []);
+  f.actor.allApplicableEffects = () => [];
+  assert.deepEqual(effectContext(f.actor).statuses, []);
 });
 
 test("form abilities switch the previous item/saved form off, refund a failed switch, and return to Base freely", async () => {
-  const f = fixture(), item = bonusAbility(f); item.system.kind = "form";
-  const old = { id: "old", type: "ability", system: { kind: "form", effectsActive: true }, async update(data) { this.system.effectsActive = data["system.effectsActive"]; return this; } };
-  const saved = { id: "saved", disabled: false, flags: { "worlds-beyond": { managed: true, kind: "form" } }, async update(data) { this.disabled = data.disabled; return this; } };
-  f.actor.items.set(old.id, old); f.actor.effects = new Map([[saved.id, saved]]); f.actor.type = "character";
-  const create = f.ChatMessage.create; f.ChatMessage.create = async () => undefined;
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.system.kind = "form";
+  const old = {
+    id: "old",
+    type: "ability",
+    system: { kind: "form", effectsActive: true },
+    async update(data) {
+      this.system.effectsActive = data["system.effectsActive"];
+      return this;
+    }
+  };
+  const saved = {
+    id: "saved",
+    disabled: false,
+    flags: { "worlds-beyond": { managed: true, kind: "form" } },
+    async update(data) {
+      this.disabled = data.disabled;
+      return this;
+    }
+  };
+  f.actor.items.set(old.id, old);
+  f.actor.effects = new Map([[saved.id, saved]]);
+  f.actor.type = "character";
+  const create = f.ChatMessage.create;
+  f.ChatMessage.create = async () => undefined;
   await assert.rejects(useAbility(f.actor, item.id), /not posted/);
-  assert.equal(old.system.effectsActive, true); assert.equal(saved.disabled, false); assert.equal(item.system.effectsActive, false);
-  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
-  f.ChatMessage.create = create; await useAbility(f.actor, item.id);
-  assert.equal(old.system.effectsActive, false); assert.equal(saved.disabled, true); assert.equal(item.system.effectsActive, true);
-  const ap = f.actor.system.ap.value; await returnToBase(f.actor);
-  assert.equal(item.system.effectsActive, false); assert.equal(f.actor.system.ap.value, ap);
+  assert.equal(old.system.effectsActive, true);
+  assert.equal(saved.disabled, false);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  f.ChatMessage.create = create;
+  await useAbility(f.actor, item.id);
+  assert.equal(old.system.effectsActive, false);
+  assert.equal(saved.disabled, true);
+  assert.equal(item.system.effectsActive, true);
+  const ap = f.actor.system.ap.value;
+  await returnToBase(f.actor);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, ap);
 });
 test("failed ability posting refunds AP/resource/uses/cooldown/activation; missing pools and empty uses spend nothing", async () => {
-  const f = fixture(), item = bonusAbility(f); f.ChatMessage.create = async () => undefined;
+  const f = fixture(),
+    item = bonusAbility(f);
+  f.ChatMessage.create = async () => undefined;
   await assert.rejects(useAbility(f.actor, item.id), /not posted/);
-  assert.equal(f.actor.system.ap.value, 15); assert.equal(f.actor.system.mana.spent, 0);
-  assert.equal(item.system.uses.spent, 0); assert.equal(item.system.cooldown.remaining, 0); assert.equal(item.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.uses.spent, 0);
+  assert.equal(item.system.cooldown.remaining, 0);
+  assert.equal(item.system.effectsActive, false);
   item.system.resourceId = "resource00000001";
-  await assert.rejects(useAbility(f.actor, item.id), /no longer exists/); assert.equal(f.actor.system.ap.value, 15);
+  await assert.rejects(useAbility(f.actor, item.id), /no longer exists/);
+  assert.equal(f.actor.system.ap.value, 15);
   item.system.uses.spent = 2;
-  await assert.rejects(useAbility(f.actor, item.id), /No ability uses/); assert.equal(f.calls.posts.length, 0);
+  await assert.rejects(useAbility(f.actor, item.id), /No ability uses/);
+  assert.equal(f.calls.posts.length, 0);
 });
 
 test("an ability without bonuses or trackers pays and posts without an empty native update", async () => {
-  const f = fixture(), item = bonusAbility(f);
-  item.effects.clear(); item.system.uses.max = null; item.system.cooldown.rounds = null;
-  item.update = async () => { throw new Error("Unexpected empty update"); };
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.effects.clear();
+  item.system.uses.max = null;
+  item.system.cooldown.rounds = null;
+  item.update = async () => {
+    throw new Error("Unexpected empty update");
+  };
   await useAbility(f.actor, item.id);
-  assert.equal(f.actor.system.ap.value, 10); assert.equal(f.actor.system.mana.spent, 12.5);
-  assert.equal(f.calls.posts.length, 1); assert.equal(item.system.effectsActive, false);
+  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.actor.system.mana.spent, 12.5);
+  assert.equal(f.calls.posts.length, 1);
+  assert.equal(item.system.effectsActive, false);
 });
 
 test("reaction abilities spend a reaction in combat and restore it if posting fails", async () => {
-  const f = fixture(), item = bonusAbility(f); item.system.kind = "reaction"; f.actor.system.reactions = { value: 1 };
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.system.kind = "reaction";
+  f.actor.system.reactions = { value: 1 };
   f.ChatMessage.create = async () => undefined;
-  await assert.rejects(useAbility(f.actor, item.id), /not posted/); assert.equal(f.actor.system.reactions.value, 1);
+  await assert.rejects(useAbility(f.actor, item.id), /not posted/);
+  assert.equal(f.actor.system.reactions.value, 1);
   f.actor.system.reactions.value = 0;
-  await assert.rejects(useAbility(f.actor, item.id), /No reactions/); assert.equal(f.actor.system.ap.value, 15);
+  await assert.rejects(useAbility(f.actor, item.id), /No reactions/);
+  assert.equal(f.actor.system.ap.value, 15);
 });
 
 test("failed attack posting restores AP and loaded shots; cancelled spending posts nothing", async () => {
   const f = fixture();
-  f.ChatMessage.create = async () => { throw new Error("offline"); };
+  f.ChatMessage.create = async () => {
+    throw new Error("offline");
+  };
   await assert.rejects(rollAttack(f.actor, f.weapon, { spendAp: true }), /offline/);
   assert.equal(f.actor.system.ap.value, 15);
   assert.equal(f.weapon.system.shots, 2);
@@ -481,17 +962,23 @@ test("reload and consumable posting failures restore their resources", async () 
 test("damage evaluation/render/post failures allow retry; success keeps source audience even if mode changed", async () => {
   const f = fixture("public");
   const evaluate = f.Roll.prototype.evaluate;
-  f.Roll.prototype.evaluate = async () => { throw new Error("dice failed"); };
+  f.Roll.prototype.evaluate = async () => {
+    throw new Error("dice failed");
+  };
   await assert.rejects(rollDamage(f.message, 0, false), /dice failed/);
   assert.equal(f.flags.attack.hands[0].damageRolled, false);
   f.Roll.prototype.evaluate = evaluate;
   const render = f.Roll.prototype.render;
-  f.Roll.prototype.render = async () => { throw new Error("render failed"); };
+  f.Roll.prototype.render = async () => {
+    throw new Error("render failed");
+  };
   await assert.rejects(rollDamage(f.message, 0, false), /render failed/);
   assert.equal(f.flags.attack.hands[0].damageRolled, false);
   f.Roll.prototype.render = render;
   const create = f.ChatMessage.create;
-  f.ChatMessage.create = async () => { throw new Error("post failed"); };
+  f.ChatMessage.create = async () => {
+    throw new Error("post failed");
+  };
   await assert.rejects(rollDamage(f.message, 0, false), /post failed/);
   assert.equal(f.flags.attack.hands[0].damageRolled, false);
   f.ChatMessage.create = create;
@@ -507,18 +994,26 @@ test("rapid damage clicks post once and two attacks cannot both spend the final 
   let f = fixture();
   await Promise.all([rollDamage(f.message, 0, false), rollDamage(f.message, 0, false)]);
   assert.equal(f.calls.posts.length, 1);
-  f = fixture(); f.actor.system.ap.value = 10;
-  const result = await Promise.allSettled([rollAttack(f.actor, f.weapon, { spendAp: true }), rollAttack(f.actor, f.weapon, { spendAp: true })]);
-  assert.equal(result[0].status, "fulfilled"); assert.equal(result[1].status, "rejected");
+  f = fixture();
+  f.actor.system.ap.value = 10;
+  const result = await Promise.allSettled([
+    rollAttack(f.actor, f.weapon, { spendAp: true }),
+    rollAttack(f.actor, f.weapon, { spendAp: true })
+  ]);
+  assert.equal(result[0].status, "fulfilled");
+  assert.equal(result[1].status, "rejected");
   assert.equal(f.calls.posts.length, 1);
   assert.equal(f.actor.system.ap.value, 0);
 });
 
 test("damage cards show Resistance before armor, Block next and Overwhelming Force last", async () => {
   const f = fixture();
-  f.flags.attack.target = { name: '<Defender>', armor: 6 };
+  f.flags.attack.target = { name: "<Defender>", armor: 6 };
   f.actor.system.stats.str.effective = 28;
-  f.Roll.prototype.evaluate = async function () { this.total = 16; return this; };
+  f.Roll.prototype.evaluate = async function () {
+    this.total = 16;
+    return this;
+  };
   await rollDamage(f.message, 0, false);
   const content = f.calls.posts[0].data.content;
   assert.match(content, /Against &lt;Defender&gt;: 6 of their 6 Armor Rating counts/);
@@ -526,9 +1021,9 @@ test("damage cards show Resistance before armor, Block next and Overwhelming For
   assert.match(content, /Before Block: 10 damage with no Resistance; 2 with Resistance/);
   assert.match(content, /Subtract Block next/);
   assert.match(content, /Overwhelming Force then raises damage back to 8/);
-  assert.ok(content.indexOf('Subtract Block next') < content.indexOf('Overwhelming Force then'));
+  assert.ok(content.indexOf("Subtract Block next") < content.indexOf("Overwhelming Force then"));
   assert.doesNotMatch(content, /before Resistance and Block/);
-  assert.equal(f.actor.system.health.damage, 10, 'the card keeps Health application manual');
+  assert.equal(f.actor.system.health.damage, 10, "the card keeps Health application manual");
 });
 
 test("untargeted damage cards still explain the mitigation order", async () => {
@@ -541,8 +1036,11 @@ test("untargeted damage cards still explain the mitigation order", async () => {
 });
 
 test("failed healing updates clear the applied flag and can be retried once", async () => {
-  const f = fixture(); const update = f.actor.update;
-  f.actor.update = async () => { throw new Error("update failed"); };
+  const f = fixture();
+  const update = f.actor.update;
+  f.actor.update = async () => {
+    throw new Error("update failed");
+  };
   await assert.rejects(applyConsumableHealing(f.message), /update failed/);
   assert.equal(f.flags.consumable.applied, false);
   f.actor.update = update;
@@ -552,16 +1050,32 @@ test("failed healing updates clear the applied flag and can be retried once", as
 });
 
 test("hidden results expose no actions and cannot roll damage or apply healing", async () => {
-  const f = fixture(); f.message.isContentVisible = false;
-  const html = { querySelector() { throw new Error("Hidden markup was inspected"); } };
-  decorateAttackMessage(f.message, html); decorateConsumableMessage(f.message, html);
-  await rollDamage(f.message, 0, false); await applyConsumableHealing(f.message);
-  assert.equal(f.calls.flags.length, 0); assert.equal(f.calls.posts.length, 0);
+  const f = fixture();
+  f.message.isContentVisible = false;
+  const html = {
+    querySelector() {
+      throw new Error("Hidden markup was inspected");
+    }
+  };
+  decorateAttackMessage(f.message, html);
+  decorateConsumableMessage(f.message, html);
+  await rollDamage(f.message, 0, false);
+  await applyConsumableHealing(f.message);
+  assert.equal(f.calls.flags.length, 0);
+  assert.equal(f.calls.posts.length, 0);
 });
 
 test("failed recovery reports the manual correction instead of claiming resources were restored", async () => {
-  const f = fixture(); const update = f.actor.update; let spent = false;
-  f.actor.update = async data => { if (spent) throw new Error("refund failed"); spent = true; return update.call(f.actor, data); };
-  f.ChatMessage.create = async () => { throw new Error("offline"); };
+  const f = fixture();
+  const update = f.actor.update;
+  let spent = false;
+  f.actor.update = async data => {
+    if (spent) throw new Error("refund failed");
+    spent = true;
+    return update.call(f.actor, data);
+  };
+  f.ChatMessage.create = async () => {
+    throw new Error("offline");
+  };
   await assert.rejects(rollAttack(f.actor, f.weapon, { spendAp: true }), /Recovery also failed; check AP/);
 });

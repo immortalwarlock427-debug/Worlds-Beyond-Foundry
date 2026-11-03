@@ -35,6 +35,9 @@ Before changing sheet presentation or interaction, consult the website's current
 
 ## Testing
 
+- Source uses two-space indentation. Format JavaScript modules/tests with Prettier 3.6.2 and the repository config (`npx --yes prettier@3.6.2 --write "module/*.mjs" "tests/*.mjs"`). This is an optional development tool, not a build step or runtime dependency.
+- Edit Foundry Handlebars templates directly: expand long opening-tag attribute lists, but preserve helper expressions, attribute values and surrounding text/inline whitespace. Templates are excluded from Prettier to protect rendering behavior.
+
 - Run `node --test` before every PR.
 - Changes to sheets or styles need checking inside Foundry itself. Note in the PR what was checked in Foundry and what wasn't.
 

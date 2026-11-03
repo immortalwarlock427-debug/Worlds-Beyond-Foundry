@@ -23,9 +23,18 @@ test("old automatic stock images resolve per item while chosen stock art and ren
   const original = structuredClone(old);
   assert.match(itemIcon(old), /handcrossbow-black/);
   assert.deepEqual(old, original);
-  assert.match(itemIcon({ type: "weapon", name: "Kusarigama", img: "icons/weapons/maces/flail-ball-grey.webp" }), /sickle-kusarigama-chain/);
-  assert.match(itemIcon({ type: "armor", name: "Light Arm Guard", img: "icons/equipment/hand/gauntlet-armored-black.webp" }), /bracer-belted-leather/);
-  assert.match(itemIcon({ type: "shield", name: "Scale Shield", img: "icons/equipment/shield/buckler-iron-cross-gray.webp" }), /scale-shield.png/);
+  assert.match(
+    itemIcon({ type: "weapon", name: "Kusarigama", img: "icons/weapons/maces/flail-ball-grey.webp" }),
+    /sickle-kusarigama-chain/
+  );
+  assert.match(
+    itemIcon({ type: "armor", name: "Light Arm Guard", img: "icons/equipment/hand/gauntlet-armored-black.webp" }),
+    /bracer-belted-leather/
+  );
+  assert.match(
+    itemIcon({ type: "shield", name: "Scale Shield", img: "icons/equipment/shield/buckler-iron-cross-gray.webp" }),
+    /scale-shield.png/
+  );
   const chosen = { ...old, img: "icons/weapons/crossbows/crossbow-ornamental-winged.webp" };
   assert.equal(itemIcon(chosen), chosen.img);
   const renamed = { ...old, name: "Family heirloom" };

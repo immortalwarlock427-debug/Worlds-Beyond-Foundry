@@ -22,16 +22,20 @@ export function statIncreases(level, advancement) {
 export function validateStatAwards(level, advancement, stats = {}, previous = {}) {
   for (const at of STAT_AWARD_LEVELS) {
     const values = keys.map(key => Number(advancement[`level${at}`]?.[key] ?? 0));
-    if (values.some(value => !Number.isInteger(value) || value < 0 || value > 2)) throw new Error("Spend at most 2 points in one stat for each award.");
+    if (values.some(value => !Number.isInteger(value) || value < 0 || value > 2))
+      throw new Error("Spend at most 2 points in one stat for each award.");
     if (values.reduce((sum, value) => sum + value, 0) > STAT_AWARD_POINTS) throw new Error(`Level ${at} provides 4 stat points.`);
     if (at > Number(level) && keys.some(key => (advancement[`level${at}`]?.[key] ?? 0) !== (previous[`level${at}`]?.[key] ?? 0))) {
       throw new Error(`Reach level ${at} before spending its stat points.`);
     }
   }
-  const before = statIncreases(level, previous), after = statIncreases(level, advancement);
+  const before = statIncreases(level, previous),
+    after = statIncreases(level, advancement);
   for (const key of keys) {
     if (after[key] > before[key] && Number(stats[key]?.value ?? 12) + after[key] > 28) {
-      throw new Error(`Stat points can't raise ${STATS.find(stat => stat.key === key).label} above 28. Gear and manual corrections still apply.`);
+      throw new Error(
+        `Stat points can't raise ${STATS.find(stat => stat.key === key).label} above 28. Gear and manual corrections still apply.`
+      );
     }
   }
 }
@@ -47,7 +51,11 @@ export function assignStatResult(rows, index, stat) {
 }
 
 export function assignedStatUpdates(rows) {
-  if (rows.length !== keys.length || new Set(rows.map(row => row.stat)).size !== keys.length || rows.some(row => !keys.includes(row.stat))) {
+  if (
+    rows.length !== keys.length ||
+    new Set(rows.map(row => row.stat)).size !== keys.length ||
+    rows.some(row => !keys.includes(row.stat))
+  ) {
     throw new Error("Assign each result to a different stat.");
   }
   const updates = {};

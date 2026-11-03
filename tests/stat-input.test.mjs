@@ -6,9 +6,16 @@ function fixture(base = "21", effective = "23") {
   const listeners = {};
   const classes = new Set(["is-adjusted"]);
   const input = {
-    value: effective, dataset: { statScore: "agl", base, effective, default: base },
-    classList: { add: key => classes.add(key), remove: key => classes.delete(key), toggle: (key, on) => on ? classes.add(key) : classes.delete(key) },
-    addEventListener: (event, listener) => { (listeners[event] ??= []).push(listener); }
+    value: effective,
+    dataset: { statScore: "agl", base, effective, default: base },
+    classList: {
+      add: key => classes.add(key),
+      remove: key => classes.delete(key),
+      toggle: (key, on) => (on ? classes.add(key) : classes.delete(key))
+    },
+    addEventListener: (event, listener) => {
+      (listeners[event] ??= []).push(listener);
+    }
   };
   const fire = event => listeners[event].forEach(listener => listener());
   const form = { querySelectorAll: () => [input] };
@@ -67,13 +74,15 @@ test("binding again does not duplicate handlers and no-change edits do not persi
   assert.deepEqual(editedStatInputs(f.form), []);
 });
 
-
 test("clearing a saved manual score restores its original base plus the active adjustment", () => {
   const f = fixture("22", "24");
   f.input.dataset.default = "21";
   f.input.dataset.manual = "true";
   f.classes.add("is-manual");
-  f.fire("focus"); f.input.value = ""; f.fire("input"); f.fire("blur");
+  f.fire("focus");
+  f.input.value = "";
+  f.fire("input");
+  f.fire("blur");
   assert.equal(f.input.value, "23");
   assert.deepEqual(editedStatInputs(f.form), [["agl", null]]);
   assert.equal(f.classes.has("is-adjusted"), true);
@@ -81,13 +90,20 @@ test("clearing a saved manual score restores its original base plus the active a
 });
 
 test("decimal stat edits floor the base before applying effects", () => {
-  const f = fixture(); f.fire("focus"); f.input.value = "22.9"; f.fire("input"); f.fire("blur");
-  assert.equal(f.input.value, "24"); assert.deepEqual(editedStatInputs(f.form), [["agl", 22]]);
+  const f = fixture();
+  f.fire("focus");
+  f.input.value = "22.9";
+  f.fire("input");
+  f.fire("blur");
+  assert.equal(f.input.value, "24");
+  assert.deepEqual(editedStatInputs(f.form), [["agl", 22]]);
 });
 
 test("hidden fractional effects keep the adjusted color after focus and blur", () => {
-  const f = fixture("21", "21"); f.input.dataset.adjusted = "true";
-  f.fire("focus"); f.fire("blur");
+  const f = fixture("21", "21");
+  f.input.dataset.adjusted = "true";
+  f.fire("focus");
+  f.fire("blur");
   assert.equal(f.classes.has("is-adjusted"), true);
   assert.deepEqual(editedStatInputs(f.form), []);
 });

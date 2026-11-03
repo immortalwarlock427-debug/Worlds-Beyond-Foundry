@@ -5,7 +5,9 @@ import { wholeDisplay } from "./number-display.mjs";
 
 export const MAGIC_RESOURCES = Object.freeze({ mana: { label: "Mana", stat: "int" }, holyPower: { label: "Holy power", stat: "fth" } });
 export const customResourceId = id => /^[A-Za-z0-9]{16}$/.test(id);
-export const RESOURCE_SCALING = Object.freeze(Object.fromEntries([["", "Manual maximum"], ...STATS.map(stat => [stat.key, `${stat.label} (${stat.abbr})`])]));
+export const RESOURCE_SCALING = Object.freeze(
+  Object.fromEntries([["", "Manual maximum"], ...STATS.map(stat => [stat.key, `${stat.label} (${stat.abbr})`])])
+);
 export const RESOURCE_DISPLAYS = Object.freeze({ number: "Points", percent: "Percentage" });
 
 // Persist expenditure, not a prepared total. Max changes therefore change current
@@ -17,14 +19,23 @@ export function resourcePool(max, spent = 0, minimum = 0) {
 
 export function magicPool(level, score, data = {}) {
   const automatic = Math.max(0, numberOr(score, 12) * (numberOr(level, 1) + 2) + numberOr(data.bonus, 0));
-  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic, allowOverflow: !!data.allowOverflow };
+  return {
+    ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride),
+    automatic,
+    allowOverflow: !!data.allowOverflow
+  };
 }
 
 export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   const stat = data.scaleStat && STATS.find(stat => stat.key === data.scaleStat);
-  const automatic = stat ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
+  const automatic = stat
+    ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
     : numberOr(data.baseMax, 100) + numberOr(data.bonus, 0);
-  return { ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride), automatic: Math.max(0, automatic), allowOverflow: !!data.allowOverflow };
+  return {
+    ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride),
+    automatic: Math.max(0, automatic),
+    allowOverflow: !!data.allowOverflow
+  };
 }
 
 export function resourcePresentation(pool) {
@@ -33,8 +44,8 @@ export function resourcePresentation(pool) {
   const range = pool.max - minimum;
   const percentUnavailable = percent && !(range > 0);
   // Floor only presentation. Unchanged forms retain the exact point balance.
-  const inputValue = Math.floor(percent && !percentUnavailable ? (pool.value - minimum) / range * 100 : pool.value);
-  const meterPercent = range > 0 ? Math.max(0, Math.min(100, (pool.value - minimum) / range * 100)) : 0;
+  const inputValue = Math.floor(percent && !percentUnavailable ? ((pool.value - minimum) / range) * 100 : pool.value);
+  const meterPercent = range > 0 ? Math.max(0, Math.min(100, ((pool.value - minimum) / range) * 100)) : 0;
   return { percent, percentUnavailable, inputValue, meterPercent };
 }
 
@@ -42,7 +53,7 @@ export function resourceInputPoints(pool, input, maximum = pool.max, minimum = n
   const parsed = numberOr(input, null);
   if (parsed === null) return null;
   const number = Math.floor(parsed);
-  return pool.display === "percent" && pool.max > numberOr(pool.min, 0) ? minimum + number / 100 * (maximum - minimum) : number;
+  return pool.display === "percent" && pool.max > numberOr(pool.min, 0) ? minimum + (number / 100) * (maximum - minimum) : number;
 }
 
 export function poolSpentForCurrent(max, current) {
@@ -58,23 +69,48 @@ export function adjustedResourceSpent(pool, action, amount = 1) {
   if (!["spend", "restore", "recover"].includes(action)) throw new Error("Choose a resource action.");
   const spent = pool.max - pool.value;
   if (action === "spend") {
-    if (amount > 0 && pool.value - amount < numberOr(pool.min, 0)) throw new Error(`Not enough resource points: spending would go below the minimum (${numberOr(pool.min, 0)}). Correct Current or Minimum on the sheet if needed.`);
+    if (amount > 0 && pool.value - amount < numberOr(pool.min, 0))
+      throw new Error(
+        `Not enough resource points: spending would go below the minimum (${numberOr(pool.min, 0)}). Correct Current or Minimum on the sheet if needed.`
+      );
     return spent + amount;
   }
   return pool.allowOverflow ? spent - amount : pool.value >= pool.max ? spent : Math.max(0, spent - amount);
 }
 
 export function resourceEntries(system) {
-  const magic = Object.entries(MAGIC_RESOURCES).filter(([key]) => system[key]?.enabled).map(([key, def]) => ({
-    key, label: def.label, path: `system.${key}`, custom: false, ...system[key]
-  }));
-  const custom = Object.entries(system.customResources ?? {}).filter(([id]) => customResourceId(id)).map(([key, data]) => ({
-    key, label: data.name || "Resource", path: `system.customResources.${key}`, custom: true, ...data
-  }));
+  const magic = Object.entries(MAGIC_RESOURCES)
+    .filter(([key]) => system[key]?.enabled)
+    .map(([key, def]) => ({
+      key,
+      label: def.label,
+      path: `system.${key}`,
+      custom: false,
+      ...system[key]
+    }));
+  const custom = Object.entries(system.customResources ?? {})
+    .filter(([id]) => customResourceId(id))
+    .map(([key, data]) => ({
+      key,
+      label: data.name || "Resource",
+      path: `system.customResources.${key}`,
+      custom: true,
+      ...data
+    }));
   return [...magic, ...custom].map(pool => ({
-    ...wholeDisplay(pool), ...resourcePresentation(pool), scaled: !!pool.scaleStat,
-    scalingChoices: Object.entries(RESOURCE_SCALING).map(([value, label]) => ({ value, label, selected: value === (pool.scaleStat ?? "") })),
-    displayChoices: Object.entries(RESOURCE_DISPLAYS).map(([value, label]) => ({ value, label, selected: value === (pool.display ?? "number") }))
+    ...wholeDisplay(pool),
+    ...resourcePresentation(pool),
+    scaled: !!pool.scaleStat,
+    scalingChoices: Object.entries(RESOURCE_SCALING).map(([value, label]) => ({
+      value,
+      label,
+      selected: value === (pool.scaleStat ?? "")
+    })),
+    displayChoices: Object.entries(RESOURCE_DISPLAYS).map(([value, label]) => ({
+      value,
+      label,
+      selected: value === (pool.display ?? "number")
+    }))
   }));
 }
 

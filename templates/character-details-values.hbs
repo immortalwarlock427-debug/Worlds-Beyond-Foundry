@@ -10,9 +10,27 @@
   <section class="wb-defenses" aria-label="Defenses">
     <h2 class="wb-section-title">Defenses <span>1 reaction</span></h2>
     <div class="wb-defense-actions">
-      <button type="button" class="wb-block-action" data-action="block" data-tooltip="Reduce incoming damage" {{#unless editable}}disabled{{/unless}}>Block <small>{{block.formula}} {{block.strMod}}</small></button>
-      <button type="button" class="wb-dodge-action" data-action="dodge" data-tooltip="Avoid an attack or make an area save" {{#unless editable}}disabled{{/unless}}>Dodge <small>d20 {{dodgeMod}}</small></button>
-      <button type="button" class="wb-parry-action" data-action="parry" data-tooltip="DEX 21 · once per round" {{#unless editable}}disabled{{/unless}}>Parry <small>d20 {{parryMod}}</small></button>
+      <button
+        type="button"
+        class="wb-block-action"
+        data-action="block"
+        data-tooltip="Reduce incoming damage"
+        {{#unless editable}}disabled{{/unless}}
+      >Block <small>{{block.formula}} {{block.strMod}}</small></button>
+      <button
+        type="button"
+        class="wb-dodge-action"
+        data-action="dodge"
+        data-tooltip="Avoid an attack or make an area save"
+        {{#unless editable}}disabled{{/unless}}
+      >Dodge <small>d20 {{dodgeMod}}</small></button>
+      <button
+        type="button"
+        class="wb-parry-action"
+        data-action="parry"
+        data-tooltip="DEX 21 · once per round"
+        {{#unless editable}}disabled{{/unless}}
+      >Parry <small>d20 {{parryMod}}</small></button>
     </div>
     {{#if worn.heavyDisadvantage}}<p class="wb-warning">Heavy armor: attacks, Dodge and AGL saves have disadvantage.</p>{{/if}}
     {{#each worn.duplicatePieces}}<p class="wb-warning">Multiple {{this}} equipped · review contributions.</p>{{/each}}
@@ -22,8 +40,20 @@
     <h2 class="wb-section-title">Attributes</h2>
     <div class="wb-stat-tools">
       <button type="button" data-action="milestones" data-tooltip="Milestone rules and current unlocks">Milestones</button>
-      <button type="button" data-action="statSetup" data-mode="generation" data-tooltip="Roll 2d6 + 1d12 or type scores, then assign them" {{#unless editable}}disabled{{/unless}}>Roll &amp; assign</button>
-      <button type="button" data-action="statSetup" data-mode="advancement" data-tooltip="4 points at levels 4, 8, 12, 16 and 19; at most 2 in one stat per award" {{#unless editable}}disabled{{/unless}}>Stat points{{#if unspentStatPoints}} <span class="wb-badge">{{unspentStatPoints}} left</span>{{/if}}</button>
+      <button
+        type="button"
+        data-action="statSetup"
+        data-mode="generation"
+        data-tooltip="Roll 2d6 + 1d12 or type scores, then assign them"
+        {{#unless editable}}disabled{{/unless}}
+      >Roll &amp; assign</button>
+      <button
+        type="button"
+        data-action="statSetup"
+        data-mode="advancement"
+        data-tooltip="4 points at levels 4, 8, 12, 16 and 19; at most 2 in one stat per award"
+        {{#unless editable}}disabled{{/unless}}
+      >Stat points{{#if unspentStatPoints}} <span class="wb-badge">{{unspentStatPoints}} left</span>{{/if}}</button>
     </div>
   </div>
   <section class="wb-stats">
@@ -33,13 +63,45 @@
       <ol class="wb-stat-list">
         {{#each group.rows as |stat|}}
         <li class="wb-stat">
-          <button type="button" class="wb-abbr" data-action="rollStat" data-stat="{{stat.key}}" data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage">{{stat.abbr}}</button>
+          <button
+            type="button"
+            class="wb-abbr"
+            data-action="rollStat"
+            data-stat="{{stat.key}}"
+            data-tooltip="{{stat.label}} check or save: choose normal, advantage or disadvantage"
+          >{{stat.abbr}}</button>
           <span class="wb-label">{{stat.label}}</span>
-          <input class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}" type="number" name="statScores.{{stat.key}}" data-stat-score="{{stat.key}}" data-base="{{stat.baseValue}}" data-default="{{stat.defaultValue}}" data-effective="{{stat.value}}" data-manual="{{stat.manual}}" data-adjusted="{{stat.adjusted}}" value="{{stat.value}}" step="1" aria-label="{{stat.label}} score; edit base score" data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score. Clear to reset the manual edit; effects still apply.{{#if stat.sources}} {{stat.sources}}{{/if}}" {{#unless @root.editable}}disabled{{/unless}}>
+          <input
+            class="wb-score {{#if stat.manual}}is-manual{{/if}} {{#if stat.adjusted}}is-adjusted{{/if}}"
+            type="number"
+            name="statScores.{{stat.key}}"
+            data-stat-score="{{stat.key}}"
+            data-base="{{stat.baseValue}}"
+            data-default="{{stat.defaultValue}}"
+            data-effective="{{stat.value}}"
+            data-manual="{{stat.manual}}"
+            data-adjusted="{{stat.adjusted}}"
+            value="{{stat.value}}"
+            step="1"
+            aria-label="{{stat.label}} score; edit base score"
+            data-tooltip="{{stat.label}}: {{stat.value}}. Select to edit your base score. Clear to reset the manual edit; effects still apply.{{#if stat.sources}} {{stat.sources}}{{/if}}"
+            {{#unless @root.editable}}disabled{{/unless}}
+          >
           <span class="wb-mod {{#if stat.negative}}is-negative{{/if}}" aria-label="{{stat.label}} modifier">{{stat.modLabel}}</span>
           <span class="wb-pips">
             {{#each stat.pips as |pip|}}
-            <button type="button" class="wb-milestone-button" data-action="milestones" data-stat="{{stat.key}}" data-threshold="{{pip.score}}" aria-label="{{pip.name}}, {{stat.abbr}} {{pip.score}}: {{pip.status}}. View rules." data-tooltip="{{pip.score}}: {{pip.name}} · {{pip.status}} · {{pip.summary}}"><span class="wb-pip {{#if pip.lit}}is-lit{{/if}}" aria-hidden="true"></span></button>
+            <button
+              type="button"
+              class="wb-milestone-button"
+              data-action="milestones"
+              data-stat="{{stat.key}}"
+              data-threshold="{{pip.score}}"
+              aria-label="{{pip.name}}, {{stat.abbr}} {{pip.score}}: {{pip.status}}. View rules."
+              data-tooltip="{{pip.score}}: {{pip.name}} · {{pip.status}} · {{pip.summary}}"
+            ><span
+              class="wb-pip {{#if pip.lit}}is-lit{{/if}}"
+              aria-hidden="true"
+            ></span></button>
             {{/each}}
           </span>
         </li>
@@ -53,18 +115,78 @@
     <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
     <div class="wb-adjust-grid">
       {{#each resources as |resource|}}
-      <label class="wb-override-label"><span>{{resource.label}} maximum</span><input type="number" name="system.{{resource.key}}.maxOverride" value="{{resource.maxOverride}}" placeholder="Auto" step="1" aria-label="{{resource.label}} maximum override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>{{resource.label}} maximum</span><input
+        type="number"
+        name="system.{{resource.key}}.maxOverride"
+        value="{{resource.maxOverride}}"
+        placeholder="Auto"
+        step="1"
+        aria-label="{{resource.label}} maximum override; clear for automatic"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ></label>
       {{/each}}
       {{#each coreDetails as |detail|}}
-      <label class="wb-override-label"><span>{{detail.label}}</span><input type="{{detail.type}}" name="system.overrides.{{detail.key}}" value="{{detail.override}}" placeholder="Auto {{detail.automatic}}" step="1" aria-label="{{detail.label}} override; clear for automatic" {{#unless @root.editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>{{detail.label}}</span><input
+        type="{{detail.type}}"
+        name="system.overrides.{{detail.key}}"
+        value="{{detail.override}}"
+        placeholder="Auto {{detail.automatic}}"
+        step="1"
+        aria-label="{{detail.label}} override; clear for automatic"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ></label>
       {{/each}}
-      <label class="wb-override-label"><span>Extra Armor Rating</span><input type="number" name="system.bonuses.armor" value="{{system.bonuses.armor}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-equipment-check" data-tooltip="Healing consumables may raise Health above its normal maximum."><input type="checkbox" name="system.health.allowOverflow" {{#if system.health.allowOverflow}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Allow Health over maximum</label>
-      <label class="wb-override-label"><span>Command AP correction</span><input type="number" name="system.command.value" value="{{commandPool.value}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Extra Evasion</span><input type="number" name="system.bonuses.evasion" value="{{system.bonuses.evasion}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input type="number" name="system.bonuses.movement" value="{{system.bonuses.movement}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Armor AGL penalty</span><input type="number" name="system.overrides.armorAgilityPenalty" value="{{system.overrides.armorAgilityPenalty}}" placeholder="{{worn.automaticPenalty}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-      <label class="wb-override-label"><span>Inventory slots</span><input type="number" name="system.overrides.inventorySlots" value="{{system.overrides.inventorySlots}}" placeholder="Auto {{carrying.automatic}}" step="1" aria-label="Inventory slots override; clear for automatic" {{#unless editable}}disabled{{/unless}}></label>
+      <label class="wb-override-label"><span>Extra Armor Rating</span><input
+        type="number"
+        name="system.bonuses.armor"
+        value="{{system.bonuses.armor}}"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label class="wb-equipment-check" data-tooltip="Healing consumables may raise Health above its normal maximum."><input
+        type="checkbox"
+        name="system.health.allowOverflow"
+        {{#if system.health.allowOverflow}}checked{{/if}}
+        {{#unless editable}}disabled{{/unless}}
+      > Allow Health over maximum</label>
+      <label class="wb-override-label"><span>Command AP correction</span><input
+        type="number"
+        name="system.command.value"
+        value="{{commandPool.value}}"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label class="wb-override-label"><span>Extra Evasion</span><input
+        type="number"
+        name="system.bonuses.evasion"
+        value="{{system.bonuses.evasion}}"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label class="wb-override-label"><span>Extra movement / AP (ft)</span><input
+        type="number"
+        name="system.bonuses.movement"
+        value="{{system.bonuses.movement}}"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label class="wb-override-label"><span>Armor AGL penalty</span><input
+        type="number"
+        name="system.overrides.armorAgilityPenalty"
+        value="{{system.overrides.armorAgilityPenalty}}"
+        placeholder="{{worn.automaticPenalty}}"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label class="wb-override-label"><span>Inventory slots</span><input
+        type="number"
+        name="system.overrides.inventorySlots"
+        value="{{system.overrides.inventorySlots}}"
+        placeholder="Auto {{carrying.automatic}}"
+        step="1"
+        aria-label="Inventory slots override; clear for automatic"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
     </div>
     <p>Clear an override to use the automatic value. Extra AR and Evasion add to equipped items; final overrides replace the total.</p>
   </details>

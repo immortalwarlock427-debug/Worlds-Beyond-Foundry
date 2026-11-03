@@ -1,5 +1,14 @@
 import { queuedAction } from "./action-support.mjs";
-import { MAGIC_RESOURCES, customResourceId, magicPool, customPool, adjustedResourceSpent, poolSpentForCurrent, resourcePresentation, resourceInputPoints } from "./resources.mjs";
+import {
+  MAGIC_RESOURCES,
+  customResourceId,
+  magicPool,
+  customPool,
+  adjustedResourceSpent,
+  poolSpentForCurrent,
+  resourcePresentation,
+  resourceInputPoints
+} from "./resources.mjs";
 
 function resourcePath(system, key) {
   if (Object.hasOwn(MAGIC_RESOURCES, key) && system[key]) return `system.${key}`;
@@ -30,10 +39,20 @@ export async function addResource(actor) {
   if (!actor.isOwner || actor.type !== "character") return;
   return queuedAction(actor.uuid, async () => {
     let id;
-    do { id = foundry.utils.randomID(); } while (Object.hasOwn(actor.system.customResources ?? {}, id));
-    const result = await actor.update({ [`system.customResources.${id}`]: {
-      name: "Resource", baseMax: 100, spent: 0, bonus: 0, amount: 1, regen: 0, refillOnRest: true
-    } });
+    do {
+      id = foundry.utils.randomID();
+    } while (Object.hasOwn(actor.system.customResources ?? {}, id));
+    const result = await actor.update({
+      [`system.customResources.${id}`]: {
+        name: "Resource",
+        baseMax: 100,
+        spent: 0,
+        bonus: 0,
+        amount: 1,
+        regen: 0,
+        refillOnRest: true
+      }
+    });
     if (!result) throw new Error("The resource was not added. Try again.");
     return id;
   });
@@ -51,9 +70,11 @@ export async function resourceAction(actor, key, action, amount) {
       if (!result) throw new Error("The resource was not removed.");
       return result;
     }
-    const pool = magic ? magicPool(actor.system.level, actor.system.stats[magic.stat].effective ?? actor.system.stats[magic.stat].value, data) : customPool(data, actor.system);
+    const pool = magic
+      ? magicPool(actor.system.level, actor.system.stats[magic.stat].effective ?? actor.system.stats[magic.stat].value, data)
+      : customPool(data, actor.system);
     // DOM amounts are strings; internal numeric costs may retain fractional points.
-    const enteredAmount = typeof amount === "string" && amount.trim() !== "" ? Math.floor(Number(amount)) : amount ?? data.amount;
+    const enteredAmount = typeof amount === "string" && amount.trim() !== "" ? Math.floor(Number(amount)) : (amount ?? data.amount);
     const spent = adjustedResourceSpent(pool, action, action === "recover" ? data.regen : enteredAmount);
     if (spent === data.spent) return;
     const result = await actor.update({ [`${path}.spent`]: spent });

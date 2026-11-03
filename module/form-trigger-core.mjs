@@ -14,22 +14,33 @@ export function triggerCondition(system, trigger = {}) {
   const value = numberOr(pool.value, pool.health ? pool.max - pool.damage : null);
   if (!Number.isFinite(value) || !Number.isFinite(threshold)) return null;
   switch (trigger.comparison) {
-    case "above": return value > threshold;
-    case "atLeast": return value >= threshold;
-    case "below": return value < threshold;
-    case "atMost": return value <= threshold;
-    default: return null;
+    case "above":
+      return value > threshold;
+    case "atLeast":
+      return value >= threshold;
+    case "below":
+      return value < threshold;
+    case "atMost":
+      return value <= threshold;
+    default:
+      return null;
   }
 }
 
 export function triggerSnapshot(actor) {
-  return Object.fromEntries(items(actor).filter(item => item.type === "ability" && item.system.kind === "form").map(item => [item.id, triggerCondition(actor.system, item.system.trigger)]));
+  return Object.fromEntries(
+    items(actor)
+      .filter(item => item.type === "ability" && item.system.kind === "form")
+      .map(item => [item.id, triggerCondition(actor.system, item.system.trigger)])
+  );
 }
 
 export function triggerTransitions(actor, before) {
-  const enter = [], end = [];
+  const enter = [],
+    end = [];
   for (const item of items(actor).filter(item => item.type === "ability" && item.system.kind === "form")) {
-    const now = triggerCondition(actor.system, item.system.trigger), was = before[item.id];
+    const now = triggerCondition(actor.system, item.system.trigger),
+      was = before[item.id];
     if (now === null) continue;
     if (now && was !== true && !abilityActive(item)) enter.push(item);
     if (!now && was === true && abilityActive(item) && item.system.trigger?.endMode !== "stay") end.push(item);
