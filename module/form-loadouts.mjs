@@ -7,6 +7,13 @@ const SCOPE = "worlds-beyond",
 // v14 mutates each operation with parentUuid and hook snapshots. Never reuse it
 // across Item/Actor writes, compensation, or another character's transaction.
 const operation = () => ({ worldsBeyondFormLoadout: true });
+// An unlinked token's actor merges its own flags over the sidebar actor's, so it
+// inherits the sidebar receipt and can never drop keys from it. Token actors read
+// and verify only the receipt stored on their own token.
+const receipt = actor =>
+  actor.isToken && actor.token?.delta
+    ? foundry.utils.getProperty(actor.token.delta._source ?? actor.token.delta, `flags.${SCOPE}.${KEY}`)
+    : actor.getFlag?.(SCOPE, KEY);
 
 export function formLoadoutSchema() {
   const { SchemaField, StringField, BooleanField, TypedObjectField, NumberField } = foundry.data.fields;
@@ -45,7 +52,7 @@ export function formLoadoutContext(item) {
 // and a small restore receipt change; inventory records and balances stay shared.
 export async function syncFormLoadout(actor, change, { edited = false, gearEdited = edited } = {}) {
   const form = activeLoadoutForm(actor),
-    saved = actor.getFlag?.(SCOPE, KEY);
+    saved = receipt(actor);
   const previous = saved ? structuredClone(saved) : undefined;
   const cleanGear = profile => Object.fromEntries(Object.entries(profile ?? {}).filter(([id]) => formGear(actor.items.get(id) ?? {})));
   // Replace maps so removed IDs cannot survive Foundry's merge updates.
@@ -121,7 +128,7 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
     () => actor.update(changes, operation()),
     () => actor.update(restore, operation())
   );
-  if (actor.img !== img || !foundry.utils.equals(actor.getFlag(SCOPE, KEY), state))
+  if (actor.img !== img || !foundry.utils.equals(receipt(actor), state))
     throw new Error("The form's portrait or restore state was not retained.");
 }
 
@@ -169,7 +176,7 @@ export function registerFormLoadouts() {
   Hooks.on("deleteActiveEffect", (effect, options, userId) => clock(effect, {}, options, userId));
   const resume = () => {
     const actors = new Set([...game.actors, ...(globalThis.canvas?.tokens?.placeables ?? []).map(token => token.actor)].filter(Boolean));
-    for (const actor of actors) if (actor.getFlag?.(SCOPE, KEY)?.currentId) reconcile(actor, {}, game.user?.id);
+    for (const actor of actors) if (receipt(actor)?.currentId) reconcile(actor, {}, game.user?.id);
   };
   Hooks.once("ready", resume);
   Hooks.on("canvasReady", resume);
