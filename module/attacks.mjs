@@ -149,7 +149,7 @@ export function damagePlan({
     : critical
       ? `${dice.formula}${signed(dice.maximum)}${flat ? signed(flat) : ""}`
       : `${dice.formula}${flat ? signed(flat) : ""}`;
-  const twoHanded = !!(system.properties?.twoHanded || twoHandedGrip);
+  const twoHanded = !!system.properties?.twoHanded;
   const notes = [];
   if (twoHanded && system.signature?.puncture) {
     notes.push("Two-handed Puncture: half the target's Armor Rating counts, rounded up, then ignore 2 more.");

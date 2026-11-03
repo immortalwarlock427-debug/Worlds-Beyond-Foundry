@@ -93,7 +93,9 @@ test("damage dice repeat at 5/10/15/20 like Notion's scaling table", () => {
 test("damage modifiers: single for most weapons, double for Heavy and Paragon, versatile uses the bracket", () => {
   assert.equal(damagePlan({ weapon: w("Longsword"), level: 5, modifier: 3 }).formula, "2d8 + 3");
   assert.equal(damagePlan({ weapon: w("Longsword"), level: 1, modifier: 3, grip: "two" }).formula, "1d10 + 3");
-  assert.equal(damagePlan({ weapon: w("Longsword"), level: 1, modifier: 3, grip: "two" }).twoHanded, true);
+  const grip = damagePlan({ weapon: w("Longsword"), level: 1, modifier: 3, grip: "two" });
+  assert.equal(grip.twoHanded, false);
+  assert.doesNotMatch(grip.notes.join(" "), /ignores half/);
   assert.equal(damagePlan({ weapon: w("Greatsword"), level: 1, modifier: 4 }).formula, "2d6 + 8");
   assert.equal(damagePlan({ weapon: w("Arbalest"), level: 10, modifier: 2 }).formula, "9d12 + 4");
   assert.equal(damagePlan({ weapon: w("Dagger"), level: 1, modifier: -1 }).formula, "1d4 - 1");
