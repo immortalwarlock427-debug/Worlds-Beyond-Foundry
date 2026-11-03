@@ -48,6 +48,7 @@ import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 import { CHARACTER_DETAILS, prepareCharacterSheetContext } from "./character-context.mjs";
 import { promptShortRest } from "./rest-actions.mjs";
+import { configureResistances } from "./resistance-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -106,6 +107,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         enabled: new BooleanField({ initial: false })
       });
     return {
+      resistances: new ArrayField(new StringField({ required: true, nullable: false, blank: false }), { initial: [] }),
       appearance: new SchemaField({
         baseFormName: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
         portraitY: number(35, { integer: true, min: 0, max: 100 })
@@ -252,6 +254,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       statSetup: CharacterSheet.#onStatSetup,
       milestones: CharacterSheet.#onMilestones,
       longRest: CharacterSheet.#onLongRest,
+      resistances: async function () {
+        if (!this.isEditable) return;
+        try {
+          return await configureResistances(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       shortRest: async function () {
         if (!this.isEditable) return;
         try {

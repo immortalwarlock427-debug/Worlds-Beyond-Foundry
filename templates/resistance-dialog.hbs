@@ -1,0 +1,22 @@
+<div class="wb-check-options wb-resistance-editor">
+  <fieldset><legend>Damage types</legend>
+    <div class="wb-resistance-options">
+    {{#each types}}
+      <label class="wb-equipment-check"><input
+        type="checkbox"
+        name="{{field}}"
+        {{#if selected}}checked{{/if}}
+      > {{label}}</label>
+    {{/each}}
+    </div>
+  </fieldset>
+  <label>Custom resistances <small>One per line</small><textarea
+    name="custom"
+    rows="4"
+    placeholder="Lightning&#10;Cold"
+  >{{custom}}</textarea></label>
+  <details class="wb-disclosure wb-help"><summary>Resistance help</summary>
+    <p>Resistance halves damage, rounded down, before Armor Rating. Apply damage manually for now.</p>
+    <p>Presets cover types named in Game Systems. Add any other types or conditions above. Clear all entries and checkboxes to remove your recorded resistances.</p>
+  </details>
+</div>

@@ -179,3 +179,45 @@
   .worlds-beyond.wb-character-sheet [data-record-tab] .wb-defense-actions { gap: 5px; }
   .worlds-beyond.wb-character-sheet [data-record-tab] .wb-defense-actions > button { padding-inline: 5px; }
 }
+/* Resistance entries share the ledger's compact brass/teal vocabulary. */
+.worlds-beyond .wb-resistances,
+.worlds-beyond .wb-resistance-overview {
+  border-block: 1px solid rgba(212, 176, 106, .25);
+  padding: 12px 0;
+  min-width: 0;
+}
+.worlds-beyond .wb-resistances { margin-block: 16px; }
+.worlds-beyond .wb-resistance-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.worlds-beyond .wb-resistance-list li {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 3px 9px;
+  border: 1px solid rgba(111, 214, 255, .28);
+  border-radius: 4px;
+  color: #f3ebdd;
+  background: #0f1630;
+}
+.worlds-beyond .wb-resistance-list .wb-resistance-empty {
+  border: 0;
+  padding-left: 0;
+  color: #aeb8d0;
+  background: transparent;
+}
+.worlds-beyond .wb-resistance-editor { display: grid; gap: 16px; }
+.worlds-beyond .wb-resistance-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.worlds-beyond .wb-resistance-editor > label { display: grid; gap: 6px; }
+.worlds-beyond .wb-resistance-editor small { color: #aeb8d0; }
+.worlds-beyond .wb-resistance-editor textarea {
+  min-height: 100px;
+  resize: vertical;
+  background: #0f1630;
+  color: #f3ebdd;
+  border: 1px solid rgba(212, 176, 106, .35);
+}

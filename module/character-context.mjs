@@ -13,6 +13,7 @@ import { milestoneGroups } from "./milestones.mjs";
 import { statAwards, statIncreases } from "./stat-advancement.mjs";
 import { currencyTotal, GOLD_PER_PLATINUM } from "./currency.mjs";
 import { hitDicePool } from "./rest-core.mjs";
+import { normalizeResistances } from "./resistances.mjs";
 
 export const CHARACTER_DETAILS = [
   { key: "class", label: "Class", placeholder: "Class or path" },
@@ -267,6 +268,7 @@ export function prepareCharacterSheetContext(input) {
     actor,
     system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
     hitDice: hitDicePool(system),
+    resistances: normalizeResistances(system.resistances),
     editable,
     ...headerContext(state),
     ...characterContext(state),
