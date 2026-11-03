@@ -46,3 +46,5 @@ Before changing sheet presentation or interaction, consult the website's current
 The user's Foundry runs from `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond`. It is a plain copy, not a git clone.
 
 The user's latest explicit preference is to install the exact tested commit whenever Codex opens or updates a PR, so they can test before merging. This authorizes Codex branch installation and supersedes the earlier merged-main-only preference. First back up and verify the current system, preserve unrelated files, and never touch world/actor data or program binaries. Verify installed files against that commit and report the PR/version and backup location. Ask the user to restart Foundry and refresh player browsers. The user tests and merges; never merge automatically.
+
+Automated pull-request checks run `npm test` (the same `node --test` suite) on Node 24, with no dependencies or build step. The workflow also checks pushes to main; it has read-only repository permissions. Passing CI does not replace the live Foundry sheet audit.

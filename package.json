@@ -1,0 +1,7 @@
+{
+  "name": "worlds-beyond-foundry",
+  "private": true,
+  "description": "Development checks for the Worlds Beyond Foundry system",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=24" }
+}
