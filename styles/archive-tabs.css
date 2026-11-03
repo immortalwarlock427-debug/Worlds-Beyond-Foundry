@@ -88,6 +88,19 @@
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-meter { display: block; flex: 1 0 100%; height: 5px; margin-top: 6px; background: #080F20; border-radius: 1px; overflow: hidden; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-meter > span { display: block; width: clamp(0%, calc(var(--wb-load) / max(1, var(--wb-capacity)) * 100%), 100%); height: 100%; background: var(--wb-brass); }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-inventory-meter.is-over > span { background: linear-gradient(90deg, var(--wb-brass), var(--wb-rose)); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-currency {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px;
+  margin: 0 0 22px; padding: 12px 14px; border: 1px solid var(--wb-record-edge);
+  border-radius: 12px 3px 12px 3px; background: var(--wb-record-surface);
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-currency > h3 { grid-column: 1 / -1; margin: 0; color: var(--wb-brass); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-currency > label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-currency input { width: 100%; font: 26px/1.2 var(--wb-font-display); }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-currency-summary {
+  grid-column: 1 / -1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px;
+  margin: 0; color: var(--wb-muted); font-size: 12px;
+}
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-currency-summary strong { color: var(--wb-ink); }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-add-equipment > summary { padding: 8px 12px; border: 1px solid var(--wb-record-edge); border-radius: 3px 9px 3px 9px; background: #18244766; color: var(--wb-brass); font: 13px/1.9 var(--wb-font-body); }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-add-equipment[open] { padding-bottom: 3px; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-add-equipment[open] > summary { width: fit-content; }

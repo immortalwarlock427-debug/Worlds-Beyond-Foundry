@@ -11,6 +11,7 @@ import { favoriteSlots, overviewFill, archiveAppearance } from "./overview.mjs";
 import { barColorContext } from "./bar-colors.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { statAwards, statIncreases } from "./stat-advancement.mjs";
+import { currencyTotal, GOLD_PER_PLATINUM } from "./currency.mjs";
 
 export const CHARACTER_DETAILS = [
   { key: "class", label: "Class", placeholder: "Class or path" },
@@ -197,7 +198,13 @@ export function equipmentContext({ system, equipment, equipmentGroups }) {
   return {
     equipment: wholeDisplay(equipment),
     equipmentGroups: wholeDisplay(equipmentGroups),
-    carrying: wholeDisplay(system.carrying)
+    carrying: wholeDisplay(system.carrying),
+    currency: {
+      gc: system.currency?.gc ?? 0,
+      pc: system.currency?.pc ?? 0,
+      total: currencyTotal(system.currency),
+      goldPerPlatinum: GOLD_PER_PLATINUM
+    }
   };
 }
 

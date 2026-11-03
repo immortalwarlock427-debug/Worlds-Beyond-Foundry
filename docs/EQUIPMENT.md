@@ -2,6 +2,16 @@
 
 This first part of roadmap step 3 adds weapon, armor and shield Item types, ApplicationV2 item sheets and a character equipment list. Add items from the character sheet or drop them from Foundry's Items directory. Open an item's name to edit it, toggle Equipped, or Remove it after confirmation. Existing `gear` items retain their original data model and sheet and remain visible in the list.
 
+## Currency
+
+Equipment has editable Gold coins (gc) and Platinum coins (pc) balances, with a combined value in gc. The user confirmed **1 pc = 1,000 gc** on 2026-11-02. The Notion Game Systems/Equipment Rules pages were checked; this denomination/conversion rule comes from that explicit clarification. The website's current Equipment markup and navy/brass styling were consulted for placement and presentation.
+
+`system.currency.gc` and `system.currency.pc` are nonnegative integer fields, initially 0. Existing characters receive those defaults through the native data model; no existing fields are renamed or removed. Coin counts save with the actor and stay shared across forms. The total is computed for display in the Foundry-free `module/currency.mjs`; it is not another saved balance. Typed decimals round down through the existing numeric-control handler. Clearing a field restores 0. Observers see both balances and the total with disabled controls.
+
+Denominations stay as entered, including 1,500 gc alongside 2 pc (3,500 gc total). This tracker adds no automatic exchange, purchasing, item-price deduction, transfer, inventory weight or rest recovery.
+
+Validation: all 388 portable tests pass, including conversion math, frozen-balance presentation and decimal/unchanged form submissions. Native v14.365 fields verify zero defaults on older data, currency-only updates, save/reload and clear-to-zero while preserving earned stats, fractional Health/AP/Mana and Notes. Strict templates cover 48 owner/observer/tab contexts; original controls/text remain with only the new currency section added. An isolated native-mixin browser preview checks 192 states at desktop/window widths 1280/1000/880/760 px: correct amounts/totals, disabled observer controls, no overflow/clipped input values and restored Equipment focus/scroll. The desktop Equipment screenshot was inspected. Actual world autosave, socket permissions and player-client refresh remain for the user's live validation after restarting Foundry.
+
 ## Sources and scope
 
 Checked 2026-10-31 against Notion [Weapons Explained](https://www.notion.so/351c72092efb81608515cad619890c48) and [Armor Types Information](https://www.notion.so/351c72092efb81c9b6c9ece66059f1de).
