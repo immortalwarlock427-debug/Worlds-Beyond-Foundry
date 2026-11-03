@@ -11,7 +11,7 @@ import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from ".
 import { itemEffectRows } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
-import { payAp, planApPayment } from "./combat-support.mjs";
+import { inCombat, payAp, planApPayment } from "./combat-support.mjs";
 import { adjustedResourceSpent, customResourceId } from "./resources.mjs";
 import { endOtherForms } from "./forms.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
@@ -275,9 +275,9 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
         const points = item.system.resourceUnit === "percent" ? (pool.max * cost) / 100 : cost;
         spent = adjustedResourceSpent(pool, "spend", points);
       }
-      // Use is an explicit paid activation, including testing outside an encounter.
-      const ap = record.ap ?? 0;
-      const reaction = item.system.kind === "reaction";
+      const combat = inCombat(actor);
+      const ap = combat ? (record.ap ?? 0) : 0;
+      const reaction = combat && item.system.kind === "reaction";
       if (reaction && !(actor.system.reactions.value >= 1)) throw new Error("No reactions left. Correct the tracker if needed.");
       const messageMode = game.settings.get("core", "messageMode");
       if (ap) planApPayment(actor, ap);

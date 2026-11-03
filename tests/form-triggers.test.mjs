@@ -64,6 +64,7 @@ function fixture() {
       return this;
     }
   };
+  game.combats = [{ started: true, combatants: [{ actor }] }];
   const form = (name = "Beast") => {
     const item = {
       id: name,
@@ -103,26 +104,27 @@ function fixture() {
   };
 }
 
-test("native resource update enters an automatic form once, honors entry cost and suppresses recursive cost triggers", async () => {
+test("native resource update enters an automatic form once, ignores AP outside combat and suppresses recursive cost triggers", async () => {
   const f = fixture(),
     form = f.form();
+  game.combats = [];
   await f.actor.update({ [`system.customResources.${id}.spent`]: -5 });
   await f.drain();
   assert.equal(form.system.effectsActive, true);
-  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.actor.system.ap.value, 15);
   assert.equal(f.posts.length, 1);
   assert.equal(f.warnings.length, 0);
   await useAbility(f.actor, form.id, { end: true });
   await f.actor.update({ [`system.customResources.${id}.spent`]: -6 });
   await f.drain();
   assert.equal(form.system.effectsActive, false);
-  assert.equal(f.actor.system.ap.value, 10);
+  assert.equal(f.actor.system.ap.value, 15);
   await f.actor.update({ [`system.customResources.${id}.spent`]: 0 });
   await f.drain();
   await f.actor.update({ [`system.customResources.${id}.spent`]: -1 });
   await f.drain();
   assert.equal(form.system.effectsActive, true);
-  assert.equal(f.actor.system.ap.value, 5);
+  assert.equal(f.actor.system.ap.value, 15);
 });
 
 test("optional trigger ending is free and keeps the user's over-cap resource value rather than changing its maximum", async () => {

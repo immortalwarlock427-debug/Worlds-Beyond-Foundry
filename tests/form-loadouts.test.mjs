@@ -108,7 +108,7 @@ function fixture() {
   globalThis.game = {
     user: { id: "gm", isActiveGM: true },
     users: { activeGM: {} },
-    combats: [],
+    combats: [{ started: true, combatants: [{ actor }] }],
     settings: { get: () => "public" },
     actors: [actor]
   };
