@@ -405,3 +405,7 @@ Before adding combat flow, test:
 - [ ] Try repeated fast damage/action clicks. Reload and confirm used flags and resources remain correct.
 
 The user merged and approved these review fixes. Start-of-turn AP/reaction refill is now implemented in [TURN-REFILLS.md](COMBAT.md#turn-refills), awaiting testing before reaction actions and Command. Drinking-potion AP integration also remains future combat-flow work; this review preserves the current consumable gameplay costs.
+
+### Updated weapon damage rules
+
+Off-hand hits deal full rolled dice damage without a stat modifier or mount bonus. A Versatile weapon held in two hands uses its larger die. Only the Two-handed property halves Armor Rating, and Versatile Puncture still applies its flat reduction of 2. Overwhelming Force retains its floor of half the original roll through Resistance, Armor Rating, Block and Parry. Dodge and immunity still apply.

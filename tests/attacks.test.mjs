@@ -160,6 +160,8 @@ test("Block subtracts from the remainder after Resistance and Armor Rating, with
 });
 
 test("Overwhelming Force applies last and uses half the original damage", () => {
+  assert.equal(hitDamage({ damage: 20, armor: 15, overwhelming: true }).total, 10);
+  assert.equal(hitDamage({ damage: 20, resistant: true, armor: 6, overwhelming: true }).total, 10);
   const hit = hitDamage({ damage: 16, resistant: true, armor: 6, block: 1, overwhelming: true });
   assert.equal(hit.afterBlock, 1);
   assert.equal(hit.minimum, 8);

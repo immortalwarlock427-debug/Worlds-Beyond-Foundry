@@ -355,7 +355,7 @@ export async function rollDamage(message, index, critical) {
       }
       lines.push("Subtract Block next. Apply Health changes manually.");
       if (overwhelming) {
-        lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower.`);
+        lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower. Immunity still applies.`);
       }
       for (const [key, on] of Object.entries(weapon.system.signature ?? {})) {
         if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));
