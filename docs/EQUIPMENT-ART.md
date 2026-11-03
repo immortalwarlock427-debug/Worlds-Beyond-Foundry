@@ -38,3 +38,11 @@ New catalog imports use the new image paths. `CATALOG_VERSION` stays unchanged s
 - Local checks verify every referenced asset exists, the 42 prior strict form/template cases and populated inventory rows still pass, and all 16 stat-setup contexts remain compatible.
 - Selected stock assets were visually reviewed across the full catalog. The seven supplied illustrations fill the remaining gaps; their copied files are hash-verified against the originals.
 - The PR records live Foundry checks and remaining limits. Restart Foundry and refresh player browsers; compare the native Items directory, compendium contents, inventory rows and editor previews. Confirm custom art remains chosen and gameplay values are unchanged. Native art popouts and third-party item browsers are outside this display pass.
+
+## Optimized artwork and offline fonts
+
+Seven user-supplied illustrations now load as 512 px WebP (quality 88): 203,490 bytes combined, versus 11,038,289 bytes for the original PNGs, a 98.2% reduction in these thumbnail downloads. The original PNGs and SVG placeholders remain available for existing direct links. Exact former system PNG paths resolve to WebP in the system's image views even after an item is renamed; custom world art remains chosen. This reduces client downloads, not repository archive size, because compatibility originals are retained.
+
+The theme's six font weights are bundled under `fonts/` with their OFL licenses. No Google Fonts runtime connection is required. The files are loaded by local `@font-face` rules; see [font provenance](../fonts/README.md).
+
+Validation: all seven resized images were opened as a contact sheet and checked for retained framing/detail. Node tests cover old PNG/SVG references, renamed items and custom artwork preservation. Live Foundry thumbnails and refreshed-player font loading remain part of the desktop audit.

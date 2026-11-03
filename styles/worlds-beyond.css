@@ -1,4 +1,50 @@
-@import url("https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya+Sans+SC:wght@500;700&family=Marcellus+SC&display=swap");
+@font-face {
+  font-family: "Alegreya Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/alegreya-sans-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/alegreya-sans-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/alegreya-sans-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans SC";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/alegreya-sans-sc-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans SC";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/alegreya-sans-sc-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Marcellus SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/marcellus-sc-400.woff2") format("woff2");
+}
 
 /* Worlds Beyond character sheet. Colors and fonts match the Worlds Beyond website's dark theme. */
 .worlds-beyond.wb-sheet {
