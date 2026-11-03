@@ -32,6 +32,7 @@
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-percent-values { gap: 2px; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-command-pool { font-size: 11px; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-wonder-rest { gap: 8px; margin: -9px 0 0; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-wonder-rest .wb-hit-dice-count { margin: auto auto auto 0; }
 .worlds-beyond.wb-character-sheet [data-record-tab] :is(.wb-wonder-rest, .wb-stat-tools, .wb-equipment-actions, .wb-defense-actions) > button {
   min-height: 44px; height: auto; margin: 0; padding: 8px 12px; border: 1px solid var(--wb-record-edge);
   border-radius: 3px 9px 3px 9px; background: #18244766; color: var(--wb-brass);

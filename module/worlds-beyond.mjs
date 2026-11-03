@@ -47,6 +47,7 @@ import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 import { CHARACTER_DETAILS, prepareCharacterSheetContext } from "./character-context.mjs";
+import { promptShortRest } from "./rest-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -153,6 +154,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       ),
       bonuses: new SchemaField({ armor: number(), evasion: number(), movement: number() }),
       inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
+      hitDice: new SchemaField({ spent: number(0, { integer: true, min: 0 }) }),
       currency: new SchemaField({
         gc: number(0, { integer: true, min: 0 }),
         pc: number(0, { integer: true, min: 0 })
@@ -250,6 +252,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       statSetup: CharacterSheet.#onStatSetup,
       milestones: CharacterSheet.#onMilestones,
       longRest: CharacterSheet.#onLongRest,
+      shortRest: async function () {
+        if (!this.isEditable) return;
+        try {
+          return await promptShortRest(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       block: CharacterSheet.#onBlock,
       dodge: CharacterSheet.#onDodge,
       parry: CharacterSheet.#onParry,

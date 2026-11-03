@@ -1,0 +1,9 @@
+<div class="wb-check-form">
+  <p><strong>{{remaining}} / {{max}}</strong> hit-die uses available · {{die}} {{modifier}} VIT per use.</p>
+  <label>Dice to spend
+    <input type="number" name="count" value="1" min="1" max="{{remaining}}" step="1" autofocus>
+  </label>
+  <details class="wb-disclosure wb-help"><summary>Short-rest rules</summary>
+    <p>Each use rolls your current hit die plus your VIT modifier. Uses equal your level and refill on a long rest. Healing stops at your maximum Health. Each selected use is spent, including rolls that heal 0.</p>
+  </details>
+</div>

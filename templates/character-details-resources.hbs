@@ -27,13 +27,15 @@
   </section>
 
   <div class="wb-wonder-rest">
+    <p class="wb-hit-dice-count">Hit dice <strong>{{hitDice.remaining}} / {{hitDice.max}}</strong></p>
     <button
       type="button"
       data-action="command"
       data-tooltip="Spend 5 own AP to give an ally up to 5 Command AP"
       {{#unless editable}}disabled{{/unless}}
     >Command</button>
-    <button type="button" data-action="longRest" data-tooltip="Restore all resources to maximum" {{#unless editable}}disabled{{/unless}}>Long rest</button>
+    <button type="button" data-action="shortRest" {{#unless editable}}disabled{{/unless}}>Short rest</button>
+    <button type="button" data-action="longRest" data-tooltip="Restore all resources and hit-die uses to maximum" {{#unless editable}}disabled{{/unless}}>Long rest</button>
   </div>
 
   <details class="wb-disclosure wb-core-bar-colors" data-sync="core-bar-colors"><summary>Core bar colors</summary>

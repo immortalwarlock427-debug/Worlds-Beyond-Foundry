@@ -114,6 +114,14 @@
   <details class="wb-disclosure wb-adjustments" data-sync="adjustments">
     <summary>Adjust values{{#if hasAdjustments}} <span class="wb-badge">Custom</span>{{/if}}</summary>
     <div class="wb-adjust-grid">
+      <label class="wb-override-label"><span>Hit dice spent</span><input
+        type="number"
+        name="system.hitDice.spent"
+        value="{{hitDice.spent}}"
+        min="0"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
       {{#each resources as |resource|}}
       <label class="wb-override-label"><span>{{resource.label}} maximum</span><input
         type="number"
