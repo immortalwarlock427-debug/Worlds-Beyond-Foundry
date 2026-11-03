@@ -170,8 +170,8 @@ test("Overwhelming Force applies last and uses half the original damage", () => 
   );
 });
 
-test("hit damage accepts already-halved off-hand damage and clamps negative reductions", () => {
-  assert.equal(hitDamage({ damage: finalDamage(15, { offhand: true }), resistant: true, armor: 2 }).total, 1);
+test("hit damage accepts full off-hand damage and clamps negative reductions", () => {
+  assert.equal(hitDamage({ damage: finalDamage(15), resistant: true, armor: 2 }).total, 5);
   assert.equal(hitDamage({ damage: -5, overwhelming: true }).total, 0);
   assert.equal(hitDamage({ damage: 16, armor: -2, block: -3 }).total, 16);
   assert.equal(hitDamage().total, 0);
@@ -191,12 +191,11 @@ test("attacking with both needs a Light weapon equipped in each hand", () => {
   assert.deepEqual(dualWieldPartners(dagger, [dagger, longsword]), []);
 });
 
-test("off-hand hits from attacking with both deal half damage with no modifier", () => {
+test("off-hand hits from attacking with both deal full dice damage with no modifier", () => {
   const plan = damagePlan({ weapon: w("Scimitar"), level: 5, modifier: 3, offhand: true });
   assert.equal(plan.formula, "2d8");
   assert.equal(plan.statBonus, 0);
-  assert.match(plan.notes[0], /half damage/);
-  assert.equal(finalDamage(9, { offhand: true }), 4);
+  assert.match(plan.notes[0], /full dice damage/);
   assert.equal(finalDamage(9), 9);
   assert.equal(finalDamage(-2), 0);
   assert.equal(damagePlan({ weapon: w("Scimitar"), modifier: 3, offhand: true, critical: true }).formula, "1d8 + 8");

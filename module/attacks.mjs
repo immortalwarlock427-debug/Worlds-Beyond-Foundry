@@ -155,7 +155,7 @@ export function damagePlan({
     notes.push("Two-handed Puncture: half the target's Armor Rating counts, rounded up, then ignore 2 more.");
   } else if (twoHanded) notes.push("Two-handed: this hit ignores half the target's Armor Rating, rounded down.");
   else if (system.signature?.puncture) notes.push("Puncture: this hit ignores 2 of the target's Armor Rating.");
-  if (offhand) notes.unshift("Off-hand hit: half damage, rounded down, with no modifier.");
+  if (offhand) notes.unshift("Off-hand hit: full dice damage with no modifier.");
   return { formula, valid: dice.valid, listed, times, statBonus, mountBonus, critical: !!critical, twoHanded, offhand, notes };
 }
 
@@ -203,7 +203,7 @@ export function modifierFor(statKey, scores = {}) {
   return statModifier(statKey, scores[statKey] ?? 12);
 }
 
-export function finalDamage(total, { offhand = false } = {}) {
+export function finalDamage(total) {
   const amount = Math.max(0, Number(total) || 0);
-  return offhand ? Math.floor(amount / 2) : amount;
+  return amount;
 }
