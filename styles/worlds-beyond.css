@@ -51,6 +51,7 @@
 .worlds-beyond.wb-character-sheet { max-height: calc(100dvh - 24px); }
 .worlds-beyond.wb-character-sheet .window-content { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .worlds-beyond.wb-character-sheet .wb-body { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0; gap: 0; overflow: hidden; }
+.worlds-beyond.wb-character-sheet .wb-character-heading { display: contents; }
 .worlds-beyond.wb-character-sheet .wb-header { flex: 0 0 auto; margin: 18px 18px 0; }
 .worlds-beyond .wb-header-details { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--wb-muted); font-size: 13px; }
 .worlds-beyond .wb-sheet-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; flex: 0 0 auto; margin: 0; padding: 12px 18px; border: 0; border-bottom: 1px solid var(--wb-rule); }

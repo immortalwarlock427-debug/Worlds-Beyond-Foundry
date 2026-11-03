@@ -39,6 +39,21 @@ const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
 const { createAbility, AbilitySheet } = await import("../module/abilities.mjs");
 
+test("form visibility refreshes the affected native parts without replacing unrelated tab drafts", async () => {
+  const sheet = new CharacterSheet(), renders = [];
+  sheet.render = async options => { renders.push(options); return sheet; };
+  const toggle = CharacterSheet.DEFAULT_OPTIONS.actions.formView;
+  await toggle.call(sheet, null, { dataset: { view: "abilities" } });
+  assert.equal(sheet._showAllFormAbilities, true);
+  assert.deepEqual(renders.pop().parts, ["abilities"]);
+  await toggle.call(sheet, null, { dataset: { view: "resources" } });
+  assert.equal(sheet._showAllFormResources, true);
+  assert.deepEqual(renders.pop().parts, ["character", "details"]);
+  await toggle.call(sheet, null, { dataset: { view: "resources" } });
+  assert.equal(sheet._showAllFormResources, false);
+  assert.deepEqual(renders.pop().parts, ["character", "details"]);
+});
+
 test("form portrait picker writes only that form's image and skips non-form/read-only sheets", async () => {
   let settings, opened = 0; const updates = [];
   foundry.applications.apps = { FilePicker: { implementation: class { constructor(options) { settings = options; } browse() { opened++; } } } };

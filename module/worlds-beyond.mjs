@@ -203,7 +203,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet", "wb-character-sheet"],
     position: { width: 880, height: 900 },
-    window: { resizable: true },
+    window: { resizable: true, contentClasses: ["wb-body"] },
     form: { submitOnChange: true },
     actions: {
       rollStat: CharacterSheet.#onRollStat,
@@ -228,7 +228,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       },
       formView: async function (event, target) {
         const key = target.dataset.view === "resources" ? "_showAllFormResources" : "_showAllFormAbilities";
-        this[key] = !this[key]; return this.render({ parts: ["sheet"] });
+        this[key] = !this[key];
+        return this.render({ parts: target.dataset.view === "resources" ? ["character", "details"] : ["abilities"] });
       },
       resource: CharacterSheet.#onResource,
       ability: CharacterSheet.#onAbility,
@@ -239,11 +240,19 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   };
 
   static PARTS = {
-    sheet: { template: `systems/${SYSTEM_ID}/templates/character-sheet.hbs`, scrollable: [
-      '.wb-sheet-panel[data-tab="character"]', '.wb-sheet-panel[data-tab="equipment"]',
-      '.wb-sheet-panel[data-tab="details"]',
-      '.wb-sheet-panel[data-tab="abilities"]', '.wb-sheet-panel[data-tab="status"]', '.wb-sheet-panel[data-tab="notes"]'
-    ] }
+    header: { template: `systems/${SYSTEM_ID}/templates/character-header.hbs` },
+    character: { template: `systems/${SYSTEM_ID}/templates/character-overview.hbs`, scrollable: [""] },
+    details: {
+      template: `systems/${SYSTEM_ID}/templates/character-details.hbs`, scrollable: [""],
+      templates: [
+        `systems/${SYSTEM_ID}/templates/character-details-resources.hbs`,
+        `systems/${SYSTEM_ID}/templates/character-details-values.hbs`
+      ]
+    },
+    equipment: { template: `systems/${SYSTEM_ID}/templates/character-equipment.hbs`, scrollable: [""] },
+    abilities: { template: `systems/${SYSTEM_ID}/templates/character-abilities.hbs`, scrollable: [""] },
+    status: { template: `systems/${SYSTEM_ID}/templates/character-status.hbs`, scrollable: [""] },
+    notes: { template: `systems/${SYSTEM_ID}/templates/character-notes.hbs`, scrollable: [""] }
   };
   static TABS = {
     sheet: { initial: "character", tabs: [

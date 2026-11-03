@@ -1,5 +1,17 @@
 # Sheet organization
 
+## Native template parts
+
+CharacterSheet uses seven ApplicationV2 parts: `header` (identity and navigation), `character`, `details`, `equipment`, `abilities`, `status` and `notes`. Each tab owns its root scroll position with `scrollable: [""]`. Details preloads two static Handlebars partials for resources and values/help. All nine files are directly under `templates/` and under 10 KB; no build step is added.
+
+The existing `wb-body` layout class moves to Foundry's window-content container using `window.contentClasses`. A display-contents heading wrapper supplies the one root element required by native part rendering while keeping header/navigation geometry unchanged. All original tab classes, action attributes and field names remain. The former monolithic `character-sheet.hbs` is no longer loaded.
+
+Show all abilities refreshes only the Abilities part. Show all resources refreshes Character and Details. Other tab DOM, including a pending Notes draft, remains in place. Full actor refreshes use the normal complete render; current tab, focus, scroll and synced disclosures retain Foundry's existing behavior. Shared context calculation is unchanged and will be separated in a later review item.
+
+Validation compares the split against the pre-refactor template on the same native v14.365 model contexts: 36 filled/empty/long-name, owner/observer and active-tab cases have identical controls, action descriptors, rendered text and source data. An isolated browser runs the installed v14.365 HandlebarsApplicationMixin: 180 DOM/layout comparisons at 1280/1000/760/390/340 px match visible control geometry within 0.6 px. Native part synchronization restores focus, root scroll and open disclosures; partial Abilities/Character/Details renders preserve the actual Notes DOM node and draft. The Foundry socket transport and base document-sheet lifecycle are adapted offline; live autosave, drag/drop and real player browsers remain for user validation.
+
+## Tab contents
+
 The character sheet now uses Foundry v14's native ApplicationV2 tabs:
 
 | Tab | Contents |
