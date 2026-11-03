@@ -288,6 +288,7 @@ test("long rest restores all current pools together without changing overrides o
   f.actor.system.health = { damage: 12, maxOverride: 80 };
   f.actor.system.ap = { value: 2, maxOverride: 0 };
   f.actor.system.reactions = { value: -1, maxOverride: 3 };
+  f.actor.system.hitDice = { spent: 3 };
   const before = structuredClone(f.actor.system);
   await longRest(f.actor);
   assert.deepEqual(f.calls.updates, [
@@ -295,7 +296,8 @@ test("long rest restores all current pools together without changing overrides o
       "system.health.damage": 0,
       "system.ap.value": null,
       "system.reactions.value": null,
-      "system.wonder.value": null
+      "system.wonder.value": null,
+      "system.hitDice.spent": 0
     }
   ]);
   assert.equal(f.actor.flags.wonderUsed.original, true);

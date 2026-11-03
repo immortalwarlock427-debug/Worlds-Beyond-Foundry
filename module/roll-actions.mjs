@@ -122,6 +122,7 @@ export async function longRest(actor) {
         "system.ap.value": null,
         "system.reactions.value": null,
         "system.wonder.value": null,
+        ...(actor.system.hitDice ? { "system.hitDice.spent": 0 } : {}),
         ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
         ...resourceRestUpdates(actor.system)
       }

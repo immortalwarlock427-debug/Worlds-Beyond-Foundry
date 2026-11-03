@@ -200,6 +200,11 @@
       {{#unless editable}}disabled{{/unless}}
     >Command</button><button
       type="button"
+      data-action="shortRest"
+      data-tooltip="Roll hit dice plus VIT to heal; uses refill on a long rest"
+      {{#unless editable}}disabled{{/unless}}
+    >Short rest · {{hitDice.remaining}}/{{hitDice.max}}</button><button
+      type="button"
       data-action="longRest"
       {{#unless editable}}disabled{{/unless}}
     >Long rest</button></div></footer></section>

@@ -1,0 +1,6 @@
+<div class="worlds-beyond wb-roll-card wb-rest-card">
+  <header><h3>Short rest</h3><span>{{healed}} Health restored · {{health}} / {{healthMax}} Health</span></header>
+  {{#each rows}}<p>{{dice}} {{modifier}} = <strong>{{total}}</strong></p>{{/each}}
+  <p>{{count}} hit-die uses spent · {{remaining}} / {{max}} left</p>
+  <details class="wb-disclosure wb-help"><summary>Dice details</summary>{{{rollHTML}}}</details>
+</div>

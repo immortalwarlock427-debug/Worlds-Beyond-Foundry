@@ -12,6 +12,7 @@ import { barColorContext } from "./bar-colors.mjs";
 import { milestoneGroups } from "./milestones.mjs";
 import { statAwards, statIncreases } from "./stat-advancement.mjs";
 import { currencyTotal, GOLD_PER_PLATINUM } from "./currency.mjs";
+import { hitDicePool } from "./rest-core.mjs";
 
 export const CHARACTER_DETAILS = [
   { key: "class", label: "Class", placeholder: "Class or path" },
@@ -265,6 +266,7 @@ export function prepareCharacterSheetContext(input) {
   return {
     actor,
     system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
+    hitDice: hitDicePool(system),
     editable,
     ...headerContext(state),
     ...characterContext(state),

@@ -2,6 +2,18 @@
 
 Roadmap step 1 adds current Health/AP/reactions, automatic maxima, hit die, Natural Evasion, Armor Rating and feet per AP. All maxima and derived numbers have manual overrides; clearing an override restores the rule. Armor contributions are entered manually until the equipment step. Automatic turn resets, short-rest rolls, equipment penalties and token movement spending belong to later steps. The rolls step adds Long rest to refill Health, AP, reactions and Wonder.
 
+## Short rests and hit dice
+
+The user clarified on 2026-11-02: hit-die uses equal your level, each use adds your current VIT modifier, uses are shared across short rests, and every long rest restores them all. Notion's Stats/Vitality pages establish the current VIT hit-die formula; they do not specify those spending/refill details. The current website's hit-die and rest presentation was consulted.
+
+Choose Short rest on Character or Details, select a count, then Roll & heal. A compound formula such as 1d12 + 1d4 is one use; VIT is added once to each use. Each selected roll is spent. Negative roll totals heal 0, and healing caps at maximum Health. Full/overflow Health spends nothing. The chat card shows dice plus modifier, current Health and remaining uses, with native dice details collapsed. It follows the chosen chat visibility. No AP/resource/ability recovery or automatic world-clock advancement is added to a short rest.
+
+`system.hitDice.spent` is an additive integer field initially 0. Availability is level minus spent, floored at 0. Level, VIT, gear and form changes do not reset spent uses. Current hit-die overrides still apply. Details → Adjust values → Hit dice spent provides a manual correction. Long rest resets it alongside the existing recovery transaction; unrelated saves preserve it.
+
+Rules live in Foundry-free `module/rest-core.mjs`; dialogs, dice, payment/healing and chat use `module/rest-actions.mjs`. Rolls and rendering prepare before the actor update. Local actor actions are serialized and pool changes rechecked. A failed/cancelled update posts nothing; failed chat posting compensates the healing and use count, preserving later corrections. A failed compensation tells the user which fields need correction. Native fractional Health remains intact while card numbers follow whole-number presentation.
+
+All 396 portable tests pass, including compound rolls, VIT on every use, use exhaustion, level changes, below-zero/full Health, caps, hidden fractions, cancellation, concurrent clicks, failed roll/render/update/chat and compensation. Offline installed v14.365 models/strict templates cover 48 owner/observer/tab contexts with unchanged stored source. A desktop preview covers the six tabs at 1280/1000/880/760 px, including visible counts and disabled read-only rest controls. Actual live dice/autosave, client permissions and rest recovery still need user validation after restarting Foundry.
+
 ## Rules checked
 
 Checked against Notion on 2026-10-31:
