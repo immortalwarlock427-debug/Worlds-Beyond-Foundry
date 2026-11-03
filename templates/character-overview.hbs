@@ -73,7 +73,7 @@
           class="wb-overview-health {{#if overviewHealth.low}}is-low{{/if}} {{#if overviewHealth.overflow}}is-overflow{{/if}}"
           data-action="overviewEdit"
           data-field="healthCurrent"
-          title="Edit Health"
+          data-tooltip="{{overviewHealth.sources}}"
         >
           <span class="wb-overview-card-heading"><span class="wb-eyebrow">Health</span><i class="fa-regular fa-heart" aria-hidden="true"></i></span>
           <span class="wb-overview-number">{{overviewHealth.value}} <small>/ {{overviewHealth.max}}</small></span>
@@ -91,7 +91,7 @@
           type="button"
           data-action="overviewEdit"
           data-field="{{field}}"
-          title="Edit {{label}}"
+          data-tooltip="{{sources}}{{#if command}} · Includes {{command}} Command AP{{/if}}"
           class="wb-economy-tile {{#if overflow}}is-overflow{{/if}}"
         ><span class="wb-eyebrow">{{label}}</span><strong>{{value}}<small>/{{max}}</small></strong><span
           class="wb-overview-meter wb-segmented-meter"
@@ -108,7 +108,7 @@
           class="wb-overview-pool {{#if overflow}}is-overflow{{/if}}"
           data-action="overviewEdit"
           data-field="resourceValues.{{key}}"
-          title="Edit {{label}} · {{value}} / {{max}} points"
+          data-tooltip="{{value}} / {{max}} points · {{sources}}"
         >
           <span class="wb-overview-pool-top"><span class="wb-eyebrow">{{label}}</span><strong>{{#if percentUnavailable}}—%{{else}}{{#if percent}}{{inputValue}}%{{else}}{{value}}<small>/{{max}}</small>{{/if}}{{/if}}</strong></span>
           <span
@@ -122,10 +122,10 @@
           ><span style="width:{{meterPercent}}%;{{barStyle}}"></span></span>{{#if overflow}}<small class="wb-overflow-note">Above maximum</small>{{/if}}
         </button>{{/each}}</div>
         <div class="wb-overview-metrics">
-          <button type="button" data-action="overviewEdit" title="Armor and evasion details"><span class="wb-eyebrow">Natural Evasion</span><strong>{{system.core.evasion}}</strong></button>
-          <button type="button" data-action="overviewEdit" title="Armor and defense details"><span class="wb-eyebrow">Armor Rating</span><strong>{{system.core.armorRating}}</strong></button>
-          <button type="button" data-action="overviewEdit" title="Movement details"><span class="wb-eyebrow">Movement / AP</span><strong>{{system.core.movement}} <small>ft</small></strong></button>
-          <div><span class="wb-eyebrow">Initiative</span><strong>{{overviewInitiative}}</strong><small>1d20 + WIS</small></div>
+          <button type="button" data-action="overviewEdit" data-tooltip="{{overviewBreakdowns.evasion}}"><span class="wb-eyebrow">Natural Evasion</span><strong>{{system.core.evasion}}</strong></button>
+          <button type="button" data-action="overviewEdit" data-tooltip="{{overviewBreakdowns.armorRating}}"><span class="wb-eyebrow">Armor Rating</span><strong>{{system.core.armorRating}}</strong></button>
+          <button type="button" data-action="overviewEdit" data-tooltip="{{overviewBreakdowns.movement}}"><span class="wb-eyebrow">Movement / AP</span><strong>{{system.core.movement}} <small>ft</small></strong></button>
+          <div tabindex="0" data-tooltip="{{overviewBreakdowns.initiative}}"><span class="wb-eyebrow">Initiative</span><strong>{{overviewInitiative}}</strong><small>1d20 + WIS</small></div>
         </div>
         {{#if resistances}}<div class="wb-resistance-overview">
           <span class="wb-eyebrow">Resistances</span>

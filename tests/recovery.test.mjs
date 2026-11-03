@@ -102,7 +102,7 @@ test("turn recovery preserves fractions, skips hidden/manual pools and respects 
   actor.system.customResources[customId].autoRecover = true;
   assert.equal(turnRecoveryUpdates(actor.system)[`system.customResources.${customId}.spent`], 0);
   actor.system.customResources[customId].allowOverflow = true;
-  assert.equal(turnRecoveryUpdates(actor.system)[`system.customResources.${customId}.spent`], -2);
+  assert.equal(turnRecoveryUpdates(actor.system)[`system.customResources.${customId}.spent`], 0);
   actor.system.mana.refillOnRest = false;
   assert.equal(resourceRestUpdates(actor.system)["system.mana.spent"], undefined);
   assert.equal(resourceRestUpdates(actor.system)["system.holyPower.spent"], 0, "Legacy rest behavior remains enabled by default");

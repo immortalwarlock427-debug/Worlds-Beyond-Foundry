@@ -3,7 +3,7 @@ import { itemList, loadoutError } from "./loadout.mjs";
 const pending = new Set();
 
 export function clickAttacker(target, event = {}) {
-  if (game.activeTool !== "select" || event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) return null;
+  if (game.activeTool !== "select" || !event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) return null;
   if (
     !target.actor ||
     !target.isVisible ||
