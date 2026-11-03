@@ -221,6 +221,33 @@ test("synthetic forms update only their own unlinked token and restore even-grow
   assert.equal(t.tokens[2].width, 1);
 });
 
+test("animated tokens are checked against stored values, not mid-animation display values", async () => {
+  const f = fixture(),
+    t = tokenFixture(f);
+  // Model v14: the stored source changes at once, while the prepared values
+  // keep showing the old size and art until the animation finishes.
+  const token = t.tokens[2];
+  token._source = { x: token.x, y: token.y, width: 1, height: 1, texture: { ...token.texture } };
+  token.update = async (changes, options) => {
+    t.calls.push({ id: token.id, changes, options });
+    apply(token._source, changes);
+    if (!options.animate) apply(token, changes);
+    return token;
+  };
+  f.actor.isToken = true;
+  f.actor.token = token;
+  await useAbility(f.actor, f.first.id);
+  assert.equal(token._source.width, 2);
+  assert.equal(token._source.texture.src, "monstrous.webp");
+  assert.equal(token._source.texture.scaleX, 1.15);
+  assert.equal(f.first.system.effectsActive, true);
+  await useAbility(f.actor, f.first.id, { end: true });
+  assert.equal(token._source.width, 1);
+  assert.equal(token._source.texture.src, "copy.webp");
+  assert.equal(token._source.texture.scaleX, 1.2);
+  assert.equal(token._source.texture.scaleY, 0.8);
+});
+
 test("failed token updates compensate prior tokens, prototype, form bonuses and costs", async () => {
   const f = fixture(),
     t = tokenFixture(f);
