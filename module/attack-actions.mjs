@@ -9,20 +9,37 @@ import { requireWeaponReady } from "./loadout.mjs";
 import { inCombat, availableAp, payAp } from "./combat-support.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
-  attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
-  attackOutcome, damagePlan, hitDamage, dualWieldPartners, shotsLeft, finalDamage, actionApCost, RELOAD_AP
+  attackStatChoices,
+  attackModes,
+  attackApCost,
+  attackDisadvantages,
+  critThreshold,
+  attackOutcome,
+  damagePlan,
+  hitDamage,
+  dualWieldPartners,
+  shotsLeft,
+  finalDamage,
+  actionApCost,
+  RELOAD_AP
 } from "./attacks.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const MODE_LABELS = { melee: "Melee", thrown: "Thrown (uses DEX)", ranged: "Ranged" };
-const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const escapeHTML = value =>
+  String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const statLabel = key => STATS.find(stat => stat.key === key)?.label ?? key;
 
 export function targetFromToken(token) {
   const actor = token?.actor;
   if (!actor) return null;
-  return { name: token.name ?? actor.name, actorUuid: actor.uuid, tokenUuid: token.document?.uuid ?? null,
-    evasion: actor.system?.core?.evasion ?? null, armor: actor.system?.core?.armorRating ?? null };
+  return {
+    name: token.name ?? actor.name,
+    actorUuid: actor.uuid,
+    tokenUuid: token.document?.uuid ?? null,
+    evasion: actor.system?.core?.evasion ?? null,
+    armor: actor.system?.core?.armorRating ?? null
+  };
 }
 
 function currentTarget() {
@@ -36,7 +53,18 @@ function requireLoaded(weapon) {
 // Older attack cards stored one weapon at the top level.
 function attackHands(data) {
   if (Array.isArray(data.hands)) return data.hands;
-  return [{ hand: "main", itemId: data.itemId, stat: data.stat, mod: data.mod, grip: data.grip, hit: data.hit, critical: data.critical, damageRolled: data.damageRolled }];
+  return [
+    {
+      hand: "main",
+      itemId: data.itemId,
+      stat: data.stat,
+      mod: data.mod,
+      grip: data.grip,
+      hit: data.hit,
+      critical: data.critical,
+      damageRolled: data.damageRolled
+    }
+  ];
 }
 
 function scores(actor) {
@@ -49,26 +77,43 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
   requireWeaponReady(actor, weapon);
   const modes = attackModes(weapon);
   const choices = [...new Set(modes.flatMap(mode => attackStatChoices(weapon, mode)))];
-  const best = choices.reduce((a, b) => actor.system.stats[b].mod > actor.system.stats[a].mod ? b : a);
+  const best = choices.reduce((a, b) => (actor.system.stats[b].mod > actor.system.stats[a].mod ? b : a));
   const reasons = attackDisadvantages({ weapon, scores: scores(actor), heavyArmor: !!actor.system.equipment?.heavyDisadvantage });
   const partners = dualWieldPartners(weapon, actor.items);
   const shots = shotsLeft(weapon);
-  const content = await foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/attack-dialog.hbs`, wholeDisplay({
-    reasons, target, apLeft: availableAp(actor), spendAp: inCombat(actor),
-    partners: partners.map(item => ({ id: item.id, name: item.name })),
-    shots, loading: weapon.system.loading,
-    modes: modes.map(value => ({ value, label: MODE_LABELS[value] })),
-    stats: choices.map(key => {
-      const mod = actor.system.stats[key].mod;
-      return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)}) · ${attackApCost(mod)} AP` };
-    }),
-    versatile: !!weapon.system.properties.versatile, damage: weapon.system.damage, versatileDamage: weapon.system.versatileDamage,
-    canRange: modes.some(mode => mode !== "melee"), mount: !!weapon.system.properties.mount
-  }));
+  const content = await foundry.applications.handlebars.renderTemplate(
+    `systems/${SYSTEM_ID}/templates/attack-dialog.hbs`,
+    wholeDisplay({
+      reasons,
+      target,
+      apLeft: availableAp(actor),
+      spendAp: inCombat(actor),
+      partners: partners.map(item => ({ id: item.id, name: item.name })),
+      shots,
+      loading: weapon.system.loading,
+      modes: modes.map(value => ({ value, label: MODE_LABELS[value] })),
+      stats: choices.map(key => {
+        const mod = actor.system.stats[key].mod;
+        return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)}) · ${attackApCost(mod)} AP` };
+      }),
+      versatile: !!weapon.system.properties.versatile,
+      damage: weapon.system.damage,
+      versatileDamage: weapon.system.versatileDamage,
+      canRange: modes.some(mode => mode !== "melee"),
+      mount: !!weapon.system.properties.mount
+    })
+  );
   const form = await foundry.applications.api.DialogV2.input({
-    classes: [SYSTEM_ID, "wb-roll-dialog"], position: { width: 380 },
-    window: { title: `${weapon.name} attack` }, content, ok: { label: "Attack" }, rejectClose: false,
-    render: (event, dialog) => { bindAttackDialog(dialog.element, actor, weapon); fitDialogDisclosures(dialog); }
+    classes: [SYSTEM_ID, "wb-roll-dialog"],
+    position: { width: 380 },
+    window: { title: `${weapon.name} attack` },
+    content,
+    ok: { label: "Attack" },
+    rejectClose: false,
+    render: (event, dialog) => {
+      bindAttackDialog(dialog.element, actor, weapon);
+      fitDialogDisclosures(dialog);
+    }
   });
   if (!form) return;
   return rollAttack(actor, weapon, { ...form, mode: form.mode ?? modes[0], stat: form.stat ?? best }, target);
@@ -84,8 +129,11 @@ export function bindAttackDialog(element, actor, weapon) {
   let previous = null;
   const update = () => {
     const reasons = attackDisadvantages({
-      weapon, scores: scores(actor), mode: field("mode")?.value ?? attackModes(weapon)[0],
-      longRange: !!field("longRange")?.checked, mounted: !!field("mounted")?.checked,
+      weapon,
+      scores: scores(actor),
+      mode: field("mode")?.value ?? attackModes(weapon)[0],
+      longRange: !!field("longRange")?.checked,
+      mounted: !!field("mounted")?.checked,
       heavyArmor: !!actor.system.equipment?.heavyDisadvantage
     });
     text.hidden = !reasons.length;
@@ -104,152 +152,237 @@ export function bindAttackDialog(element, actor, weapon) {
 export async function rollAttack(actor, weapon, options, target = currentTarget()) {
   if (!actor.isOwner || weapon?.type !== "weapon") return;
   const messageMode = game.settings.get("core", "messageMode");
-  return queuedAction(actor.uuid, () => reversibleAction(async change => {
-    const mode = options.mode ?? "melee";
-    requireWeaponReady(actor, weapon, options.grip);
-    const offWeapon = options.hands ? actor.items.get(options.hands) : null;
-    const weapons = [weapon, ...(offWeapon && dualWieldPartners(weapon, actor.items).includes(offWeapon) ? [offWeapon] : [])];
-    const hands = weapons.map((item, index) => {
-      const allowed = attackStatChoices(item, mode);
-      const stat = allowed.includes(options.stat) ? options.stat : allowed[0];
-      return { item, hand: index ? "off" : "main", stat, mod: actor.system.stats[stat].mod };
-    });
-    for (const { item } of hands) requireLoaded(item);
-    // Attacking with both weapons costs the same AP as one attack.
-    const cost = attackApCost(hands[0].mod);
-    if (options.spendAp && !(availableAp(actor) >= cost)) {
-      throw new Error(`Not enough AP: this attack costs ${cost} and you have ${availableAp(actor)}. Untick Spend AP to roll anyway.`);
-    }
-    const rollMode = options.rollMode ?? "normal";
-    const sections = [];
-    const rolls = [];
-    for (const hand of hands) {
-      const reasons = attackDisadvantages({
-        weapon: hand.item, scores: scores(actor), mode, longRange: !!options.longRange,
-        mounted: !!options.mounted, heavyArmor: !!actor.system.equipment?.heavyDisadvantage
+  return queuedAction(actor.uuid, () =>
+    reversibleAction(async change => {
+      const mode = options.mode ?? "melee";
+      requireWeaponReady(actor, weapon, options.grip);
+      const offWeapon = options.hands ? actor.items.get(options.hands) : null;
+      const weapons = [weapon, ...(offWeapon && dualWieldPartners(weapon, actor.items).includes(offWeapon) ? [offWeapon] : [])];
+      const hands = weapons.map((item, index) => {
+        const allowed = attackStatChoices(item, mode);
+        const stat = allowed.includes(options.stat) ? options.stat : allowed[0];
+        return { item, hand: index ? "off" : "main", stat, mod: actor.system.stats[stat].mod };
       });
-      const roll = await new foundry.dice.Roll(checkMode(rollMode).formula, { mod: hand.mod }).evaluate({ allowInteractive: messageMode !== "blind" });
-      const natural = roll.dice[0]?.total;
-      Object.assign(hand, { total: roll.total, natural });
-      Object.assign(hand, attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: critThreshold(hand.item) }));
-      const breakdown = describeD20Roll(roll, rollMode);
-      const result = hand.hit === null
-        ? (hand.critical === "if it hits" ? `Natural ${natural}: a critical hit if it hits.` : "Compare with the target's Natural Evasion.")
-        : hand.hit ? (hand.critical ? `Critical hit on ${escapeHTML(target.name)}!` : `Hits ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`)
-          : `Misses ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`;
-      const lines = [
-        `${hands.length > 1 ? (hand.hand === "main" ? "Main hand · " : "Off hand · ") : ""}${MODE_LABELS[mode]} attack with ${statLabel(hand.stat)} (${formatModifier(hand.mod)}) · ${checkMode(rollMode).label}`,
-        result,
-        reasons.length ? `Disadvantage applies: ${reasons.join("; ")}.${rollMode === "disadvantage" ? "" : " This roll did not use it."}` : ""
+      for (const { item } of hands) requireLoaded(item);
+      // Attacking with both weapons costs the same AP as one attack.
+      const cost = attackApCost(hands[0].mod);
+      if (options.spendAp && !(availableAp(actor) >= cost)) {
+        throw new Error(`Not enough AP: this attack costs ${cost} and you have ${availableAp(actor)}. Untick Spend AP to roll anyway.`);
+      }
+      const rollMode = options.rollMode ?? "normal";
+      const sections = [];
+      const rolls = [];
+      for (const hand of hands) {
+        const reasons = attackDisadvantages({
+          weapon: hand.item,
+          scores: scores(actor),
+          mode,
+          longRange: !!options.longRange,
+          mounted: !!options.mounted,
+          heavyArmor: !!actor.system.equipment?.heavyDisadvantage
+        });
+        const roll = await new foundry.dice.Roll(checkMode(rollMode).formula, { mod: hand.mod }).evaluate({
+          allowInteractive: messageMode !== "blind"
+        });
+        const natural = roll.dice[0]?.total;
+        Object.assign(hand, { total: roll.total, natural });
+        Object.assign(
+          hand,
+          attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: critThreshold(hand.item) })
+        );
+        const breakdown = describeD20Roll(roll, rollMode);
+        const result =
+          hand.hit === null
+            ? hand.critical === "if it hits"
+              ? `Natural ${natural}: a critical hit if it hits.`
+              : "Compare with the target's Natural Evasion."
+            : hand.hit
+              ? hand.critical
+                ? `Critical hit on ${escapeHTML(target.name)}!`
+                : `Hits ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`
+              : `Misses ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`;
+        const lines = [
+          `${hands.length > 1 ? (hand.hand === "main" ? "Main hand · " : "Off hand · ") : ""}${MODE_LABELS[mode]} attack with ${statLabel(hand.stat)} (${formatModifier(hand.mod)}) · ${checkMode(rollMode).label}`,
+          result,
+          reasons.length
+            ? `Disadvantage applies: ${reasons.join("; ")}.${rollMode === "disadvantage" ? "" : " This roll did not use it."}`
+            : ""
+        ].filter(Boolean);
+        sections.push(
+          `<section class="wb-attack-hand" data-hand="${sections.length}">${hands.length > 1 ? `<h4>${escapeHTML(hand.item.name)}</h4>` : ""}` +
+            lines.map(line => `<p>${line}</p>`).join("") +
+            (await roll.render()) +
+            (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "") +
+            "</section>"
+        );
+        rolls.push(roll);
+      }
+      if (options.spendAp) await payAp(actor, cost, change);
+      for (const { item } of hands) {
+        const shots = shotsLeft(item);
+        if (shots !== null)
+          await change(
+            () => item.update({ "system.shots": shots - 1 }),
+            () => item.update({ "system.shots": shotsLeft(item) + 1 })
+          );
+      }
+      const footer = [
+        options.spendAp ? `${cost} AP spent.` : "",
+        ...hands
+          .filter(({ item }) => shotsLeft(item) !== null)
+          .map(({ item }) => `${escapeHTML(item.name)}: ${shotsLeft(item)} of ${item.system.loading} shots left.`)
       ].filter(Boolean);
-      sections.push(`<section class="wb-attack-hand" data-hand="${sections.length}">${hands.length > 1 ? `<h4>${escapeHTML(hand.item.name)}</h4>` : ""}`
-        + lines.map(line => `<p>${line}</p>`).join("") + await roll.render()
-        + (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "") + "</section>");
-      rolls.push(roll);
-    }
-    if (options.spendAp) await payAp(actor, cost, change);
-    for (const { item } of hands) {
-      const shots = shotsLeft(item);
-      if (shots !== null) await change(
-        () => item.update({ "system.shots": shots - 1 }),
-        () => item.update({ "system.shots": shotsLeft(item) + 1 })
+      const content =
+        `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(hands.map(({ item }) => item.name).join(" + "))}</h3>` +
+        sections.join("") +
+        footer.map(line => `<p>${line}</p>`).join("") +
+        (hands.length > 1
+          ? '<details class="wb-disclosure wb-help"><summary>Two-weapon rules</summary><p>One attack’s AP for both weapons. The off-hand hit deals half damage, rounded down, with no modifier.</p></details>'
+          : "") +
+        "</div>";
+      return createActionMessage(
+        {
+          speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+          content,
+          rolls,
+          flags: {
+            [SYSTEM_ID]: {
+              attack: {
+                actorUuid: actor.uuid,
+                attackerName: actor.name,
+                target,
+                overwhelmingForce: scores(actor).str >= 28,
+                mounted: !!options.mounted,
+                mountedFeet: Number(options.mountedFeet) || 0,
+                hands: hands.map(({ item, hand, stat, mod, hit, critical, total, natural }) => ({
+                  hand,
+                  itemId: item.id,
+                  name: item.name,
+                  stat,
+                  mod,
+                  grip: hand === "main" ? (options.grip ?? "one") : "one",
+                  hit,
+                  critical,
+                  total,
+                  natural,
+                  damageRolled: false
+                }))
+              }
+            }
+          }
+        },
+        { messageMode }
       );
-    }
-    const footer = [
-      options.spendAp ? `${cost} AP spent.` : "",
-      ...hands.filter(({ item }) => shotsLeft(item) !== null).map(({ item }) => `${escapeHTML(item.name)}: ${shotsLeft(item)} of ${item.system.loading} shots left.`)
-    ].filter(Boolean);
-    const content = `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(hands.map(({ item }) => item.name).join(" + "))}</h3>`
-      + sections.join("") + footer.map(line => `<p>${line}</p>`).join("")
-      + (hands.length > 1 ? '<details class="wb-disclosure wb-help"><summary>Two-weapon rules</summary><p>One attack’s AP for both weapons. The off-hand hit deals half damage, rounded down, with no modifier.</p></details>' : "") + "</div>";
-    return createActionMessage({
-      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-      content, rolls,
-      flags: { [SYSTEM_ID]: { attack: {
-        actorUuid: actor.uuid, attackerName: actor.name, target, overwhelmingForce: scores(actor).str >= 28,
-        mounted: !!options.mounted, mountedFeet: Number(options.mountedFeet) || 0,
-        hands: hands.map(({ item, hand, stat, mod, hit, critical, total, natural }) => ({
-          hand, itemId: item.id, name: item.name, stat, mod, grip: hand === "main" ? options.grip ?? "one" : "one",
-          hit, critical, total, natural, damageRolled: false
-        }))
-      } } }
-    }, { messageMode });
-  }));
+    })
+  );
 }
 
 export async function reloadWeapon(actor, itemId) {
   const messageMode = game.settings.get("core", "messageMode");
-  return queuedAction(actor.uuid, () => reversibleAction(async change => {
-    const weapon = actor.items.get(itemId);
-    if (!actor.isOwner || weapon?.type !== "weapon" || !(weapon.system.loading > 0)) return;
-    const combat = inCombat(actor);
-    const cost = actionApCost(RELOAD_AP, actor.system.stats.dex.mod);
-    if (combat) await payAp(actor, cost, change);
-    const previous = weapon.system.shots;
-    await change(() => weapon.update({ "system.shots": null }), () => weapon.update({ "system.shots": previous }));
-    return createActionMessage({
-      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-      content: `<div class="worlds-beyond wb-attack-card"><p>${escapeHTML(weapon.name)} reloaded (${weapon.system.loading} shots)${combat ? ` · ${cost} AP spent` : ""}.</p></div>`
-    }, { messageMode });
-  }));
+  return queuedAction(actor.uuid, () =>
+    reversibleAction(async change => {
+      const weapon = actor.items.get(itemId);
+      if (!actor.isOwner || weapon?.type !== "weapon" || !(weapon.system.loading > 0)) return;
+      const combat = inCombat(actor);
+      const cost = actionApCost(RELOAD_AP, actor.system.stats.dex.mod);
+      if (combat) await payAp(actor, cost, change);
+      const previous = weapon.system.shots;
+      await change(
+        () => weapon.update({ "system.shots": null }),
+        () => weapon.update({ "system.shots": previous })
+      );
+      return createActionMessage(
+        {
+          speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+          content: `<div class="worlds-beyond wb-attack-card"><p>${escapeHTML(weapon.name)} reloaded (${weapon.system.loading} shots)${combat ? ` · ${cost} AP spent` : ""}.</p></div>`
+        },
+        { messageMode }
+      );
+    })
+  );
 }
 
 export async function rollDamage(message, index, critical) {
   if (!message.isContentVisible) return;
-  return queuedAction(`${message.uuid ?? message.id}:damage`, () => reversibleAction(async change => {
-    const data = structuredClone(message.getFlag(SYSTEM_ID, "attack") ?? null);
-    const hands = data ? attackHands(data) : [];
-    const hand = hands[index];
-    const actor = data && await foundry.utils.fromUuid(data.actorUuid);
-    const weapon = actor?.items.get(hand?.itemId);
-    if (!actor?.isOwner || !hand || hand.damageRolled) return;
-    if (!weapon) throw new Error(`${hand.name ?? "That weapon"} is no longer on this character.`);
-    const offhand = hand.hand === "off";
-    const plan = damagePlan({
-      weapon, level: actor.system.level, modifier: hand.mod, grip: hand.grip, critical, offhand,
-      mounted: !offhand && data.mounted, mountedFeet: data.mountedFeet
-    });
-    if (!plan.formula) throw new Error(`${weapon.name} has no damage to roll.`);
-    if (!plan.valid || !foundry.dice.Roll.validate(plan.formula)) throw new Error(`Couldn't read ${weapon.name}'s damage "${plan.listed}". Use dice like 1d8 or 2d6.`);
-    const updated = hands.map((entry, i) => i === index ? { ...entry, damageRolled: true } : entry);
-    const roll = await new foundry.dice.Roll(plan.formula).evaluate({ allowInteractive: !message.blind });
-    const total = finalDamage(roll.total, { offhand });
-    const lines = [
-      `${total} ${escapeHTML(weapon.system.damageType)} damage${plan.critical ? " (critical: maximum damage plus a second roll)" : ""}${offhand ? ` (half of ${Math.max(0, roll.total)})` : ""}.`,
-      `${escapeHTML(plan.listed)} rolled ${plan.times}× for level ${actor.system.level}${offhand ? "" : `, ${plan.statBonus >= 0 ? "+" : "−"}${Math.abs(plan.statBonus)} from ${statLabel(hand.stat)}`}${plan.mountBonus ? `, +${plan.mountBonus} from the charge` : ""}.`,
-      ...plan.notes
-    ];
-    const target = data.target;
-    const overwhelming = (actor.system.stats.str.effective ?? actor.system.stats.str.value) >= 28;
-    const mitigation = {
-      damage: total, armor: target?.armor ?? 0, twoHanded: plan.twoHanded,
-      puncture: !!weapon.system.signature?.puncture, overwhelming
-    };
-    const hit = hitDamage(mitigation);
-    const resisted = hitDamage({ ...mitigation, resistant: true });
-    if (target?.armor != null) {
-      lines.push(`Against ${escapeHTML(target.name)}: ${hit.armor} of their ${target.armor} Armor Rating counts.`);
-    }
-    lines.push("If the target is resistant, halve the damage first (rounded down), then subtract Armor Rating.");
-    if (target?.armor != null) {
-      lines.push(`Before Block: ${hit.afterArmor} damage with no Resistance; ${resisted.afterArmor} with Resistance.`);
-    }
-    lines.push("Subtract Block next. Apply Health changes manually.");
-    if (overwhelming) {
-      lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower.`);
-    }
-    for (const [key, on] of Object.entries(weapon.system.signature ?? {})) {
-      if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));
-    }
-    const content = `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(weapon.name)} damage</h3>`
-      + `<p class="wb-result">${lines[0]}</p>` + await roll.render()
-      + '<details class="wb-disclosure wb-help"><summary>Damage breakdown</summary>'
-      + lines.slice(1).map(line => `<p>${line}</p>`).join("") + "</details></div>";
-    await change(() => message.setFlag(SYSTEM_ID, "attack", { ...data, hands: updated }), () => message.setFlag(SYSTEM_ID, "attack", data));
-    return createActionMessage({
-      speaker: message.speaker, content, rolls: [roll], whisper: [...message.whisper], blind: message.blind
-    });
-  }));
+  return queuedAction(`${message.uuid ?? message.id}:damage`, () =>
+    reversibleAction(async change => {
+      const data = structuredClone(message.getFlag(SYSTEM_ID, "attack") ?? null);
+      const hands = data ? attackHands(data) : [];
+      const hand = hands[index];
+      const actor = data && (await foundry.utils.fromUuid(data.actorUuid));
+      const weapon = actor?.items.get(hand?.itemId);
+      if (!actor?.isOwner || !hand || hand.damageRolled) return;
+      if (!weapon) throw new Error(`${hand.name ?? "That weapon"} is no longer on this character.`);
+      const offhand = hand.hand === "off";
+      const plan = damagePlan({
+        weapon,
+        level: actor.system.level,
+        modifier: hand.mod,
+        grip: hand.grip,
+        critical,
+        offhand,
+        mounted: !offhand && data.mounted,
+        mountedFeet: data.mountedFeet
+      });
+      if (!plan.formula) throw new Error(`${weapon.name} has no damage to roll.`);
+      if (!plan.valid || !foundry.dice.Roll.validate(plan.formula))
+        throw new Error(`Couldn't read ${weapon.name}'s damage "${plan.listed}". Use dice like 1d8 or 2d6.`);
+      const updated = hands.map((entry, i) => (i === index ? { ...entry, damageRolled: true } : entry));
+      const roll = await new foundry.dice.Roll(plan.formula).evaluate({ allowInteractive: !message.blind });
+      const total = finalDamage(roll.total, { offhand });
+      const lines = [
+        `${total} ${escapeHTML(weapon.system.damageType)} damage${plan.critical ? " (critical: maximum damage plus a second roll)" : ""}${offhand ? ` (half of ${Math.max(0, roll.total)})` : ""}.`,
+        `${escapeHTML(plan.listed)} rolled ${plan.times}× for level ${actor.system.level}${offhand ? "" : `, ${plan.statBonus >= 0 ? "+" : "−"}${Math.abs(plan.statBonus)} from ${statLabel(hand.stat)}`}${plan.mountBonus ? `, +${plan.mountBonus} from the charge` : ""}.`,
+        ...plan.notes
+      ];
+      const target = data.target;
+      const overwhelming = (actor.system.stats.str.effective ?? actor.system.stats.str.value) >= 28;
+      const mitigation = {
+        damage: total,
+        armor: target?.armor ?? 0,
+        twoHanded: plan.twoHanded,
+        puncture: !!weapon.system.signature?.puncture,
+        overwhelming
+      };
+      const hit = hitDamage(mitigation);
+      const resisted = hitDamage({ ...mitigation, resistant: true });
+      if (target?.armor != null) {
+        lines.push(`Against ${escapeHTML(target.name)}: ${hit.armor} of their ${target.armor} Armor Rating counts.`);
+      }
+      lines.push("If the target is resistant, halve the damage first (rounded down), then subtract Armor Rating.");
+      if (target?.armor != null) {
+        lines.push(`Before Block: ${hit.afterArmor} damage with no Resistance; ${resisted.afterArmor} with Resistance.`);
+      }
+      lines.push("Subtract Block next. Apply Health changes manually.");
+      if (overwhelming) {
+        lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower.`);
+      }
+      for (const [key, on] of Object.entries(weapon.system.signature ?? {})) {
+        if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));
+      }
+      const content =
+        `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(weapon.name)} damage</h3>` +
+        `<p class="wb-result">${lines[0]}</p>` +
+        (await roll.render()) +
+        '<details class="wb-disclosure wb-help"><summary>Damage breakdown</summary>' +
+        lines
+          .slice(1)
+          .map(line => `<p>${line}</p>`)
+          .join("") +
+        "</details></div>";
+      await change(
+        () => message.setFlag(SYSTEM_ID, "attack", { ...data, hands: updated }),
+        () => message.setFlag(SYSTEM_ID, "attack", data)
+      );
+      return createActionMessage({
+        speaker: message.speaker,
+        content,
+        rolls: [roll],
+        whisper: [...message.whisper],
+        blind: message.blind
+      });
+    })
+  );
 }
 
 // Foundry shows advantage as "2d20kh1"; show the same plain wording as check cards.
@@ -283,9 +416,15 @@ export function decorateAttackMessage(message, html) {
   hands.forEach((hand, index) => {
     if (hand.hit === false) return;
     const prefix = hands.length > 1 ? `${hand.hand === "off" ? "Off-hand" : "Main-hand"} ` : "";
-    const buttons = hand.critical === true ? [[`Roll ${prefix}critical damage`, true]]
-      : hand.critical === "if it hits" ? [[`Roll ${prefix}damage`, false], [`Roll ${prefix}critical damage`, true]]
-        : [[`Roll ${prefix}damage`, false]];
+    const buttons =
+      hand.critical === true
+        ? [[`Roll ${prefix}critical damage`, true]]
+        : hand.critical === "if it hits"
+          ? [
+              [`Roll ${prefix}damage`, false],
+              [`Roll ${prefix}critical damage`, true]
+            ]
+          : [[`Roll ${prefix}damage`, false]];
     const group = card.querySelector(`.wb-attack-hand[data-hand="${index}"]`) ?? card;
     for (const [label, critical] of buttons) {
       const button = document.createElement("button");
@@ -297,8 +436,9 @@ export function decorateAttackMessage(message, html) {
       button.addEventListener("click", async () => {
         const siblings = card.querySelectorAll(`.wb-damage-action[data-hand="${index}"]`);
         for (const other of siblings) other.disabled = true;
-        try { await rollDamage(message, index, critical); }
-        catch (error) {
+        try {
+          await rollDamage(message, index, critical);
+        } catch (error) {
           for (const other of siblings) other.disabled = false;
           ui.notifications.error(error.message);
         }

@@ -3,7 +3,9 @@
 // Recognize only the old automatic icon for the same named catalog item.
 // Other saved artwork (including user-selected stock art) remains untouched.
 const legacyWeaponIcons = {};
-const assign = (names, path) => { for (const name of names) legacyWeaponIcons[name] = `icons/${path}`; };
+const assign = (names, path) => {
+  for (const name of names) legacyWeaponIcons[name] = `icons/${path}`;
+};
 assign(["Battleaxe", "Handaxe", "War Axe"], "weapons/axes/axe-battle-simple.webp");
 assign(["Greataxe"], "weapons/axes/axe-double.webp");
 assign(["Chakram"], "weapons/thrown/shuriken-double-red.webp");
@@ -117,7 +119,7 @@ const shieldIcons = {
   "Scale Shield": CUSTOM_ARTWORK["Scale Shield"],
   "Plate Shield": "equipment/shield/heater-steel-grey.webp"
 };
-const iconPath = path => path.startsWith("systems/") ? path : `icons/${path}`;
+const iconPath = path => (path.startsWith("systems/") ? path : `icons/${path}`);
 
 const pieces = {
   chest: "equipment/chest/breastplate-banded-blue.webp",
@@ -131,18 +133,33 @@ export function stockItemIcon({ type, name, system = {} }) {
   if (type === "weapon") return iconPath(weaponIcons[name === "Gun" ? "Revolver" : name] ?? "weapons/swords/sword-simple-white.webp");
   if (type === "armor") return iconPath(armorIcons[name]?.[1] ?? pieces[system.piece] ?? pieces.chest);
   if (type === "shield") return iconPath(shieldIcons[name] ?? "equipment/shield/buckler-iron-cross-gray.webp");
-  if (type === "consumable") return system.kind === "ammunition"
-    ? "icons/weapons/ammunition/arrow-broadhead-bent-teal.webp" : "icons/consumables/potions/bottle-bulb-corked-glowing-red.webp";
+  if (type === "consumable")
+    return system.kind === "ammunition"
+      ? "icons/weapons/ammunition/arrow-broadhead-bent-teal.webp"
+      : "icons/consumables/potions/bottle-bulb-corked-glowing-red.webp";
   return "icons/svg/item-bag.svg";
 }
 
-const generic = new Set(["icons/svg/item-bag.svg", "icons/svg/sword.svg", "icons/svg/target.svg", "icons/svg/statue.svg", "icons/svg/shield.svg"]);
+const generic = new Set([
+  "icons/svg/item-bag.svg",
+  "icons/svg/sword.svg",
+  "icons/svg/target.svg",
+  "icons/svg/statue.svg",
+  "icons/svg/shield.svg"
+]);
 export function itemIcon(item) {
-  const priorPlaceholder = ((item.type === "weapon" && weaponIcons[item.name])
-    || (item.type === "shield" && shieldIcons[item.name])) && CUSTOM_ARTWORK[item.name]?.replace(/\.png$/, ".svg");
-  const legacy = item.type === "weapon" ? legacyWeaponIcons[item.name]
-    : item.type === "armor" && armorIcons[item.name] ? `icons/${pieces[armorIcons[item.name][0]]}`
-      : item.type === "shield" && shieldIcons[item.name] ? item.name === "Wooden Shield"
-        ? "icons/equipment/shield/shield-round-boss-wood-brown.webp" : "icons/equipment/shield/buckler-iron-cross-gray.webp" : null;
+  const priorPlaceholder =
+    ((item.type === "weapon" && weaponIcons[item.name]) || (item.type === "shield" && shieldIcons[item.name])) &&
+    CUSTOM_ARTWORK[item.name]?.replace(/\.png$/, ".svg");
+  const legacy =
+    item.type === "weapon"
+      ? legacyWeaponIcons[item.name]
+      : item.type === "armor" && armorIcons[item.name]
+        ? `icons/${pieces[armorIcons[item.name][0]]}`
+        : item.type === "shield" && shieldIcons[item.name]
+          ? item.name === "Wooden Shield"
+            ? "icons/equipment/shield/shield-round-boss-wood-brown.webp"
+            : "icons/equipment/shield/buckler-iron-cross-gray.webp"
+          : null;
   return item.img && !generic.has(item.img) && item.img !== legacy && item.img !== priorPlaceholder ? item.img : stockItemIcon(item);
 }

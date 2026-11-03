@@ -4,15 +4,25 @@ import { numberOr } from "./core-numbers.mjs";
 
 export function recoveryPool(system, key = "health") {
   if (key === "health") return { ...system.health, label: "Health", path: "system.health", health: true };
-  if (Object.hasOwn(MAGIC_RESOURCES, key) && system[key]?.enabled) return { ...system[key], label: MAGIC_RESOURCES[key].label, path: `system.${key}` };
-  if (customResourceId(key) && system.customResources?.[key]) return { ...system.customResources[key], label: system.customResources[key].name || "Resource", path: `system.customResources.${key}` };
+  if (Object.hasOwn(MAGIC_RESOURCES, key) && system[key]?.enabled)
+    return { ...system[key], label: MAGIC_RESOURCES[key].label, path: `system.${key}` };
+  if (customResourceId(key) && system.customResources?.[key])
+    return { ...system.customResources[key], label: system.customResources[key].name || "Resource", path: `system.customResources.${key}` };
   return null;
 }
 
 export function recoveryChoices(system, selected = "health") {
-  const choices = [{ value: "health", label: "Health" }, ...Object.entries(MAGIC_RESOURCES).filter(([key]) => !system || system[key]?.enabled).map(([value, def]) => ({ value, label: def.label })),
-    ...Object.entries(system?.customResources ?? {}).filter(([id]) => customResourceId(id)).map(([value, pool]) => ({ value, label: pool.name || "Resource" }))];
-  if (selected && !choices.some(choice => choice.value === selected)) choices.push({ value: selected, label: "Missing or hidden resource" });
+  const choices = [
+    { value: "health", label: "Health" },
+    ...Object.entries(MAGIC_RESOURCES)
+      .filter(([key]) => !system || system[key]?.enabled)
+      .map(([value, def]) => ({ value, label: def.label })),
+    ...Object.entries(system?.customResources ?? {})
+      .filter(([id]) => customResourceId(id))
+      .map(([value, pool]) => ({ value, label: pool.name || "Resource" }))
+  ];
+  if (selected && !choices.some(choice => choice.value === selected))
+    choices.push({ value: selected, label: "Missing or hidden resource" });
   return choices.map(choice => ({ ...choice, selected: choice.value === selected }));
 }
 
@@ -28,5 +38,5 @@ export function restorationPlan(system, key, amount) {
 
 export function restorationAmount(total, unit, maximum) {
   const rolled = Math.max(0, numberOr(total, 0));
-  return unit === "percent" ? rolled * Math.max(0, numberOr(maximum, 0)) / 100 : rolled;
+  return unit === "percent" ? (rolled * Math.max(0, numberOr(maximum, 0))) / 100 : rolled;
 }

@@ -1,9 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  attackStatChoices, attackModes, attackApCost, attackDisadvantages, critThreshold,
-  attackOutcome, damageMultiplier, scaleDice, damagePlan, effectiveArmor,
-  actionApCost, dualWieldPartners, shotsLeft, finalDamage, hitDamage
+  attackStatChoices,
+  attackModes,
+  attackApCost,
+  attackDisadvantages,
+  critThreshold,
+  attackOutcome,
+  damageMultiplier,
+  scaleDice,
+  damagePlan,
+  effectiveArmor,
+  actionApCost,
+  dualWieldPartners,
+  shotsLeft,
+  finalDamage,
+  hitDamage
 } from "../module/attacks.mjs";
 import { catalogItems } from "../module/catalog.mjs";
 
@@ -42,7 +54,8 @@ test("modifiers move AP costs by at most half: attacks 5–15, spells 6–16, re
 });
 
 test("automatic disadvantage reasons match Notion", () => {
-  const low = { str: 20, dex: 20 }, high = { str: 21, dex: 21 };
+  const low = { str: 20, dex: 20 },
+    high = { str: 21, dex: 21 };
   assert.equal(attackDisadvantages({ weapon: w("Greatsword"), scores: low }).length, 1);
   assert.equal(attackDisadvantages({ weapon: w("Greatsword"), scores: high }).length, 0);
   assert.equal(attackDisadvantages({ weapon: w("Rapier"), scores: { dex: 20 } }).length, 1);
@@ -120,8 +133,12 @@ test("hit damage applies rounded-down Resistance before Armor Rating", () => {
 
 test("hit damage handles odd/even Two-handed armor and Puncture before subtracting armor", () => {
   for (const [armor, twoHanded, puncture, used] of [
-    [7, false, false, 7], [7, true, false, 4], [8, true, false, 4],
-    [7, false, true, 5], [7, true, true, 2], [1, true, true, 0]
+    [7, false, false, 7],
+    [7, true, false, 4],
+    [8, true, false, 4],
+    [7, false, true, 5],
+    [7, true, true, 2],
+    [1, true, true, 0]
   ]) {
     const hit = hitDamage({ damage: 16, resistant: true, armor, twoHanded, puncture });
     assert.equal(hit.armor, used);
@@ -147,8 +164,10 @@ test("Overwhelming Force applies last and uses half the original damage", () => 
   assert.equal(hit.total, 8);
   assert.equal(hitDamage({ damage: 17, resistant: true, armor: 99, block: 99, overwhelming: true }).total, 8);
   assert.equal(hitDamage({ damage: 16, overwhelming: true }).total, 16);
-  assert.equal(hitDamage({ damage: 16, resistant: true, armor: 7, twoHanded: true,
-    puncture: true, block: 3, overwhelming: true }).total, 8);
+  assert.equal(
+    hitDamage({ damage: 16, resistant: true, armor: 7, twoHanded: true, puncture: true, block: 3, overwhelming: true }).total,
+    8
+  );
 });
 
 test("hit damage accepts already-halved off-hand damage and clamps negative reductions", () => {
@@ -160,9 +179,14 @@ test("hit damage accepts already-halved off-hand damage and clamps negative redu
 
 test("attacking with both needs a Light weapon equipped in each hand", () => {
   const equip = (name, id) => ({ ...structuredClone(w(name)), id, system: { ...structuredClone(w(name).system), equipped: true } });
-  const dagger = equip("Dagger", "a"), scimitar = equip("Scimitar", "b"), longsword = equip("Longsword", "c");
+  const dagger = equip("Dagger", "a"),
+    scimitar = equip("Scimitar", "b"),
+    longsword = equip("Longsword", "c");
   const stowed = { ...equip("Handaxe", "d"), system: { ...w("Handaxe").system, equipped: false } };
-  assert.deepEqual(dualWieldPartners(dagger, [dagger, scimitar, longsword, stowed]).map(item => item.id), ["b"]);
+  assert.deepEqual(
+    dualWieldPartners(dagger, [dagger, scimitar, longsword, stowed]).map(item => item.id),
+    ["b"]
+  );
   assert.deepEqual(dualWieldPartners(longsword, [dagger, scimitar, longsword]), []);
   assert.deepEqual(dualWieldPartners(dagger, [dagger, longsword]), []);
 });
@@ -187,7 +211,17 @@ test("Loading weapons track shots; blank means fully loaded", () => {
 });
 
 test("the attack dialog switches the dice when range or mounting changes the reasons", async () => {
-  class Input { constructor(name, extra = {}) { Object.assign(this, { name, checked: false, value: "", listeners: [] }, extra); } addEventListener(type, fn) { this.listeners.push(fn); } fire() { this.listeners.forEach(fn => fn()); } }
+  class Input {
+    constructor(name, extra = {}) {
+      Object.assign(this, { name, checked: false, value: "", listeners: [] }, extra);
+    }
+    addEventListener(type, fn) {
+      this.listeners.push(fn);
+    }
+    fire() {
+      this.listeners.forEach(fn => fn());
+    }
+  }
   const fields = { mode: new Input("mode", { value: "ranged" }), longRange: new Input("longRange"), mounted: new Input("mounted") };
   const radios = { normal: new Input("rollMode"), disadvantage: new Input("rollMode") };
   const text = { hidden: true, textContent: "" };
@@ -201,14 +235,21 @@ test("the attack dialog switches the dice when range or mounting changes the rea
   };
   globalThis.foundry ??= {};
   const { bindAttackDialog } = await import("../module/attack-actions.mjs");
-  const actor = { system: { stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(k => [k, { value: 12, effective: 12 }])), equipment: {} } };
-  bindAttackDialog({ querySelector: s => s === "form" ? form : null }, actor, w("Longbow"));
+  const actor = {
+    system: {
+      stats: Object.fromEntries(["str", "dex", "vit", "agl", "int", "wis", "cha", "fth"].map(k => [k, { value: 12, effective: 12 }])),
+      equipment: {}
+    }
+  };
+  bindAttackDialog({ querySelector: s => (s === "form" ? form : null) }, actor, w("Longbow"));
   assert.equal(radios.normal.checked, true);
   assert.equal(text.hidden, true);
-  fields.longRange.checked = true; fields.longRange.fire();
+  fields.longRange.checked = true;
+  fields.longRange.fire();
   assert.equal(radios.disadvantage.checked, true);
   assert.match(text.textContent, /normal range/);
-  fields.longRange.checked = false; fields.longRange.fire();
+  fields.longRange.checked = false;
+  fields.longRange.fire();
   assert.equal(text.hidden, true);
 });
 
@@ -218,6 +259,18 @@ test("attack cards replace Foundry's kh/kl notation with plain wording", async (
   assert.equal(d20Mode("2d20kh1 + 3"), "advantage");
   assert.equal(d20Mode("1d20 + 3"), "normal");
   const { describeD20Roll } = await import("../module/rolls.mjs");
-  const roll = { total: 4, dice: [{ faces: 20, total: 4, results: [{ result: 18, active: false, discarded: true }, { result: 4, active: true }] }] };
+  const roll = {
+    total: 4,
+    dice: [
+      {
+        faces: 20,
+        total: 4,
+        results: [
+          { result: 18, active: false, discarded: true },
+          { result: 4, active: true }
+        ]
+      }
+    ]
+  };
   assert.equal(describeD20Roll(roll, "disadvantage").diceLabel, "2d20 · keep lowest");
 });

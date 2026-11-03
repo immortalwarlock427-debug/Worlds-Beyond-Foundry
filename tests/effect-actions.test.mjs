@@ -1,11 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 class Sheet {
-  constructor(options = {}) { this.document = options.document; this.isEditable = true; }
-  async _prepareContext() { return {}; }
-  render() { return this; }
-  _processFormData(event, form, formData) { return structuredClone(formData.object); }
-  async _processSubmitData(event, form, data) { const updated = await this.document.update(data); return updated ? { updated } : {}; }
+  constructor(options = {}) {
+    this.document = options.document;
+    this.isEditable = true;
+  }
+  async _prepareContext() {
+    return {};
+  }
+  render() {
+    return this;
+  }
+  _processFormData(event, form, formData) {
+    return structuredClone(formData.object);
+  }
+  async _processSubmitData(event, form, data) {
+    const updated = await this.document.update(data);
+    return updated ? { updated } : {};
+  }
 }
 globalThis.foundry = { applications: { api: { HandlebarsApplicationMixin: base => base, DocumentSheetV2: Sheet } } };
 const { toggleEffect, createEffect, EffectSheet, registerEffectSupport } = await import("../module/effects.mjs");
@@ -13,59 +25,130 @@ const { newEffectChange } = await import("../module/effects-core.mjs");
 const id = "resource00000001";
 function fixture() {
   const calls = [];
-  const actor = { uuid: "Actor.effects", documentName: "Actor", type: "character", isOwner: true, system: { stats: {}, customResources: {} }, effects: new Map(),
-    updateEmbeddedDocuments: async (type, updates) => { calls.push({ type, updates }); for (const data of updates) Object.assign(actor.effects.get(data._id), data); return updates; },
-    createEmbeddedDocuments: async (type, data) => { calls.push({ type, data }); const effect = make("new", data[0].flags["worlds-beyond"].kind); Object.assign(effect, data[0]); return [effect]; }
+  const actor = {
+    uuid: "Actor.effects",
+    documentName: "Actor",
+    type: "character",
+    isOwner: true,
+    system: { stats: {}, customResources: {} },
+    effects: new Map(),
+    updateEmbeddedDocuments: async (type, updates) => {
+      calls.push({ type, updates });
+      for (const data of updates) Object.assign(actor.effects.get(data._id), data);
+      return updates;
+    },
+    createEmbeddedDocuments: async (type, data) => {
+      calls.push({ type, data });
+      const effect = make("new", data[0].flags["worlds-beyond"].kind);
+      Object.assign(effect, data[0]);
+      return [effect];
+    }
   };
   function make(name, kind = "effect") {
-    const effect = { id: name, uuid: `Actor.effects.ActiveEffect.${name}`, parent: actor, name, img: "icons/svg/aura.svg", description: "", disabled: true,
-      flags: { "worlds-beyond": { managed: true, kind, source: "" } }, system: { changes: [newEffectChange()] },
-      async update(data) { calls.push({ effect: name, data }); for (const [key, value] of Object.entries(data)) if (key === "system.changes") this.system.changes = value; else this[key] = value; return this; }
+    const effect = {
+      id: name,
+      uuid: `Actor.effects.ActiveEffect.${name}`,
+      parent: actor,
+      name,
+      img: "icons/svg/aura.svg",
+      description: "",
+      disabled: true,
+      flags: { "worlds-beyond": { managed: true, kind, source: "" } },
+      system: { changes: [newEffectChange()] },
+      async update(data) {
+        calls.push({ effect: name, data });
+        for (const [key, value] of Object.entries(data))
+          if (key === "system.changes") this.system.changes = value;
+          else this[key] = value;
+        return this;
+      }
     };
-    actor.effects.set(name, effect); return effect;
+    actor.effects.set(name, effect);
+    return effect;
   }
   return { actor, make, calls };
 }
 
 test("saved form switches keep one form active and independent saved abilities remain enabled", async () => {
-  const f = fixture(), wolf = f.make("wolf", "form"), bear = f.make("bear", "form"), blessing = f.make("blessing"); blessing.disabled = false;
-  await toggleEffect(f.actor, wolf.uuid); assert.equal(wolf.disabled, false); assert.equal(bear.disabled, true);
-  await toggleEffect(f.actor, bear.uuid); assert.equal(wolf.disabled, true); assert.equal(bear.disabled, false); assert.equal(blessing.disabled, false);
-  assert.deepEqual(f.calls.map(call => call.data), [{ disabled: false }, { disabled: true }, { disabled: false }]);
-  await toggleEffect(f.actor, "base"); assert.equal(bear.disabled, true); assert.equal(blessing.disabled, false);
+  const f = fixture(),
+    wolf = f.make("wolf", "form"),
+    bear = f.make("bear", "form"),
+    blessing = f.make("blessing");
+  blessing.disabled = false;
+  await toggleEffect(f.actor, wolf.uuid);
+  assert.equal(wolf.disabled, false);
+  assert.equal(bear.disabled, true);
+  await toggleEffect(f.actor, bear.uuid);
+  assert.equal(wolf.disabled, true);
+  assert.equal(bear.disabled, false);
+  assert.equal(blessing.disabled, false);
+  assert.deepEqual(
+    f.calls.map(call => call.data),
+    [{ disabled: false }, { disabled: true }, { disabled: false }]
+  );
+  await toggleEffect(f.actor, "base");
+  assert.equal(bear.disabled, true);
+  assert.equal(blessing.disabled, false);
 });
 
 test("rapid local form changes serialize and selecting the active form returns to Base", async () => {
-  const f = fixture(), a = f.make("a", "form"), b = f.make("b", "form");
+  const f = fixture(),
+    a = f.make("a", "form"),
+    b = f.make("b", "form");
   await Promise.all([toggleEffect(f.actor, a.uuid), toggleEffect(f.actor, b.uuid)]);
-  assert.equal(a.disabled, true); assert.equal(b.disabled, false);
-  await toggleEffect(f.actor, b.uuid); assert.equal(b.disabled, true);
-  f.actor.isOwner = false; const count = f.calls.length; await toggleEffect(f.actor, a.uuid); assert.equal(f.calls.length, count);
+  assert.equal(a.disabled, true);
+  assert.equal(b.disabled, false);
+  await toggleEffect(f.actor, b.uuid);
+  assert.equal(b.disabled, true);
+  f.actor.isOwner = false;
+  const count = f.calls.length;
+  await toggleEffect(f.actor, a.uuid);
+  assert.equal(f.calls.length, count);
 });
 
 test("using a saved form replaces a Form ability and restores it if the saved form update is cancelled", async () => {
-  const f = fixture(), saved = f.make("Monstrous", "form");
-  const item = { id: "wolf", type: "ability", system: { kind: "form", effectsActive: true }, async update(data) { this.system.effectsActive = data["system.effectsActive"]; return this; } };
+  const f = fixture(),
+    saved = f.make("Monstrous", "form");
+  const item = {
+    id: "wolf",
+    type: "ability",
+    system: { kind: "form", effectsActive: true },
+    async update(data) {
+      this.system.effectsActive = data["system.effectsActive"];
+      return this;
+    }
+  };
   f.actor.items = new Map([[item.id, item]]);
-  const update = saved.update; saved.update = async () => undefined;
+  const update = saved.update;
+  saved.update = async () => undefined;
   await assert.rejects(toggleEffect(f.actor, saved.uuid, { active: true }), /cancelled/);
-  assert.equal(item.system.effectsActive, true); assert.equal(saved.disabled, true);
-  saved.update = update; await toggleEffect(f.actor, saved.uuid, { active: true });
-  assert.equal(item.system.effectsActive, false); assert.equal(saved.disabled, false);
-  await toggleEffect(f.actor, saved.uuid, { active: true }); assert.equal(saved.disabled, false);
+  assert.equal(item.system.effectsActive, true);
+  assert.equal(saved.disabled, true);
+  saved.update = update;
+  await toggleEffect(f.actor, saved.uuid, { active: true });
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(saved.disabled, false);
+  await toggleEffect(f.actor, saved.uuid, { active: true });
+  assert.equal(saved.disabled, false);
 });
 
 test("cancelled saved form/ability updates report failure rather than claiming activation", async () => {
-  const f = fixture(), a = f.make("a", "form"), effect = f.make("effect");
+  const f = fixture(),
+    a = f.make("a", "form"),
+    effect = f.make("effect");
   a.update = async () => undefined;
-  await assert.rejects(toggleEffect(f.actor, a.uuid), /cancelled/); assert.equal(a.disabled, true);
+  await assert.rejects(toggleEffect(f.actor, a.uuid), /cancelled/);
+  assert.equal(a.disabled, true);
   effect.update = async () => undefined;
   await assert.rejects(toggleEffect(f.actor, effect.uuid), /cancelled/);
   await assert.rejects(toggleEffect(f.actor, "missing"), /no longer exists/);
 });
 
 test("standalone actor effect creation is replaced by ability creation without changing saved records", async () => {
-  const f = fixture(), active = f.make("active", "form"); active.disabled = false; const before = structuredClone(f.actor.system);
+  const f = fixture(),
+    active = f.make("active", "form");
+  active.disabled = false;
+  const before = structuredClone(f.actor.system);
   await assert.rejects(createEffect(f.actor, "form"), /Create an ability/);
   await assert.rejects(createEffect(f.actor), /Create an ability/);
   assert.equal(active.disabled, false);
@@ -74,58 +157,119 @@ test("standalone actor effect creation is replaced by ability creation without c
 });
 
 test("effect sheets reject stale edits and permission loss without overwriting native changes", async () => {
-  const f = fixture(), effect = f.make("effect"), sheet = new EffectSheet({ document: effect });
+  const f = fixture(),
+    effect = f.make("effect"),
+    sheet = new EffectSheet({ document: effect });
   await sheet._prepareContext({});
   effect.name = "Renamed elsewhere";
   await assert.rejects(sheet._processSubmitData(null, null, { name: "Old name" }), /another window/);
-  await sheet._prepareContext({}); f.actor.isOwner = false;
+  await sheet._prepareContext({});
+  f.actor.isOwner = false;
   await assert.rejects(sheet._processSubmitData(null, null, { name: "New name" }), /permission/);
   assert.equal(f.calls.length, 0);
 });
 
 test("v14 change guards skip removed managed pools, preserve initial/final phases and leave other effects alone", () => {
-  class NativeEffect { shouldApplyChange(change, { phase }) { return change.phase === phase; } }
-  globalThis.CONFIG = { ActiveEffect: { documentClass: NativeEffect } }; registerEffectSupport();
-  const effect = new CONFIG.ActiveEffect.documentClass(); effect.flags = { "worlds-beyond": { managed: true } }; effect.target = { system: { customResources: {} } };
+  class NativeEffect {
+    shouldApplyChange(change, { phase }) {
+      return change.phase === phase;
+    }
+  }
+  globalThis.CONFIG = { ActiveEffect: { documentClass: NativeEffect } };
+  registerEffectSupport();
+  const effect = new CONFIG.ActiveEffect.documentClass();
+  effect.flags = { "worlds-beyond": { managed: true } };
+  effect.target = { system: { customResources: {} } };
   const change = { ...newEffectChange(), key: `system.customResources.${id}.bonus` };
   assert.equal(effect.shouldApplyChange(change, { phase: "initial" }), false);
   effect.target.system.customResources[id] = { bonus: 0 };
   assert.equal(effect.shouldApplyChange(change, { phase: "initial" }), true);
   assert.equal(effect.shouldApplyChange(change, { phase: "final" }), false);
   assert.equal(effect.shouldApplyChange(newEffectChange(), { phase: "initial" }), true);
-  effect.flags = {}; delete effect.target.system.customResources[id];
+  effect.flags = {};
+  delete effect.target.system.customResources[id];
   assert.equal(effect.shouldApplyChange(change, { phase: "initial" }), true);
 });
 
 test("item bonus creation stores native transferred effects on the Item, enabled but gated by equipment/ability state", async () => {
   let data;
-  const item = { documentName: "Item", type: "weapon", uuid: "Item.sword", name: "Sword", isOwner: true, effects: new Map(),
-    async createEmbeddedDocuments(type, records) { assert.equal(type, "ActiveEffect"); data = records[0]; const effect = { ...data, id: "bonus", parent: item }; item.effects.set(effect.id, effect); return [effect]; }
+  const item = {
+    documentName: "Item",
+    type: "weapon",
+    uuid: "Item.sword",
+    name: "Sword",
+    isOwner: true,
+    effects: new Map(),
+    async createEmbeddedDocuments(type, records) {
+      assert.equal(type, "ActiveEffect");
+      data = records[0];
+      const effect = { ...data, id: "bonus", parent: item };
+      item.effects.set(effect.id, effect);
+      return [effect];
+    }
   };
   const effect = await createEffect(item);
-  assert.equal(effect.parent, item); assert.equal(data.transfer, true); assert.equal(data.disabled, false);
-  assert.equal(data.flags["worlds-beyond"].itemBound, true); assert.equal(data.name, "Sword bonus");
-  const sheet = new EffectSheet({ document: effect }); await sheet._prepareContext({});
-  item.isOwner = false; await assert.rejects(sheet._processSubmitData(null, null, { name: "Changed" }), /permission/);
+  assert.equal(effect.parent, item);
+  assert.equal(data.transfer, true);
+  assert.equal(data.disabled, false);
+  assert.equal(data.flags["worlds-beyond"].itemBound, true);
+  assert.equal(data.name, "Sword bonus");
+  const sheet = new EffectSheet({ document: effect });
+  await sheet._prepareContext({});
+  item.isOwner = false;
+  await assert.rejects(sheet._processSubmitData(null, null, { name: "Changed" }), /permission/);
 });
 
 test("native effect suppression follows managed item state without disabling unrelated transferred effects", () => {
-  class Native { get isSuppressed() { return !!this.expired; } shouldApplyChange() { return true; } }
-  globalThis.CONFIG = { ActiveEffect: { documentClass: Native } }; registerEffectSupport();
-  const effect = new CONFIG.ActiveEffect.documentClass(); effect.flags = { "worlds-beyond": { managed: true, itemBound: true } };
-  effect.item = { type: "weapon", system: { equipped: false } }; assert.equal(effect.isSuppressed, true);
-  effect.item.system.equipped = true; assert.equal(effect.isSuppressed, false);
-  effect.item = { type: "ability", system: { kind: "active", effectsActive: false } }; assert.equal(effect.isSuppressed, true);
-  effect.item.system.effectsActive = true; assert.equal(effect.isSuppressed, false);
-  effect.item.system.kind = "passive"; effect.item.system.effectsActive = false; assert.equal(effect.isSuppressed, false);
-  effect.expired = true; assert.equal(effect.isSuppressed, true);
-  effect.expired = false; effect.flags = {}; effect.item = { type: "weapon", system: { equipped: false } }; assert.equal(effect.isSuppressed, false);
+  class Native {
+    get isSuppressed() {
+      return !!this.expired;
+    }
+    shouldApplyChange() {
+      return true;
+    }
+  }
+  globalThis.CONFIG = { ActiveEffect: { documentClass: Native } };
+  registerEffectSupport();
+  const effect = new CONFIG.ActiveEffect.documentClass();
+  effect.flags = { "worlds-beyond": { managed: true, itemBound: true } };
+  effect.item = { type: "weapon", system: { equipped: false } };
+  assert.equal(effect.isSuppressed, true);
+  effect.item.system.equipped = true;
+  assert.equal(effect.isSuppressed, false);
+  effect.item = { type: "ability", system: { kind: "active", effectsActive: false } };
+  assert.equal(effect.isSuppressed, true);
+  effect.item.system.effectsActive = true;
+  assert.equal(effect.isSuppressed, false);
+  effect.item.system.kind = "passive";
+  effect.item.system.effectsActive = false;
+  assert.equal(effect.isSuppressed, false);
+  effect.expired = true;
+  assert.equal(effect.isSuppressed, true);
+  effect.expired = false;
+  effect.flags = {};
+  effect.item = { type: "weapon", system: { equipped: false } };
+  assert.equal(effect.isSuppressed, false);
 });
 
 test("consumable bonus definitions never transfer or apply just from carrying the item", async () => {
   let data;
-  const item = { documentName: "Item", type: "consumable", uuid: "Item.tonic", name: "Tonic", isOwner: true, effects: new Map(),
-    async createEmbeddedDocuments(type, records) { data = records[0]; const effect = { ...data, id: "bonus", parent: item }; item.effects.set(effect.id, effect); return [effect]; } };
+  const item = {
+    documentName: "Item",
+    type: "consumable",
+    uuid: "Item.tonic",
+    name: "Tonic",
+    isOwner: true,
+    effects: new Map(),
+    async createEmbeddedDocuments(type, records) {
+      data = records[0];
+      const effect = { ...data, id: "bonus", parent: item };
+      item.effects.set(effect.id, effect);
+      return [effect];
+    }
+  };
   const effect = await createEffect(item);
-  assert.equal(effect.transfer, false); assert.equal(effect.disabled, false); assert.equal(effect.flags["worlds-beyond"].itemBound, true);
+  assert.equal(effect.transfer, false);
+  assert.equal(effect.disabled, false);
+  assert.equal(effect.flags["worlds-beyond"].itemBound, true);
 });

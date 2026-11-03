@@ -15,5 +15,7 @@ export function bonusDurationText(setting) {
 }
 export function effectTimeLeft(effect) {
   if (!Number.isFinite(effect.duration?.value)) return "";
-  return effect.duration.label ? `${effect.duration.label} left` : `${Math.max(0, Math.floor(effect.duration.remaining ?? effect.duration.value))} ${effect.duration.units} left`;
+  return effect.duration.label
+    ? `${effect.duration.label} left`
+    : `${Math.max(0, Math.floor(effect.duration.remaining ?? effect.duration.value))} ${effect.duration.units} left`;
 }

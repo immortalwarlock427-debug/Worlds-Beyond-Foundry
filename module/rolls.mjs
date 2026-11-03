@@ -36,9 +36,10 @@ export function describeD20Roll(roll, mode = "normal") {
   const choice = mode === "advantage" ? " (higher)" : mode === "disadvantage" ? " (lower)" : "";
   return {
     equation: `${dieTotal} ${sign} ${Math.abs(wholeNumber(bonus))} = ${wholeNumber(roll.total)}`,
-    diceText: results.length > 1
-      ? `Rolled ${results.map(result => result.result).join(" and ")} · kept ${dieTotal}${choice}`
-      : `Rolled ${dieTotal} on the d20`,
+    diceText:
+      results.length > 1
+        ? `Rolled ${results.map(result => result.result).join(" and ")} · kept ${dieTotal}${choice}`
+        : `Rolled ${dieTotal} on the d20`,
     diceLabel: mode === "advantage" ? "2d20 · keep highest" : mode === "disadvantage" ? "2d20 · keep lowest" : "d20"
   };
 }

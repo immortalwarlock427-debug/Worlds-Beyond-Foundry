@@ -26,7 +26,17 @@ import { registerRecovery } from "./recovery-actions.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
 import { STAT_AWARD_LEVELS, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
-import { EQUIPMENT_MODELS, EquipmentSheet, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, useConsumable, decorateConsumableMessage } from "./equipment.mjs";
+import {
+  EQUIPMENT_MODELS,
+  EquipmentSheet,
+  ITEM_TYPES,
+  equipmentRows,
+  groupEquipmentRows,
+  createEquipment,
+  toggleEquipment,
+  useConsumable,
+  decorateConsumableMessage
+} from "./equipment.mjs";
 import { decorateSystemMessage } from "./chat-style.mjs";
 import { decorateEquipmentDirectory } from "./item-artwork.mjs";
 import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, importCatalog } from "./catalog-import.mjs";
@@ -51,35 +61,49 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const number = (initial = 0, options = {}) => new NumberField({ required: true, nullable: false, initial, ...options });
     const override = () => number(null, { nullable: true });
-    const barColors = () => new SchemaField(Object.fromEntries(["start", "end"].map(key => [key,
-      new StringField({ required: true, nullable: false, blank: true, initial: "" })
-    ])));
-    const pool = () => new SchemaField({
-      barColors: barColors(),
-      value: override(),
-      maxOverride: override(),
-      max: number(0, { persisted: false })
-    });
-    const stat = () => new SchemaField({
-      // Stores the component before earned points. A manual correction below
-      // the award total can make this component negative; the displayed base
-      // still includes the earned points, exactly as on the website.
-      value: new NumberField({ required: true, nullable: false, integer: true, initial: 12 }),
-      manual: new BooleanField({ initial: false }),
-      resetValue: override()
-    });
+    const barColors = () =>
+      new SchemaField(
+        Object.fromEntries(
+          ["start", "end"].map(key => [key, new StringField({ required: true, nullable: false, blank: true, initial: "" })])
+        )
+      );
+    const pool = () =>
+      new SchemaField({
+        barColors: barColors(),
+        value: override(),
+        maxOverride: override(),
+        max: number(0, { persisted: false })
+      });
+    const stat = () =>
+      new SchemaField({
+        // Stores the component before earned points. A manual correction below
+        // the award total can make this component negative; the displayed base
+        // still includes the earned points, exactly as on the website.
+        value: new NumberField({ required: true, nullable: false, integer: true, initial: 12 }),
+        manual: new BooleanField({ initial: false }),
+        resetValue: override()
+      });
     const resource = () => ({
       barColors: barColors(),
-      spent: number(), bonus: number(), amount: number(1, { min: 0 }),
-      regen: number(0, { min: 0 }), autoRecover: new BooleanField({ initial: false }), refillOnRest: new BooleanField({ initial: true }),
+      spent: number(),
+      bonus: number(),
+      amount: number(1, { min: 0 }),
+      regen: number(0, { min: 0 }),
+      autoRecover: new BooleanField({ initial: false }),
+      refillOnRest: new BooleanField({ initial: true }),
       allowOverflow: new BooleanField({ initial: false }),
-      maxOverride: number(null, { nullable: true, min: 0 }), minOverride: override(),
+      maxOverride: number(null, { nullable: true, min: 0 }),
+      minOverride: override(),
       display: new StringField({ required: true, nullable: false, blank: false, initial: "number", choices: RESOURCE_DISPLAYS }),
-      value: number(0, { persisted: false }), max: number(0, { persisted: false }), min: number(0, { persisted: false })
+      value: number(0, { persisted: false }),
+      max: number(0, { persisted: false }),
+      min: number(0, { persisted: false })
     });
-    const magicResource = () => new SchemaField({
-      ...resource(), enabled: new BooleanField({ initial: false })
-    });
+    const magicResource = () =>
+      new SchemaField({
+        ...resource(),
+        enabled: new BooleanField({ initial: false })
+      });
     return {
       appearance: new SchemaField({
         baseFormName: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
@@ -87,13 +111,23 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       }),
       favorites: new ArrayField(new StringField({ required: true, nullable: false, blank: true, initial: "" }), { initial: [] }),
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
-      details: new SchemaField(Object.fromEntries(CHARACTER_DETAILS.map(({ key }) => [key,
-        new StringField({ required: true, nullable: false, blank: true, trim: false, initial: "" })
-      ]))),
+      details: new SchemaField(
+        Object.fromEntries(
+          CHARACTER_DETAILS.map(({ key }) => [
+            key,
+            new StringField({ required: true, nullable: false, blank: true, trim: false, initial: "" })
+          ])
+        )
+      ),
       stats: new SchemaField(Object.fromEntries(STATS.map(s => [s.key, stat()]))),
-      advancement: new SchemaField(Object.fromEntries(STAT_AWARD_LEVELS.map(level => [
-        `level${level}`, new SchemaField(Object.fromEntries(STATS.map(s => [s.key, number(0, { integer: true, min: 0, max: 2 })])))
-      ]))),
+      advancement: new SchemaField(
+        Object.fromEntries(
+          STAT_AWARD_LEVELS.map(level => [
+            `level${level}`,
+            new SchemaField(Object.fromEntries(STATS.map(s => [s.key, number(0, { integer: true, min: 0, max: 2 })])))
+          ])
+        )
+      ),
       health: new SchemaField({
         barColors: barColors(),
         damage: number(),
@@ -108,11 +142,15 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       wonder: pool(),
       mana: magicResource(),
       holyPower: magicResource(),
-      customResources: new TypedObjectField(new SchemaField({
-        ...resource(), name: new StringField({ required: true, nullable: false, blank: true, initial: "Resource" }),
-        scaleStat: new StringField({ required: true, nullable: false, blank: true, initial: "", choices: RESOURCE_SCALING }),
-        baseMax: number(100, { min: 0 })
-      }), { validateKey: customResourceId }),
+      customResources: new TypedObjectField(
+        new SchemaField({
+          ...resource(),
+          name: new StringField({ required: true, nullable: false, blank: true, initial: "Resource" }),
+          scaleStat: new StringField({ required: true, nullable: false, blank: true, initial: "", choices: RESOURCE_SCALING }),
+          baseMax: number(100, { min: 0 })
+        }),
+        { validateKey: customResourceId }
+      ),
       bonuses: new SchemaField({ armor: number(), evasion: number(), movement: number() }),
       inventory: new SchemaField({ backpack: new BooleanField({ initial: false }) }),
       overrides: new SchemaField({
@@ -136,7 +174,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
 
   prepareDerivedData() {
     this.equipment = wornEquipment({
-      items: this.parent?.items ?? [], agility: this.stats.agl.value, strength: this.stats.str.value,
+      items: this.parent?.items ?? [],
+      agility: this.stats.agl.value,
+      strength: this.stats.str.value,
       penaltyOverride: this.overrides.armorAgilityPenalty
     });
     for (const { key } of STATS) {
@@ -148,7 +188,11 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.core = coreNumbers({
       level: this.level,
       stats: { ...this.stats, agl: { value: this.equipment.effectiveAgility } },
-      bonuses: { armor: this.equipment.armor + this.bonuses.armor, evasion: this.equipment.evasion + this.bonuses.evasion, movement: this.bonuses.movement },
+      bonuses: {
+        armor: this.equipment.armor + this.bonuses.armor,
+        evasion: this.equipment.evasion + this.bonuses.evasion,
+        movement: this.bonuses.movement
+      },
       overrides: {
         ...this.overrides,
         healthMax: this.health.maxOverride,
@@ -169,14 +213,16 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     for (const resource of Object.values(this.customResources ?? {})) Object.assign(resource, customPool(resource, this));
     const items = this.parent?.items ?? [];
     this.carrying = inventory({
-      items, strengthMod: this.stats.str.mod,
-      backpack: this.inventory.backpack, capacityOverride: this.overrides.inventorySlots
+      items,
+      strengthMod: this.stats.str.mod,
+      backpack: this.inventory.backpack,
+      capacityOverride: this.overrides.inventorySlots
     });
     this.block = blockDice({ level: this.level, items });
   }
 
   async _preCreate(data, options, user) {
-    if (await super._preCreate(data, options, user) === false) return false;
+    if ((await super._preCreate(data, options, user)) === false) return false;
     const defaults = {};
     // Honor supplied token settings, including an explicitly cleared bar.
     if (!foundry.utils.hasProperty(data, "prototypeToken.bar1.attribute")) defaults["prototypeToken.bar1.attribute"] = "health";
@@ -205,9 +251,25 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
       pickPortrait: CharacterSheet.#onPickPortrait,
-      viewTab: function (event, target) { this.changeTab(target.dataset.tab, "sheet"); },
-      favorites: async function () { if (!this.isEditable) return; try { await configureFavorites(this.actor); } catch (error) { ui.notifications.error(error.message); } },
-      archiveAppearance: async function () { if (!this.isEditable) return; try { await configureArchive(this.actor); } catch (error) { ui.notifications.error(error.message); } },
+      viewTab: function (event, target) {
+        this.changeTab(target.dataset.tab, "sheet");
+      },
+      favorites: async function () {
+        if (!this.isEditable) return;
+        try {
+          await configureFavorites(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
+      archiveAppearance: async function () {
+        if (!this.isEditable) return;
+        try {
+          await configureArchive(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       overviewEdit: function (event, target) {
         this.changeTab("details", "sheet");
         const field = target.dataset.field;
@@ -223,7 +285,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       },
       resource: CharacterSheet.#onResource,
       ability: CharacterSheet.#onAbility,
-      command: async function () { if (!this.isEditable) return; try { await promptCommand(this.actor); } catch (error) { ui.notifications.error(error.message); } },
+      command: async function () {
+        if (!this.isEditable) return;
+        try {
+          await promptCommand(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       savedAbility: CharacterSheet.#onSavedAbility,
       status: CharacterSheet.#onStatus
     }
@@ -233,7 +302,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     header: { template: `systems/${SYSTEM_ID}/templates/character-header.hbs` },
     character: { template: `systems/${SYSTEM_ID}/templates/character-overview.hbs`, scrollable: [""] },
     details: {
-      template: `systems/${SYSTEM_ID}/templates/character-details.hbs`, scrollable: [""],
+      template: `systems/${SYSTEM_ID}/templates/character-details.hbs`,
+      scrollable: [""],
       templates: [
         `systems/${SYSTEM_ID}/templates/character-details-resources.hbs`,
         `systems/${SYSTEM_ID}/templates/character-details-values.hbs`
@@ -245,29 +315,48 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     notes: { template: `systems/${SYSTEM_ID}/templates/character-notes.hbs`, scrollable: [""] }
   };
   static TABS = {
-    sheet: { initial: "character", tabs: [
-      { id: "character", label: "Character" }, { id: "details", label: "Details" }, { id: "equipment", label: "Equipment" },
-      { id: "abilities", label: "Abilities" }, { id: "status", label: "Status" }, { id: "notes", label: "Notes" }
-    ] }
+    sheet: {
+      initial: "character",
+      tabs: [
+        { id: "character", label: "Character" },
+        { id: "details", label: "Details" },
+        { id: "equipment", label: "Equipment" },
+        { id: "abilities", label: "Abilities" },
+        { id: "status", label: "Status" },
+        { id: "notes", label: "Notes" }
+      ]
+    }
   };
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const system = this.actor.system;
     const equipment = equipmentRows(this.actor.items ?? [], system.carrying?.perItem);
-    return Object.assign(context, prepareCharacterSheetContext({
-      actor: this.actor, source: system.toObject(), editable: this.isEditable,
-      equipment, equipmentGroups: groupEquipmentRows(equipment),
-      showAllFormAbilities: this._showAllFormAbilities,
-      showAllFormResources: this._showAllFormResources,
-      commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false
-    }));
+    return Object.assign(
+      context,
+      prepareCharacterSheetContext({
+        actor: this.actor,
+        source: system.toObject(),
+        editable: this.isEditable,
+        equipment,
+        equipmentGroups: groupEquipmentRows(equipment),
+        showAllFormAbilities: this._showAllFormAbilities,
+        showAllFormResources: this._showAllFormResources,
+        commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false
+      })
+    );
   }
 
   _processFormData(event, form, formData) {
     const systemSource = this.actor.system.toObject?.();
     const shownAp = apTotal(this.actor.system);
-    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, { system: { ...this.actor.system, ap: { ...this.actor.system.ap, value: shownAp }, bonuses: systemSource?.bonuses ?? this.actor.system.bonuses } });
+    const data = wholeFormUpdates(super._processFormData(event, form, formData), form, {
+      system: {
+        ...this.actor.system,
+        ap: { ...this.actor.system.ap, value: shownAp },
+        bonuses: systemSource?.bonuses ?? this.actor.system.bonuses
+      }
+    });
     barColorFormUpdates(this.actor.system, data);
     // The main AP field includes Command. Manual total corrections change own AP,
     // while the separate Command correction remains explicit and unchanged.
@@ -275,7 +364,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const entered = numberOr(data.system.ap.value, null);
       if (entered === wholeNumber(shownAp)) delete data.system.ap.value;
       else {
-        const grant = data.system.command && Object.hasOwn(data.system.command, "value") ? numberOr(data.system.command.value, 0) : numberOr(this.actor.system.command?.value, 0);
+        const grant =
+          data.system.command && Object.hasOwn(data.system.command, "value")
+            ? numberOr(data.system.command.value, 0)
+            : numberOr(this.actor.system.command?.value, 0);
         data.system.ap.value = entered === null ? null : Math.floor(entered) - Math.max(0, grant);
       }
     }
@@ -313,7 +405,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await super._onRender(context, options);
     // Native read-only actor sheets disable form buttons; rule references are
     // still viewable and never submit a document update.
-    for (const button of this.element.querySelectorAll('[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name')) button.disabled = false;
+    for (const button of this.element.querySelectorAll(
+      '[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name'
+    ))
+      button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
@@ -323,25 +418,37 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   static async #onRollStat(event, target) {
-    try { return await promptStatCheck(this.actor, target.dataset.stat); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await promptStatCheck(this.actor, target.dataset.stat);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onStatSetup(event, target) {
     if (!this.isEditable) return;
-    try { return await openStatSetup(this.actor, target.dataset.mode); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await openStatSetup(this.actor, target.dataset.mode);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onMilestones(event, target) {
-    try { return await openMilestones(this.actor, target.dataset.stat, target.dataset.threshold); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await openMilestones(this.actor, target.dataset.stat, target.dataset.threshold);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onLongRest() {
     if (!this.isEditable) return;
-    try { return await longRest(this.actor); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await longRest(this.actor);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onResource(event, target) {
@@ -351,11 +458,19 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const card = target.closest("[data-resource-key]");
       const key = card?.dataset.resourceKey;
       const operation = target.dataset.operation;
-      if (operation === "remove" && !await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Remove resource" }, content: "<p>Remove this custom resource and its balance?</p>", rejectClose: false
-      })) return;
+      if (
+        operation === "remove" &&
+        !(await foundry.applications.api.DialogV2.confirm({
+          window: { title: "Remove resource" },
+          content: "<p>Remove this custom resource and its balance?</p>",
+          rejectClose: false
+        }))
+      )
+        return;
       return await resourceAction(this.actor, key, operation, card?.querySelector("[data-resource-amount]")?.value);
-    } catch (error) { ui.notifications.error(error.message); }
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onEquipment(event, target) {
@@ -369,10 +484,19 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "use") return await useConsumable(this.actor, item?.id);
       if (operation === "attack") return await promptAttack(this.actor, item?.id);
       if (operation === "reload") return await reloadWeapon(this.actor, item?.id);
-      if (operation === "delete" && item && await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Remove equipment" }, content: "<p>Remove this item from this character?</p>", rejectClose: false
-      })) return await item.delete();
-    } catch (error) { ui.notifications.error(error.message); }
+      if (
+        operation === "delete" &&
+        item &&
+        (await foundry.applications.api.DialogV2.confirm({
+          window: { title: "Remove equipment" },
+          content: "<p>Remove this item from this character?</p>",
+          rejectClose: false
+        }))
+      )
+        return await item.delete();
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onAbility(event, target) {
@@ -385,10 +509,18 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");
       if (operation === "edit") return item.sheet.render({ force: true });
       if (["use", "end"].includes(operation)) return await useAbility(this.actor, item.id, { end: operation === "end" });
-      if (operation === "delete" && await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Remove ability" }, content: "<p>Remove this ability and its trackers from this character?</p>", rejectClose: false
-      })) return await item.delete();
-    } catch (error) { ui.notifications.error(error.message); }
+      if (
+        operation === "delete" &&
+        (await foundry.applications.api.DialogV2.confirm({
+          window: { title: "Remove ability" },
+          content: "<p>Remove this ability and its trackers from this character?</p>",
+          rejectClose: false
+        }))
+      )
+        return await item.delete();
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onSavedAbility(event, target) {
@@ -400,10 +532,19 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (!row) throw new Error("That saved ability no longer exists. Reopen the sheet.");
       if (["use", "end"].includes(operation)) return await toggleEffect(this.actor, uuid, { active: operation === "use" });
       if (operation === "edit") return await openEffect(row.effect);
-      if (operation === "delete" && row.canRemove && await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Remove saved ability" }, content: "<p>Remove this saved ability or form and its bonuses?</p>", rejectClose: false
-      })) return await row.effect.delete();
-    } catch (error) { ui.notifications.error(error.message); }
+      if (
+        operation === "delete" &&
+        row.canRemove &&
+        (await foundry.applications.api.DialogV2.confirm({
+          window: { title: "Remove saved ability" },
+          content: "<p>Remove this saved ability or form and its bonuses?</p>",
+          rejectClose: false
+        }))
+      )
+        return await row.effect.delete();
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onStatus(event, target) {
@@ -414,9 +555,17 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const row = effectContext(this.actor).statuses.find(row => row.uuid === uuid);
       if (!row) return; // A concurrent End already removed the live entry.
       const item = row.itemId ? this.actor.items.get(row.itemId) : null;
-      if (operation === "edit") return await (item ? item.sheet.render({ force: true }) : openEffect(effectRows(this.actor).find(effect => effect.uuid === uuid).effect));
-      if (operation === "end" && row.canEnd) return await (row.abilityId ? useAbility(this.actor, row.abilityId, { end: true }) : toggleEffect(this.actor, uuid, { active: false }));
-    } catch (error) { ui.notifications.error(error.message); }
+      if (operation === "edit")
+        return await (item
+          ? item.sheet.render({ force: true })
+          : openEffect(effectRows(this.actor).find(effect => effect.uuid === uuid).effect));
+      if (operation === "end" && row.canEnd)
+        return await (row.abilityId
+          ? useAbility(this.actor, row.abilityId, { end: true })
+          : toggleEffect(this.actor, uuid, { active: false }));
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onPickPortrait(event, target) {
@@ -432,20 +581,29 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onBlock() {
     if (!this.isEditable) return;
-    try { return await promptBlock(this.actor); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await promptBlock(this.actor);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onDodge() {
     if (!this.isEditable) return;
-    try { return await promptDodge(this.actor); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await promptDodge(this.actor);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   static async #onParry() {
     if (!this.isEditable) return;
-    try { return await promptParry(this.actor); }
-    catch (error) { ui.notifications.error(error.message); }
+    try {
+      return await promptParry(this.actor);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 }
 
@@ -463,10 +621,14 @@ Hooks.once("init", () => {
   Object.assign(CONFIG.Item.dataModels, EQUIPMENT_MODELS);
   CONFIG.Item.dataModels.ability = AbilityData;
   foundry.documents.collections.Items.registerSheet(SYSTEM_ID, AbilitySheet, {
-    types: ["ability"], makeDefault: true, label: "Worlds Beyond Ability"
+    types: ["ability"],
+    makeDefault: true,
+    label: "Worlds Beyond Ability"
   });
   foundry.documents.collections.Items.registerSheet(SYSTEM_ID, EquipmentSheet, {
-    types: Object.keys(ITEM_TYPES), makeDefault: true, label: "Worlds Beyond Equipment"
+    types: Object.keys(ITEM_TYPES),
+    makeDefault: true,
+    label: "Worlds Beyond Equipment"
   });
   CONFIG.Actor.trackableAttributes = {
     character: { bar: ["health", "ap", "reactions", "mana", "holyPower"], value: ["core.evasion", "core.armorRating", "core.movement"] }
@@ -503,7 +665,8 @@ Hooks.on("renderChatMessageHTML", decorateAttackDefenses);
 Hooks.on("renderChatMessageHTML", decorateReactionMessage);
 Hooks.on("renderChatMessageHTML", decorateCommand);
 Hooks.on("createChatMessage", message => {
-  if (game.user.isActiveGM && message.getFlag(SYSTEM_ID, "command")) receiveCommand(message).catch(error => ui.notifications.warn(`Command is waiting in chat: ${error.message}`));
+  if (game.user.isActiveGM && message.getFlag(SYSTEM_ID, "command"))
+    receiveCommand(message).catch(error => ui.notifications.warn(`Command is waiting in chat: ${error.message}`));
 });
 Hooks.on("updateActor", refreshWonderControls);
 Hooks.on("updateActor", refreshCommandControls);

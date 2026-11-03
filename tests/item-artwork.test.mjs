@@ -9,7 +9,7 @@ test("world/compendium thumbnails use resolved artwork without changing document
   const before = structuredClone([loaded, indexed, custom]);
   const images = [{}, {}, {}, {}];
   const rows = ["loaded", "indexed", "custom", "missing"].map((id, i) => ({ dataset: { entryId: id }, querySelector: () => images[i] }));
-  const application = { documentName: "Item", collection: { get: id => ({ loaded, custom }[id]), index: new Map([["indexed", indexed]]) } };
+  const application = { documentName: "Item", collection: { get: id => ({ loaded, custom })[id], index: new Map([["indexed", indexed]]) } };
   decorateEquipmentDirectory(application, { querySelectorAll: () => rows });
   assert.match(images[0].src, /handcrossbow-black/);
   assert.match(images[1].src, /crossbow-heavy-black/);
@@ -19,8 +19,18 @@ test("world/compendium thumbnails use resolved artwork without changing document
 });
 
 test("non-item directories and rows without thumbnails are untouched", () => {
-  decorateEquipmentDirectory({ documentName: "Actor" }, { querySelectorAll() { throw new Error("should not inspect actors"); } });
-  decorateEquipmentDirectory({ documentName: "Item", collection: new Map([["item", { type: "weapon", name: "Dagger" }]]) }, {
-    querySelectorAll: () => [{ dataset: { entryId: "item" }, querySelector: () => null }]
-  });
+  decorateEquipmentDirectory(
+    { documentName: "Actor" },
+    {
+      querySelectorAll() {
+        throw new Error("should not inspect actors");
+      }
+    }
+  );
+  decorateEquipmentDirectory(
+    { documentName: "Item", collection: new Map([["item", { type: "weapon", name: "Dagger" }]]) },
+    {
+      querySelectorAll: () => [{ dataset: { entryId: "item" }, querySelector: () => null }]
+    }
+  );
 });

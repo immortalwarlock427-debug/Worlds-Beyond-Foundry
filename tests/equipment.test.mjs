@@ -1,56 +1,132 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-class Field { constructor(options) { this.options = options; } }
+class Field {
+  constructor(options) {
+    this.options = options;
+  }
+}
 class StringField extends Field {}
 class NumberField extends Field {}
 class BooleanField extends Field {}
-class SchemaField { constructor(fields) { this.fields = fields; } }
+class SchemaField {
+  constructor(fields) {
+    this.fields = fields;
+  }
+}
 globalThis.foundry = {
   data: { fields: { StringField, NumberField, BooleanField, SchemaField } },
   abstract: { TypeDataModel: class {} },
-  applications: { api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base }, sheets: { ItemSheetV2: class { async _prepareContext() { return {}; } } } }
+  applications: {
+    api: { DocumentSheetV2: class {}, HandlebarsApplicationMixin: base => base },
+    sheets: {
+      ItemSheetV2: class {
+        async _prepareContext() {
+          return {};
+        }
+      }
+    }
+  }
 };
-const { ConsumableData, MiscData, ITEM_TYPES, equipmentRows, groupEquipmentRows, createEquipment, toggleEquipment, WeaponData, ArmorData, ShieldData, WEAPON_PROPERTIES, SIGNATURE_PROPERTIES, EquipmentSheet } = await import("../module/equipment.mjs");
+const {
+  ConsumableData,
+  MiscData,
+  ITEM_TYPES,
+  equipmentRows,
+  groupEquipmentRows,
+  createEquipment,
+  toggleEquipment,
+  WeaponData,
+  ArmorData,
+  ShieldData,
+  WEAPON_PROPERTIES,
+  SIGNATURE_PROPERTIES,
+  EquipmentSheet
+} = await import("../module/equipment.mjs");
 
 test("inventory rows show compact configured bonuses while stowed/on-use, with the right pool and duration", () => {
   const change = (key, value) => ({ key, value, type: "add", phase: "initial" });
-  const effects = [{ system: { changes: [change("system.stats.str.value", 3), change("system.stats.dex.value", -2)] } }, { disabled: true, system: { changes: [change("system.stats.str.value", 99)] } }];
+  const effects = [
+    { system: { changes: [change("system.stats.str.value", 3), change("system.stats.dex.value", -2)] } },
+    { disabled: true, system: { changes: [change("system.stats.str.value", 99)] } }
+  ];
   const potion = { id: "power", type: "consumable", effects, system: { bonusDuration: { value: 3, units: "rounds" } } };
   const gear = { id: "sword", type: "weapon", effects, system: { equipped: false, damage: "2d8" } };
   const custom = "resource00000001";
-  const blood = { id: "blood", type: "consumable", actor: { system: { customResources: { [custom]: { name: "Blood" } } } }, system: { healingDice: "20", restoreTarget: custom, restoreUnit: "percent" } };
+  const blood = {
+    id: "blood",
+    type: "consumable",
+    actor: { system: { customResources: { [custom]: { name: "Blood" } } } },
+    system: { healingDice: "20", restoreTarget: custom, restoreUnit: "percent" }
+  };
   const rows = equipmentRows([potion, gear, blood]);
-  assert.equal(rows[0].bonusHint, "+3 STR · -2 DEX"); assert.equal(rows[0].bonusDuration, "3 rounds"); assert.equal(rows[0].bonusHintTitle, "On use");
-  assert.equal(rows[1].bonusHint, rows[0].bonusHint); assert.match(rows[1].bonusHintTitle, /stowed/); assert.equal(gear.system.equipped, false);
-  assert.equal(rows[2].brief, "Restore 20% Blood"); assert.equal(rows[2].bonusHint, "");
+  assert.equal(rows[0].bonusHint, "+3 STR · -2 DEX");
+  assert.equal(rows[0].bonusDuration, "3 rounds");
+  assert.equal(rows[0].bonusHintTitle, "On use");
+  assert.equal(rows[1].bonusHint, rows[0].bonusHint);
+  assert.match(rows[1].bonusHintTitle, /stowed/);
+  assert.equal(gear.system.equipped, false);
+  assert.equal(rows[2].brief, "Restore 20% Blood");
+  assert.equal(rows[2].bonusHint, "");
 });
 
 test("equipment grouping retains every item and its actions, including zero quantity and legacy gear", () => {
   const items = [
     { id: "old", name: "Legacy", type: "gear", system: {} },
-    { id: "gun", name: "Revolver", type: "weapon", img: "icons/svg/target.svg", system: { equipped: true, damage: "1d6", loading: 6, shots: 2, quantity: 0 } },
+    {
+      id: "gun",
+      name: "Revolver",
+      type: "weapon",
+      img: "icons/svg/target.svg",
+      system: { equipped: true, damage: "1d6", loading: 6, shots: 2, quantity: 0 }
+    },
     { id: "coat", name: "Armor", type: "armor", system: { equipped: true } },
     { id: "potion", name: "Potion", type: "consumable", system: { quantity: 2 } },
     { id: "shield", name: "Shield", type: "shield", system: {} }
   ];
   const before = structuredClone(items);
   const groups = groupEquipmentRows(equipmentRows(items));
-  assert.deepEqual(groups.map(group => group.label), ["Weapons", "Armor", "Shields", "Consumables", "Gear"]);
+  assert.deepEqual(
+    groups.map(group => group.label),
+    ["Weapons", "Armor", "Shields", "Consumables", "Gear"]
+  );
   const rows = groups.flatMap(group => group.rows);
   assert.equal(rows.length, items.length);
   const gun = rows.find(row => row.id === "gun");
-  assert.equal(gun.quantity, 0); assert.equal(gun.showQuantity, true);
-  assert.equal(gun.canAttack, true); assert.equal(gun.canReload, true); assert.equal(gun.canEquip, true);
-  assert.match(gun.img, /pistol-revolver/); assert.match(gun.brief, /2\/6 shots/);
+  assert.equal(gun.quantity, 0);
+  assert.equal(gun.showQuantity, true);
+  assert.equal(gun.canAttack, true);
+  assert.equal(gun.canReload, true);
+  assert.equal(gun.canEquip, true);
+  assert.match(gun.img, /pistol-revolver/);
+  assert.match(gun.brief, /2\/6 shots/);
   assert.equal(rows.find(row => row.id === "potion").canUse, true);
   assert.deepEqual(items, before);
 });
 
 test("equipment summaries support all new types and preserve legacy gear", () => {
   const rows = equipmentRows([
-    { id: "a", name: "Sword", type: "weapon", system: { damage: "1d8", damageType: "Slashing", family: "balanced", properties: { versatile: true, reach: false }, signature: { quickdraw: true }, range: { normal: 20, long: 40 }, loading: 0, quantity: 0 } },
-    { id: "b", name: "Guards", type: "armor", system: { armorType: "heavy", piece: "legs", armorRating: 1, evasionBonus: 0, equipped: true } },
+    {
+      id: "a",
+      name: "Sword",
+      type: "weapon",
+      system: {
+        damage: "1d8",
+        damageType: "Slashing",
+        family: "balanced",
+        properties: { versatile: true, reach: false },
+        signature: { quickdraw: true },
+        range: { normal: 20, long: 40 },
+        loading: 0,
+        quantity: 0
+      }
+    },
+    {
+      id: "b",
+      name: "Guards",
+      type: "armor",
+      system: { armorType: "heavy", piece: "legs", armorRating: 1, evasionBonus: 0, equipped: true }
+    },
     { id: "c", name: "Plate", type: "shield", system: { armorRating: 1, blockDie: "1d10" } },
     { id: "d", name: "Old gear", type: "gear", system: {} }
   ]);
@@ -70,7 +146,13 @@ test("ability records appear only in their own list rather than as carried gear"
 test("creation embeds an item on the correct actor and opens its sheet", async () => {
   const calls = [];
   const item = { sheet: { render: options => calls.push(options) } };
-  const actor = { isOwner: true, async createEmbeddedDocuments(type, data) { calls.push({ type, data }); return [item]; } };
+  const actor = {
+    isOwner: true,
+    async createEmbeddedDocuments(type, data) {
+      calls.push({ type, data });
+      return [item];
+    }
+  };
   assert.equal(await createEquipment(actor, "weapon"), item);
   assert.deepEqual(calls, [{ type: "Item", data: [{ name: "New weapon", type: "weapon" }] }, { force: true }]);
   await createEquipment(actor, "constructor");
@@ -93,7 +175,6 @@ test("equip changes only the chosen owned item's flag without changing stats or 
   assert.equal(updates.length, 2);
 });
 
-
 test("each equipment model exposes only its common and type-specific fields", () => {
   const weapon = WeaponData.defineSchema();
   const armor = ArmorData.defineSchema();
@@ -102,8 +183,10 @@ test("each equipment model exposes only its common and type-specific fields", ()
     for (const key of ["description", "quantity", "slots", "cost", "equipped"]) assert.ok(key in schema);
   }
   for (const key of ["armorRating", "armorType", "piece", "evasionBonus", "blockDie"]) assert.equal(key in weapon, false);
-  for (const key of ["family", "ranged", "damage", "range", "loading", "properties", "signature", "blockDie"]) assert.equal(key in armor, false);
-  for (const key of ["family", "ranged", "damage", "range", "loading", "properties", "signature", "piece", "armorType", "evasionBonus"]) assert.equal(key in shield, false);
+  for (const key of ["family", "ranged", "damage", "range", "loading", "properties", "signature", "blockDie"])
+    assert.equal(key in armor, false);
+  for (const key of ["family", "ranged", "damage", "range", "loading", "properties", "signature", "piece", "armorType", "evasionBonus"])
+    assert.equal(key in shield, false);
   assert.equal(weapon.family.options.initial, "balanced");
   assert.deepEqual(Object.keys(weapon.family.options.choices), ["balanced", "heavy", "finesse", "paragon", "none"]);
   assert.ok(weapon.ranged instanceof BooleanField);
@@ -120,7 +203,22 @@ test("each equipment model exposes only its common and type-specific fields", ()
 test("Notion property and signature keys are boolean flags, separate from family and numeric loading/range", () => {
   const schema = WeaponData.defineSchema();
   assert.deepEqual(Object.keys(WEAPON_PROPERTIES), ["light", "twoHanded", "versatile", "strapped", "reach", "mount", "thrown"]);
-  assert.deepEqual(Object.keys(SIGNATURE_PROPERTIES), ["sweep", "hook", "stagger", "disarm", "entangle", "puncture", "sunder", "bleed", "pierceThrough", "bulwark", "quickdraw", "concealed", "silent", "loud"]);
+  assert.deepEqual(Object.keys(SIGNATURE_PROPERTIES), [
+    "sweep",
+    "hook",
+    "stagger",
+    "disarm",
+    "entangle",
+    "puncture",
+    "sunder",
+    "bleed",
+    "pierceThrough",
+    "bulwark",
+    "quickdraw",
+    "concealed",
+    "silent",
+    "loud"
+  ]);
   for (const field of [...Object.values(schema.properties.fields), ...Object.values(schema.signature.fields)]) {
     assert.ok(field instanceof BooleanField);
     assert.equal(field.options.initial, false);
@@ -132,9 +230,15 @@ test("weapon sheet choices preserve the family and checked/unchecked property st
   const sheet = new EquipmentSheet();
   sheet.isEditable = true;
   for (const family of ["balanced", "heavy", "finesse", "paragon", "none"]) {
-    sheet.item = { type: "weapon", system: { family, properties: { light: true, twoHanded: false }, signature: { silent: true, loud: false } } };
+    sheet.item = {
+      type: "weapon",
+      system: { family, properties: { light: true, twoHanded: false }, signature: { silent: true, loud: false } }
+    };
     const context = await sheet._prepareContext({});
-    assert.deepEqual(context.weaponFamilies.filter(choice => choice.selected).map(choice => choice.value), [family]);
+    assert.deepEqual(
+      context.weaponFamilies.filter(choice => choice.selected).map(choice => choice.value),
+      [family]
+    );
     assert.equal(context.weaponProperties.find(choice => choice.key === "light").checked, true);
     assert.equal(context.weaponProperties.find(choice => choice.key === "twoHanded").checked, false);
     assert.equal(context.signatureProperties.find(choice => choice.key === "silent").checked, true);
@@ -158,19 +262,33 @@ test("Notion ranged, ranged Paragon and melee Thrown examples remain distinct in
   for (const row of rows.slice(ordinary.length, ordinary.length + 2)) assert.match(row.detail, /Ranged · Paragon/);
   assert.equal(rows.at(-2).detail, "Finesse · Thrown");
   assert.equal(rows.at(-1).detail, "Balanced (melee) · Thrown");
-  const rangedWithZeroRange = equipmentRows([{ id: "custom", name: "Custom", type: "weapon", system: { family: "none", ranged: true, range: { normal: 0, long: 0 } } }])[0];
+  const rangedWithZeroRange = equipmentRows([
+    { id: "custom", name: "Custom", type: "weapon", system: { family: "none", ranged: true, range: { normal: 0, long: 0 } } }
+  ])[0];
   assert.equal(rangedWithZeroRange.detail, "Ranged");
-  const meleeWithRange = equipmentRows([{ id: "melee", name: "Custom", type: "weapon", system: { family: "finesse", ranged: false, range: { normal: 30, long: 60 } } }])[0];
+  const meleeWithRange = equipmentRows([
+    { id: "melee", name: "Custom", type: "weapon", system: { family: "finesse", ranged: false, range: { normal: 30, long: 60 } } }
+  ])[0];
   assert.doesNotMatch(meleeWithRange.detail, /Ranged/);
 });
 
 test("Two-handed weapons default to 2 slots and toggling only moves an unedited slot size", async () => {
   const get = (object, path) => path.split(".").reduce((value, key) => value?.[key], object);
   const has = (object, path) => get(object, path) !== undefined;
-  const set = (object, path, value) => { const keys = path.split("."); const last = keys.pop(); keys.reduce((o, k) => (o[k] ??= {}), object)[last] = value; };
+  const set = (object, path, value) => {
+    const keys = path.split(".");
+    const last = keys.pop();
+    keys.reduce((o, k) => (o[k] ??= {}), object)[last] = value;
+  };
   foundry.utils = { getProperty: get, hasProperty: has, setProperty: set };
 
-  const created = Object.assign(Object.create(WeaponData.prototype), { parent: { updateSource(data) { this.data = data; } } });
+  const created = Object.assign(Object.create(WeaponData.prototype), {
+    parent: {
+      updateSource(data) {
+        this.data = data;
+      }
+    }
+  });
   await created._preCreate({ system: { properties: { twoHanded: true } } });
   assert.deepEqual(created.parent.data, { "system.slots": 2 });
 
@@ -210,17 +328,26 @@ test("consumable and miscellaneous types have their own models, rows and creatio
   assert.equal(consumable.equipped, undefined);
   assert.equal(MiscData.defineSchema().equipped, undefined);
   assert.equal(ITEM_TYPES.misc, "Miscellaneous");
-  const [potion, rope] = equipmentRows([
-    { id: "p", name: "Potion", type: "consumable", system: { kind: "potion", healingDice: "2d4+2", perSlot: 5, quantity: 3 } },
-    { id: "r", name: "Rope", type: "misc", system: { perSlot: 1, quantity: 1 } }
-  ], { p: 1, r: 1 });
+  const [potion, rope] = equipmentRows(
+    [
+      { id: "p", name: "Potion", type: "consumable", system: { kind: "potion", healingDice: "2d4+2", perSlot: 5, quantity: 3 } },
+      { id: "r", name: "Rope", type: "misc", system: { perSlot: 1, quantity: 1 } }
+    ],
+    { p: 1, r: 1 }
+  );
   assert.equal(potion.detail, "Potion · Heals 2d4+2 · 5 per slot");
   assert.equal(potion.canUse, true);
   assert.equal(potion.canEquip, false);
   assert.equal(rope.canUse, false);
   assert.equal(rope.slots, 1);
   const created = [];
-  const actor = { isOwner: true, async createEmbeddedDocuments(type, data) { created.push(data[0]); return [{ sheet: { render() {} } }]; } };
+  const actor = {
+    isOwner: true,
+    async createEmbeddedDocuments(type, data) {
+      created.push(data[0]);
+      return [{ sheet: { render() {} } }];
+    }
+  };
   await createEquipment(actor, "misc");
   assert.deepEqual(created, [{ name: "New miscellaneous", type: "misc" }]);
 });

@@ -5,8 +5,14 @@ import { dodgeContext, dodgeOutcome, parryContext, parryOutcome, parryReadiness 
 test("direct Dodge must beat the attack, while an area Dodge meets the save DC", () => {
   const direct = dodgeContext({ target: 17 });
   const area = dodgeContext({ against: "area", target: 17 });
-  assert.deepEqual([16, 17, 18].map(total => dodgeOutcome(direct, total).damageMultiplier), [1, 1, 0]);
-  assert.deepEqual([16, 17, 18].map(total => dodgeOutcome(area, total).damageMultiplier), [1, 0.5, 0.5]);
+  assert.deepEqual(
+    [16, 17, 18].map(total => dodgeOutcome(direct, total).damageMultiplier),
+    [1, 1, 0]
+  );
+  assert.deepEqual(
+    [16, 17, 18].map(total => dodgeOutcome(area, total).damageMultiplier),
+    [1, 0.5, 0.5]
+  );
 });
 
 test("blank defense targets stay unresolved; an explicit zero remains a comparison target", () => {
@@ -52,7 +58,10 @@ test("Parry requires DEX 21 and a held weapon or shield; armor and carried items
 test("Parry must beat an attack total, allows manual/zero targets and supports an ally", () => {
   const context = parryContext({ target: "17", ally: true });
   assert.equal(context.ally, true);
-  assert.deepEqual([16, 17, 18].map(total => parryOutcome(context, total).damageMultiplier), [1, 1, 0]);
+  assert.deepEqual(
+    [16, 17, 18].map(total => parryOutcome(context, total).damageMultiplier),
+    [1, 1, 0]
+  );
   assert.equal(parryOutcome(parryContext(), 20).resolved, false);
   assert.equal(parryOutcome(parryContext({ target: 0 }), 0).success, false);
   assert.throws(() => parryContext({ target: "unknown" }), /numeric attack total/);

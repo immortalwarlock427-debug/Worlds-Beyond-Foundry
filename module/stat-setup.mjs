@@ -1,5 +1,13 @@
 import { STATS } from "./stats.mjs";
-import { STAT_ROLL_FORMULA, STAT_AWARD_LEVELS, statAwards, statIncreases, validateStatAwards, assignStatResult, assignedStatUpdates } from "./stat-advancement.mjs";
+import {
+  STAT_ROLL_FORMULA,
+  STAT_AWARD_LEVELS,
+  statAwards,
+  statIncreases,
+  validateStatAwards,
+  assignStatResult,
+  assignedStatUpdates
+} from "./stat-advancement.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 
@@ -16,20 +24,27 @@ const signature = actor => JSON.stringify(sourceState(actor));
 // Unrelated resource spending does not invalidate it. Recheck ownership at save.
 export async function saveStatSetup(actor, baseline, updates) {
   const previous = operations.get(actor.uuid) ?? Promise.resolve();
-  const current = previous.catch(() => {}).then(async () => {
-    if (!actor.isOwner) throw new Error("You need permission to edit this character.");
-    if (signature(actor) !== baseline) throw new Error("This character's stats or level changed. Reopen this window to use the latest values.");
-    return actor.update(updates);
-  });
+  const current = previous
+    .catch(() => {})
+    .then(async () => {
+      if (!actor.isOwner) throw new Error("You need permission to edit this character.");
+      if (signature(actor) !== baseline)
+        throw new Error("This character's stats or level changed. Reopen this window to use the latest values.");
+      return actor.update(updates);
+    });
   operations.set(actor.uuid, current);
-  try { return await current; }
-  finally { if (operations.get(actor.uuid) === current) operations.delete(actor.uuid); }
+  try {
+    return await current;
+  } finally {
+    if (operations.get(actor.uuid) === current) operations.delete(actor.uuid);
+  }
 }
 
 export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     classes: [SYSTEM_ID, "wb-sheet", "wb-stat-setup"],
-    position: { width: 500, height: "auto" }, window: { resizable: true },
+    position: { width: 500, height: "auto" },
+    window: { resizable: true },
     actions: { setup: StatSetup.#onAction }
   };
   static PARTS = { body: { template: `systems/${SYSTEM_ID}/templates/stat-setup.hbs` } };
@@ -42,8 +57,9 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
     this.baseline = signature(actor);
     this.rows = STATS.map(stat => ({ stat: stat.key, score: null, dice: "" }));
     this.advancement = structuredClone(this.source.advancement);
-    this.selectedLevel = statAwards(this.source.level, this.advancement).find(award => award.remaining > 0)?.level
-      ?? statAwards(this.source.level, this.advancement).at(-1)?.level;
+    this.selectedLevel =
+      statAwards(this.source.level, this.advancement).find(award => award.remaining > 0)?.level ??
+      statAwards(this.source.level, this.advancement).at(-1)?.level;
     this.busy = false;
     this.discarded = false;
   }
@@ -54,24 +70,42 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
     const awards = statAwards(this.source.level, this.advancement);
     const award = awards.find(row => row.level === this.selectedLevel);
     const filled = this.rows.filter(row => row.score !== null).length;
-    return Object.assign(context, wholeDisplay({
-      generation: this.mode === "generation", editable: this.actor.isOwner && !this.busy, busy: this.busy,
-      filled, full: filled === 8, canApply: filled > 0 && !this.busy && this.actor.isOwner,
-      awards: awards.map(row => ({ ...row, selected: row.level === this.selectedLevel })), award,
-      nextAward: STAT_AWARD_LEVELS.find(at => at > this.source.level),
-      rows: this.rows.map((row, index) => ({ ...row, index, number: index + 1,
-        hasScore: row.score !== null,
-        choices: STATS.map(stat => ({ value: stat.key, label: stat.abbr, selected: stat.key === row.stat })),
-        increase: increases[row.stat], preview: row.score === null ? null : row.score + increases[row.stat]
-      })),
-      stats: STATS.map(stat => {
-        const points = award?.allocation[stat.key] ?? 0;
-        const base = Number(this.source.stats[stat.key]?.value ?? 12), total = base + increases[stat.key];
-        return { ...stat, points, base, total,
-          canAdd: !!award && award.remaining > 0 && points < 2 && total < 28,
-          canRemove: points > 0 };
+    return Object.assign(
+      context,
+      wholeDisplay({
+        generation: this.mode === "generation",
+        editable: this.actor.isOwner && !this.busy,
+        busy: this.busy,
+        filled,
+        full: filled === 8,
+        canApply: filled > 0 && !this.busy && this.actor.isOwner,
+        awards: awards.map(row => ({ ...row, selected: row.level === this.selectedLevel })),
+        award,
+        nextAward: STAT_AWARD_LEVELS.find(at => at > this.source.level),
+        rows: this.rows.map((row, index) => ({
+          ...row,
+          index,
+          number: index + 1,
+          hasScore: row.score !== null,
+          choices: STATS.map(stat => ({ value: stat.key, label: stat.abbr, selected: stat.key === row.stat })),
+          increase: increases[row.stat],
+          preview: row.score === null ? null : row.score + increases[row.stat]
+        })),
+        stats: STATS.map(stat => {
+          const points = award?.allocation[stat.key] ?? 0;
+          const base = Number(this.source.stats[stat.key]?.value ?? 12),
+            total = base + increases[stat.key];
+          return {
+            ...stat,
+            points,
+            base,
+            total,
+            canAdd: !!award && award.remaining > 0 && points < 2 && total < 28,
+            canRemove: points > 0
+          };
+        })
       })
-    }));
+    );
   }
 
   async _onRender(context, options) {
@@ -86,13 +120,15 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
         // Keep the focused input and Apply button in place while typing.
         const increase = statIncreases(this.source.level, this.advancement)[row.stat];
         const detail = this.element.querySelector(`[data-result-details="${input.dataset.resultScore}"]`);
-        detail.textContent = row.score === null ? "Not rolled" : `Typed score${increase ? ` · with stat points: ${row.score + increase} (+${increase})` : ""}`;
+        detail.textContent =
+          row.score === null ? "Not rolled" : `Typed score${increase ? ` · with stat points: ${row.score + increase} (+${increase})` : ""}`;
         const filled = this.rows.filter(row => row.score !== null).length;
         const apply = this.element.querySelector('[data-operation="apply"]');
         apply.textContent = `Apply ${filled} scores`;
         apply.disabled = !filled;
         this.element.querySelector('[data-operation="roll-one"]').disabled = filled === 8;
-        this.element.querySelector('[data-operation="roll-all"]').textContent = filled === 8 ? "Reroll eight" : filled ? "Roll remaining" : "Roll eight";
+        this.element.querySelector('[data-operation="roll-all"]').textContent =
+          filled === 8 ? "Reroll eight" : filled ? "Roll remaining" : "Roll eight";
       });
     }
     for (const select of this.element.querySelectorAll("[data-result-stat]")) {
@@ -115,7 +151,9 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
       if (operation === "level") this.selectedLevel = Number(target.dataset.level);
       if (operation === "reset") this.advancement[`level${this.selectedLevel}`] = Object.fromEntries(STATS.map(stat => [stat.key, 0]));
       if (operation === "add" || operation === "remove") {
-        const next = structuredClone(this.advancement), key = `level${this.selectedLevel}`, stat = target.dataset.stat;
+        const next = structuredClone(this.advancement),
+          key = `level${this.selectedLevel}`,
+          stat = target.dataset.stat;
         if (!STATS.some(row => row.key === stat) || !statAwards(this.source.level).some(row => row.level === this.selectedLevel)) return;
         next[key] ??= {};
         next[key][stat] = (next[key][stat] ?? 0) + (operation === "add" ? 1 : -1);
@@ -124,15 +162,18 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
       }
       if (operation === "apply") return await this.apply();
       await this.render({ force: true });
-      const focus = this.element.querySelector(`[data-operation="${operation}"][data-stat="${target.dataset.stat}"]:not(:disabled)`)
-        ?? this.element.querySelector(`[data-stat="${target.dataset.stat}"]:not(:disabled)`);
+      const focus =
+        this.element.querySelector(`[data-operation="${operation}"][data-stat="${target.dataset.stat}"]:not(:disabled)`) ??
+        this.element.querySelector(`[data-stat="${target.dataset.stat}"]:not(:disabled)`);
       focus?.focus();
-    } catch (error) { ui.notifications.error(error.message); }
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
   }
 
   async rollScores(one = false) {
     if (this.busy || this.discarded || !this.actor.isOwner) return;
-    const indices = this.rows.flatMap((row, index) => row.score === null ? [index] : []);
+    const indices = this.rows.flatMap((row, index) => (row.score === null ? [index] : []));
     const selected = one ? indices.slice(0, 1) : indices.length ? indices : this.rows.map((row, index) => index);
     if (!selected.length) return;
     this.busy = true;
@@ -145,7 +186,10 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
         results.push({ index, score: roll.total, dice: dice.join(" + ") });
       }
       for (const result of results) Object.assign(this.rows[result.index], { score: result.score, dice: result.dice });
-    } finally { this.busy = false; if (!this.discarded) await this.render({ force: true }); }
+    } finally {
+      this.busy = false;
+      if (!this.discarded) await this.render({ force: true });
+    }
   }
 
   async apply() {
@@ -155,15 +199,21 @@ export class StatSetup extends HandlebarsApplicationMixin(ApplicationV2) {
     else {
       validateStatAwards(this.source.level, this.advancement, this.source.stats, this.source.advancement);
       updates = {};
-      for (const award of statAwards(this.source.level, this.advancement)) for (const stat of STATS) {
-        updates[`system.advancement.${award.key}.${stat.key}`] = award.allocation[stat.key];
-      }
+      for (const award of statAwards(this.source.level, this.advancement))
+        for (const stat of STATS) {
+          updates[`system.advancement.${award.key}.${stat.key}`] = award.allocation[stat.key];
+        }
       if (!Object.keys(updates).length) return this.close();
     }
     this.busy = true;
     await this.render({ force: true });
-    try { await saveStatSetup(this.actor, this.baseline, updates); await this.close(); }
-    finally { this.busy = false; if (this.rendered) await this.render({ force: true }); }
+    try {
+      await saveStatSetup(this.actor, this.baseline, updates);
+      await this.close();
+    } finally {
+      this.busy = false;
+      if (this.rendered) await this.render({ force: true });
+    }
   }
 
   async close(options) {

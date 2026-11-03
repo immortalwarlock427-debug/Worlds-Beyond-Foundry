@@ -1,15 +1,32 @@
   <section class="tab wb-sheet-panel {{tabs.status.cssClass}}" data-group="sheet" data-tab="status" data-record-tab aria-label="Status">
   <section class="wb-status wb-equipment" aria-label="Active status">
-    <header class="wb-record-heading"><div><span class="wb-eyebrow">Active influences</span><h2 class="wb-section-title">Status <span class="wb-record-count">{{overviewStatusCount}}</span></h2></div><span class="wb-record-seal" aria-hidden="true"><i class="fa-solid fa-circle-nodes"></i></span></header>
+    <header class="wb-record-heading"><div><span class="wb-eyebrow">Active influences</span><h2 class="wb-section-title">Status <span class="wb-record-count">{{overviewStatusCount}}</span></h2></div><span
+      class="wb-record-seal"
+      aria-hidden="true"
+    ><i class="fa-solid fa-circle-nodes"></i></span></header>
     <ul class="wb-equipment-list">
       {{#each activeStatuses}}<li class="wb-equipment-row" data-effect-uuid="{{uuid}}">
         <img class="wb-item-icon" src="{{img}}" alt="" loading="lazy">
-        <div class="wb-item-main"><button type="button" class="wb-equipment-name" data-action="status" data-operation="edit" aria-label="Open source: {{name}}" data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}">
+        <div class="wb-item-main"><button
+          type="button"
+          class="wb-equipment-name"
+          data-action="status"
+          data-operation="edit"
+          aria-label="Open source: {{name}}"
+          data-tooltip="{{summary}}{{#if source}} · {{source}}{{/if}}"
+        >
           <span class="wb-item-title">{{name}}</span>
           <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
           {{#if timeLeft}}<span class="wb-status-time">{{timeLeft}}</span>{{/if}}
         </button></div>
-        {{#if canEnd}}<div class="wb-row-actions"><button type="button" class="wb-row-use" data-action="status" data-operation="end" aria-label="End {{name}}" {{#unless @root.editable}}disabled{{/unless}}>End</button></div>{{/if}}
+        {{#if canEnd}}<div class="wb-row-actions"><button
+          type="button"
+          class="wb-row-use"
+          data-action="status"
+          data-operation="end"
+          aria-label="End {{name}}"
+          {{#unless @root.editable}}disabled{{/unless}}
+        >End</button></div>{{/if}}
       </li>{{else}}<li class="wb-empty">Nothing is actively affecting you.</li>{{/each}}
     </ul>
   </section>

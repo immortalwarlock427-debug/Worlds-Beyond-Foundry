@@ -4,13 +4,28 @@
       <span class="wb-eyebrow wb-archive-title">Worlds Beyond <span aria-hidden="true">✦</span> Infinite Archive</span>
       <input class="wb-name" type="text" name="name" value="{{actor.name}}" placeholder="Name" {{#unless editable}}disabled{{/unless}}>
       <div class="wb-identity-tags">
-        {{#if overviewClass}}<button type="button" data-action="viewTab" data-tab="notes" title="Class and character notes"><i class="fa-solid fa-book-open" aria-hidden="true"></i> {{overviewClass}}</button>{{#if overviewRace}}<span aria-hidden="true">·</span>{{else}}{{#if hasForms}}<span aria-hidden="true">·</span>{{/if}}{{/if}}{{/if}}
-        {{#if overviewRace}}<button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> {{overviewRace}}</button>{{#if hasForms}}<span aria-hidden="true">·</span>{{/if}}{{/if}}
+        {{#if overviewClass}}<button type="button" data-action="viewTab" data-tab="notes" title="Class and character notes"><i
+          class="fa-solid fa-book-open"
+          aria-hidden="true"
+        ></i> {{overviewClass}}</button>{{#if overviewRace}}<span aria-hidden="true">·</span>{{else}}{{#if hasForms}}<span aria-hidden="true">·</span>{{/if}}{{/if}}{{/if}}
+        {{#if overviewRace}}<button type="button" data-action="viewTab" data-tab="notes" title="Race and character notes"><i
+          class="fa-solid fa-fingerprint"
+          aria-hidden="true"
+        ></i> {{overviewRace}}</button>{{#if hasForms}}<span aria-hidden="true">·</span>{{/if}}{{/if}}
         {{#if hasForms}}
         {{#if canRenameBaseForm}}
-        <button type="button" data-action="archiveAppearance" title="Rename base form" aria-label="Rename {{baseFormName}}"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}} <i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+        <button type="button" data-action="archiveAppearance" title="Rename base form" aria-label="Rename {{baseFormName}}"><i
+          class="fa-solid fa-moon"
+          aria-hidden="true"
+        ></i> {{overviewForm}} <i
+          class="fa-solid fa-pen"
+          aria-hidden="true"
+        ></i></button>
         {{else}}
-        <button type="button" data-action="viewTab" data-tab="abilities" title="Abilities and forms"><i class="fa-solid fa-moon" aria-hidden="true"></i> {{overviewForm}}</button>
+        <button type="button" data-action="viewTab" data-tab="abilities" title="Abilities and forms"><i
+          class="fa-solid fa-moon"
+          aria-hidden="true"
+        ></i> {{overviewForm}}</button>
         {{/if}}
         {{/if}}
       </div>

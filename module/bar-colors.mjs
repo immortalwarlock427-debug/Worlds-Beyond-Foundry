@@ -8,10 +8,18 @@ export function normalizeBarColor(value) {
   return `#${hex.length === 3 ? [...hex].map(c => c + c).join("") : hex}`;
 }
 export function barColorContext(pool = {}) {
-  const colors = pool.barColors ?? {}, barColors = { start: colors.start ?? "", end: colors.end ?? "" };
+  const colors = pool.barColors ?? {},
+    barColors = { start: colors.start ?? "", end: colors.end ?? "" };
   // Advanced/imported invalid values should not break a sheet or become CSS.
-  const safe = value => { try { return normalizeBarColor(value); } catch { return ""; } };
-  const start = safe(barColors.start), end = safe(barColors.end);
+  const safe = value => {
+    try {
+      return normalizeBarColor(value);
+    } catch {
+      return "";
+    }
+  };
+  const start = safe(barColors.start),
+    end = safe(barColors.end);
   const fill = start && end ? `linear-gradient(90deg, ${start}, ${end})` : start || end;
   return { barColors, barStyle: fill ? `background:${fill};` : "" };
 }

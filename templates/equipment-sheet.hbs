@@ -4,75 +4,226 @@
   </div></header>
   <div class="wb-equipment-fields">
     <label>Quantity<input type="number" name="system.quantity" value="{{system.quantity}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    {{#if equippable}}<label class="wb-equipment-check"><input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Equipped</label>{{/if}}
+    {{#if equippable}}<label class="wb-equipment-check"><input
+      type="checkbox"
+      name="system.equipped"
+      {{#if system.equipped}}checked{{/if}}
+      {{#unless editable}}disabled{{/unless}}
+    > Equipped</label>{{/if}}
   </div>
   {{#if weapon}}
   <div class="wb-equipment-fields">
-    <label>Weapon family<select name="system.family" {{#unless editable}}disabled{{/unless}}>{{#each weaponFamilies}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label class="wb-equipment-check"><input type="checkbox" name="system.ranged" {{#if system.ranged}}checked{{/if}} {{#unless editable}}disabled{{/unless}}> Ranged weapon</label>
-    <label>Base damage<input type="text" name="system.damage" value="{{system.damage}}" placeholder="1d8" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Weapon family<select name="system.family" {{#unless editable}}disabled{{/unless}}>{{#each weaponFamilies}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label class="wb-equipment-check"><input
+      type="checkbox"
+      name="system.ranged"
+      {{#if system.ranged}}checked{{/if}}
+      {{#unless editable}}disabled{{/unless}}
+    > Ranged weapon</label>
+    <label>Base damage<input
+      type="text"
+      name="system.damage"
+      value="{{system.damage}}"
+      placeholder="1d8"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
     <label>Damage type<input type="text" name="system.damageType" value="{{system.damageType}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   <details class="wb-disclosure" data-sync="weapon-range"><summary>Range &amp; loading</summary><div class="wb-equipment-fields">
-    <label>Normal range (ft)<input type="number" name="system.range.normal" value="{{system.range.normal}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Long range (ft)<input type="number" name="system.range.long" value="{{system.range.long}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Loading (shots; 0 for none)<input type="number" name="system.loading" value="{{system.loading}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Shots loaded (blank = full)<input type="number" name="system.shots" value="{{system.shots}}" min="0" step="1" placeholder="Full" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Normal range (ft)<input
+      type="number"
+      name="system.range.normal"
+      value="{{system.range.normal}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Long range (ft)<input
+      type="number"
+      name="system.range.long"
+      value="{{system.range.long}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Loading (shots; 0 for none)<input
+      type="number"
+      name="system.loading"
+      value="{{system.loading}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Shots loaded (blank = full)<input
+      type="number"
+      name="system.shots"
+      value="{{system.shots}}"
+      min="0"
+      step="1"
+      placeholder="Full"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
   </div></details>
   <details class="wb-disclosure" data-sync="weapon-properties"><summary>Properties <span class="wb-summary-value">{{propertySummary}}</span></summary><div class="wb-equipment-fields">
-    {{#each weaponProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.properties.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
-  </div><label>Versatile damage<input type="text" name="system.versatileDamage" value="{{system.versatileDamage}}" placeholder="1d10" {{#unless editable}}disabled{{/unless}}></label></details>
+    {{#each weaponProperties}}<label class="wb-equipment-check"><input
+      type="checkbox"
+      name="system.properties.{{key}}"
+      {{#if checked}}checked{{/if}}
+      {{#unless @root.editable}}disabled{{/unless}}
+    > {{label}}</label>{{/each}}
+  </div><label>Versatile damage<input
+    type="text"
+    name="system.versatileDamage"
+    value="{{system.versatileDamage}}"
+    placeholder="1d10"
+    {{#unless editable}}disabled{{/unless}}
+  ></label></details>
   <details class="wb-disclosure" data-sync="weapon-signatures"><summary>Signature properties <span class="wb-summary-value">{{signatureSummary}}</span></summary><div class="wb-equipment-fields">
-    {{#each signatureProperties}}<label class="wb-equipment-check"><input type="checkbox" name="system.signature.{{key}}" {{#if checked}}checked{{/if}} {{#unless @root.editable}}disabled{{/unless}}> {{label}}</label>{{/each}}
+    {{#each signatureProperties}}<label class="wb-equipment-check"><input
+      type="checkbox"
+      name="system.signature.{{key}}"
+      {{#if checked}}checked{{/if}}
+      {{#unless @root.editable}}disabled{{/unless}}
+    > {{label}}</label>{{/each}}
   </div></details>
   {{/if}}
   {{#if armor}}
   <div class="wb-equipment-fields">
-    <label>Armor type<select name="system.armorType" {{#unless editable}}disabled{{/unless}}>{{#each armorTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Worn piece<select name="system.piece" {{#unless editable}}disabled{{/unless}}>{{#each armorPieces}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Natural Evasion bonus<input type="number" name="system.evasionBonus" value="{{system.evasionBonus}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Armor type<select name="system.armorType" {{#unless editable}}disabled{{/unless}}>{{#each armorTypes}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Worn piece<select name="system.piece" {{#unless editable}}disabled{{/unless}}>{{#each armorPieces}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Armor Rating<input
+      type="number"
+      name="system.armorRating"
+      value="{{system.armorRating}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Natural Evasion bonus<input
+      type="number"
+      name="system.evasionBonus"
+      value="{{system.evasionBonus}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
   </div>
   {{/if}}
   {{#if consumable}}
   <div class="wb-equipment-fields">
-    <label>Kind<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each consumableKinds}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Restore<select name="system.restoreTarget" {{#unless editable}}disabled{{/unless}}>{{#each recoveryChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-    <label>Amount or dice<input type="text" name="system.healingDice" value="{{system.healingDice}}" placeholder="20 or 2d6+2; blank for bonuses only" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Unit<select name="system.restoreUnit" {{#unless editable}}disabled{{/unless}}>{{#each recoveryUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>Kind<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each consumableKinds}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Restore<select name="system.restoreTarget" {{#unless editable}}disabled{{/unless}}>{{#each recoveryChoices}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Amount or dice<input
+      type="text"
+      name="system.healingDice"
+      value="{{system.healingDice}}"
+      placeholder="20 or 2d6+2; blank for bonuses only"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Unit<select name="system.restoreUnit" {{#unless editable}}disabled{{/unless}}>{{#each recoveryUnits}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
   </div>
   {{/if}}
   {{#if shield}}
   <div class="wb-equipment-fields">
-    <label>Armor Rating<input type="number" name="system.armorRating" value="{{system.armorRating}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Armor Rating<input
+      type="number"
+      name="system.armorRating"
+      value="{{system.armorRating}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
     <label>Block die<input type="text" name="system.blockDie" value="{{system.blockDie}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   {{/if}}
 {{#if hasBonuses}}
   <section class="wb-item-bonuses" aria-label="Item bonuses">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button type="button" data-action="itemEffect" data-operation="create" {{#unless editable}}disabled{{/unless}}>Add bonus</button></div>
+    <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button
+      type="button"
+      data-action="itemEffect"
+      data-operation="create"
+      {{#unless editable}}disabled{{/unless}}
+    >Add bonus</button></div>
     {{#each itemEffects}}
     <div class="wb-item-bonus-row" data-item-effect-id="{{id}}">
       <button type="button" class="wb-bonus-name" data-action="itemEffect" data-operation="edit"><strong>{{name}}</strong><span>{{summary}}</span></button>
       <span class="wb-item-brief">{{state}}</span>
-      <button type="button" data-action="itemEffect" data-operation="toggle" aria-label="Toggle {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-power-off" aria-hidden="true"></i></button>
-      <button type="button" data-action="itemEffect" data-operation="delete" aria-label="Remove {{name}}" {{#unless @root.editable}}disabled{{/unless}}><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+      <button
+        type="button"
+        data-action="itemEffect"
+        data-operation="toggle"
+        aria-label="Toggle {{name}}"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ><i
+        class="fa-solid fa-power-off"
+        aria-hidden="true"
+      ></i></button>
+      <button
+        type="button"
+        data-action="itemEffect"
+        data-operation="delete"
+        aria-label="Remove {{name}}"
+        {{#unless @root.editable}}disabled{{/unless}}
+      ><i
+        class="fa-solid fa-trash-can"
+        aria-hidden="true"
+      ></i></button>
     </div>
     {{else}}<p class="wb-empty">No bonuses. Add one, choose a stat and enter an amount.</p>{{/each}}
   </section>
 {{#if consumable}}<details class="wb-disclosure" data-sync="consumable-duration"><summary>Bonus duration</summary><div class="wb-equipment-fields">
-  <label>Duration<input type="number" name="system.bonusDuration.value" value="{{system.bonusDuration.value}}" min="0" step="1" placeholder="Until ended" {{#unless editable}}disabled{{/unless}}></label>
-  <label>Unit<select name="system.bonusDuration.units" {{#unless editable}}disabled{{/unless}}>{{#each bonusDurationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+  <label>Duration<input
+    type="number"
+    name="system.bonusDuration.value"
+    value="{{system.bonusDuration.value}}"
+    min="0"
+    step="1"
+    placeholder="Until ended"
+    {{#unless editable}}disabled{{/unless}}
+  ></label>
+  <label>Unit<select name="system.bonusDuration.units" {{#unless editable}}disabled{{/unless}}>{{#each bonusDurationUnits}}<option
+    value="{{value}}"
+    {{#if selected}}selected{{/if}}
+  >{{label}}</option>{{/each}}</select></label>
 </div><p class="wb-item-brief">Starts when you Apply benefits. Blank or 0 lasts until ended. Rounds end at the start of your turn after that many rounds and need a started encounter. Minutes and hours follow Foundry's game clock. Restoration is instant.</p></details>{{/if}}
 <p class="wb-item-brief">{{#if consumable}}Apply from the use card. Timed bonuses expire automatically; End in Status removes them early.{{else}}Bonuses apply while this item is equipped.{{/if}}</p>
 {{/if}}
   <details class="wb-disclosure" data-sync="item-carrying"><summary>Carrying &amp; cost</summary><div class="wb-equipment-fields">
     <label>Slots per item<input type="number" name="system.slots" value="{{system.slots}}" step="1" {{#unless editable}}disabled{{/unless}}></label>
-    <label>Items per slot<input type="number" name="system.perSlot" value="{{system.perSlot}}" min="1" step="1" data-tooltip="Ammunition and potions stack 5 to a slot" {{#unless editable}}disabled{{/unless}}></label>
+    <label>Items per slot<input
+      type="number"
+      name="system.perSlot"
+      value="{{system.perSlot}}"
+      min="1"
+      step="1"
+      data-tooltip="Ammunition and potions stack 5 to a slot"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
     <label>Cost<input type="text" name="system.cost" value="{{system.cost}}" placeholder="15 gc" {{#unless editable}}disabled{{/unless}}></label>
   </div></details>
-  <details class="wb-disclosure" data-sync="item-image"><summary>Image</summary><label>Image path<input type="text" name="img" value="{{item.img}}" {{#unless editable}}disabled{{/unless}}></label></details>
-  <details class="wb-disclosure" data-sync="item-description"><summary>Description</summary><label>Description and rules<textarea name="system.description" rows="5" {{#unless editable}}disabled{{/unless}}>{{system.description}}</textarea></label></details>
+  <details class="wb-disclosure" data-sync="item-image"><summary>Image</summary><label>Image path<input
+    type="text"
+    name="img"
+    value="{{item.img}}"
+    {{#unless editable}}disabled{{/unless}}
+  ></label></details>
+  <details class="wb-disclosure" data-sync="item-description"><summary>Description</summary><label>Description and rules<textarea
+    name="system.description"
+    rows="5"
+    {{#unless editable}}disabled{{/unless}}
+  >{{system.description}}</textarea></label></details>
   <details class="wb-disclosure wb-help" data-sync="item-help"><summary>Equipment help</summary>
     {{#if weapon}}<p>Balanced is melee-only. Standard ranged weapons use None + Ranged weapon; Warbow and Arbalest use Paragon + Ranged weapon. Thrown is separate and keeps the weapon's melee family. Loading 0 means no loading limit; blank shots means full.</p>{{/if}}
     {{#if equippable}}<p>Equip armor and shields to add their defenses. Each leg-guard item is a complete pair; worn contributions count once per record, regardless of quantity. Equip weapons to attack from the character sheet.</p>{{/if}}

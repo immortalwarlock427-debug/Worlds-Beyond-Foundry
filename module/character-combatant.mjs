@@ -4,8 +4,11 @@ export class CharacterCombatant extends foundry.documents.Combatant {
     const roll = super.getInitiativeRoll(formula);
     if (this.actor?.type === "character") {
       roll.options["worlds-beyond"] = {
-        kind: "initiative", label: "Initiative", actorUuid: this.actor.uuid,
-        combatId: this.parent.id, combatantId: this.id
+        kind: "initiative",
+        label: "Initiative",
+        actorUuid: this.actor.uuid,
+        combatId: this.parent.id,
+        combatantId: this.id
       };
     }
     return roll;

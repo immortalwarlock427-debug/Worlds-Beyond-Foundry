@@ -3,10 +3,12 @@
 export function dodgeContext({ against = "attack", target = null, natural20 = false } = {}) {
   if (!["attack", "area"].includes(against)) throw new Error("Choose an attack or an area attack save.");
   const area = against === "area";
-  if (!area && natural20) throw new Error("An attack that rolled a natural 20 cannot be Dodged. Use Block or Parry, or correct the incoming attack.");
+  if (!area && natural20)
+    throw new Error("An attack that rolled a natural 20 cannot be Dodged. Use Block or Parry, or correct the incoming attack.");
   const blank = target == null || String(target).trim() === "";
   const value = blank ? null : Number(target);
-  if (value !== null && !Number.isFinite(value)) throw new Error("Enter a numeric attack total or save DC, or leave it blank to compare manually.");
+  if (value !== null && !Number.isFinite(value))
+    throw new Error("Enter a numeric attack total or save DC, or leave it blank to compare manually.");
   return { type: "dodge", area, target: value };
 }
 
@@ -44,8 +46,12 @@ export function incomingWeaponAttack(data, rolls, index = 0) {
   const natural = hand.natural ?? roll?.dice?.find(die => die.faces === 20)?.total;
   if (!Number.isFinite(total) || !Number.isFinite(natural)) return null;
   return {
-    total, natural20: natural === 20, overwhelmingForce: !!data.overwhelmingForce,
-    weaponName: hand.name ?? "Weapon attack", attackerName: data.attackerName ?? "Attack",
-    targetName: data.target?.name ?? "", targetActorUuid: data.target?.actorUuid ?? null
+    total,
+    natural20: natural === 20,
+    overwhelmingForce: !!data.overwhelmingForce,
+    weaponName: hand.name ?? "Weapon attack",
+    attackerName: data.attackerName ?? "Attack",
+    targetName: data.target?.name ?? "",
+    targetActorUuid: data.target?.actorUuid ?? null
   };
 }
