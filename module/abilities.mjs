@@ -117,6 +117,16 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   };
   static PARTS = { sheet: { template: `systems/${SYSTEM_ID}/templates/ability-sheet.hbs`, scrollable: [""] } };
 
+  _syncPartState(partId, newElement, priorElement, state) {
+    // Native v14 restores scroll before reopening details. A closed loadout is
+    // shorter, so the saved position is clamped and its focused field jumps.
+    for (const [id, open] of Object.entries(state.details ?? {})) {
+      const details = newElement.querySelector(`details[data-sync="${id}"]`);
+      if (details) details.open = open;
+    }
+    super._syncPartState(partId, newElement, priorElement, state);
+  }
+
   async _prepareContext(options) {
     const system = this.item.system,
       character = this.item.actor?.system;
