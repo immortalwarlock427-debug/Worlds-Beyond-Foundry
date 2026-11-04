@@ -51,6 +51,7 @@ import { decorateAttackDefenses } from "./attack-defense.mjs";
 import { registerEquipmentItem } from "./equipment-item.mjs";
 import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
+import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -706,6 +707,7 @@ Hooks.once("init", () => {
   registerEquipmentItem();
   registerTokenAttacks();
   registerMovementRuler();
+  registerTokenConfig();
   registerCombatPortraits();
   CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Combatant.documentClass = CharacterCombatant;

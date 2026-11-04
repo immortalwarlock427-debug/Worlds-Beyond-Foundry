@@ -3,6 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { coreNumbers, healthFromDamage } from "../module/core-numbers.mjs";
+import { customBarChoices } from "../module/resources.mjs";
 
 const getProperty = (object, path) => path.split(".").reduce((value, key) => value?.[key], object);
 const setProperty = (object, path, value) => {
@@ -326,6 +327,25 @@ test("token AP and reaction corrections remain unrestricted and unrelated attrib
   assert.deepEqual(a.lastUpdate, { "system.reactions.value": -1 });
   await a.modifyTokenAttribute("other", 2, true, false);
   assert.deepEqual(a.fallback, ["other", 2, true, false]);
+});
+
+test("token bars edit custom resources through their spent amount like the sheet", async () => {
+  const a = actor();
+  a.system.customResources = { jLaL634UIhFTxJYF: { value: 30, max: 100, spent: 70 } };
+  await a.modifyTokenAttribute("customResources.jLaL634UIhFTxJYF", 15, true);
+  assert.deepEqual(a.lastUpdate, { "system.customResources.jLaL634UIhFTxJYF.spent": 55 });
+  await a.modifyTokenAttribute("customResources.jLaL634UIhFTxJYF", 100, false);
+  assert.deepEqual(a.lastUpdate, { "system.customResources.jLaL634UIhFTxJYF.spent": 0 });
+  await a.modifyTokenAttribute("customResources.missing00000000x", 5, true);
+  assert.deepEqual(a.fallback, ["customResources.missing00000000x", 5, true, true]);
+});
+
+test("token settings offer each custom pool by name and skip invalid ids", () => {
+  assert.deepEqual(customBarChoices({ jLaL634UIhFTxJYF: { name: "Ichor" }, bad: { name: "Nope" }, VDP8uQn0NFN7xeUM: {} }), [
+    { group: "Worlds Beyond resources", value: "customResources.jLaL634UIhFTxJYF", label: "Ichor" },
+    { group: "Worlds Beyond resources", value: "customResources.VDP8uQn0NFN7xeUM", label: "Custom resource" }
+  ]);
+  assert.deepEqual(customBarChoices(undefined), []);
 });
 
 test("token updates respect cancellation through Foundry's modifyTokenAttribute hook", async () => {
