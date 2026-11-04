@@ -38,7 +38,8 @@ import {
   groupEquipmentRows,
   createEquipment,
   toggleEquipment,
-  chooseArmorSlot,
+  chooseBodySlot,
+  clearBodySlot,
   useConsumable,
   decorateConsumableMessage
 } from "./equipment.mjs";
@@ -51,6 +52,7 @@ import { registerEquipmentItem } from "./equipment-item.mjs";
 import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
 import { registerTokenConfig } from "./token-config.mjs";
+import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
@@ -298,10 +300,11 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       dodge: CharacterSheet.#onDodge,
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
-      armorSlot: async function (event, target) {
+      bodySlot: async function (event, target) {
         if (!this.isEditable) return;
         try {
-          return await chooseArmorSlot(this.actor, target.dataset.piece);
+          if (target.dataset.operation === "clear") return await clearBodySlot(this.actor, target.dataset.slot);
+          return await chooseBodySlot(this.actor, target.dataset.slot);
         } catch (error) {
           ui.notifications.error(error.message);
         }
@@ -728,6 +731,7 @@ Hooks.once("init", () => {
   registerCatalogSetting();
   registerSchemaVersion();
   registerSheetLog();
+  registerDarknessFade();
   registerCatalogMenu();
   game.worldsBeyond = { importCatalog, openSheetLog };
 

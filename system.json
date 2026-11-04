@@ -2,7 +2,7 @@
   "id": "worlds-beyond",
   "title": "Worlds Beyond",
   "description": "The Worlds Beyond homebrew: eight stats, Action Points, and a combat framework of its own.",
-  "version": "0.38.41",
+  "version": "0.39.1",
   "socket": true,
   "compatibility": {
     "minimum": "14",
@@ -23,6 +23,7 @@
       "weapon": {},
       "armor": {},
       "shield": {},
+      "accessory": {},
       "consumable": {},
       "misc": {},
       "gear": {}

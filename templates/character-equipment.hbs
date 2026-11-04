@@ -11,20 +11,122 @@
       <button type="button" data-action="equipment" data-operation="create" data-type="weapon" {{#unless editable}}disabled{{/unless}}>Add weapon</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="armor" {{#unless editable}}disabled{{/unless}}>Add armor</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="shield" {{#unless editable}}disabled{{/unless}}>Add shield</button>
+      <button type="button" data-action="equipment" data-operation="create" data-type="accessory" {{#unless editable}}disabled{{/unless}}>Add accessory</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="consumable" {{#unless editable}}disabled{{/unless}}>Add consumable</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="misc" {{#unless editable}}disabled{{/unless}}>Add miscellaneous</button>
     </div></details></div>
-    <details class="wb-disclosure wb-armor-layout" data-sync="armor-layout" open><summary>Worn armor</summary>
-      <div class="wb-armor-body">
-        <svg viewBox="0 0 160 300" aria-hidden="true" focusable="false">
-          <circle cx="80" cy="33" r="24"/><path d="M54 65 Q80 57 106 65 L120 146 L102 158 L100 191 L108 282 L83 282 L80 207 L77 282 L52 282 L60 191 L58 158 L40 146 Z"/>
-          <path d="M53 74 L31 141 L25 194 L8 190 L13 137 L34 76 Z M107 74 L129 141 L135 194 L152 190 L147 137 L126 76 Z"/>
-        </svg>
-        <div class="wb-armor-slot-list">{{#each armorSlots}}<button type="button"
-          class="wb-armor-slot {{#if equipped}}is-equipped{{/if}}" data-action="armorSlot" data-piece="{{piece}}"
-          aria-label="Choose {{label}} armor" {{#unless @root.editable}}disabled{{/unless}}>
-          <span class="wb-eyebrow">{{label}}</span><strong>{{name}}</strong>
-        </button>{{/each}}</div>
+    <details class="wb-disclosure wb-doll-panel" data-sync="armor-layout" open><summary>Worn equipment</summary>
+      <div class="wb-doll-layout">
+        <div class="wb-doll">
+          <svg class="wb-doll-figure" viewBox="0 0 400 500" aria-hidden="true" focusable="false">
+            <ellipse class="wb-doll-plinth" cx="200" cy="474" rx="70" ry="6"/>
+            <path class="wb-doll-part {{#if doll.worn.arms}}is-worn{{/if}}" d="M147 136 C135 138 128 148 127 164 L123 232 L119 306 C118 320 139 322 140 308 L145 234 L153 176 Z"/>
+            <path class="wb-doll-part {{#if doll.worn.arms}}is-worn{{/if}}" d="M253 136 C265 138 272 148 273 164 L277 232 L281 306 C282 320 261 322 260 308 L255 234 L247 176 Z"/>
+            <path class="wb-doll-part {{#if doll.worn.pants}}is-worn{{/if}}" d="M170 278 L198 278 L196 364 L166 364 Z"/>
+            <path class="wb-doll-part {{#if doll.worn.pants}}is-worn{{/if}}" d="M230 278 L202 278 L204 364 L234 364 Z"/>
+            <path class="wb-doll-part {{#if doll.worn.legs}}is-worn{{/if}}" d="M166 364 L196 364 L191 444 L195 466 L161 466 L165 444 Z"/>
+            <path class="wb-doll-part {{#if doll.worn.legs}}is-worn{{/if}}" d="M204 364 L234 364 L235 444 L239 466 L205 466 L209 444 Z"/>
+            <path class="wb-doll-body" d="M190 104 V126 H210 V104 Z"/>
+            <path class="wb-doll-part {{#if doll.worn.chest}}is-worn{{/if}}" d="M150 132 C170 120 230 120 250 132 L243 202 L231 276 L169 276 L157 202 Z"/>
+            <path class="wb-doll-seam" d="M200 132 V246"/>
+            <ellipse class="wb-doll-part {{#if doll.worn.helmet}}is-worn{{/if}}" cx="200" cy="78" rx="25" ry="29"/>
+            <path class="wb-doll-part wb-doll-acc {{#if doll.worn.strapped}}is-worn{{/if}}" d="M256 246 L278 244 L280 280 L258 282 Z"/>
+            <path class="wb-doll-part wb-doll-acc wb-doll-chain {{#if doll.worn.amulet}}is-worn{{/if}}" d="M190 124 L200 146 L210 124"/>
+            <path class="wb-doll-part wb-doll-acc wb-doll-gem {{#if doll.worn.amulet}}is-worn{{/if}}" d="M200 145 L206 152 L200 161 L194 152 Z"/>
+            <path class="wb-doll-part wb-doll-acc {{#if doll.worn.belt}}is-worn{{/if}}" d="M165 248 H235 L233 264 H167 Z"/>
+            <rect class="wb-doll-part wb-doll-acc wb-doll-gem {{#if doll.worn.belt}}is-worn{{/if}}" x="195" y="246" width="10" height="20" rx="2"/>
+            <circle class="wb-doll-part wb-doll-acc wb-doll-gem {{#if doll.worn.ringRight}}is-worn{{/if}}" cx="129" cy="304" r="5.5"/>
+            <circle class="wb-doll-part wb-doll-acc wb-doll-gem {{#if doll.worn.ringLeft}}is-worn{{/if}}" cx="271" cy="304" r="5.5"/>
+            <path class="wb-doll-lead {{#if doll.worn.helmet}}is-worn{{/if}}" d="M112 53 H150 L177 71"/>
+            <path class="wb-doll-lead {{#if doll.worn.amulet}}is-worn{{/if}}" d="M288 53 H262 L208 150"/>
+            <path class="wb-doll-lead {{#if doll.worn.arms}}is-worn{{/if}}" d="M112 151 H124 L137 176"/>
+            <path class="wb-doll-lead {{#if doll.worn.strapped}}is-worn{{/if}}" d="M288 151 H282 L270 244"/>
+            <path class="wb-doll-lead {{#if doll.worn.chest}}is-worn{{/if}}" d="M112 249 H155 L181 213"/>
+            <path class="wb-doll-lead {{#if doll.worn.belt}}is-worn{{/if}}" d="M288 249 H245 L234 256"/>
+            <path class="wb-doll-lead {{#if doll.worn.ringRight}}is-worn{{/if}}" d="M112 347 H118 L126 309"/>
+            <path class="wb-doll-lead {{#if doll.worn.ringLeft}}is-worn{{/if}}" d="M288 347 H282 L274 309"/>
+            <path class="wb-doll-lead {{#if doll.worn.pants}}is-worn{{/if}}" d="M112 445 H150 L176 352"/>
+            <path class="wb-doll-lead {{#if doll.worn.legs}}is-worn{{/if}}" d="M288 445 H250 L223 427"/>
+            <circle class="wb-doll-anchor {{#if doll.worn.helmet}}is-worn{{/if}}" cx="179" cy="72" r="3.5"/>
+            <circle class="wb-doll-anchor {{#if doll.worn.arms}}is-worn{{/if}}" cx="139" cy="178" r="3.5"/>
+            <circle class="wb-doll-anchor {{#if doll.worn.strapped}}is-worn{{/if}}" cx="269" cy="247" r="3.5"/>
+            <circle class="wb-doll-anchor {{#if doll.worn.chest}}is-worn{{/if}}" cx="183" cy="211" r="3.5"/>
+            <circle class="wb-doll-anchor {{#if doll.worn.pants}}is-worn{{/if}}" cx="177" cy="349" r="3.5"/>
+            <circle class="wb-doll-anchor {{#if doll.worn.legs}}is-worn{{/if}}" cx="221" cy="426" r="3.5"/>
+          </svg>
+          {{#each doll.slots}}<div
+            class="wb-doll-slot wb-doll-{{side}} wb-doll-row-{{row}} {{#if filled}}is-filled{{/if}}"
+            {{#if itemId}}data-item-id="{{itemId}}"{{/if}}
+          ><button
+            type="button"
+            class="wb-doll-slot-main"
+            data-action="bodySlot"
+            data-slot="{{key}}"
+            aria-label="{{label}}: {{name}}. Choose what to wear"
+            data-tooltip="{{label}}: {{name}}{{#if detail}} · {{detail}}{{/if}}"
+            {{#unless @root.editable}}disabled{{/unless}}
+          ><span class="wb-doll-slot-label">{{label}}</span><span class="wb-doll-slot-body">{{#if img}}<img
+            src="{{img}}"
+            alt=""
+            loading="lazy"
+          >{{/if}}<span class="wb-doll-slot-text"><span class="wb-doll-slot-name">{{name}}</span>{{#if detail}}<span
+            class="wb-doll-slot-detail"
+          >{{detail}}</span>{{/if}}</span></span></button>{{#if filled}}<button
+            type="button"
+            class="wb-doll-slot-clear"
+            data-action="bodySlot"
+            data-operation="clear"
+            data-slot="{{key}}"
+            aria-label="Take off {{name}}"
+            data-tooltip="Take off"
+            {{#unless @root.editable}}disabled{{/unless}}
+          ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>{{/if}}</div>{{/each}}
+        </div>
+        <aside class="wb-doll-side" aria-label="Armor and hands">
+          <div class="wb-doll-total">
+            <span class="wb-eyebrow">Armor Rating</span>
+            <strong>{{doll.armorRating}}</strong>
+            {{#if doll.armorParts}}<span class="wb-doll-total-parts">{{doll.armorParts}}</span>{{/if}}
+            <ul class="wb-doll-notes">{{#each doll.armorNotes}}<li>{{this}}</li>{{/each}}</ul>
+          </div>
+          <h3 class="wb-doll-heading">Hands</h3>
+          <div class="wb-doll-hands">{{#each doll.hands}}<div
+            class="wb-doll-hand {{#if filled}}is-filled{{/if}} {{#if covered}}is-covered{{/if}}"
+            {{#if itemId}}data-item-id="{{itemId}}"{{/if}}
+          ><button
+            type="button"
+            class="wb-doll-slot-main"
+            data-action="bodySlot"
+            data-slot="{{key}}"
+            aria-label="{{label}}: {{#if covered}}{{coverText}}{{else}}{{name}}{{/if}}. Choose what to hold"
+            {{#unless @root.editable}}disabled{{/unless}}
+          ><span class="wb-doll-slot-label">{{label}}</span><span class="wb-doll-slot-body">{{#if img}}<img
+            src="{{img}}"
+            alt=""
+            loading="lazy"
+          >{{/if}}<span class="wb-doll-slot-text"><span class="wb-doll-slot-name">{{#if covered}}{{coverText}}{{else}}{{name}}{{/if}}</span>{{#if detail}}<span
+            class="wb-doll-slot-detail"
+          >{{detail}}</span>{{/if}}</span></span></button>{{#if canAttack}}<button
+            type="button"
+            class="wb-doll-hand-attack"
+            data-action="equipment"
+            data-operation="attack"
+            aria-label="Attack with {{name}}"
+            data-tooltip="Attack"
+            {{#unless @root.editable}}disabled{{/unless}}
+          ><i class="fa-solid fa-crosshairs" aria-hidden="true"></i></button>{{/if}}{{#if filled}}<button
+            type="button"
+            class="wb-doll-slot-clear"
+            data-action="bodySlot"
+            data-operation="clear"
+            data-slot="{{key}}"
+            aria-label="Stow {{name}}"
+            data-tooltip="Stow"
+            {{#unless @root.editable}}disabled{{/unless}}
+          ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>{{/if}}</div>{{/each}}</div>
+          {{#if doll.extraHeld}}<p class="wb-doll-warning">Also equipped: {{doll.extraHeld}}. Stow or re-equip to fix your hands.</p>{{/if}}
+          <p class="wb-doll-hint">Select a slot to wear or hold something you're carrying. Strapped weapons sit on the forearm and leave both hands free.</p>
+        </aside>
       </div>
     </details>
     <div class="wb-inventory">
@@ -160,6 +262,6 @@
   <details class="wb-disclosure wb-help" data-sync="equipment-help"><summary>Equipment help</summary>
     <p>Equip or stow weapons, shields and armor for 2 AP adjusted by DEX (1–3 AP) during combat. Swapping automatically stows conflicting hand gear for that single cost. Quickdraw weapons are free to draw, stow or swap to. Outside combat these actions are free. Direct Equipped edits on an item remain manual corrections; form presets keep their ability's recorded cost.</p>
     <h3>Equipment</h3>
-    <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
+    <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Accessories are amulets, rings and belts: wear one amulet, one belt and two rings, and give them bonuses like any other gear. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
   </details>
   </section>

@@ -5,7 +5,7 @@ import { MAGIC_RESOURCES, resourceEntries } from "./resources.mjs";
 import { wholeDisplay, wholeNumber } from "./number-display.mjs";
 import { apTotal } from "./ap.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
-import { effectContext } from "./effects-core.mjs";
+import { effectContext, itemBonusSummary } from "./effects-core.mjs";
 import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
 import { favoriteSlots, overviewFill, archiveAppearance } from "./overview.mjs";
 import { barColorContext } from "./bar-colors.mjs";
@@ -14,6 +14,8 @@ import { statAwards, statIncreases } from "./stat-advancement.mjs";
 import { currencyTotal, GOLD_PER_PLATINUM } from "./currency.mjs";
 import { hitDicePool } from "./rest-core.mjs";
 import { normalizeResistances } from "./resistances.mjs";
+import { DOLL_SLOTS, HAND_SLOTS, handAssignment, slotItems } from "./paper-doll.mjs";
+import { itemIcon } from "./item-icons.mjs";
 
 export const CHARACTER_DETAILS = [
   { key: "class", label: "Class", placeholder: "Class or path" },
@@ -260,15 +262,73 @@ export function detailsContext(state) {
   };
 }
 
-export function equipmentContext({ actor, system, equipment, equipmentGroups }) {
-  const labels = { helmet: "Head", chest: "Chest", arms: "Arm guards", pants: "Pants", legs: "Leg guards" };
-  const items = Array.from(actor?.items?.values?.() ?? actor?.items ?? []);
-  const armorSlots = Object.entries(labels).map(([piece, label]) => {
-    const worn = items.find(item => item.type === "armor" && item.system.piece === piece && item.system.equipped);
-    return { piece, label, name: worn?.name ?? "Empty", img: worn?.img ?? "", equipped: !!worn };
-  });
+const ARMOR_WEIGHTS = { light: "Light", medium: "Medium", heavy: "Heavy" };
+// One line under an item's name: what it adds while worn or held.
+function wornDetail(item) {
+  const system = item.system ?? {};
+  if (item.type === "armor") return [`AR ${wholeNumber(system.armorRating ?? 0)}`, ARMOR_WEIGHTS[system.armorType]].filter(Boolean).join(" · ");
+  if (item.type === "shield") return `Block ${system.blockDie || "1d6"}${system.armorRating ? ` · AR ${wholeNumber(system.armorRating)}` : ""}`;
+  if (item.type === "weapon") return [system.damage, system.damageType].filter(Boolean).join(" ");
+  return itemBonusSummary(item);
+}
+const slotView = (items, extra = {}) => {
+  const [first] = items;
   return {
-    armorSlots,
+    ...extra,
+    filled: items.length > 0,
+    itemId: items.length === 1 ? first.id : "",
+    name: items.length ? items.map(item => item.name).join(", ") : "Empty",
+    img: first ? itemIcon(first) : "",
+    detail: items.length > 1 ? `${items.length} worn` : first ? wornDetail(first) : ""
+  };
+};
+
+// The website's paper doll: body slots around the figure, both hands and the armor total.
+export function paperDollContext(items, system = {}, equipment = {}) {
+  const list = Array.from(items?.values?.() ?? items ?? []);
+  const slots = DOLL_SLOTS.map(slot => slotView(slotItems(list, slot.key), { key: slot.key, label: slot.label, side: slot.side, row: slot.row }));
+  const worn = Object.fromEntries(slots.map(slot => [slot.key, slot.filled]));
+  const hands = handAssignment(list);
+  const handSlots = Object.entries(HAND_SLOTS).map(([key, label]) => {
+    const covered = key === "off" && hands.twoHanded;
+    return slotView(hands[key] ? [hands[key]] : [], {
+      key,
+      label,
+      covered,
+      coverText: covered ? `Both hands: ${hands.main.name}` : "",
+      canAttack: hands[key]?.type === "weapon"
+    });
+  });
+  const armorType = ARMOR_WEIGHTS[equipment.type];
+  // Armor Rating already includes worn armor and shields; the rest is VIT and gear or effect bonuses.
+  const total = Number(system.core?.armorRating ?? 0) || 0;
+  const other = total - (Number(equipment.armorAR) || 0) - (Number(equipment.shieldAR) || 0);
+  const notes = [
+    armorType ? `${armorType} armor` : "No armor worn",
+    equipment.evasion ? `+${wholeNumber(equipment.evasion)} Natural Evasion` : "",
+    equipment.agilityPenalty ? `AGL −${wholeNumber(equipment.agilityPenalty)}` : "",
+    equipment.heavyDisadvantage ? "Below 21 STR: attacks, Agility saves and Dodge at disadvantage" : ""
+  ].filter(Boolean);
+  return {
+    slots,
+    worn,
+    hands: handSlots,
+    extraHeld: hands.extra.map(item => item.name).join(", "),
+    armorRating: wholeNumber(total),
+    armorParts: [
+      equipment.armorAR ? `Armor ${wholeNumber(equipment.armorAR)}` : "",
+      equipment.shieldAR ? `Shield ${wholeNumber(equipment.shieldAR)}` : "",
+      other ? `VIT and bonuses ${other > 0 ? "+" : "−"}${wholeNumber(Math.abs(other))}` : ""
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    armorNotes: notes
+  };
+}
+
+export function equipmentContext({ actor, system, equipment, equipmentGroups }) {
+  return {
+    doll: paperDollContext(actor?.items, system, system.equipment),
     equipment: wholeDisplay(equipment),
     equipmentGroups: wholeDisplay(equipmentGroups),
     carrying: wholeDisplay(system.carrying),

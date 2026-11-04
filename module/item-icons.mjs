@@ -119,6 +119,11 @@ const shieldIcons = {
   "Scale Shield": CUSTOM_ARTWORK["Scale Shield"],
   "Plate Shield": "equipment/shield/heater-steel-grey.webp"
 };
+const accessoryIcons = {
+  amulet: "equipment/neck/amulet-round-engraved-gold.webp",
+  ring: "equipment/finger/ring-band-gold.webp",
+  belt: "equipment/waist/belt-buckle-ornate-steel.webp"
+};
 const iconPath = path => (path.startsWith("systems/") ? path : `icons/${path}`);
 
 const pieces = {
@@ -133,6 +138,7 @@ export function stockItemIcon({ type, name, system = {} }) {
   if (type === "weapon") return iconPath(weaponIcons[name === "Gun" ? "Revolver" : name] ?? "weapons/swords/sword-simple-white.webp");
   if (type === "armor") return iconPath(armorIcons[name]?.[1] ?? pieces[system.piece] ?? pieces.chest);
   if (type === "shield") return iconPath(shieldIcons[name] ?? "equipment/shield/buckler-iron-cross-gray.webp");
+  if (type === "accessory") return iconPath(accessoryIcons[system.slot] ?? accessoryIcons.ring);
   if (type === "consumable")
     return system.kind === "ammunition"
       ? "icons/weapons/ammunition/arrow-broadhead-bent-teal.webp"
