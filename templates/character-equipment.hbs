@@ -119,7 +119,7 @@
               data-operation="toggle"
               aria-pressed="{{equipped}}"
               aria-label="{{#if equipped}}Unequip{{else}}Equip{{/if}} {{name}}"
-              data-tooltip="{{#if equipped}}Equipped · click to unequip{{else}}Equip{{/if}}"
+              data-tooltip="{{#if equipped}}Equipped · click to unequip{{else}}Equip{{/if}} · In combat: 2 AP adjusted by DEX; Quickdraw is free"
               {{#unless @root.editable}}disabled{{/unless}}
             ><i
               class="fa-solid {{equipIcon}}"
@@ -145,6 +145,7 @@
     {{else}}<p class="wb-empty">Drop an item here or choose Add item.</p>{{/each}}
   </section>
   <details class="wb-disclosure wb-help" data-sync="equipment-help"><summary>Equipment help</summary>
+    <p>Equip or stow weapons, shields and armor for 2 AP adjusted by DEX (1–3 AP) during combat. Swapping automatically stows conflicting hand gear for that single cost. Quickdraw weapons are free to draw, stow or swap to. Outside combat these actions are free. Direct Equipped edits on an item remain manual corrections; form presets keep their ability's recorded cost.</p>
     <h3>Equipment</h3>
     <p>Drop items from Foundry's Items directory or use Add item. Equip a weapon to attack. Worn armor and held weapons/shields take no slots; capacity is 10 + STR modifier, with +6 for a backpack. A leg-guard item represents a complete pair. Review old manual armor totals after equipping armor to avoid counting it twice.</p>
   </details>

@@ -65,3 +65,11 @@ Before the next equipment part:
 - [ ] Check an observer view and a phone-width sheet: fields and mutation buttons are disabled as appropriate, names remain readable, controls are reachable and descriptions display as plain text.
 
 Wait for the user's validation before adding equipment calculations and the catalog.
+
+## Combat equipment changes
+
+The sheet Equip/Stow buttons cost 2 AP adjusted by DEX (1–3 AP) for weapons, shields and armor while that actor is in a started encounter. The user confirmed armor and shields share this cost on 2026-11-03. A swap pays once, including automatically stowed conflicting hand gear. Quickdraw weapons cost 0 AP to draw, stow or swap to. Outside combat, the buttons are free.
+
+Item-sheet Equipped edits remain manual corrections. Form presets use the form ability's existing cost. Failed gear updates restore AP and affected equipment. No new armor timing rule is inferred.
+
+Validation: 418 Node tests passed, including DEX limits, Quickdraw, insufficient AP, outside-combat use and failure after a conflicting weapon was stowed. Live Foundry/server testing remains part of the final audit.
