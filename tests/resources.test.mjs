@@ -78,7 +78,7 @@ test("magic maxima use current scores, level and additive bonus; final override 
   assert.equal(magicPool(1, 21).max, 63);
   assert.equal(magicPool(5, 21).max, 147);
   assert.equal(magicPool(5, 23, { bonus: 4 }).max, 165);
-  assert.equal(magicPool(1, 21, { maxOverride: 0, bonus: 4 }).max, 0);
+  assert.equal(magicPool(1, 21, { maxOverride: 0, bonus: 4 }).max, 4);
   assert.equal(magicPool(1, 21, { maxOverride: "" }).max, 63);
 });
 
@@ -286,15 +286,15 @@ test("percentage mode leaves action amounts in points for custom and built-in po
   assert.equal(edit.system.mana.spent, 31.5);
 });
 
-test("custom final maximum overrides replace scaled or manual totals and all bonuses; clearing restores the source", () => {
+test("custom maximum overrides replace the base while bonuses still apply; clearing restores the source", () => {
   const system = { level: 4, stats: { vit: { effective: 21 } } };
   for (const scaleStat of ["", "vit"]) {
     const source = { scaleStat, baseMax: 77, bonus: 23, spent: 10 };
     const before = structuredClone(source);
     for (const maxOverride of [0, 40, 200]) {
       const pool = customPool({ ...source, maxOverride }, system);
-      assert.equal(pool.max, maxOverride);
-      assert.equal(pool.value, maxOverride - 10);
+      assert.equal(pool.max, maxOverride + 23);
+      assert.equal(pool.value, maxOverride + 13);
     }
     for (const maxOverride of [null, ""]) assert.equal(customPool({ ...source, maxOverride }, system).max, scaleStat ? 149 : 100);
     assert.deepEqual(source, before);

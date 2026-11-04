@@ -66,22 +66,22 @@ function fixture() {
   return { actor, weapon, target, selected, calls, make, DialogV2 };
 }
 
-test("a plain target click uses exactly one controlled owned attacker without confusing it with the victim", () => {
+test("an Alt-click uses exactly one controlled owned attacker without confusing it with the victim", () => {
   const f = fixture();
-  assert.equal(clickAttacker(f.target), f.actor);
-  for (const key of ["altKey", "shiftKey", "ctrlKey", "metaKey"]) assert.equal(clickAttacker(f.target, { [key]: true }), null);
+  assert.equal(clickAttacker(f.target, { altKey: true }), f.actor);
+  for (const key of ["shiftKey", "ctrlKey", "metaKey"]) assert.equal(clickAttacker(f.target, { altKey: true, [key]: true }), null);
   f.target.isVisible = false;
-  assert.equal(clickAttacker(f.target), null);
+  assert.equal(clickAttacker(f.target, { altKey: true }), null);
   f.target.isVisible = true;
   f.actor.isOwner = false;
-  assert.equal(clickAttacker(f.target), null);
+  assert.equal(clickAttacker(f.target, { altKey: true }), null);
   f.actor.isOwner = true;
   canvas.tokens.controlled.push({ actor: f.actor });
-  assert.equal(clickAttacker(f.target), null);
+  assert.equal(clickAttacker(f.target, { altKey: true }), null);
   canvas.tokens.controlled.pop();
-  assert.equal(clickAttacker(f.selected), null);
+  assert.equal(clickAttacker(f.selected, { altKey: true }), null);
   game.activeTool = "target";
-  assert.equal(clickAttacker(f.target), null);
+  assert.equal(clickAttacker(f.target, { altKey: true }), null);
 });
 
 test("token registration grants an attack click without control/drag permissions and preserves modifier selection", () => {
@@ -97,12 +97,12 @@ test("token registration grants an attack click without control/drag permissions
   CONFIG.Token = { objectClass: Base };
   registerTokenAttacks();
   const token = Object.assign(new CONFIG.Token.objectClass(), f.target);
-  assert.equal(token._canControl({}, { type: "pointerdown" }), true);
+  assert.equal(token._canControl({}, { type: "pointerdown", altKey: true }), true);
   assert.equal(token._canControl({}), false);
-  token._onClickLeft({ altKey: true });
+  token._onClickLeft({});
   assert.equal(token.fallback, true);
   canvas.controls.ruler.active = true;
-  assert.equal(token._canControl({}, { type: "pointerdown" }), false);
+  assert.equal(token._canControl({}, { type: "pointerdown", altKey: true }), false);
 });
 
 test("one equipped weapon opens its attack dialog with the clicked target, ignoring unrelated current targets", async () => {

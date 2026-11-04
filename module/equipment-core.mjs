@@ -13,15 +13,20 @@ export function wornEquipment({ items = [], agility = 12, strength = 12, penalty
   const arms = armor.filter(item => item.system.piece === "arms");
   const other = armor.filter(item => item.system.piece !== "arms");
   const sum = (list, field) => list.reduce((total, item) => total + numberOr(item.system[field], 0), 0);
-  const armorAR = sum(other, "armorRating") + (arms.length ? Math.max(...arms.map(item => numberOr(item.system.armorRating, 0))) : 0);
+  const bestGuard = arms.reduce(
+    (best, item) => (!best || numberOr(item.system.armorRating, 0) > numberOr(best.system.armorRating, 0) ? item : best),
+    null
+  );
+  const armorContributors = bestGuard ? [...other, bestGuard] : other;
+  const armorAR = sum(armorContributors, "armorRating");
   const shieldAR = sum(shields, "armorRating");
-  const evasion =
-    type === "light"
-      ? sum(
-          armor.filter(item => item.system.armorType === "light"),
-          "evasionBonus"
-        )
-      : 0;
+  const lightArmor = armor.filter(item => item.system.armorType === "light");
+  const evasion = type === "light" ? sum(lightArmor, "evasionBonus") : 0;
+  const contributions = (items, field) =>
+    items.flatMap(item => {
+      const amount = numberOr(item.system[field], 0);
+      return amount ? [{ name: item.name || "Equipment", amount }] : [];
+    });
   const automaticPenalty = type === "heavy" ? Math.min(3, Math.max(0, armorAR - 3)) : 0;
   const agilityPenalty = numberOr(penaltyOverride, automaticPenalty);
   return {
@@ -30,6 +35,9 @@ export function wornEquipment({ items = [], agility = 12, strength = 12, penalty
     shieldAR,
     armor: armorAR + shieldAR,
     evasion,
+    armorSources: contributions([...armorContributors, ...shields], "armorRating"),
+    evasionSources: type === "light" ? contributions(lightArmor, "evasionBonus") : [],
+    suppressedEvasion: type === "light" ? [] : contributions(lightArmor, "evasionBonus"),
     automaticPenalty,
     agilityPenalty,
     effectiveAgility: numberOr(agility, 12) - agilityPenalty,

@@ -64,7 +64,54 @@ export function headerContext({ source, effects, activeForm, appearance, editabl
   };
 }
 
-export function characterContext({ actor, system, effects, activeForm, appearance, rows, pools }) {
+function coreBreakdowns({ system, effects, statSources }) {
+  const { stats, equipment, bonuses, overrides, core } = system;
+  const pieces = list => (list ?? []).map(({ name, amount }) => `${name} ${formatModifier(amount)}`);
+  const tooltip = (key, lines) =>
+    [...lines.filter(Boolean), overrides?.[key] != null ? `Manual override: ${core[key]}` : ""].filter(Boolean).join(" · ");
+  const adjustment = (key, value) => effects.sources[`system.bonuses.${key}`] || (value ? `Adjustment ${formatModifier(value)}` : "");
+  const vit = stats.vit.effective ?? stats.vit.value;
+  return {
+    evasion: tooltip("evasion", [
+      "Base 12",
+      `AGL ${formatModifier(stats.agl.mod)}`,
+      statSources("agl"),
+      ...pieces(equipment?.evasionSources),
+      adjustment("evasion", bonuses?.evasion),
+      ...pieces(equipment?.suppressedEvasion).map(source => `${source} suppressed by ${equipment.type} armor`)
+    ]),
+    armorRating: tooltip("armorRating", [
+      vit >= 28 ? `Adamantine Body +${Math.floor(vit / 2)}` : `VIT ${formatModifier(stats.vit.mod)}`,
+      statSources("vit"),
+      ...pieces(equipment?.armorSources),
+      adjustment("armor", bonuses?.armor)
+    ]),
+    movement: tooltip("movement", [
+      "Base 5 ft",
+      `AGL ${formatModifier(5 * stats.agl.mod)} ft (minimum 5 ft before bonuses)`,
+      statSources("agl"),
+      adjustment("movement", bonuses?.movement)
+    ]),
+    initiative: ["1d20", `WIS ${formatModifier(stats.wis.mod)}`, statSources("wis")].filter(Boolean).join(" · ")
+  };
+}
+
+function resourceSources(pool, { system, effects, statSources }) {
+  const stat = pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat;
+  return [
+    pool.maxOverride != null
+      ? `Base maximum override: ${pool.maxOverride}`
+      : stat
+        ? `${stat.toUpperCase()} × (level + 2)`
+        : "Manual base maximum",
+    effects.sources[`${pool.path}.bonus`] || (pool.bonus ? `Maximum bonus ${formatModifier(pool.bonus)}` : ""),
+    pool.maxOverride == null && statSources(stat)
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+export function characterContext({ actor, system, effects, activeForm, appearance, rows, pools, statSources }) {
   const health = system.health;
   return {
     overviewStats: wholeDisplay(rows),
@@ -76,6 +123,9 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
       max: wholeNumber(health.max),
       meter: overviewFill(health),
       overflow: health.value > health.max,
+      sources: [health.maxOverride != null ? `Maximum override: ${health.maxOverride}` : "VIT × level", statSources("vit")]
+        .filter(Boolean)
+        .join(" · "),
       low: health.max > 0 && health.value / health.max <= 0.25
     },
     overviewEconomy: [
@@ -86,6 +136,7 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
         barColors: system.ap.barColors,
         field: "system.ap.value",
         icon: "bolt",
+        sources: system.ap.maxOverride != null ? `Maximum override: ${system.ap.maxOverride}` : "15 AP + 2 per 5 levels",
         command: system.command?.value ?? 0
       },
       {
@@ -94,7 +145,13 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
         max: system.reactions.max,
         barColors: system.reactions.barColors,
         field: "system.reactions.value",
-        icon: "shield-halved"
+        icon: "shield-halved",
+        sources: [
+          system.reactions.maxOverride != null ? `Maximum override: ${system.reactions.maxOverride}` : "1 reaction + AGL milestones",
+          statSources("agl")
+        ]
+          .filter(Boolean)
+          .join(" · ")
       },
       {
         label: "Wonder",
@@ -102,7 +159,13 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
         max: system.wonder.max,
         barColors: system.wonder.barColors,
         field: "system.wonder.value",
-        icon: "sparkles"
+        icon: "sparkles",
+        sources: [
+          system.wonder.maxOverride != null ? `Maximum override: ${system.wonder.maxOverride}` : "Nonnegative FTH modifier",
+          statSources("fth")
+        ]
+          .filter(Boolean)
+          .join(" · ")
       }
     ].map(pool => ({
       ...wholeDisplay(pool),
@@ -116,8 +179,10 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
       .map(pool => ({
         ...pool,
         ...barColorContext(pool),
-        overflow: pool.value > pool.max
+        overflow: pool.value > pool.max,
+        sources: resourceSources(pool, { system, effects, statSources })
       })),
+    overviewBreakdowns: coreBreakdowns({ system, effects, statSources }),
     overviewInitiative: formatModifier(system.stats.wis.mod),
     overviewStatus: effects.statuses
       .slice(0, 3)
@@ -138,12 +203,7 @@ export function detailsContext(state) {
       .map(pool => ({
         ...pool,
         ...barColorContext(pool),
-        sources: [
-          effects.sources[`${pool.path}.bonus`],
-          statSources(pool.custom ? system.customResources[pool.key].scaleStat : MAGIC_RESOURCES[pool.key].stat)
-        ]
-          .filter(Boolean)
-          .join(" · ")
+        sources: resourceSources(pool, { system, effects, statSources })
       })),
     manaEnabled: !!system.mana?.enabled,
     holyPowerEnabled: !!system.holyPower?.enabled,

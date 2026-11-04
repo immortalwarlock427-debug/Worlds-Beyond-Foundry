@@ -18,9 +18,11 @@ export function resourcePool(max, spent = 0, minimum = 0) {
 }
 
 export function magicPool(level, score, data = {}) {
-  const automatic = Math.max(0, numberOr(score, 12) * (numberOr(level, 1) + 2) + numberOr(data.bonus, 0));
+  const base = numberOr(score, 12) * (numberOr(level, 1) + 2);
+  const bonus = numberOr(data.bonus, 0);
+  const automatic = Math.max(0, base + bonus);
   return {
-    ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride),
+    ...resourcePool(numberOr(data.maxOverride, base) + bonus, data.spent, data.minOverride),
     automatic,
     allowOverflow: !!data.allowOverflow
   };
@@ -28,12 +30,13 @@ export function magicPool(level, score, data = {}) {
 
 export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   const stat = data.scaleStat && STATS.find(stat => stat.key === data.scaleStat);
-  const automatic = stat
-    ? magicPool(level, stats[stat.key]?.effective ?? stats[stat.key]?.value, { bonus: data.bonus }).max
-    : numberOr(data.baseMax, 100) + numberOr(data.bonus, 0);
+  const base = stat
+    ? numberOr(stats[stat.key]?.effective ?? stats[stat.key]?.value, 12) * (numberOr(level, 1) + 2)
+    : numberOr(data.baseMax, 100);
+  const bonus = numberOr(data.bonus, 0);
   return {
-    ...resourcePool(numberOr(data.maxOverride, automatic), data.spent, data.minOverride),
-    automatic: Math.max(0, automatic),
+    ...resourcePool(numberOr(data.maxOverride, base) + bonus, data.spent, data.minOverride),
+    automatic: Math.max(0, base + bonus),
     allowOverflow: !!data.allowOverflow
   };
 }

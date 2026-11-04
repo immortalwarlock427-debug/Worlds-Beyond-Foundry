@@ -285,7 +285,7 @@ Titan's Might audit: searched Game Systems for Titan/Might/push and fetched matc
 2. Click another visible token. It becomes your target and your attacker remains selected. With one equipped weapon, its normal attack dialog opens; with several, choose the equipped weapon first.
 3. Confirm dice, grip, AP spending and other options, then Attack. The clicked target's exact actor/token identity and defenses are passed through even if another token was previously targeted. Normal attack/damage cards and Block/Dodge/Parry controls follow.
 
-Alt-click, Shift-click and Ctrl/Meta-click keep normal selection behavior; click the already selected token normally, or clear selection, when selecting/moving rather than attacking. Target/ruler tools keep their original behavior. Multi-selection does not guess an attacker. Invisible targets, placement/ruler/drag workflows and unowned attackers do not open this shortcut. This does not grant permission to control, move or edit another player's token. A pending attack dialog suppresses duplicate clicks for that attacker.
+Select your attacker, then Alt-click the target to open the attack dialog. Double-click a token to open its sheet with normal Foundry permissions. Target/ruler tools keep their original behavior. Multi-selection does not guess an attacker. Invisible targets, placement/ruler/drag workflows and unowned attackers do not open this shortcut. This does not grant permission to control, move or edit another player's token. A pending attack dialog suppresses duplicate clicks for that attacker.
 
 No weapon equipped gives an instruction to equip one. Legacy invalid loadouts give an instruction to re-equip the intended weapon. Cancelling a chooser or attack dialog spends nothing. Attack-time checks catch weapons that were stowed/deleted or an incompatible two-hand grip before AP/shots are spent. Range, line of sight, ally/enemy intent and reach are still table decisions.
 
@@ -306,7 +306,7 @@ No actor/item schema fields were renamed, removed or added. Compatibility uses e
 
 Automated tests cover ordinary/Light/Strapped/shield/two-hand combinations, deterministic conflict stowing, item-operation cancellation/creation and property changes, unchanged unrelated data, stale weapons, explicit target selection, equipped-only choosers, cancellation, ownership, token permission boundaries, modifier clicks and duplicate dialogs. Existing attacks, defenses, rolls and model tests run with `node --test`.
 
-The PR records real Foundry checks and limits. Before merging, test one-handed + shield, two Light weapons, Strapped + held gear and a two-handed swap using both the inventory and item editor. Select an owned token, click an enemy/player token, and confirm the attack names that target. Check Alt-click selection, a cancelled attack, multi-selection, unlinked tokens, player permissions and phone layout. Apply damage/Health manually.
+The PR records real Foundry checks and limits. Before merging, test one-handed + shield, two Light weapons, Strapped + held gear and a two-handed swap using both the inventory and item editor. Select an owned token, Alt-click an enemy/player token, and confirm the attack names that target. Check double-click sheet access, a cancelled attack, multi-selection, unlinked tokens, player permissions and phone layout. Apply damage/Health manually.
 
 <a id="command-delivery"></a>
 ## Command recipients and AP

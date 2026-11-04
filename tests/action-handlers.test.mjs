@@ -923,17 +923,23 @@ test("an ability without bonuses or trackers pays and posts without an empty nat
   assert.equal(item.system.effectsActive, false);
 });
 
-test("reaction abilities spend a reaction in combat and restore it if posting fails", async () => {
+test("reaction abilities spend a reaction outside combat and restore it if posting fails", async () => {
   const f = fixture(),
     item = bonusAbility(f);
+  game.combats = [];
   item.system.kind = "reaction";
+  item.system.cooldown.rounds = 0;
   f.actor.system.reactions = { value: 1 };
+  const post = f.ChatMessage.create;
   f.ChatMessage.create = async () => undefined;
   await assert.rejects(useAbility(f.actor, item.id), /not posted/);
   assert.equal(f.actor.system.reactions.value, 1);
-  f.actor.system.reactions.value = 0;
+  f.ChatMessage.create = post;
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.reactions.value, 0);
+  await useAbility(f.actor, item.id, { end: true });
   await assert.rejects(useAbility(f.actor, item.id), /No reactions/);
-  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.reactions.value, 0);
 });
 
 test("failed attack posting restores AP and loaded shots; cancelled spending posts nothing", async () => {

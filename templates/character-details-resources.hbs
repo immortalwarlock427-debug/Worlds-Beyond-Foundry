@@ -194,7 +194,7 @@
               {{#if refillOnRest}}checked{{/if}}
               {{#unless @root.editable}}disabled{{/unless}}
             > Fill on long rest</label>
-            <label data-tooltip="Replaces the calculated maximum and bonuses. Clear to restore the selected maximum source.">Maximum override<input
+            <label data-tooltip="Replaces the calculated base maximum. Bonuses still apply. Clear to restore the selected maximum source.">Maximum override<input
               type="number"
               name="{{path}}.maxOverride"
               value="{{maxOverride}}"

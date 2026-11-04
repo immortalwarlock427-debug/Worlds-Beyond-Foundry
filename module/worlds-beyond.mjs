@@ -1,7 +1,7 @@
 import { STATS, statModifier, milestonesReached } from "./stats.mjs";
 import { coreNumbers, numberOr, healthFromDamage, damageFromHealth } from "./core-numbers.mjs";
 import { CharacterActor } from "./character-actor.mjs";
-import { CharacterCombatant } from "./character-combatant.mjs";
+import { CharacterCombatant, registerCombatPortraits } from "./character-combatant.mjs";
 import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { MAGIC_RESOURCES, RESOURCE_SCALING, RESOURCE_DISPLAYS, customResourceId, magicPool, customPool } from "./resources.mjs";
@@ -641,6 +641,7 @@ Hooks.once("init", () => {
   registerEffectSupport();
   registerEquipmentItem();
   registerTokenAttacks();
+  registerCombatPortraits();
   CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Combatant.documentClass = CharacterCombatant;
   CONFIG.Actor.dataModels.character = CharacterData;

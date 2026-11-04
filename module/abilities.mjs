@@ -11,7 +11,7 @@ import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from ".
 import { itemEffectRows } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
-import { inCombat, payAp, planApPayment } from "./combat-support.mjs";
+import { payAp, planApPayment } from "./combat-support.mjs";
 import { adjustedResourceSpent, customResourceId } from "./resources.mjs";
 import { endOtherForms } from "./forms.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
@@ -277,7 +277,7 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
       }
       // Use is an explicit paid activation, including testing outside an encounter.
       const ap = record.ap ?? 0;
-      const reaction = inCombat(actor) && item.system.kind === "reaction";
+      const reaction = item.system.kind === "reaction";
       if (reaction && !(actor.system.reactions.value >= 1)) throw new Error("No reactions left. Correct the tracker if needed.");
       const messageMode = game.settings.get("core", "messageMode");
       if (ap) planApPayment(actor, ap);
@@ -300,10 +300,11 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
           () => actor.update({ [`${path}.spent`]: spent }, updateOptions),
           () => actor.update({ [`${path}.spent`]: previousSpent }, updateOptions)
         );
+      const reactionBefore = actor.system.reactions?.value;
       if (reaction)
         await change(
-          () => actor.update({ "system.reactions.value": actor.system.reactions.value - 1 }),
-          () => actor.update({ "system.reactions.value": actor.system.reactions.value + 1 })
+          () => actor.update({ "system.reactions.value": reactionBefore - 1 }, updateOptions),
+          () => actor.update({ "system.reactions.value": reactionBefore }, updateOptions)
         );
       // Re-read expenditure after costs: paying and restoring the same pool must
       // not overwrite the payment. Percentage amounts use the pre-use maximum.

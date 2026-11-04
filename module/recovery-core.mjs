@@ -26,7 +26,7 @@ export function turnRecoveryUpdates(system) {
   const updates = {};
   for (const [, pool, path] of pools) {
     if (!pool.autoRecover || !(numberOr(pool.regen, 0) > 0)) continue;
-    const spent = adjustedResourceSpent(pool, "recover", pool.regen);
+    const spent = adjustedResourceSpent({ ...pool, allowOverflow: false }, "recover", pool.regen);
     if (spent !== pool.spent) updates[`${path}.spent`] = spent;
   }
   return updates;
