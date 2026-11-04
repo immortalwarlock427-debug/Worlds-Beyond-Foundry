@@ -360,6 +360,27 @@ export async function createEquipment(actor, type) {
   return item;
 }
 
+export async function chooseArmorSlot(actor, piece) {
+  if (!actor.isOwner || !Object.hasOwn(ARMOR_PIECES, piece)) return;
+  const armor = Array.from(actor.items.values()).filter(item => item.type === "armor" && item.system.piece === piece);
+  const current = armor.find(item => item.system.equipped);
+  const escape = text =>
+    String(text).replace(/[&<>"']/g, value => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[value]);
+  const result = await foundry.applications.api.DialogV2.input({
+    window: { title: `Armor · ${ARMOR_PIECES[piece]}` },
+    classes: ["worlds-beyond", "wb-roll-dialog"],
+    content: `<label>Wear<select name="item"><option value="">Empty</option>${armor
+      .map(item => `<option value="${escape(item.id)}"${item.id === current?.id ? " selected" : ""}>${escape(item.name)}</option>`)
+      .join("")}</select></label>`,
+    ok: { label: "Apply" },
+    rejectClose: false
+  });
+  if (!result || (result.item || "") === (current?.id || "")) return;
+  const chosen = result.item ? actor.items.get(result.item) : current;
+  if (!chosen || chosen.type !== "armor" || chosen.system.piece !== piece) throw new Error("Choose armor for this body slot.");
+  return toggleEquipment(actor, chosen.id);
+}
+
 export async function toggleEquipment(actor, id) {
   return queuedAction(actor.uuid, () =>
     reversibleAction(async change => {

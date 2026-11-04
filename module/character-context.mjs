@@ -260,8 +260,15 @@ export function detailsContext(state) {
   };
 }
 
-export function equipmentContext({ system, equipment, equipmentGroups }) {
+export function equipmentContext({ actor, system, equipment, equipmentGroups }) {
+  const labels = { helmet: "Head", chest: "Chest", arms: "Arm guards", pants: "Pants", legs: "Leg guards" };
+  const items = Array.from(actor?.items?.values?.() ?? actor?.items ?? []);
+  const armorSlots = Object.entries(labels).map(([piece, label]) => {
+    const worn = items.find(item => item.type === "armor" && item.system.piece === piece && item.system.equipped);
+    return { piece, label, name: worn?.name ?? "Empty", img: worn?.img ?? "", equipped: !!worn };
+  });
   return {
+    armorSlots,
     equipment: wholeDisplay(equipment),
     equipmentGroups: wholeDisplay(equipmentGroups),
     carrying: wholeDisplay(system.carrying),

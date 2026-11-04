@@ -38,6 +38,7 @@ import {
   groupEquipmentRows,
   createEquipment,
   toggleEquipment,
+  chooseArmorSlot,
   useConsumable,
   decorateConsumableMessage
 } from "./equipment.mjs";
@@ -295,6 +296,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       dodge: CharacterSheet.#onDodge,
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
+      armorSlot: async function (event, target) {
+        if (!this.isEditable) return;
+        try {
+          return await chooseArmorSlot(this.actor, target.dataset.piece);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       pickPortrait: CharacterSheet.#onPickPortrait,
       viewTab: function (event, target) {
         this.changeTab(target.dataset.tab, "sheet");

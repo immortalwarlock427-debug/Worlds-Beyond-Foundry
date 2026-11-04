@@ -169,3 +169,11 @@ test("Item operation registration respects cancellation, runs batch normalizatio
     effects: [{ name: "Actual bonus", system: { changes: [] } }]
   });
 });
+
+test("equipping armor replaces the same body slot while allowing mixed armor on different slots", () => {
+  const chest = { id: "old", type: "armor", system: { equipped: true, piece: "chest", armorType: "heavy" } };
+  const other = { id: "new", type: "armor", system: { equipped: true, piece: "chest", armorType: "light" } };
+  const pants = { id: "pants", type: "armor", system: { equipped: true, piece: "pants", armorType: "light" } };
+  assert.deepEqual(stowedConflicts([chest, other, pants], ["new"]), ["old"]);
+  assert.equal(chest.system.equipped, true, "planning leaves documents alone");
+});

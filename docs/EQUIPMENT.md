@@ -332,3 +332,7 @@ Offline checks use actual installed v14.365 duration fields plus the native comb
 Not tested in a running world: native document persistence, GM/player synchronization, effect re-preparation after expiry, clock controls, live dice/card interactions, unlinked tokens and live scrolling. After restarting Foundry and refreshing browsers, make a +3 STR potion with 3 rounds, Apply, advance the drinker's turns, and confirm the effective stat returns to base and Status disappears. Repeat with game-time minutes, End early, two independent uses and a deleted original item. Check stowed/equipped gear hints and older untimed cards. Offline checks and installation never access or alter saved world/actor data.
 
 Ability duration/cooldown/recovery automation, form loadouts and final sheet validation are still later sheet work. Combat resolution, spell visuals and module installation remain deferred; notify the user before that transition.
+
+## Body slots
+
+The Equipment tab includes a body diagram with Head, Chest, Arm guards, Pants and Leg guards. Select a slot to choose an owned armor item or leave it empty. The catalog's arm and leg guard records represent each paired slot. Equipping another item for the same slot stows the previous record through the same native item update, including form presets and item-sheet edits. Mixed armor weights on different slots remain supported. Combat swaps use the existing AP cost once.

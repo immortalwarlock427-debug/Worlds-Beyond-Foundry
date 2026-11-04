@@ -14,6 +14,19 @@
       <button type="button" data-action="equipment" data-operation="create" data-type="consumable" {{#unless editable}}disabled{{/unless}}>Add consumable</button>
       <button type="button" data-action="equipment" data-operation="create" data-type="misc" {{#unless editable}}disabled{{/unless}}>Add miscellaneous</button>
     </div></details></div>
+    <details class="wb-disclosure wb-armor-layout" data-sync="armor-layout" open><summary>Worn armor</summary>
+      <div class="wb-armor-body">
+        <svg viewBox="0 0 160 300" aria-hidden="true" focusable="false">
+          <circle cx="80" cy="33" r="24"/><path d="M54 65 Q80 57 106 65 L120 146 L102 158 L100 191 L108 282 L83 282 L80 207 L77 282 L52 282 L60 191 L58 158 L40 146 Z"/>
+          <path d="M53 74 L31 141 L25 194 L8 190 L13 137 L34 76 Z M107 74 L129 141 L135 194 L152 190 L147 137 L126 76 Z"/>
+        </svg>
+        <div class="wb-armor-slot-list">{{#each armorSlots}}<button type="button"
+          class="wb-armor-slot {{#if equipped}}is-equipped{{/if}}" data-action="armorSlot" data-piece="{{piece}}"
+          aria-label="Choose {{label}} armor" {{#unless @root.editable}}disabled{{/unless}}>
+          <span class="wb-eyebrow">{{label}}</span><strong>{{name}}</strong>
+        </button>{{/each}}</div>
+      </div>
+    </details>
     <div class="wb-inventory">
       <p class="wb-inventory-total {{#if carrying.over}}is-over{{/if}}"><strong>{{carrying.used}} / {{carrying.capacity}}</strong> inventory slots{{#if carrying.over}} · over by {{carrying.over}}{{/if}}</p>
       <label class="wb-equipment-check"><input
