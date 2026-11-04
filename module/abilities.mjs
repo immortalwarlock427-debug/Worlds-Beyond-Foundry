@@ -35,6 +35,7 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
       loadout: formLoadoutSchema(),
       effectsActive: new foundry.data.fields.BooleanField({ initial: false }),
       activeDuration: new SchemaField({
+        combatRounds: number(null, { min: 0, integer: true }),
         value: number(null, { min: 0, integer: true }),
         units: text("rounds", { choices: BONUS_DURATION_UNITS, blank: false })
       }),

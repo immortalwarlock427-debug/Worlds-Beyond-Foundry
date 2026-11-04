@@ -265,7 +265,10 @@
       value="{{value}}"
       {{#if selected}}selected{{/if}}
     >{{label}}</option>{{/each}}</select></label>
-  </div><p class="wb-item-brief">Starts on Use; expires bonuses or the form. Blank/0 keeps manual End. Rounds need a started encounter; minutes/hours follow Foundry game time. Instant restoration stays applied.</p></details>{{/unless}}
+<label>Rounds in combat (optional)<input
+    type="number" name="system.activeDuration.combatRounds" value="{{system.activeDuration.combatRounds}}"
+    min="0" step="1" placeholder="Use duration above" {{#unless editable}}disabled{{/unless}}
+  ></label>  </div><p class="wb-item-brief">Starts on Use; expires bonuses or the form. Blank/0 keeps manual End. Optional combat rounds replace the duration when used in a started encounter. Rounds need a started encounter; minutes/hours follow Foundry game time. Instant restoration stays applied.</p></details>{{/unless}}
   <details class="wb-disclosure" data-sync="ability-trackers"><summary>Uses &amp; cooldown</summary><div class="wb-equipment-fields">
     <label>Maximum uses<input
       type="number"
