@@ -11,6 +11,7 @@ import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { AbilityData, AbilitySheet, createAbility, createSpell, useAbility } from "./abilities.mjs";
+import { registerSchemaVersion, runMigrations } from "./migrations.mjs";
 import { promptCommand, receiveCommand, decorateCommand, refreshCommandControls } from "./command.mjs";
 import { apTotal } from "./ap.mjs";
 import { commandReady } from "./combat-support.mjs";
@@ -660,6 +661,7 @@ Hooks.once("init", () => {
   };
 
   registerCatalogSetting();
+  registerSchemaVersion();
   registerCatalogMenu();
   game.worldsBeyond = { importCatalog };
 
@@ -676,6 +678,7 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", offerCatalogImport);
+Hooks.once("ready", () => runMigrations().catch(error => ui.notifications.error(`Worlds Beyond migration: ${error.message}`)));
 registerFormTriggers();
 registerAbilityTimers();
 registerFormLoadouts();

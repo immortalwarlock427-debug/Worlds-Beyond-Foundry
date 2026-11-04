@@ -48,3 +48,9 @@ The user's Foundry runs from `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyo
 The user's latest explicit preference is to install the exact tested commit whenever Codex opens or updates a PR, so they can test before merging. This authorizes Codex branch installation and supersedes the earlier merged-main-only preference. First back up and verify the current system, preserve unrelated files, and never touch world/actor data or program binaries. Verify installed files against that commit and report the PR/version and backup location. Ask the user to restart Foundry and refresh player browsers. The user tests and merges; never merge automatically.
 
 Automated pull-request checks run `npm test` (the same `node --test` suite) on Node 24, with no dependencies or build step. The workflow also checks pushes to main; it has read-only repository permissions. Passing CI does not replace the live Foundry sheet audit.
+
+## Schema migrations
+
+`module/migrations.mjs` registers the hidden world `schemaVersion` and runs from `ready` on the one active GM. Storage schema version is currently 0: the empty migration list makes no document or settings writes. Release version bumps do not change the storage version.
+
+Before adding a real migration, obtain the user's approval for renamed/removed model fields, require a verified world backup, add ordered idempotent steps and tests for old actors, embedded/unlinked-token actors, world items and relevant packs. Advance `schemaVersion` only after a step succeeds; a failed step must be safe to retry. Never decrease a saved schema version. This scaffold does not authorize migrations or automate world backups.
