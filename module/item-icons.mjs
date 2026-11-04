@@ -35,13 +35,13 @@ assign(["Revolver", "Gun"], "weapons/guns/pistol-revolver-steel.webp");
 assign(["Net"], "tools/fishing/net-simple-tan.webp");
 
 export const CUSTOM_ARTWORK = Object.freeze({
-  Chakram: "systems/worlds-beyond/icons/chakram.png",
-  Rapier: "systems/worlds-beyond/icons/rapier.png",
-  Urumi: "systems/worlds-beyond/icons/urumi.png",
-  Lance: "systems/worlds-beyond/icons/lance.png",
-  Blowgun: "systems/worlds-beyond/icons/blowgun.png",
-  "Chain Shield": "systems/worlds-beyond/icons/chain-shield.png",
-  "Scale Shield": "systems/worlds-beyond/icons/scale-shield.png"
+  Chakram: "systems/worlds-beyond/icons/chakram.webp",
+  Rapier: "systems/worlds-beyond/icons/rapier.webp",
+  Urumi: "systems/worlds-beyond/icons/urumi.webp",
+  Lance: "systems/worlds-beyond/icons/lance.webp",
+  Blowgun: "systems/worlds-beyond/icons/blowgun.webp",
+  "Chain Shield": "systems/worlds-beyond/icons/chain-shield.webp",
+  "Scale Shield": "systems/worlds-beyond/icons/scale-shield.webp"
 });
 const weaponIcons = {
   Battleaxe: "weapons/axes/axe-battle-simple.webp",
@@ -148,9 +148,12 @@ const generic = new Set([
   "icons/svg/shield.svg"
 ]);
 export function itemIcon(item) {
+  // Exact old system PNG paths resolve even after a player renames an item.
+  const compressed = Object.values(CUSTOM_ARTWORK).find(path => path.replace(/\.webp$/, ".png") === item.img);
+  if (compressed) return compressed;
   const priorPlaceholder =
     ((item.type === "weapon" && weaponIcons[item.name]) || (item.type === "shield" && shieldIcons[item.name])) &&
-    CUSTOM_ARTWORK[item.name]?.replace(/\.png$/, ".svg");
+    CUSTOM_ARTWORK[item.name]?.replace(/\.webp$/, ".svg");
   const legacy =
     item.type === "weapon"
       ? legacyWeaponIcons[item.name]

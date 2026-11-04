@@ -10,7 +10,7 @@ test("every catalog item has unique artwork, including seven supplied images", (
   assert.equal(items.filter(item => item.img.startsWith("icons/")).length, 63);
   assert.equal(Object.keys(CUSTOM_ARTWORK).length, 7);
   for (const item of items) {
-    assert.match(item.img, CUSTOM_ARTWORK[item.name] ? /^systems\/worlds-beyond\/icons\/.+\.png$/ : /^icons\/.+\.webp$/, item.name);
+    assert.match(item.img, CUSTOM_ARTWORK[item.name] ? /^systems\/worlds-beyond\/icons\/.+\.webp$/ : /^icons\/.+\.webp$/, item.name);
     assert.notEqual(item.img, "icons/weapons/swords/sword-simple-white.webp", item.name);
   }
   assert.match(weapons.find(item => item.name === "Revolver").img, /pistol-revolver/);
@@ -33,7 +33,7 @@ test("old automatic stock images resolve per item while chosen stock art and ren
   );
   assert.match(
     itemIcon({ type: "shield", name: "Scale Shield", img: "icons/equipment/shield/buckler-iron-cross-gray.webp" }),
-    /scale-shield.png/
+    /scale-shield.webp/
   );
   const chosen = { ...old, img: "icons/weapons/crossbows/crossbow-ornamental-winged.webp" };
   assert.equal(itemIcon(chosen), chosen.img);
@@ -44,7 +44,7 @@ test("old automatic stock images resolve per item while chosen stock art and ren
 test("saved placeholders resolve to supplied art only for the matching catalog item without changing documents", () => {
   for (const [name, path] of Object.entries(CUSTOM_ARTWORK)) {
     const type = name.endsWith("Shield") ? "shield" : "weapon";
-    const item = { name, type, img: path.replace(/\.png$/, ".svg") };
+    const item = { name, type, img: path.replace(/\.webp$/, ".svg") };
     const original = structuredClone(item);
     assert.equal(itemIcon(item), path, name);
     assert.deepEqual(item, original);
@@ -70,4 +70,14 @@ test("armor pieces, shields and consumables use appropriate stock families", () 
   assert.match(stockItemIcon({ type: "shield", name: "Wooden Shield" }), /shield/);
   assert.match(stockItemIcon({ type: "consumable", system: { kind: "potion" } }), /potions/);
   assert.match(stockItemIcon({ type: "consumable", system: { kind: "ammunition" } }), /ammunition/);
+});
+
+test("old supplied PNG paths resolve to WebP even on renamed items without rewriting saved images", () => {
+  for (const path of Object.values(CUSTOM_ARTWORK)) {
+    const img = path.replace(/\.webp$/, ".png");
+    const item = { type: "weapon", name: "Personal heirloom", img };
+    assert.equal(itemIcon(item), path);
+    assert.equal(item.img, img);
+    assert.equal(itemIcon({ ...item, img: "worlds/custom/rapier.png" }), "worlds/custom/rapier.png");
+  }
 });
