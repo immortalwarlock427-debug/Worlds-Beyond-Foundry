@@ -37,10 +37,25 @@ export async function recoverActor(actor, event, { updates = {}, combat, positio
       }
       if (!guard()) throw new Error("The encounter moved before recovery completed; the use resets were cancelled.");
       if (receipt) changes[`flags.${SCOPE}.recovery`] = receipt;
+      const removed = [];
+      if (event === "longRest" && globalThis.game?.user?.isGM && !actor.isToken && typeof game.combats?.has === "function") {
+        for (const field of ["parryUses", "recovery"]) {
+          for (const id of Object.keys(actor.getFlag(SCOPE, field) ?? {})) {
+            if (!/^[A-Za-z0-9]{16}$/.test(id) || game.combats.has(id)) continue;
+            changes[`flags.${SCOPE}.${field}.-=${id}`] = null;
+            removed.push(`flags.${SCOPE}.${field}.${id}`);
+          }
+        }
+      }
       if (!Object.keys(changes).length) return actor;
       await actor.update(changes);
       const saved = actor.toObject?.() ?? actor;
-      if (Object.entries(changes).some(([path, value]) => JSON.stringify(foundry.utils.getProperty(saved, path)) !== JSON.stringify(value)))
+      if (
+        removed.some(path => foundry.utils.getProperty(saved, path) !== undefined) ||
+        Object.entries(changes).some(
+          ([path, value]) => !path.includes(".-=") && JSON.stringify(foundry.utils.getProperty(saved, path)) !== JSON.stringify(value)
+        )
+      )
         throw new Error("Recovery was cancelled or not retained. Retry the event or correct its trackers.");
       return actor;
     })

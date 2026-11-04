@@ -64,3 +64,5 @@ For each failure send: actor or token copy, tab/button, values before/after, exp
 Roman’s world form now uses `worlds/echoes-of-the-end-ver-1/tokens/roman-solvaris-monstrous.webp`; its existing 2×2, scale 1.15 and current 1.25-second timing were preserved. The path persisted after reopening the editor; test the visible transformation during the audit. Keep the PNG and old macro until the integrated behavior is confirmed.
 
 - [ ] Set a stored Maximum bonus, then zero it. Add an effect bonus and confirm it still applies to the chosen base. At 101/100 with overflow enabled, trigger a form that sets the cap to 200 using a blank Above threshold. Confirm 101/200 without oscillation, then End and confirm 101/100. Repeat on an unlinked token.
+
+- [ ] In a test encounter, move one token several times. Completed trails should disappear and previews for a new move should still draw.
