@@ -10,10 +10,12 @@ import { actionApCost } from "./attacks.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
 import { consumableBonusData, applyConsumableBonuses, consumableDurationStart } from "./consumable-effects.mjs";
 import { BONUS_DURATION_UNITS, bonusDurationText } from "./effect-duration.mjs";
+import { ACCESSORY_SLOTS } from "./loadout.mjs";
+import { DOLL_SLOTS, HAND_SLOTS, slotChoices, slotItems, slotPlan, freeEquipmentChange } from "./paper-doll.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 // Equippable types; ITEM_TYPES adds carried-only items.
-export const EQUIPMENT_TYPES = Object.freeze({ weapon: "Weapon", armor: "Armor", shield: "Shield" });
+export const EQUIPMENT_TYPES = Object.freeze({ weapon: "Weapon", armor: "Armor", shield: "Shield", accessory: "Accessory" });
 export const ITEM_TYPES = Object.freeze({ ...EQUIPMENT_TYPES, consumable: "Consumable", misc: "Miscellaneous" });
 export const CONSUMABLE_KINDS = Object.freeze({ potion: "Potion", ammunition: "Ammunition", other: "Other" });
 export const ARMOR_TYPES = { light: "Light", medium: "Medium", heavy: "Heavy" };
@@ -154,6 +156,14 @@ export class ArmorData extends EquipmentData {
   }
 }
 
+// Amulets, rings and belts. Their bonuses come from item bonuses, like any other worn gear.
+export class AccessoryData extends EquipmentData {
+  static defineSchema() {
+    const choices = Object.fromEntries(Object.entries(ACCESSORY_SLOTS).map(([key, slot]) => [key, slot.label]));
+    return { ...super.defineSchema(), slot: text("ring", { choices, blank: false }) };
+  }
+}
+
 export class ShieldData extends EquipmentData {
   static defineSchema() {
     return { ...super.defineSchema(), slots: number(2), armorRating: number(), blockDie: text("1d6") };
@@ -164,6 +174,7 @@ export const EQUIPMENT_MODELS = Object.freeze({
   weapon: WeaponData,
   armor: ArmorData,
   shield: ShieldData,
+  accessory: AccessoryData,
   consumable: ConsumableData,
   misc: MiscData
 });
@@ -208,6 +219,12 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
       weapon: this.item.type === "weapon",
       armor: this.item.type === "armor",
       shield: this.item.type === "shield",
+      accessory: this.item.type === "accessory",
+      accessorySlots: Object.entries(ACCESSORY_SLOTS).map(([value, slot]) => ({
+        value,
+        label: slot.label,
+        selected: value === this.item.system.slot
+      })),
       consumable: this.item.type === "consumable",
       equippable: Object.hasOwn(EQUIPMENT_TYPES, this.item.type),
       hasBonuses: Object.hasOwn(EQUIPMENT_TYPES, this.item.type) || this.item.type === "consumable",
@@ -277,7 +294,8 @@ export function equipmentRows(items, slotsUsed = {}) {
         type: item.type,
         typeLabel: ITEM_TYPES[item.type] ?? "Gear",
         img: itemIcon(item),
-        equipIcon: item.type === "shield" ? "fa-shield-halved" : item.type === "armor" ? "fa-shirt" : "fa-hand",
+        equipIcon:
+          item.type === "shield" ? "fa-shield-halved" : item.type === "armor" ? "fa-shirt" : item.type === "accessory" ? "fa-ring" : "fa-hand",
         canUse: item.type === "consumable",
         canAttack: item.type === "weapon" && !!item.system.equipped,
         canReload: item.type === "weapon" && item.system.loading > 0,
@@ -300,7 +318,9 @@ export function equipmentRows(items, slotsUsed = {}) {
               ? `AR ${item.system.armorRating} · Evasion +${item.system.evasionBonus}`
               : item.type === "shield"
                 ? `Block ${item.system.blockDie} · AR ${item.system.armorRating}`
-                : item.type === "consumable" && item.system.healingDice
+                : item.type === "accessory"
+                  ? (ACCESSORY_SLOTS[item.system.slot]?.label ?? "Accessory")
+                  : item.type === "consumable" && item.system.healingDice
                   ? `Restore ${item.system.healingDice}${item.system.restoreUnit === "percent" ? "%" : ""} ${recoveryChoices(original.actor?.system, item.system.restoreTarget ?? "health").find(choice => choice.selected)?.label ?? "Resource"}`
                   : "",
         detail:
@@ -325,7 +345,9 @@ export function equipmentRows(items, slotsUsed = {}) {
               ? `${ARMOR_TYPES[item.system.armorType] ?? item.system.armorType} · ${ARMOR_PIECES[item.system.piece] ?? item.system.piece} · AR ${item.system.armorRating} · NE +${item.system.evasionBonus}`
               : item.type === "shield"
                 ? `AR ${item.system.armorRating} · Block ${item.system.blockDie}`
-                : item.type === "consumable"
+                : item.type === "accessory"
+                  ? `${ACCESSORY_SLOTS[item.system.slot]?.label ?? "Accessory"} · worn`
+                  : item.type === "consumable"
                   ? [
                       CONSUMABLE_KINDS[item.system.kind] ?? item.system.kind,
                       item.system.healingDice ? `Heals ${item.system.healingDice}` : "",
@@ -341,11 +363,12 @@ export function equipmentRows(items, slotsUsed = {}) {
 }
 
 export function groupEquipmentRows(rows) {
-  const known = new Set(["weapon", "armor", "shield", "consumable"]);
+  const known = new Set(["weapon", "armor", "shield", "accessory", "consumable"]);
   return [
     ["weapon", "Weapons"],
     ["armor", "Armor"],
     ["shield", "Shields"],
+    ["accessory", "Accessories"],
     ["consumable", "Consumables"],
     ["misc", "Gear"]
   ]
@@ -360,35 +383,69 @@ export async function createEquipment(actor, type) {
   return item;
 }
 
-export async function chooseArmorSlot(actor, piece) {
-  if (!actor.isOwner || !Object.hasOwn(ARMOR_PIECES, piece)) return;
-  const armor = Array.from(actor.items.values()).filter(item => item.type === "armor" && item.system.piece === piece);
-  const current = armor.find(item => item.system.equipped);
-  const escape = text =>
-    String(text).replace(/[&<>"']/g, value => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[value]);
+const escapeText = text =>
+  String(text).replace(/[&<>"']/g, value => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[value]);
+
+// Choose what fills one paper-doll slot. Swaps go out as one change that pays the equip cost once.
+export async function chooseBodySlot(actor, key) {
+  if (!actor.isOwner) return;
+  const slot = DOLL_SLOTS.find(entry => entry.key === key);
+  const label = slot?.label ?? HAND_SLOTS[key];
+  if (!label) return;
+  const choices = slotChoices(actor.items, key);
+  const current = new Set(slotItems(actor.items, key).map(item => item.id));
+  const many = key === "strapped";
+  const option = item =>
+    many
+      ? `<label class="wb-equipment-check"><input type="checkbox" name="item" value="${escapeText(item.id)}"${current.has(item.id) ? " checked" : ""}> ${escapeText(item.name)}</label>`
+      : `<option value="${escapeText(item.id)}"${current.has(item.id) ? " selected" : ""}>${escapeText(item.name)}</option>`;
+  const empty = many
+    ? "<p>No Strapped weapons. Tick Strapped on a weapon to wear it on the forearm.</p>"
+    : `<p>Nothing that fits here yet.</p>`;
+  const content = !choices.length
+    ? empty
+    : many
+      ? `<fieldset class="wb-slot-choices"><legend>Worn on the forearm</legend>${choices.map(option).join("")}</fieldset>`
+      : `<label>Wear<select name="item"><option value="">Empty</option>${choices.map(option).join("")}</select></label>`;
   const result = await foundry.applications.api.DialogV2.input({
-    window: { title: `Armor · ${ARMOR_PIECES[piece]}` },
+    window: { title: `Equipment · ${label}` },
     classes: ["worlds-beyond", "wb-roll-dialog"],
-    content: `<label>Wear<select name="item"><option value="">Empty</option>${armor
-      .map(item => `<option value="${escape(item.id)}"${item.id === current?.id ? " selected" : ""}>${escape(item.name)}</option>`)
-      .join("")}</select></label>`,
+    content,
     ok: { label: "Apply" },
     rejectClose: false
   });
-  if (!result || (result.item || "") === (current?.id || "")) return;
-  const chosen = result.item ? actor.items.get(result.item) : current;
-  if (!chosen || chosen.type !== "armor" || chosen.system.piece !== piece) throw new Error("Choose armor for this body slot.");
-  return toggleEquipment(actor, chosen.id);
+  if (!result || !choices.length) return;
+  const picked = many ? [result.item ?? []].flat().filter(Boolean) : (result.item ?? "");
+  return setEquipment(actor, slotPlan(actor.items, key, picked));
+}
+
+// Stow everything shown in one slot.
+export async function clearBodySlot(actor, key) {
+  if (!actor.isOwner) return;
+  return setEquipment(actor, slotPlan(actor.items, key, []));
 }
 
 export async function toggleEquipment(actor, id) {
+  const item = actor.items.get(id);
+  if (!item) return;
+  return setEquipment(actor, { [id]: !item.system.equipped });
+}
+
+// Apply {id: equipped} as one item update. In combat it pays the equip cost (2 AP adjusted by DEX) once;
+// Quickdraw changes are free. Conflicting hand or slot gear is stowed by the item operation itself.
+export async function setEquipment(actor, changes) {
+  const ids = Object.keys(changes ?? {});
+  if (!ids.length) return;
   return queuedAction(actor.uuid, () =>
     reversibleAction(async change => {
-      const item = actor.items.get(id);
-      if (!actor.isOwner || !item || !Object.hasOwn(EQUIPMENT_TYPES, item.type)) return;
-      const equipped = !item.system.equipped;
-      const cost =
-        inCombat(actor) && !(item.type === "weapon" && item.system.signature?.quickdraw) ? actionApCost(2, actor.system.stats.dex.mod) : 0;
+      if (!actor.isOwner) return;
+      const updates = ids
+        .map(id => actor.items.get(id))
+        .filter(item => item && Object.hasOwn(EQUIPMENT_TYPES, item.type) && !!item.system.equipped !== !!changes[item.id])
+        .map(item => ({ _id: item.id, "system.equipped": !!changes[item.id] }));
+      if (!updates.length) return;
+      const free = freeEquipmentChange(actor.items, Object.fromEntries(updates.map(update => [update._id, update["system.equipped"]])));
+      const cost = inCombat(actor) && !free ? actionApCost(2, actor.system.stats.dex.mod) : 0;
       const before = Array.from(actor.items.values())
         .filter(entry => Object.hasOwn(EQUIPMENT_TYPES, entry.type))
         .map(entry => ({ _id: entry.id, "system.equipped": !!entry.system.equipped }));
@@ -405,8 +462,14 @@ export async function toggleEquipment(actor, id) {
           return actor;
         }
       );
-      const result = await item.update({ "system.equipped": equipped });
-      if (!result || !!item.system.equipped !== equipped) throw new Error("Equipment change was not saved. Try again.");
+      // One item goes through its own update; a slot swap sends every change in one batch.
+      const [only] = updates;
+      const result =
+        updates.length === 1
+          ? await actor.items.get(only._id).update({ "system.equipped": only["system.equipped"] })
+          : await actor.updateEmbeddedDocuments("Item", updates);
+      const missed = updates.filter(update => !!actor.items.get(update._id)?.system.equipped !== update["system.equipped"]);
+      if (!result || missed.length) throw new Error("Equipment change was not saved. Try again.");
       return result;
     })
   );

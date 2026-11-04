@@ -38,7 +38,8 @@ import {
   groupEquipmentRows,
   createEquipment,
   toggleEquipment,
-  chooseArmorSlot,
+  chooseBodySlot,
+  clearBodySlot,
   useConsumable,
   decorateConsumableMessage
 } from "./equipment.mjs";
@@ -297,10 +298,11 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       dodge: CharacterSheet.#onDodge,
       parry: CharacterSheet.#onParry,
       equipment: CharacterSheet.#onEquipment,
-      armorSlot: async function (event, target) {
+      bodySlot: async function (event, target) {
         if (!this.isEditable) return;
         try {
-          return await chooseArmorSlot(this.actor, target.dataset.piece);
+          if (target.dataset.operation === "clear") return await clearBodySlot(this.actor, target.dataset.slot);
+          return await chooseBodySlot(this.actor, target.dataset.slot);
         } catch (error) {
           ui.notifications.error(error.message);
         }

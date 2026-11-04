@@ -118,7 +118,7 @@ export function openEffect(effect) {
 
 export async function createEffect(item) {
   if (item.documentName !== "Item") throw new Error("Create an ability and add its bonuses on the ability sheet.");
-  if (!item.isOwner || !["weapon", "armor", "shield", "ability", "consumable"].includes(item.type)) return;
+  if (!item.isOwner || !["weapon", "armor", "shield", "accessory", "ability", "consumable"].includes(item.type)) return;
   return queuedAction(item.actor?.uuid ?? item.uuid, async () => {
     const [effect] = await item.createEmbeddedDocuments("ActiveEffect", [
       {
