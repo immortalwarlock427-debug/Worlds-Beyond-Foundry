@@ -9,8 +9,12 @@ export function normalizeHandUpdates(actor, updates) {
     const changed = path =>
       foundry.utils.hasProperty(update, path) && !!foundry.utils.getProperty(update, path) !== !!foundry.utils.getProperty(item, path);
     return (
-      ["weapon", "shield"].includes(item?.type) &&
+      ["weapon", "shield", "armor"].includes(item?.type) &&
       (changed("system.equipped") ||
+        (item.type === "armor" &&
+          item.system.equipped &&
+          foundry.utils.hasProperty(update, "system.piece") &&
+          foundry.utils.getProperty(update, "system.piece") !== item.system.piece) ||
         (item.system.equipped && ["light", "twoHanded", "strapped"].some(key => changed(`system.properties.${key}`))))
     );
   });
@@ -59,7 +63,7 @@ export function registerEquipmentItem() {
       // Existing actors/items are never rewritten merely by opening a world.
       if (operation.parent?.type !== "character") return;
       for (const item of documents) {
-        if (["weapon", "shield"].includes(item.type) && item.system.equipped) item.updateSource({ "system.equipped": false });
+        if (["weapon", "shield", "armor"].includes(item.type) && item.system.equipped) item.updateSource({ "system.equipped": false });
         if (item.type === "ability" && item.system.effectsActive) item.updateSource({ "system.effectsActive": false });
         const effects = Array.from(item.effects?.values?.() ?? item.effects ?? []);
         if (item.type === "ability" && (item.system.timers?.durationId || item.system.timers?.cooldownId || effects.some(timerKind)))

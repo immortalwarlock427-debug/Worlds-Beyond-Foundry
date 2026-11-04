@@ -223,3 +223,10 @@
 }
 
 .worlds-beyond.wb-character-sheet .wb-resource-management-fields button { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+
+.worlds-beyond.wb-character-sheet .wb-armor-body { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(180px, 2fr); gap: 20px; align-items: center; padding: 12px; }
+.worlds-beyond.wb-character-sheet .wb-armor-body svg { width: 100%; max-height: 300px; fill: #182447; stroke: #D4B06A; stroke-width: 1.5; opacity: .85; }
+.worlds-beyond.wb-character-sheet .wb-armor-slot-list { display: grid; gap: 8px; min-width: 0; }
+.worlds-beyond.wb-character-sheet .wb-armor-slot { display: grid; gap: 4px; padding: 10px 14px; text-align: left; height: auto; background: #0F1630; border: 1px solid #2C3452; }
+.worlds-beyond.wb-character-sheet .wb-armor-slot.is-equipped { border-color: #D4B06A; background: #182447; }
+.worlds-beyond.wb-character-sheet .wb-armor-slot strong { white-space: normal; }

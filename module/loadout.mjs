@@ -30,7 +30,7 @@ export function loadoutError(items, twoHandedId = null) {
 // Keep the deliberately changed item first, then as much existing gear as fits.
 // No document writes on load; this runs only for an intentional equipment edit.
 export function stowedConflicts(items, preferredIds = []) {
-  const all = itemList(items).filter(item => handGear(item) && item.system?.equipped);
+  const all = itemList(items).filter(item => (handGear(item) || item.type === "armor") && item.system?.equipped);
   const preferred = [...preferredIds]
     .reverse()
     .map(id => all.find(item => item.id === id))
@@ -39,7 +39,9 @@ export function stowedConflicts(items, preferredIds = []) {
   const kept = [],
     stowed = [];
   for (const item of ordered) {
-    if (loadoutError([...kept, item])) stowed.push(item.id);
+    const occupied =
+      item.type === "armor" && item.system.piece && kept.some(other => other.type === "armor" && other.system.piece === item.system.piece);
+    if (occupied || loadoutError([...kept, item])) stowed.push(item.id);
     else kept.push(item);
   }
   return stowed;
