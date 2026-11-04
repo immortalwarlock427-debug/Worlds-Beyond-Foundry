@@ -147,7 +147,7 @@
   box-shadow: 0 0 0 8px #010209E8, 0 0 20px 14px #010209D9, -7px 9px 30px #28325755;
 }
 .worlds-beyond.wb-character-sheet .wb-stat-orb { z-index: 2; }
-.worlds-beyond.wb-character-sheet .wb-sheet-panel:not(.active) .wb-vortex-streams { animation-play-state: paused; }
+
 @keyframes worlds-beyond-vortex-turn {
   from { transform: translate(-50%, -50%) rotate(0deg); }
   to { transform: translate(-50%, -50%) rotate(360deg); }

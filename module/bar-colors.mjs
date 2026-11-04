@@ -7,7 +7,13 @@ export function normalizeBarColor(value) {
   const hex = match[1].toUpperCase();
   return `#${hex.length === 3 ? [...hex].map(c => c + c).join("") : hex}`;
 }
-export function barColorContext(pool = {}) {
+const defaults = {
+  health: ["#8B1026", "#FF465A"],
+  mana: ["#4433CC", "#35D7FF"],
+  holyPower: ["#C18A27", "#FFF0AE"],
+  wonder: ["#C18A27", "#FFF0AE"]
+};
+export function barColorContext(pool = {}, key = pool.key) {
   const colors = pool.barColors ?? {},
     barColors = { start: colors.start ?? "", end: colors.end ?? "" };
   // Advanced/imported invalid values should not break a sheet or become CSS.
@@ -20,7 +26,11 @@ export function barColorContext(pool = {}) {
   };
   const start = safe(barColors.start),
     end = safe(barColors.end);
-  const fill = start && end ? `linear-gradient(90deg, ${start}, ${end})` : start || end;
+  const fallback = defaults[key];
+  const fill =
+    start && end
+      ? `linear-gradient(90deg, ${start}, ${end})`
+      : start || end || (fallback ? `linear-gradient(90deg, ${fallback[0]}, ${fallback[1]})` : "");
   return { barColors, barStyle: fill ? `background:${fill};` : "" };
 }
 export function barColorFormUpdates(system, data) {

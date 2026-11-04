@@ -119,7 +119,7 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
     favoriteSlots: favoriteSlots(actor, effects.savedAbilities),
     overviewPortraitY: appearance.portraitY,
     overviewHealth: {
-      ...barColorContext(health),
+      ...barColorContext(health, "health"),
       value: wholeNumber(health.value),
       max: wholeNumber(health.max),
       meter: overviewFill(health),
@@ -170,7 +170,7 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
       }
     ].map(pool => ({
       ...wholeDisplay(pool),
-      ...barColorContext(pool),
+      ...barColorContext(pool, pool.field.split(".")[1]),
       meter: overviewFill(pool),
       segments: Number.isInteger(pool.max) && pool.max > 0 && pool.max <= 24 ? pool.max : 1,
       overflow: pool.value > pool.max

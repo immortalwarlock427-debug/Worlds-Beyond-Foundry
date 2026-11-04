@@ -7,6 +7,7 @@ import {
   abilityResources,
   abilityFormUpdates
 } from "./abilities-core.mjs";
+import { imagePicker } from "./image-picker.mjs";
 import { wholeDisplay, wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
 import { itemEffectRows } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
@@ -91,7 +92,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       },
       pickFormPortrait: function () {
         if (!this.isEditable || this.item.system.kind !== "form") return;
-        return new foundry.applications.apps.FilePicker.implementation({
+        return imagePicker({
           type: "image",
           current: this.item.system.loadout.portrait || this.item.actor?.img,
           callback: path => this.item.update({ "system.loadout.portrait": path }).catch(error => ui.notifications.error(error.message))
@@ -99,7 +100,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       },
       pickFormToken: function () {
         if (!this.isEditable || this.item.system.kind !== "form") return;
-        return new foundry.applications.apps.FilePicker.implementation({
+        return imagePicker({
           type: "image",
           current: this.item.system.loadout.tokenImg || this.item.actor?.token?.texture.src || this.item.actor?.prototypeToken?.texture.src,
           callback: path => this.item.update({ "system.loadout.tokenImg": path }).catch(error => ui.notifications.error(error.message))
