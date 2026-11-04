@@ -194,7 +194,16 @@
               {{#if refillOnRest}}checked{{/if}}
               {{#unless @root.editable}}disabled{{/unless}}
             > Fill on long rest</label>
-            <label data-tooltip="Replaces the calculated base maximum. Bonuses still apply. Clear to restore the selected maximum source.">Maximum override<input
+            {{#if activeFormName}}<label>Maximum in {{activeFormName}}
+              <button type="button" data-action="resource" data-operation="formMaximum" {{#unless @root.editable}}disabled{{/unless}}>
+                {{#if (eq formMaximum null)}}∞ · set form maximum{{else}}{{formMaximum}} · edit{{/if}}
+              </button>
+            </label>{{/if}}
+            <label data-tooltip="Optional ceiling for Current. Blank allows unlimited manual overflow. A form maximum supplies its own ceiling.">Current limit<input
+              type="number" name="{{path}}.currentLimit" value="{{currentLimit}}" min="0" step="1"
+              placeholder="∞" {{#unless @root.editable}}disabled{{/unless}}
+            ></label>
+            <label data-tooltip="Replaces the calculated base maximum. Bonuses still apply. Clear to restore the selected maximum source.">Base maximum override<input
               type="number"
               name="{{path}}.maxOverride"
               value="{{maxOverride}}"

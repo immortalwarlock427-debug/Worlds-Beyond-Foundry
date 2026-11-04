@@ -24,7 +24,8 @@ export function magicPool(level, score, data = {}) {
   return {
     ...resourcePool(numberOr(data.maxOverride, base) + bonus, data.spent, data.minOverride),
     automatic,
-    allowOverflow: !!data.allowOverflow
+    allowOverflow: !!data.allowOverflow,
+    ...(data.currentLimit != null ? { currentLimit: Math.max(0, numberOr(data.currentLimit, 0)) } : {})
   };
 }
 
@@ -37,13 +38,14 @@ export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   return {
     ...resourcePool(numberOr(data.maxOverride, base) + bonus, data.spent, data.minOverride),
     automatic: Math.max(0, base + bonus),
-    allowOverflow: !!data.allowOverflow
+    allowOverflow: !!data.allowOverflow,
+    ...(data.currentLimit != null ? { currentLimit: Math.max(0, numberOr(data.currentLimit, 0)) } : {})
   };
 }
 
 export function applyFormMaximum(pool, spent, maximum, formName) {
   if (maximum == null) return pool;
-  return { ...pool, normalMax: pool.max, max: maximum, value: maximum - numberOr(spent, 0), formName };
+  return { ...pool, normalMax: pool.max, max: maximum, currentLimit: maximum, value: maximum - numberOr(spent, 0), formName };
 }
 
 export function resourcePresentation(pool) {
@@ -70,8 +72,15 @@ export function poolSpentForCurrent(max, current) {
   return value === null ? 0 : max - value;
 }
 
+export function boundedResourceCurrent(pool, value) {
+  const ceiling = numberOr(pool.currentLimit, Infinity);
+  if (!Number.isFinite(ceiling)) return value;
+  const current = numberOr(pool.value, pool.max - numberOr(pool.damage ?? pool.spent, 0));
+  return Math.min(value, Math.max(current, ceiling));
+}
+
 export function adjustedResourceSpent(pool, action, amount = 1) {
-  if (action === "fill") return 0;
+  if (action === "fill") return pool.max - Math.min(pool.max, numberOr(pool.currentLimit, Infinity));
   amount = numberOr(amount, null);
   if (amount === null || amount < 0) throw new Error("Enter a non-negative recovery amount.");
   if (!["spend", "restore", "recover"].includes(action)) throw new Error("Choose a resource action.");
@@ -83,7 +92,8 @@ export function adjustedResourceSpent(pool, action, amount = 1) {
       );
     return spent + amount;
   }
-  return pool.allowOverflow ? spent - amount : pool.value >= pool.max ? spent : Math.max(0, spent - amount);
+  const restored = pool.allowOverflow ? pool.value + amount : pool.value >= pool.max ? pool.value : Math.min(pool.max, pool.value + amount);
+  return pool.max - boundedResourceCurrent(pool, restored);
 }
 
 export function resourceEntries(system) {

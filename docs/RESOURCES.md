@@ -110,3 +110,9 @@ Portable tests cover policy selection, finite/unlimited uses, fractional gains, 
 Not yet exercised in the running world: the new controls, live combat hooks, socket persistence, multiple clients, player permissions, token actors and real mobile focus/scrolling. Before merging, restart Foundry and refresh player browsers. Configure one ability for each reset mode, spend uses, test long rest/start/next turn, and check an unchanged manual ability. Spend Mana, set recovery 5/on, advance its own turn and verify only one gain. Test overflow Blood, hidden Mana, long-rest opt-out and an unlinked token. Confirm cooldowns, active forms and base stats remain as configured.
 
 A form maximum replaces the resulting cap while that form is active. The change preserves current points, including overflow, and percentage display uses the active cap. Ordinary stat, level and equipment changes still preserve points spent.
+
+## Editing a form maximum and limiting Current
+
+While a form is active, resource Settings shows **Maximum in [form]**. Set or clear that form's final cap there, or in its Form loadout editor. Configured form caps limit further gains and typed Current increases. Changing the cap keeps current points, including an existing value above the new cap.
+
+**Base maximum override** and **Maximum bonus** configure the normal pool. **Current limit** is an optional additional ceiling, blank by default (∞). Automatic recovery still stops at the full-bar maximum. Manual overflow follows Allow over maximum, up to a configured Current limit or active form cap.

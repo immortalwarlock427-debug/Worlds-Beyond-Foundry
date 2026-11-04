@@ -161,6 +161,36 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
     throw new Error("The form's portrait or restore state was not retained.");
 }
 
+export async function configureFormResourceMaximum(actor, key) {
+  const form = activeLoadoutForm(actor);
+  if (!actor.isOwner || !form?.isOwner) return;
+  if (!Object.hasOwn(MAGIC_RESOURCES, key) && !customResourceId(key)) throw new Error("Choose an existing resource.");
+  const previous = form.system.loadout.resourceMaxima?.[key] ?? null;
+  const result = await foundry.applications.api.DialogV2.input({
+    window: { title: `Maximum in ${form.name}` },
+    classes: ["worlds-beyond", "wb-roll-dialog"],
+    content: `<label>Maximum in this form<input type="number" name="maximum" min="0" step="1" value="${previous ?? ""}" placeholder="∞ · no additional cap"></label><p>Sets the full bar and limits further gains while this form is active. Clearing uses the normal maximum and resource limit.</p>`,
+    ok: { label: "Save maximum" },
+    rejectClose: false
+  });
+  if (!result) return;
+  const maximum = numberOr(result.maximum, null);
+  if (maximum !== null && (!Number.isInteger(maximum) || maximum < 0)) throw new Error("Enter a whole non-negative maximum or clear it.");
+  return queuedAction(actor.uuid, () =>
+    reversibleAction(async change => {
+      if (!actor.isOwner || !form.isOwner || activeLoadoutForm(actor) !== form)
+        throw new Error("The form changed. Open its maximum again.");
+      if (maximum === previous) return actor;
+      await change(
+        () => form.update({ [`system.loadout.resourceMaxima.${key}`]: maximum }, operation()),
+        () => form.update({ [`system.loadout.resourceMaxima.${key}`]: previous }, operation())
+      );
+      await syncFormLoadout(actor, change);
+      return actor;
+    })
+  );
+}
+
 export async function copyFormEquipment(item) {
   const actor = item.actor;
   if (!item.isOwner || !actor?.isOwner || item.system.kind !== "form") return;
