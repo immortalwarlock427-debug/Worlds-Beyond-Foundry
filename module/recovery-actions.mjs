@@ -23,7 +23,10 @@ export async function recoverActor(actor, event, { updates = {}, combat, positio
         };
       }
       const items = new Set(events.flatMap(event => abilityRecoveryItems(actor.items, event)));
-      const changes = { ...updates, ...(event === "turn" ? turnRecoveryUpdates(actor.system) : {}) };
+      const changes = {
+        ...(typeof updates === "function" ? updates() : updates),
+        ...(event === "turn" ? turnRecoveryUpdates(actor.system) : {})
+      };
       for (const item of items) {
         if (actor.items.get(item.id) !== item || !item.system.uses.spent) continue;
         const previous = item.system.uses.spent;

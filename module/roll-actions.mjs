@@ -8,7 +8,6 @@ import { wholeNumber } from "./number-display.mjs";
 import { recoverActor } from "./recovery-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
-const actorOperations = new Map();
 const renderTemplate = (name, context) =>
   foundry.applications.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/${name}.hbs`, context);
 
@@ -103,37 +102,25 @@ function requireWonder(actor, message) {
   if (!(actor.system.wonder.value >= 1)) throw new Error("No Wonder uses left. Take a long rest or correct the pool on your sheet.");
 }
 
-// Serialize local clicks for the same actor so rapid use/refill actions cannot lose a spend.
-function actorOperation(actor, operation) {
-  const previous = actorOperations.get(actor.uuid) ?? Promise.resolve();
-  const current = previous.catch(() => {}).then(operation);
-  actorOperations.set(actor.uuid, current);
-  return current.finally(() => {
-    if (actorOperations.get(actor.uuid) === current) actorOperations.delete(actor.uuid);
-  });
-}
-
 export async function longRest(actor) {
   if (!actor.isOwner) return;
-  return actorOperation(actor, () =>
-    recoverActor(actor, "longRest", {
-      updates: {
-        "system.health.damage": 0,
-        "system.ap.value": null,
-        "system.reactions.value": null,
-        "system.wonder.value": null,
-        ...(actor.system.hitDice ? { "system.hitDice.spent": 0 } : {}),
-        ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
-        ...resourceRestUpdates(actor.system)
-      }
+  return recoverActor(actor, "longRest", {
+    updates: () => ({
+      "system.health.damage": 0,
+      "system.ap.value": null,
+      "system.reactions.value": null,
+      "system.wonder.value": null,
+      ...(actor.system.hitDice ? { "system.hitDice.spent": 0 } : {}),
+      ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
+      ...resourceRestUpdates(actor.system)
     })
-  );
+  });
 }
 
 export async function useWonder(message) {
   const actor = speakerActor(message);
   if (!message.isContentVisible || !actor?.isOwner || actor.type !== "character") return;
-  return actorOperation(actor, async () => {
+  return queuedAction(actor.uuid, async () => {
     const context = rollContext(message);
     const original = message.rolls?.[0];
     if (!context || context.actorUuid !== actor.uuid || context.success || !original?.dice.some(die => die.faces === 20)) return;
