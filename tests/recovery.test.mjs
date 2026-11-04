@@ -201,3 +201,32 @@ test("stale encounters and ignored actor acknowledgements restore use resets wit
   assert.deepEqual(f.actor.flags, {});
   assert.match(f.errors[0], /not retained/);
 });
+
+test("a GM long rest prunes only Parry and recovery receipts for deleted encounters", async () => {
+  const { actor } = fixture();
+  const active = "EncounterLive001",
+    deleted = "EncounterGone001";
+  const flags = (actor.flags["worlds-beyond"] = {
+    parryUses: { [active]: 2, [deleted]: 1 },
+    recovery: { [active]: { round: 2 }, [deleted]: { round: 1 } },
+    wonderUsed: { [deleted]: true },
+    commandClaims: { [deleted]: true },
+    defenseUses: { [deleted]: true }
+  });
+  game.user.isGM = true;
+  game.combats = new Map([[active, {}]]);
+  const update = actor.update.bind(actor);
+  actor.update = async data => {
+    const kept = {};
+    for (const [path, value] of Object.entries(data)) {
+      const [parent, key] = path.split(".-=");
+      if (key) delete get(actor, parent)[key];
+      else kept[path] = value;
+    }
+    return update(kept);
+  };
+  await recoverActor(actor, "longRest");
+  assert.deepEqual(flags.parryUses, { [active]: 2 });
+  assert.deepEqual(flags.recovery, { [active]: { round: 2 } });
+  for (const field of ["wonderUsed", "commandClaims", "defenseUses"]) assert.equal(flags[field][deleted], true);
+});
