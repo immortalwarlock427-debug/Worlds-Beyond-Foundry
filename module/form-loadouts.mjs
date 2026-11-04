@@ -1,4 +1,6 @@
 import { activeLoadoutForm, equipmentSnapshot, equipmentPlan, formGear, hasPhysicalLoadout } from "./form-loadout-core.mjs";
+import { MAGIC_RESOURCES, customResourceId, poolSpentForCurrent } from "./resources.mjs";
+import { numberOr } from "./core-numbers.mjs";
 import { itemList } from "./loadout.mjs";
 import { queuedAction, reversibleAction } from "./action-support.mjs";
 import { syncFormTokens } from "./form-tokens.mjs";
@@ -11,9 +13,11 @@ const operation = () => ({ worldsBeyondFormLoadout: true });
 // inherits the sidebar receipt and can never drop keys from it. Token actors read
 // and verify only the receipt stored on their own token.
 const receipt = actor =>
-  actor.isToken && actor.token?.delta
+  actor?.isToken && actor.token?.delta
     ? foundry.utils.getProperty(actor.token.delta._source ?? actor.token.delta, `flags.${SCOPE}.${KEY}`)
-    : actor.getFlag?.(SCOPE, KEY);
+    : actor?.getFlag?.(SCOPE, KEY);
+
+export const formResourceState = actor => receipt(actor)?.formResources;
 
 export function formLoadoutSchema() {
   const { SchemaField, StringField, BooleanField, TypedObjectField, NumberField } = foundry.data.fields;
@@ -29,7 +33,8 @@ export function formLoadoutSchema() {
     gearEnabled: new BooleanField({ initial: false }),
     equipment: map(),
     abilities: map(),
-    resources: map()
+    resources: map(),
+    resourceMaxima: new TypedObjectField(new NumberField({ nullable: true, initial: null, min: 0, integer: true }))
   });
 }
 export function formLoadoutContext(item) {
@@ -44,7 +49,7 @@ export function formLoadoutContext(item) {
     resources: [
       ...["mana", "holyPower"].map(id => ({ id, name: id === "mana" ? "Mana" : "Holy power" })),
       ...Object.entries(actor?.system.customResources ?? {}).map(([id, pool]) => ({ id, name: pool.name || "Resource" }))
-    ].map(entry => ({ ...entry, selected: config.resources?.[entry.id] !== false }))
+    ].map(entry => ({ ...entry, selected: config.resources?.[entry.id] !== false, maximum: config.resourceMaxima?.[entry.id] ?? null }))
   };
 }
 
@@ -66,7 +71,22 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
         () => item.update({ "system.loadout.equipment": new foundry.data.operators.ForcedReplacement(old) }, operation())
       );
   }
-  const nextId = hasPhysicalLoadout(form) ? form.id : "";
+  const resourcePools = () => [
+    ...Object.keys(MAGIC_RESOURCES)
+      .filter(key => actor.system[key])
+      .map(key => [key, actor.system[key], `system.${key}`]),
+    ...Object.entries(actor.system.customResources ?? {})
+      .filter(([key]) => customResourceId(key))
+      .map(([key, pool]) => [key, pool, `system.customResources.${key}`])
+  ];
+  const maxima = Object.fromEntries(
+    resourcePools().flatMap(([key]) => {
+      const maximum = numberOr(form?.system.loadout?.resourceMaxima?.[key], null);
+      return maximum != null && maximum >= 0 ? [[key, Math.floor(maximum)]] : [];
+    })
+  );
+  const formResources = Object.keys(maxima).length ? { name: form.name, maxima } : null;
+  const nextId = hasPhysicalLoadout(form) || formResources ? form.id : "";
   if (!previous && !nextId) return;
   const prior = actor.items.get(previous?.currentId);
   const currentGear = equipmentSnapshot(actor);
@@ -112,13 +132,22 @@ export async function syncFormLoadout(actor, change, { edited = false, gearEdite
     basePortrait,
     baseEquipment,
     gearEnabled: !!(nextId && form.system.loadout.gearEnabled),
-    ...(tokenState ? { tokenState } : {})
+    ...(tokenState ? { tokenState } : {}),
+    ...(formResources ? { formResources } : {})
   };
   const changes = {};
   if (actor.img !== img) changes.img = img;
   if (!foundry.utils.equals(previous, state)) changes[`flags.${SCOPE}.${KEY}`] = new foundry.data.operators.ForcedReplacement(state);
+  const restoreSpent = {};
+  for (const [key, pool, path] of resourcePools()) {
+    const next = maxima[key] ?? pool.normalMax ?? pool.max;
+    if (next === pool.max || !Number.isFinite(pool.value)) continue;
+    changes[`${path}.spent`] = poolSpentForCurrent(next, pool.value);
+    restoreSpent[`${path}.spent`] = pool.spent;
+  }
   if (!Object.keys(changes).length) return;
   const restore = {
+    ...restoreSpent,
     img: actor.img,
     [`flags.${SCOPE}.${KEY}`]: previous
       ? new foundry.data.operators.ForcedReplacement(previous)

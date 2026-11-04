@@ -5,7 +5,7 @@
         <span class="wb-eyebrow">{{resource.label}}</span>
         <span
           class="wb-resource-values"
-          {{#if resource.sources}}data-tooltip="{{resource.sources}} · Final maximum overrides still take priority"{{/if}}
+          {{#if resource.sources}}data-tooltip="{{resource.sources}}"{{/if}}
         >
           <input
             type="number"
@@ -113,7 +113,7 @@
         </header>
         <div
           class="wb-resource-values {{#if percent}}wb-percent-values{{/if}}"
-          data-tooltip="{{value}} / {{max}} points · Minimum {{min}}{{#if sources}} · {{sources}} · Final maximum overrides still take priority{{/if}}"
+          data-tooltip="{{value}} / {{max}} points · Minimum {{min}}{{#if sources}} · {{sources}}{{/if}}"
         >
           {{#if percentUnavailable}}<strong class="wb-percent-unavailable">—%</strong>
           {{else}}<input
@@ -200,6 +200,13 @@
               value="{{maxOverride}}"
               placeholder="Default {{automatic}}"
               min="0"
+              step="1"
+              {{#unless @root.editable}}disabled{{/unless}}
+            ></label>
+            <label data-tooltip="Stored bonus to maximum. Active effects can add their own bonuses.">Maximum bonus<input
+              type="number"
+              name="{{path}}.bonus"
+              value="{{storedBonus}}"
               step="1"
               {{#unless @root.editable}}disabled{{/unless}}
             ></label>

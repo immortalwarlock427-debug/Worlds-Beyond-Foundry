@@ -5,6 +5,7 @@ import { CharacterCombatant, registerCombatPortraits } from "./character-combata
 import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { MAGIC_RESOURCES, RESOURCE_SCALING, RESOURCE_DISPLAYS, customResourceId, magicPool, customPool } from "./resources.mjs";
+import { applyFormMaximum } from "./resources.mjs";
 import { addResource, resourceAction, resourceFormUpdates } from "./resource-actions.mjs";
 import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
@@ -18,7 +19,7 @@ import { commandReady } from "./combat-support.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
-import { registerFormLoadouts, setCharacterPortrait } from "./form-loadouts.mjs";
+import { registerFormLoadouts, setCharacterPortrait, formResourceState } from "./form-loadouts.mjs";
 import { configureFavorites, configureArchive } from "./overview.mjs";
 import { barColorFormUpdates } from "./bar-colors.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
@@ -216,10 +217,25 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     this.reactions.max = this.core.reactionsMax;
     this.reactions.value = numberOr(this.reactions.value, this.reactions.max);
     Object.assign(this.wonder, wonderPool(this.stats.fth.value, this.wonder));
+    const formResources = formResourceState(this.parent);
     for (const [key, def] of Object.entries(MAGIC_RESOURCES)) {
-      if (this[key]) Object.assign(this[key], magicPool(this.level, this.stats[def.stat].effective, this[key]));
+      const resource = this[key];
+      if (resource)
+        Object.assign(
+          resource,
+          applyFormMaximum(
+            magicPool(this.level, this.stats[def.stat].effective, resource),
+            resource.spent,
+            formResources?.maxima?.[key],
+            formResources?.name
+          )
+        );
     }
-    for (const resource of Object.values(this.customResources ?? {})) Object.assign(resource, customPool(resource, this));
+    for (const [key, resource] of Object.entries(this.customResources ?? {}))
+      Object.assign(
+        resource,
+        applyFormMaximum(customPool(resource, this), resource.spent, formResources?.maxima?.[key], formResources?.name)
+      );
     const items = this.parent?.items ?? [];
     this.carrying = inventory({
       items,
@@ -379,7 +395,15 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       system: {
         ...this.actor.system,
         ap: { ...this.actor.system.ap, value: shownAp },
-        bonuses: systemSource?.bonuses ?? this.actor.system.bonuses
+        bonuses: systemSource?.bonuses ?? this.actor.system.bonuses,
+        mana: { ...this.actor.system.mana, bonus: systemSource?.mana?.bonus },
+        holyPower: { ...this.actor.system.holyPower, bonus: systemSource?.holyPower?.bonus },
+        customResources: Object.fromEntries(
+          Object.entries(this.actor.system.customResources ?? {}).map(([key, pool]) => [
+            key,
+            { ...pool, bonus: systemSource?.customResources?.[key]?.bonus ?? 0 }
+          ])
+        )
       }
     });
     barColorFormUpdates(this.actor.system, data);

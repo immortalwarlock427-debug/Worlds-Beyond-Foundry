@@ -731,3 +731,29 @@ test("a failed form-to-form post restores the original preset definition, curren
   assert.equal(f.shield.system.equipped, false);
   assert.equal(f.actor.img, "first.png");
 });
+test("form caps preserve current resource points through entry and exit", async () => {
+  const { actor, first } = fixture();
+  const id = "BloodResource001";
+  actor.system.customResources = { [id]: { max: 100, value: 101, spent: -1 } };
+  first.system.loadout.resourceMaxima = { [id]: 200 };
+  const update = actor.update.bind(actor);
+  actor.update = async (...args) => {
+    await update(...args);
+    const cap = actor.getFlag("worlds-beyond", "formLoadoutState")?.formResources?.maxima?.[id];
+    const pool = actor.system.customResources[id];
+    pool.max = cap ?? 100;
+    pool.normalMax = cap == null ? undefined : 100;
+    pool.value = pool.max - pool.spent;
+    return actor;
+  };
+  first.system.effectsActive = true;
+  await sync(actor);
+  assert.equal(actor.system.customResources[id].max, 200);
+  assert.equal(actor.system.customResources[id].value, 101);
+  assert.equal(actor.system.customResources[id].spent, 99);
+  first.system.effectsActive = false;
+  await sync(actor);
+  assert.equal(actor.system.customResources[id].max, 100);
+  assert.equal(actor.system.customResources[id].value, 101);
+  assert.equal(actor.system.customResources[id].spent, -1);
+});
