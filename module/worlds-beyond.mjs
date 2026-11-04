@@ -10,7 +10,7 @@ import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
 import { bindStatInput, editedStatInputs } from "./stat-input.mjs";
 import { wholeNumber, wholeFormUpdates, bindWholeNumbers } from "./number-display.mjs";
-import { AbilityData, AbilitySheet, createAbility, useAbility } from "./abilities.mjs";
+import { AbilityData, AbilitySheet, createAbility, createSpell, useAbility } from "./abilities.mjs";
 import { promptCommand, receiveCommand, decorateCommand, refreshCommandControls } from "./command.mjs";
 import { apTotal } from "./ap.mjs";
 import { commandReady } from "./combat-support.mjs";
@@ -528,6 +528,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (operation !== "edit" && !this.isEditable) return;
     try {
       if (operation === "create") return await createAbility(this.actor, target.dataset.kind ?? "active");
+      if (operation === "spell") return await createSpell(this.actor);
       if (operation === "base") return await returnToBase(this.actor);
       const item = this.actor.items.get(target.closest("[data-ability-id]")?.dataset.abilityId);
       if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");

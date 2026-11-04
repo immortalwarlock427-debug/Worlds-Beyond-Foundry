@@ -32,3 +32,9 @@ The portable `node --test` suite covers the records and activation adapters. New
 Offline checks use actual Foundry v14.365 schemas and strict Handlebars rendering for standalone/owned records, nullable defaults and clearing, source/reload stability, AP preview, custom-resource selection, escaped descriptions/notes, read-only controls and inline rows. Existing resource and 42 interface regression checks remain green. Foundry's native ActorSheetV2 drop implementation was inspected and is used unchanged.
 
 Not tested in a running Foundry client: creating/dropping/editing/removing records, live focus events, scrolling/mobile layout, simultaneous clients and user permissions in-world. The user tests the installed branch before merging. Restart Foundry and refresh player browsers, add a record, set AP 11 with INT/FTH discount, select Blood, record uses/cooldown, edit its description, reload, try a world Item drop and confirm resource balances/inventory totals remain unchanged. No live world/actor data is touched by offline checks or installation.
+
+## Spell preset
+
+Abilities → Add spell creates an ordinary Active ability, category Spell. Choose INT (arcane/Mana) or FTH (holy/Holy power); the preset records 11 base AP and that discount stat. The existing capped AP calculation and payment apply on Use, including outside combat. Set the resource cost yourself: spell costs vary, so the preset leaves it untracked. It does not enable a resource pool automatically. All fields remain editable in the normal Ability editor; this adds no new Item type, attack resolution or spell animation.
+
+Validation: Node tests cover both presets, cancel, invalid choice and owner-only creation, alongside existing capped AP/payment tests. Check Add spell in the live client, set an enabled pool and resource cost, then Use and verify the same payment/End behavior as any other Active ability.

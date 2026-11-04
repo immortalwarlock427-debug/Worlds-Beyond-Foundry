@@ -75,7 +75,7 @@ globalThis.Hooks = {
 };
 const { CharacterActor } = await import("../module/character-actor.mjs");
 const { CharacterSheet, CharacterData } = await import("../module/worlds-beyond.mjs");
-const { createAbility, AbilitySheet } = await import("../module/abilities.mjs");
+const { createAbility, createSpell, AbilitySheet } = await import("../module/abilities.mjs");
 
 test("form visibility refreshes the affected native parts without replacing unrelated tab drafts", async () => {
   const sheet = new CharacterSheet(),
@@ -707,4 +707,42 @@ test("editing the advanced base subtracts earned points exactly once; clearing p
   input.dataset.pendingBase = "0";
   result = sheet._processFormData(null, form, { object: {} });
   assert.equal(result.system.stats.agl.value, -4, "manual exceptions below the award total remain editable");
+});
+
+test("spell creation presets INT/FTH Active abilities without inventing costs or enabling pools", async () => {
+  const oldDialog = foundry.applications.api.DialogV2;
+  const created = [];
+  const actor = {
+    type: "character",
+    isOwner: true,
+    createEmbeddedDocuments: async (type, records) => {
+      assert.equal(type, "Item");
+      created.push(records[0]);
+      return [{ sheet: { render: async () => {} } }];
+    }
+  };
+  try {
+    for (const stat of ["int", "fth"]) {
+      foundry.applications.api.DialogV2 = { input: async () => ({ stat }) };
+      await createSpell(actor);
+      const record = created.at(-1);
+      assert.equal(record.name, "New spell");
+      assert.equal(record.system.kind, "active");
+      assert.equal(record.system.category, "Spell");
+      assert.equal(record.system.apCost, 11);
+      assert.equal(record.system.apDiscountStat, stat);
+      assert.equal(record.system.resourceId, stat === "int" ? "mana" : "holyPower");
+      assert.equal(record.system.resourceCost, undefined);
+    }
+    foundry.applications.api.DialogV2.input = async () => null;
+    await createSpell(actor);
+    assert.equal(created.length, 2);
+    foundry.applications.api.DialogV2.input = async () => ({ stat: "str" });
+    await assert.rejects(createSpell(actor), /INT or FTH/);
+    actor.isOwner = false;
+    await createSpell(actor);
+    assert.equal(created.length, 2);
+  } finally {
+    foundry.applications.api.DialogV2 = oldDialog;
+  }
 });

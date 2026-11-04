@@ -180,20 +180,41 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
   }
 }
 
-export async function createAbility(actor, kind = "active") {
+export async function createAbility(actor, kind = "active", { spellStat } = {}) {
   if (!actor.isOwner || actor.type !== "character") return;
   if (!Object.hasOwn(ABILITY_TYPES, kind)) throw new Error("Choose an ability type.");
+  if (spellStat && (kind !== "active" || !["int", "fth"].includes(spellStat))) throw new Error("Choose INT or FTH for the spell preset.");
   const [item] = await actor.createEmbeddedDocuments("Item", [
     {
-      name: kind === "form" ? "New form" : "New ability",
+      name: spellStat ? "New spell" : kind === "form" ? "New form" : "New ability",
       type: "ability",
       img: ABILITY_ICON,
-      system: { kind, ...(kind === "form" ? { trigger: { mode: "prompt", endMode: "prompt" } } : {}) }
+      system: {
+        kind,
+        ...(kind === "form" ? { trigger: { mode: "prompt", endMode: "prompt" } } : {}),
+        ...(spellStat
+          ? { category: "Spell", apCost: 11, apDiscountStat: spellStat, resourceId: spellStat === "int" ? "mana" : "holyPower" }
+          : {})
+      }
     }
   ]);
   if (!item) throw new Error("The ability was not created. Try again.");
   await item.sheet.render({ force: true });
   return item;
+}
+
+export async function createSpell(actor) {
+  if (!actor.isOwner || actor.type !== "character") return;
+  const result = await foundry.applications.api.DialogV2.input({
+    window: { title: "Add spell" },
+    classes: ["worlds-beyond", "wb-roll-dialog"],
+    content: `<label>Casting stat<select name="stat"><option value="int">INT · Arcane / Mana</option><option value="fth">FTH · Holy / Holy power</option></select></label><p>11 base AP, adjusted by this stat. Set the spell's resource cost in its editor.</p>`,
+    ok: { label: "Create spell" },
+    rejectClose: false
+  });
+  if (!result) return;
+  if (!["int", "fth"].includes(result.stat)) throw new Error("Choose INT or FTH for the spell preset.");
+  return createAbility(actor, "active", { spellStat: result.stat });
 }
 
 const escapeHTML = value =>
