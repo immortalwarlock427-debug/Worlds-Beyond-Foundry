@@ -38,7 +38,7 @@ Restart Foundry and refresh player browsers. Use two disposable test characters 
 
 ## Abilities, forms and status (7 minutes)
 
-- [ ] Add spell twice: INT gives an Active Spell with base AP 11 and Mana; FTH selects Holy power. Enter resource costs. Use with sufficient AP/pool, then insufficient AP: costs are paid once or use is refused. End does not refund a successful cast. Ordinary abilities remain editable.
+- [ ] Add spell twice: INT gives an Active Spell with base AP 11 and Mana; FTH selects Holy power. Enter resource costs. Use with sufficient AP/pool, then insufficient AP in combat: costs are paid once or use is refused. End does not refund a successful cast. Ordinary abilities remain editable.
 - [ ] Test a self-buff and restoration ability. Bonuses apply on Use, disappear on End, and never appear in Status while inactive. Uses/cooldowns and active duration update independently; manual corrections remain usable.
 - [ ] Configure a form with +3 STR, portrait, token art/2×2 size, equipment preset and resource visibility. Use, switch, then End/Base: original portrait/token/gear restore, and balances/uses do not reset. Preset checkboxes keep the editor's scroll position.
 - [ ] Try the same on linked tokens and on B's unlinked copy. Linked changes affect that actor's prototype/active tokens; unlinked changes affect only that token copy. Watch the transition and restoration of position/size.

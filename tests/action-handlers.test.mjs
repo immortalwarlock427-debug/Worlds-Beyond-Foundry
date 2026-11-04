@@ -616,10 +616,9 @@ test("ability Use pays exact percent resources and one use, enables bonuses; rap
   await assert.rejects(useAbility(f.actor, item.id), /cooldown/);
 });
 
-test("ability Use pays AP without an encounter and insufficient AP leaves all costs and bonuses untouched", async () => {
+test("ability Use charges AP in combat and refuses insufficient AP before paying other costs", async () => {
   const f = fixture(),
     item = bonusAbility(f);
-  game.combats = [];
   f.actor.system.ap.value = 4;
   await assert.rejects(useAbility(f.actor, item.id), /Not enough AP/);
   assert.equal(f.actor.system.ap.value, 4);
@@ -631,6 +630,23 @@ test("ability Use pays AP without an encounter and insufficient AP leaves all co
   assert.equal(f.actor.system.ap.value, 0);
   assert.equal(f.actor.system.mana.spent, 12.5);
   assert.equal(item.system.effectsActive, true);
+});
+
+test("repeated Reaction ability uses outside combat pay resources without AP or reactions", async () => {
+  const f = fixture(), item = bonusAbility(f);
+  game.combats = [];
+  item.effects.clear();
+  item.system.kind = "reaction";
+  item.system.cooldown.rounds = 0;
+  f.actor.system.ap.value = 0;
+  f.actor.system.reactions = { value: 0 };
+  await useAbility(f.actor, item.id);
+  await useAbility(f.actor, item.id);
+  assert.equal(f.actor.system.ap.value, 0);
+  assert.equal(f.actor.system.reactions.value, 0);
+  assert.equal(f.actor.system.mana.spent, 25);
+  assert.equal(item.system.uses.spent, 2);
+  assert.doesNotMatch(f.calls.posts[0].data.content, /AP spent|reaction spent/);
 });
 
 test("healing abilities apply on Use, cap at the deficit, pay once per use and stay usable without active bonus state", async () => {
@@ -923,10 +939,9 @@ test("an ability without bonuses or trackers pays and posts without an empty nat
   assert.equal(item.system.effectsActive, false);
 });
 
-test("reaction abilities spend a reaction outside combat and restore it if posting fails", async () => {
+test("reaction abilities spend a reaction in combat and restore it if posting fails", async () => {
   const f = fixture(),
     item = bonusAbility(f);
-  game.combats = [];
   item.system.kind = "reaction";
   item.system.cooldown.rounds = 0;
   f.actor.system.reactions = { value: 1 };

@@ -1,6 +1,6 @@
 # Abilities, forms and active status
 
-Create Active/Passive/Reaction/Other abilities or dedicated Forms. Add spell creates an Active preset with 11 base AP and INT/Mana or FTH/Holy power; enter its resource cost in the editor. Use checks and spends configured costs even outside combat. Equipment/ability bonuses affect the sheet; Status lists active sources only.
+Create Active/Passive/Reaction/Other abilities or dedicated Forms. Add spell creates an Active preset with 11 base AP and INT/Mana or FTH/Holy power; enter its resource cost in the editor. Use spends AP and reactions only in combat. Resource costs, uses and cooldowns also apply outside combat. Equipment/ability bonuses affect the sheet; Status lists active sources only.
 
 Forms share the same inventory, balances and counters. Optional portraits, token transforms, equipment presets and visibility apply on Use and restore on End/Base. Threshold prompts ask before changing forms by default. Timers use Foundry time. Broader spell attacks, area resolution and visuals remain deferred.
 
@@ -60,7 +60,7 @@ Not tested in a running Foundry client: creating/dropping/editing/removing recor
 <a id="abilities-spell-preset"></a>
 ### Spell preset
 
-Abilities → Add spell creates an ordinary Active ability, category Spell. Choose INT (arcane/Mana) or FTH (holy/Holy power); the preset records 11 base AP and that discount stat. The existing capped AP calculation and payment apply on Use, including outside combat. Set the resource cost yourself: spell costs vary, so the preset leaves it untracked. It does not enable a resource pool automatically. All fields remain editable in the normal Ability editor; this adds no new Item type, attack resolution or spell animation.
+Abilities → Add spell creates an ordinary Active ability, category Spell. Choose INT (arcane/Mana) or FTH (holy/Holy power); the preset records 11 base AP and that discount stat. The existing capped AP calculation and payment apply on Use during combat. Set the resource cost yourself: spell costs vary, so the preset leaves it untracked. It does not enable a resource pool automatically. All fields remain editable in the normal Ability editor; this adds no new Item type, attack resolution or spell animation.
 
 Validation: Node tests cover both presets, cancel, invalid choice and owner-only creation, alongside existing capped AP/payment tests. Check Add spell in the live client, set an enabled pool and resource cost, then Use and verify the same payment/End behavior as any other Active ability.
 
