@@ -45,6 +45,7 @@ import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, import
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
 import { decorateAttackDefenses } from "./attack-defense.mjs";
 import { registerEquipmentItem } from "./equipment-item.mjs";
+import { registerMovementRuler } from "./movement-ruler.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
@@ -665,6 +666,7 @@ Hooks.once("init", () => {
   registerEffectSupport();
   registerEquipmentItem();
   registerTokenAttacks();
+  registerMovementRuler();
   registerCombatPortraits();
   CONFIG.Actor.documentClass = CharacterActor;
   CONFIG.Combatant.documentClass = CharacterCombatant;
