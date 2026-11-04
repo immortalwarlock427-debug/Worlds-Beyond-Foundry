@@ -328,6 +328,17 @@ test("token AP and reaction corrections remain unrestricted and unrelated attrib
   assert.deepEqual(a.fallback, ["other", 2, true, false]);
 });
 
+test("token bars edit custom resources through their spent amount like the sheet", async () => {
+  const a = actor();
+  a.system.customResources = { jLaL634UIhFTxJYF: { value: 30, max: 100, spent: 70 } };
+  await a.modifyTokenAttribute("customResources.jLaL634UIhFTxJYF", 15, true);
+  assert.deepEqual(a.lastUpdate, { "system.customResources.jLaL634UIhFTxJYF.spent": 55 });
+  await a.modifyTokenAttribute("customResources.jLaL634UIhFTxJYF", 100, false);
+  assert.deepEqual(a.lastUpdate, { "system.customResources.jLaL634UIhFTxJYF.spent": 0 });
+  await a.modifyTokenAttribute("customResources.missing00000000x", 5, true);
+  assert.deepEqual(a.fallback, ["customResources.missing00000000x", 5, true, true]);
+});
+
 test("token updates respect cancellation through Foundry's modifyTokenAttribute hook", async () => {
   const a = actor();
   Hooks.call = () => false;
