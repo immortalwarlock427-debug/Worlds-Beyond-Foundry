@@ -349,6 +349,7 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
         {
           speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
           content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${timed ? ` Duration: ${escapeHTML(bonusDurationText(item.system.activeDuration))}.` : hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}${details}</div>`,
+          flags: { [SYSTEM_ID]: { sheetActivity: { actorUuid: actor.uuid, label: `Used ${item.name}` } } },
           rolls: roll ? [roll] : []
         },
         { messageMode }

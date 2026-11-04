@@ -509,3 +509,9 @@ The PR records live Foundry checks and their limits. Test before merging:
 Resource settings reopen before restoring scroll, so changes keep the current location. Manage fits its Add resource button. The Details seal opens Adjust values. Portrait and form image pickers bind a fresh upload control on rerender to avoid duplicate upload listeners.
 
 The portrait vortex keeps elapsed rotation for the lifetime of its sheet window. Theme defaults are Health #8B1026 → #FF465A, Mana #4433CC → #35D7FF, and Holy power/Wonder #C18A27 → #FFF0AE. Saved custom colors take priority.
+
+## DM activity log
+
+A GM can open the private **Worlds Beyond · DM activity log** Journal from Notes → Open DM activity log. With an active GM connected, the log records character values, resources, equipment, ability/form changes, bonuses, rests and edited text/artwork. Each entry identifies the character, player and time, with token copies labeled separately. Nearby updates for the same character/player are grouped into one entry.
+
+The default is the latest 500 entries. Configure Settings → Worlds Beyond offers logging and retention controls (100–5,000). The Journal uses GM-only ownership. Opening tabs, hovering controls and typing without saving produce no log entry. Logging begins after this release loads; it cannot reconstruct earlier activity or edits made while no GM is connected. It is a play aid for a trust-based sheet.

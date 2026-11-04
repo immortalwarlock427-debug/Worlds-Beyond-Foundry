@@ -1,3 +1,4 @@
+import { recordSheetAction } from "./dm-log.mjs";
 import { STATS } from "./stats.mjs";
 import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
 import { dodgeOutcome, parryOutcome } from "./defenses.mjs";
@@ -104,7 +105,7 @@ function requireWonder(actor, message) {
 
 export async function longRest(actor) {
   if (!actor.isOwner) return;
-  return recoverActor(actor, "longRest", {
+  const result = await recoverActor(actor, "longRest", {
     updates: () => ({
       "system.health.damage": 0,
       "system.ap.value": null,
@@ -115,6 +116,8 @@ export async function longRest(actor) {
       ...resourceRestUpdates(actor.system)
     })
   });
+  if (result) recordSheetAction(actor, "Long rest");
+  return result;
 }
 
 export async function useWonder(message) {

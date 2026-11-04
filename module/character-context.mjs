@@ -306,8 +306,9 @@ export function statusContext({ effects }) {
   return { activeStatuses: effects.statuses, hasForms: effects.hasForms, hasActiveForm: effects.hasActiveForm };
 }
 
-export function notesContext({ source }) {
+export function notesContext({ source, isGM }) {
   return {
+    canViewSheetLog: !!isGM,
     characterDetails: CHARACTER_DETAILS.map(field => ({ ...field, value: source.details?.[field.key] ?? "" })),
     characterDetailsSummary: [source.details?.class, source.details?.race].filter(value => value?.trim()).join(" · ")
   };
