@@ -339,10 +339,14 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
           () => item.update(previous, { ...updateOptions, worldsBeyondFormLoadout: true })
         );
       if (item.system.kind === "form") await syncFormLoadout(actor, change);
+      const description = String(item.system.description ?? "").trim();
+      const details = description
+        ? `<details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(description).replace(/\r\n?|\n/g, "<br>")}</p></details>`
+        : "";
       const message = await createActionMessage(
         {
           speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-          content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${timed ? ` Duration: ${escapeHTML(bonusDurationText(item.system.activeDuration))}.` : hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}<details class="wb-disclosure"><summary>Details</summary><p>${escapeHTML(item.system.description)}</p></details></div>`,
+          content: `<div class="worlds-beyond wb-ability-card"><h3>${escapeHTML(item.name)}</h3><p>Used${ap ? ` · ${wholeNumber(ap)} AP spent` : ""}${reaction ? " · 1 reaction spent" : ""}.${timed ? ` Duration: ${escapeHTML(bonusDurationText(item.system.activeDuration))}.` : hasBonuses ? " Bonuses enabled until ended." : ""}</p>${restoration ? `<p>Restored ${wholeNumber(restoration.restored)} ${escapeHTML(restoration.label)}.</p>` : ""}${rollHTML}${details}</div>`,
           rolls: roll ? [roll] : []
         },
         { messageMode }
