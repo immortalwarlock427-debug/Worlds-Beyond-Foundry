@@ -435,3 +435,11 @@ test("whole point/percent displays survive unrelated saves without erasing fract
   await resourceAction(f.actor, id, "spend", 0.5);
   assert.ok(Math.abs(pool.spent - 7.1) < 1e-10, "internal numeric costs retain fractions");
 });
+
+test("explicit resource ceilings bound restore and fill while blank limits allow configured overflow", () => {
+  const pool = { max: 100, value: 90, spent: 10, allowOverflow: true, currentLimit: 125 };
+  assert.equal(adjustedResourceSpent(pool, "restore", 100), -25);
+  assert.equal(adjustedResourceSpent({ ...pool, currentLimit: null }, "restore", 100), -90);
+  assert.equal(adjustedResourceSpent({ ...pool, currentLimit: 50 }, "fill"), 50);
+  assert.equal(adjustedResourceSpent({ ...pool, value: 150, spent: -50 }, "restore", 10), -50);
+});

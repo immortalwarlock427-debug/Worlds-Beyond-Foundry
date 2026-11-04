@@ -1,5 +1,5 @@
 // Foundry-free restoration targets and plans. Custom pools keep stable IDs.
-import { MAGIC_RESOURCES, customResourceId } from "./resources.mjs";
+import { MAGIC_RESOURCES, customResourceId, boundedResourceCurrent } from "./resources.mjs";
 import { numberOr } from "./core-numbers.mjs";
 
 export function recoveryPool(system, key = "health") {
@@ -32,7 +32,8 @@ export function restorationPlan(system, key, amount) {
   amount = numberOr(amount, 0);
   if (amount < 0) throw new Error("Restoration cannot be negative.");
   const previous = pool.health ? numberOr(pool.damage, 0) : numberOr(pool.spent, pool.max - pool.value);
-  const next = pool.allowOverflow ? previous - amount : previous <= 0 ? previous : Math.max(0, previous - amount);
+  const candidate = pool.allowOverflow ? previous - amount : previous <= 0 ? previous : Math.max(0, previous - amount);
+  const next = pool.currentLimit == null ? candidate : pool.max - boundedResourceCurrent(pool, pool.max - candidate);
   return { label: pool.label, path: `${pool.path}.${pool.health ? "damage" : "spent"}`, previous, next, restored: previous - next };
 }
 

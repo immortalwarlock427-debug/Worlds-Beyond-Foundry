@@ -21,7 +21,7 @@ import { commandReady } from "./combat-support.mjs";
 import { effectContext, effectRows } from "./effects-core.mjs";
 import { toggleEffect, openEffect, registerEffectSupport } from "./effects.mjs";
 import { returnToBase } from "./forms.mjs";
-import { registerFormLoadouts, setCharacterPortrait, formResourceState } from "./form-loadouts.mjs";
+import { registerFormLoadouts, setCharacterPortrait, formResourceState, configureFormResourceMaximum } from "./form-loadouts.mjs";
 import { configureFavorites, configureArchive } from "./overview.mjs";
 import { barColorFormUpdates } from "./bar-colors.mjs";
 import { registerFormTriggers } from "./form-triggers.mjs";
@@ -101,6 +101,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       allowOverflow: new BooleanField({ initial: false }),
       maxOverride: number(null, { nullable: true, min: 0 }),
       minOverride: override(),
+      currentLimit: number(null, { nullable: true, min: 0 }),
       display: new StringField({ required: true, nullable: false, blank: false, initial: "number", choices: RESOURCE_DISPLAYS }),
       value: number(0, { persisted: false }),
       max: number(0, { persisted: false }),
@@ -524,6 +525,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const card = target.closest("[data-resource-key]");
       const key = card?.dataset.resourceKey;
       const operation = target.dataset.operation;
+      if (operation === "formMaximum") return await configureFormResourceMaximum(this.actor, key);
       if (
         operation === "remove" &&
         !(await foundry.applications.api.DialogV2.confirm({

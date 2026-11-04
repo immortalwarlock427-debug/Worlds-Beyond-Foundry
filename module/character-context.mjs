@@ -203,6 +203,8 @@ export function detailsContext(state) {
       .filter(pool => showAllFormResources || formShowsResource(activeForm, pool.key))
       .map(pool => ({
         ...pool,
+        activeFormName: activeForm?.name ?? "",
+        formMaximum: activeForm?.system.loadout?.resourceMaxima?.[pool.key] ?? null,
         storedBonus: (pool.custom ? source.customResources?.[pool.key]?.bonus : source[pool.key]?.bonus) ?? 0,
         ...barColorContext(pool),
         sources: resourceSources(pool, { system, effects, statSources })
