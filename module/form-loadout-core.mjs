@@ -1,8 +1,8 @@
 // Form presentation and equipment plans, without Foundry or stored mutations.
 import { abilityActive } from "./ability-timers-core.mjs";
-import { itemList, stowedConflicts } from "./loadout.mjs";
+import { itemList, stowedConflicts, wornGear } from "./loadout.mjs";
 import { hasTokenLoadout } from "./form-token-core.mjs";
-export const formGear = item => ["weapon", "armor", "shield"].includes(item.type);
+export const formGear = wornGear;
 export const activeLoadoutForm = actor =>
   itemList(actor?.items).find(item => item.type === "ability" && item.system.kind === "form" && abilityActive(item)) ?? null;
 export const equipmentSnapshot = actor =>

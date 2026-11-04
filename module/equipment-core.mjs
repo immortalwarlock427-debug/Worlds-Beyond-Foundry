@@ -1,5 +1,6 @@
 // Foundry-free armor rules from Notion's Armor Types Information.
 import { numberOr } from "./core-numbers.mjs";
+import { wornGear } from "./loadout.mjs";
 
 export function wornEquipment({ items = [], agility = 12, strength = 12, penaltyOverride = null } = {}) {
   const armor = Array.from(items).filter(item => item.type === "armor" && item.system.equipped);
@@ -68,7 +69,7 @@ export function carriedSlots(item) {
   if (item.type === "ability") return 0;
   const system = item.system ?? {};
   const quantity = Math.max(0, numberOr(system.quantity, 1));
-  const equippable = ["weapon", "armor", "shield"].includes(item.type);
+  const equippable = wornGear(item);
   const carried = equippable && system.equipped ? Math.max(0, quantity - 1) : quantity;
   const perSlot = Math.max(1, numberOr(system.perSlot, 1));
   const size = Math.max(0, numberOr(system.slots, defaultSlots(item.type, system)));

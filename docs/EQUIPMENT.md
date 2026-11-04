@@ -335,4 +335,12 @@ Ability duration/cooldown/recovery automation, form loadouts and final sheet val
 
 ## Body slots
 
-The Equipment tab includes a body diagram with Head, Chest, Arm guards, Pants and Leg guards. Select a slot to choose an owned armor item or leave it empty. The catalog's arm and leg guard records represent each paired slot. Equipping another item for the same slot stows the previous record through the same native item update, including form presets and item-sheet edits. Mixed armor weights on different slots remain supported. Combat swaps use the existing AP cost once.
+The Equipment tab shows a paper doll ported from the Worlds Beyond website (`index.html` equipment grid and `css/sheet.css`). Ten slots sit beside the figure: Head, Arm guards, Chest, Right ring and Pants on the character's right; Amulet, Strapped, Belt, Left ring and Leg guards on the left. Worn parts of the figure and their leader lines turn brass. Beside the doll are the Armor Rating total (armor, shield, and VIT plus bonuses), the armor weight and its effects, and the Main hand and Off hand.
+
+- **Choosing:** select a slot to pick from carried items that fit it, or Empty. The × on a filled slot takes it off or stows it. A swap is one item update and pays the combat equip cost (2 AP adjusted by DEX) once. Quickdraw is free to draw, stow or swap to. The rules live in the Foundry-free `module/paper-doll.mjs`.
+- **Armor:** the five Notion pieces are unchanged. The catalog's arm and leg guard records represent each paired slot, and another item for the same slot stows the previous one.
+- **Accessories:** a new `accessory` Item type (`system.slot`: amulet, ring or belt). One amulet, one belt and two rings can be worn; a third ring stows the oldest. Accessories add bonuses through item bonuses like other gear. They don't change armor type, Armor Rating or Natural Evasion on their own. Worn accessories take no inventory slots. They join form equipment presets.
+- **Hands:** a Two-handed weapon fills the main hand and covers the off hand. Otherwise weapons fill the main hand first and shields prefer the off hand. The main hand offers any held weapon; the off hand offers one-handed weapons and shields. The existing hand rules still decide what fits together. Equipped weapons get an Attack button on their hand.
+- **Strapped:** Strapped weapons (Notion: worn on the forearm) show in their own slot and use no hand. The slot lists every Strapped weapon as a checklist; no limit was added.
+
+Existing worlds need a restart after updating because `system.json` adds the accessory document type. No existing data changes.

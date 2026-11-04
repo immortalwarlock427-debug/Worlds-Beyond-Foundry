@@ -113,6 +113,14 @@
     ></label>
   </div>
   {{/if}}
+  {{#if accessory}}
+  <div class="wb-equipment-fields">
+    <label>Worn as<select name="system.slot" {{#unless editable}}disabled{{/unless}}>{{#each accessorySlots}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+  </div>
+  {{/if}}
   {{#if consumable}}
   <div class="wb-equipment-fields">
     <label>Kind<select name="system.kind" {{#unless editable}}disabled{{/unless}}>{{#each consumableKinds}}<option
