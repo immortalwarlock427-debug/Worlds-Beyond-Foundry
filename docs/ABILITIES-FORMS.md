@@ -1,5 +1,7 @@
 # Abilities, forms and active status
 
+For the v14 transformation-image quality trace and native-token comparison, see [Token rendering investigation](TOKEN-RENDERING.md). The investigation does not change the renderer.
+
 Create Active/Passive/Reaction/Other abilities or dedicated Forms. Add spell creates an Active preset with 11 base AP and INT/Mana or FTH/Holy power; enter its resource cost in the editor. Use spends AP and reactions only in combat. Resource costs, uses and cooldowns also apply outside combat. Equipment/ability bonuses affect the sheet; Status lists active sources only.
 
 Forms share the same inventory, balances and counters. Optional portraits, token transforms, equipment presets and visibility apply on Use and restore on End/Base. Threshold prompts ask before changing forms by default. Timers use Foundry time. Broader spell attacks, area resolution and visuals remain deferred.
