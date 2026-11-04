@@ -237,7 +237,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         sections.join("") +
         footer.map(line => `<p>${line}</p>`).join("") +
         (hands.length > 1
-          ? '<details class="wb-disclosure wb-help"><summary>Two-weapon rules</summary><p>One attack’s AP for both weapons. The off-hand hit deals half damage, rounded down, with no modifier.</p></details>'
+          ? '<details class="wb-disclosure wb-help"><summary>Two-weapon rules</summary><p>One attack’s AP for both weapons. The off-hand hit deals full dice damage with no modifier.</p></details>'
           : "") +
         "</div>";
       return createActionMessage(
@@ -329,9 +329,9 @@ export async function rollDamage(message, index, critical) {
         throw new Error(`Couldn't read ${weapon.name}'s damage "${plan.listed}". Use dice like 1d8 or 2d6.`);
       const updated = hands.map((entry, i) => (i === index ? { ...entry, damageRolled: true } : entry));
       const roll = await new foundry.dice.Roll(plan.formula).evaluate({ allowInteractive: !message.blind });
-      const total = finalDamage(roll.total, { offhand });
+      const total = finalDamage(roll.total);
       const lines = [
-        `${total} ${escapeHTML(weapon.system.damageType)} damage${plan.critical ? " (critical: maximum damage plus a second roll)" : ""}${offhand ? ` (half of ${Math.max(0, roll.total)})` : ""}.`,
+        `${total} ${escapeHTML(weapon.system.damageType)} damage${plan.critical ? " (critical: maximum damage plus a second roll)" : ""}.`,
         `${escapeHTML(plan.listed)} rolled ${plan.times}× for level ${actor.system.level}${offhand ? "" : `, ${plan.statBonus >= 0 ? "+" : "−"}${Math.abs(plan.statBonus)} from ${statLabel(hand.stat)}`}${plan.mountBonus ? `, +${plan.mountBonus} from the charge` : ""}.`,
         ...plan.notes
       ];
@@ -355,7 +355,7 @@ export async function rollDamage(message, index, critical) {
       }
       lines.push("Subtract Block next. Apply Health changes manually.");
       if (overwhelming) {
-        lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower.`);
+        lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower. Immunity still applies.`);
       }
       for (const [key, on] of Object.entries(weapon.system.signature ?? {})) {
         if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));
