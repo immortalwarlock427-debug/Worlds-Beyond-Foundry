@@ -1,3 +1,4 @@
+import { inCombat } from "./combat-support.mjs";
 import { abilityClock, timerEffects, timerKind } from "./ability-timers-core.mjs";
 import { bonusDuration } from "./effect-duration.mjs";
 import { consumableDurationStart } from "./consumable-effects.mjs";
@@ -5,7 +6,7 @@ import { queuedAction } from "./action-support.mjs";
 const options = { worldsBeyondAbilityTimers: true };
 
 export function abilityTimerPlans(item) {
-  const duration = bonusDuration(item.system.activeDuration);
+  const duration = bonusDuration(item.system.activeDuration, !!item.actor && inCombat(item.actor));
   const cooldown = item.system.cooldown?.automatic ? bonusDuration({ value: item.system.cooldown.rounds, units: "rounds" }) : null;
   return Object.entries({ duration, cooldown })
     .filter(([, value]) => value)

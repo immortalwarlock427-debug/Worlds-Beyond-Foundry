@@ -91,6 +91,7 @@ export class ConsumableData extends CarriedData {
       restoreTarget: text("health"),
       restoreUnit: text("points", { choices: { points: "Points", percent: "% of maximum" }, blank: false }),
       bonusDuration: new foundry.data.fields.SchemaField({
+        combatRounds: new foundry.data.fields.NumberField({ required: true, nullable: true, initial: null, min: 0, integer: true }),
         value: new foundry.data.fields.NumberField({ required: true, nullable: true, initial: null, min: 0, integer: true }),
         units: text("rounds", { choices: BONUS_DURATION_UNITS, blank: false })
       })

@@ -400,3 +400,7 @@ User checks after restarting Foundry and refreshing browsers:
 6. Check read-only sheets, item editors, five tabs and phone layout. Native multi-client lifecycle, actual server permissions/GM hooks, real drops and UI rendering remain for live validation. The assistant did not access or edit live actor/world data.
 
 Form loadouts can specify a final maximum for Mana, Holy power and custom resources. Entering, switching or ending a form keeps current points when applying or clearing that cap. A blank trigger threshold uses the resource maximum outside forms.
+
+## Separate combat duration
+
+Ability Active duration and consumable Bonus duration offer **Rounds in combat**. For example, enter 5 Minutes and 6 combat rounds. A use outside a started encounter starts the game-time duration, and a use during combat starts the round duration. Blank combat rounds uses the main duration; 0 keeps manual End during combat. The selected clock stays with that use, including after the encounter starts or ends.

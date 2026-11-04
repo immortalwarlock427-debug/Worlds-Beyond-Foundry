@@ -14,3 +14,13 @@ test("old/cleared durations remain untimed; positive counts use native v14 expir
   assert.equal(effectTimeLeft({ duration: { value: 3, units: "rounds", label: "2 rounds" } }), "2 rounds left");
   assert.equal(effectTimeLeft({ duration: { value: null, remaining: Infinity } }), "");
 });
+
+test("a duration can select game-time outside combat and a separate round count in combat", () => {
+  const setting = { value: 5, units: "minutes", combatRounds: 6 };
+  assert.equal(bonusDuration(setting).units, "minutes");
+  assert.equal(bonusDuration(setting).value, 5);
+  assert.equal(bonusDuration(setting, true).units, "rounds");
+  assert.equal(bonusDuration(setting, true).value, 6);
+  assert.match(bonusDurationText(setting), /5 min · 6 rounds in combat/);
+  assert.equal(bonusDuration({ ...setting, combatRounds: 0 }, true), null);
+});

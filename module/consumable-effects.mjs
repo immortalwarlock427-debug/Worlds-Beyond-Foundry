@@ -1,3 +1,4 @@
+import { inCombat } from "./combat-support.mjs";
 import { EFFECT_SCOPE, effectChanges, effectFlags } from "./effects-core.mjs";
 import { bonusDuration } from "./effect-duration.mjs";
 
@@ -15,7 +16,7 @@ export function consumableDurationStart(actor, duration) {
 
 // Definitions stay on the consumable. Applied copies outlive the consumed item.
 export function consumableBonusData(item) {
-  const duration = bonusDuration(item.system?.bonusDuration);
+  const duration = bonusDuration(item.system?.bonusDuration, !!item.actor && inCombat(item.actor));
   return Array.from(item.effects?.values?.() ?? item.effects ?? [])
     .filter(effect => !effect.disabled)
     .map(effect => ({
