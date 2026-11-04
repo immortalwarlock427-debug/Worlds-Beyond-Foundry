@@ -503,3 +503,9 @@ The PR records live Foundry checks and their limits. Test before merging:
 3. Compare equipped/unequipped states. Remove should be a quieter trash control with the existing confirmation.
 4. Check a narrower sheet, keyboard focus, long names, zero quantity, loaded-shot counts and a custom item image. Check the Backpack checkbox's two states and the scrollbar.
 5. Keep compendium refresh optional: existing character rows already receive generic-image fallbacks. Refreshing the catalog follows the existing behavior in CATALOG.md.
+
+## Resource controls and portrait motion
+
+Resource settings reopen before restoring scroll, so changes keep the current location. Manage fits its Add resource button. The Details seal opens Adjust values. Portrait and form image pickers bind a fresh upload control on rerender to avoid duplicate upload listeners.
+
+The portrait vortex keeps elapsed rotation for the lifetime of its sheet window. Theme defaults are Health #8B1026 → #FF465A, Mana #4433CC → #35D7FF, and Holy power/Wonder #C18A27 → #FFF0AE. Saved custom colors take priority.

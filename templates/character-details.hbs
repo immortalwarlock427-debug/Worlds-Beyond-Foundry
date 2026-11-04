@@ -5,10 +5,13 @@
     data-record-tab
     aria-label="Character controls and detailed values"
   >
-  <header class="wb-record-heading"><div><span class="wb-eyebrow">The character ledger</span><h2>Details</h2></div><span
+  <header class="wb-record-heading"><div><span class="wb-eyebrow">The character ledger</span><h2>Details</h2></div><button
+    type="button"
     class="wb-record-seal"
-    aria-hidden="true"
-  ><i class="fa-solid fa-sliders"></i></span></header>
+    data-action="overviewEdit"
+    aria-label="Open Adjust values"
+    data-tooltip="Adjust values"
+  ><i class="fa-solid fa-sliders"></i></button></header>
   {{> "systems/worlds-beyond/templates/character-details-resources.hbs"}}
   {{> "systems/worlds-beyond/templates/character-details-values.hbs"}}
   </section>

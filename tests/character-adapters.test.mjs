@@ -550,6 +550,7 @@ test("read-only actor sheets keep milestone reference buttons usable without ena
     correction = { disabled: true };
   sheet.element = {
     querySelectorAll: selector => {
+      if (selector === ".wb-vortex-streams") return [];
       assert.equal(
         selector,
         '[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name'

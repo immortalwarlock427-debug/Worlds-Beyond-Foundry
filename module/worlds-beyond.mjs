@@ -6,6 +6,8 @@ import { refillTurnResources } from "./character-combat.mjs";
 import { wonderPool } from "./rolls.mjs";
 import { MAGIC_RESOURCES, RESOURCE_SCALING, RESOURCE_DISPLAYS, customResourceId, magicPool, customPool } from "./resources.mjs";
 import { applyFormMaximum } from "./resources.mjs";
+import { restoreDisclosures, continueVortex } from "./sheet-state.mjs";
+import { imagePicker } from "./image-picker.mjs";
 import { addResource, resourceAction, resourceFormUpdates } from "./resource-actions.mjs";
 import { queuedAction } from "./action-support.mjs";
 import { wornEquipment, inventory, blockDice } from "./equipment-core.mjs";
@@ -315,7 +317,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       overviewEdit: function (event, target) {
         this.changeTab("details", "sheet");
         const field = target.dataset.field;
-        if (!field) return;
+        if (!field) {
+          const section = this.element.querySelector('details[data-sync="adjust-values"]');
+          if (section) {
+            section.open = true;
+            section.scrollIntoView({ block: "start" });
+          }
+          return;
+        }
         const input = Array.from(this.element.querySelectorAll("[name]")).find(input => input.name === field);
         input?.scrollIntoView({ block: "center" });
         if (this.isEditable) input?.focus();
@@ -451,8 +460,15 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return resourceFormUpdates(this.actor, data);
   }
 
+  _syncPartState(partId, newElement, priorElement, state) {
+    restoreDisclosures(newElement, state);
+    super._syncPartState(partId, newElement, priorElement, state);
+  }
+
   async _onRender(context, options) {
     await super._onRender(context, options);
+    this._vortexStartedAt ??= performance.now();
+    continueVortex(this.element, this._vortexStartedAt);
     // Native read-only actor sheets disable form buttons; rule references are
     // still viewable and never submit a document update.
     for (const button of this.element.querySelectorAll(
@@ -621,12 +637,12 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   static async #onPickPortrait(event, target) {
     if (!this.isEditable) return;
-    const FilePicker = foundry.applications.apps.FilePicker.implementation;
-    const picker = new FilePicker({
+    if (this._portraitPicker?.rendered) return this._portraitPicker.bringToFront();
+    const picker = (this._portraitPicker = imagePicker({
       type: "image",
       current: this.actor.img,
       callback: path => setCharacterPortrait(this.actor, path).catch(error => ui.notifications.error(error.message))
-    });
+    }));
     return picker.browse();
   }
 
