@@ -43,6 +43,13 @@ export function customPool(data = {}, { level = 1, stats = {} } = {}) {
   };
 }
 
+// Token bar choices for a character's custom pools, listed by name after Foundry's own attributes.
+export function customBarChoices(customResources) {
+  return Object.entries(customResources ?? {})
+    .filter(([id]) => customResourceId(id))
+    .map(([id, pool]) => ({ group: "Worlds Beyond resources", value: `customResources.${id}`, label: pool?.name || "Custom resource" }));
+}
+
 export function applyFormMaximum(pool, spent, maximum, formName) {
   if (maximum == null) return pool;
   return { ...pool, normalMax: pool.max, max: maximum, currentLimit: maximum, value: maximum - numberOr(spent, 0), formName };
