@@ -4,6 +4,7 @@
       class="wb-record-seal"
       aria-hidden="true"
     ><i class="fa-solid fa-feather-pointed"></i></span></header>
+    {{#if canViewSheetLog}}<button type="button" data-action="sheetLog" class="wb-dm-log-open"><i class="fa-solid fa-book" aria-hidden="true"></i> Open DM activity log</button>{{/if}}
     <div class="wb-character-details-grid">
       {{#each characterDetails}}
       <div class="wb-character-detail {{#if wide}}wb-character-detail-wide{{/if}}">

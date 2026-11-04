@@ -48,6 +48,7 @@ import { registerCatalogSetting, registerCatalogMenu, offerCatalogImport, import
 import { promptAttack, reloadWeapon, decorateAttackMessage } from "./attack-actions.mjs";
 import { decorateAttackDefenses } from "./attack-defense.mjs";
 import { registerEquipmentItem } from "./equipment-item.mjs";
+import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -345,6 +346,13 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         return this.render({ parts: target.dataset.view === "resources" ? ["character", "details"] : ["abilities"] });
       },
       resource: CharacterSheet.#onResource,
+      sheetLog: async function () {
+        try {
+          return await openSheetLog();
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       ability: CharacterSheet.#onAbility,
       command: async function () {
         if (!this.isEditable) return;
@@ -399,6 +407,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         actor: this.actor,
         source: system._source,
         editable: this.isEditable,
+        isGM: !!globalThis.game?.user?.isGM,
         equipment,
         equipmentGroups: groupEquipmentRows(equipment),
         showAllFormAbilities: this._showAllFormAbilities,
@@ -716,8 +725,9 @@ Hooks.once("init", () => {
 
   registerCatalogSetting();
   registerSchemaVersion();
+  registerSheetLog();
   registerCatalogMenu();
-  game.worldsBeyond = { importCatalog };
+  game.worldsBeyond = { importCatalog, openSheetLog };
 
   // Initiative is d20 + Wisdom modifier.
   CONFIG.Combat.initiative = { formula: "1d20 + @stats.wis.mod", decimals: 0 };
