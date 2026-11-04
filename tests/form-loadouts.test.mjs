@@ -199,6 +199,41 @@ test("linked forms transform the prototype and active linked tokens, then Base r
   }
 });
 
+test("encoded form art and fractional art scale use only native token document updates", async () => {
+  for (const seconds of [0, 1.25]) {
+    const f = fixture(),
+      t = tokenFixture(f),
+      src = "assets/Characters/Aran%20Transformed%20(Token).png";
+    Object.assign(f.first.system.loadout, { tokenImg: src, transitionSeconds: seconds });
+    // No renderer, PIXI texture loader, mesh, or filter exists in this fixture.
+    // Animated and immediate entry must commit the same appearance.
+    await useAbility(f.actor, f.first.id);
+    const appearance = { src, scaleX: 1.15, scaleY: 1.15 };
+    for (const token of t.tokens.slice(0, 2)) {
+      assert.deepEqual(token.texture, appearance);
+      assert.equal(token.width, 2);
+      assert.equal(token.height, 2);
+    }
+    assert.equal(t.calls.length, 2, "one native update per active linked token");
+    for (const { changes, options } of t.calls) {
+      assert.deepEqual(changes, { "texture.src": src, "texture.scaleX": 1.15, "texture.scaleY": 1.15, width: 2, height: 2 });
+      assert.equal(options.animate, seconds > 0);
+      assert.equal(options.animation.duration, seconds * 1000);
+      assert.equal(options.animation.transition, "fade");
+      assert.equal(options.movement.showRuler, false);
+    }
+    await returnToBase(f.actor);
+    assert.equal(t.calls.length, 4);
+    for (const token of t.tokens.slice(0, 2)) {
+      assert.equal(token.texture.src, `${token.id}.webp`);
+      assert.equal(token.texture.scaleX, 1.2);
+      assert.equal(token.texture.scaleY, 0.8);
+      assert.equal(token.width, 1);
+      assert.equal(token.height, 1);
+    }
+  }
+});
+
 test("synthetic forms update only their own unlinked token and restore even-growth offsets after movement", async () => {
   const f = fixture(),
     t = tokenFixture(f);
