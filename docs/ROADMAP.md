@@ -21,6 +21,8 @@ Latest decisions: combat equip/stow costs cover weapons, shields and armor; spel
 
 Roman's queued token-image optimization was completed through the live Form editor on 2026-11-03: Monstrous now points to `worlds/echoes-of-the-end-ver-1/tokens/roman-solvaris-monstrous.webp`. Closing/reopening retained the path. The existing 2×2, scale 1.15 and current 1.25-second transition were preserved. The 105,408-byte image was opened and inspected. Activation/animation is left for the user audit; the PNG and legacy macro remain.
 
+Day/night fade (requested 2026-11-04, outside the gate because it changes no character data): every scene darkness change fades over a world setting, **Day and night fade (seconds)**, default 10 and at most 60. This covers Calendaria time jumps (which otherwise snap for jumps of an hour or more), Foundry's Day/Night buttons and Scene settings edits. 0 hands fades back to Foundry and other modules. Code: `module/darkness-fade-core.mjs` and `module/darkness-fade.mjs`.
+
 ## After the gate
 
 1. **Combat resolution:** apply damage/healing consistently, using Resistance → Armor Rating → Block → Overwhelming Force. Review the existing [combat support](COMBAT.md) before expanding it.
