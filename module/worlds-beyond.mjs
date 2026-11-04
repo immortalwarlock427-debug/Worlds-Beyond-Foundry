@@ -51,6 +51,7 @@ import { decorateAttackDefenses } from "./attack-defense.mjs";
 import { registerEquipmentItem } from "./equipment-item.mjs";
 import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
+import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
@@ -728,6 +729,7 @@ Hooks.once("init", () => {
   registerCatalogSetting();
   registerSchemaVersion();
   registerSheetLog();
+  registerDarknessFade();
   registerCatalogMenu();
   game.worldsBeyond = { importCatalog, openSheetLog };
 
