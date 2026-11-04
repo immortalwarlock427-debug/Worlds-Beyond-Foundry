@@ -1,83 +1,43 @@
 # Roadmap
 
-What's next for the Foundry system, in order. Each numbered step is one PR, or a few if it's large. Update this file in place as steps finish. Don't append per-PR histories.
-
 ## Approach
 
-The Worlds Beyond website (`immortalwarlock427-debug/Worlds-Beyond`) already implements most of the rules. **Port its rules, rebuild its interface, and skip what Foundry already does.**
+Use Notion → D&D → Game Systems as the rules authority. Consult the original Worlds Beyond website for UI behavior. Port Foundry-free rules, rebuild native sheets/chat, and use Foundry's canvas, combat tracker, Items and Active Effects. Keep the sheet editable and trust-based. Desktop is the priority; phone-specific work is deferred.
 
-- **Port** the DOM-free rules modules into Foundry-free files under `module/`, with tests: `js/combat-core.js` (effective stats, Armor Rating, AP, attacks, crits, defenses), `js/character-core.js` (Health, payments), `js/resources.js` and the rules parts of `js/abilities.js` and `js/status.js`. Check each rule against Notion while porting. Notion wins when they disagree.
-- **Rebuild** the interface as Foundry sheets and chat cards. Don't port the website's HTML or page code.
-- **Skip** the battlemap, fog, light, routing, DM Room, player preview, cloud saves, save protection, dice roller and roll history. Foundry's canvas, combat tracker, server and chat log cover them, and every player joins from their own device.
+## Current gate: final character-sheet audit
 
-Website features map to Foundry like this:
+Pre-audit implementation is complete on the review stack. The [desktop audit](CHARACTER-SHEET-AUDIT.md) is the single list of live validation still required. Passing tests and earlier user spot-checks do not close this gate. Fix any defects found before moving into wider combat, spell effects or module integrations, and explicitly tell the user when the sheet gate is closed.
 
-| Website | Foundry |
-| --- | --- |
-| Weapons, armor, shields, consumables, abilities | Item types |
-| Form bonuses, ability effects, statuses | Active Effects |
-| Health, AP | Token bars (trackable attributes) |
-| DM Room initiative and turns | Combat tracker and combat hooks |
-| Battlemap movement | Token movement on the canvas |
+Implemented scope:
 
-## Done
+- Stats/identity, generation and level-up points, modifiers and milestone reference, readable rolls/Wonder and editable overrides.
+- Resources, bounds/overflow, points/percentage presentation, colors, recovery, short-rest hit dice and long-rest refills.
+- Native equipment/catalog, currency, bonuses, consumable benefits/durations, resistance recording, hand-gear rules and combat equip/stow costs.
+- Abilities/spell preset, costs/restoration, uses/cooldowns, active Status, forms/triggers, shared loadouts and token transformations.
+- Infinite Archive overview and polished tabs, four favorites, optional help, bundled fonts and optimized equipment thumbnails.
+- Template/context cleanup, rules regressions, automated PR tests, a no-op schema migration framework and consolidated documentation.
 
-- **Stats.** Character actor with level and the 8 stats, modifiers per the Notion chart, milestone diamonds at 21/28, click-to-roll d20 + modifier, d20 + WIS initiative.
-- **Stat setup — implemented, awaiting validation.** User-requested stat generation/typed assignments and separate 4-point awards at levels 4/8/12/16/19, at most 2 per stat per award. This takes priority over the next combat-flow step. See [stat setup and validation](STAT-SETUP.md).
-- **Core numbers.** Health, hit die, AP, reactions, Natural Evasion, Armor Rating, movement per AP, manual overrides and Health/AP token bars. The user confirmed the installed release works in Foundry on 2026-10-31 and authorized the next step. See [rules and regression checklist](CORE-NUMBERS.md).
+Latest decisions: combat equip/stow costs cover weapons, shields and armor; spells use an Active preset with 11 AP and INT/FTH choice. Equipment changes outside combat remain free. See [equipment](EQUIPMENT.md) and [abilities](ABILITIES-FORMS.md).
 
-- **Rolls.** Checks/saves, advantage/disadvantage, readable chat cards, Wonder and long rest. The user tested the installed release and merged PR #5 before requesting equipment.
+Roman's queued token-image optimization was completed through the live Form editor on 2026-11-03: Monstrous now points to `worlds/echoes-of-the-end-ver-1/tokens/roman-solvaris-monstrous.webp`. Closing/reopening retained the path. The existing 2×2, scale 1.15 and current 1.25-second transition were preserved. The 105,408-byte image was opened and inspected. Activation/animation is left for the user audit; the PNG and legacy macro remain.
 
-## Next
+## After the gate
 
-### Current priority: base character-sheet review
+1. **Combat resolution:** apply damage/healing consistently, using Resistance → Armor Rating → Block → Overwhelming Force. Review the existing [combat support](COMBAT.md) before expanding it.
+2. **Movement and reactions:** movement AP and difficult terrain, then opportunity prompts when a creature leaves an armed character with an available reaction. No standalone React button.
+3. **Milestone actions:** add agreed buttons and usage trackers after checking each rule in Notion.
+4. **Ability targeting and areas:** spell attack/save/damage resolution, simple cone/area configuration and target selection.
+5. **Conditions:** settled Notion definitions for bleeding, burning, downed/0 Health, exhaustion and similar statuses.
+6. **Optional visuals/modules:** evaluate compatible effects and supporting modules once the mechanics work. No modules are installed by this sheet task.
 
-The user supplied Claude's review checklist against main d202d91. Work follows its order, with one PR per item: damage-order correction, text/Class header fixes, then structure work before missing features. Items marked Ask first require a user decision, and the later combat section remains deferred. Review items 1 and 2 and the native template split are merged; see [ATTACKS.md](ATTACKS.md#order-of-a-hit) and [SHEET-TABS.md](SHEET-TABS.md#native-template-parts). Item 3's read-only context helpers are merged: one presenter per header/tab, shared stat/resource projections and unchanged output. Formatting is merged: consistent JavaScript layout and expanded template attributes preserve semantic code, text and controls. Source-copy optimization is merged: stat prep, sheet context and form processing read stored values without copying the complete system model. Section 3 is complete. Section 4 Currency is merged under Equipment with the user-confirmed 1 pc = 1,000 gc. Short rest/hit dice is merged: level uses per long rest, current hit die + VIT per use, healing and editable spending history. See [CORE-NUMBERS.md](CORE-NUMBERS.md#short-rests-and-hit-dice). The requested per-form token transformations and stale-equipment receipt/bonus rollback fixes are implemented for validation; see [FORM-LOADOUTS.md](FORM-LOADOUTS.md#token-transformation). Roman Monstrous uses the user-provided token image, 2×2, scale 1.15 and 1.5 seconds. Live validation precedes deleting the old macro. Resistance tracking is implemented for validation: the user chose Notion types plus custom entries. See [CORE-NUMBERS.md](CORE-NUMBERS.md#resistance-tracking). Damage application remains deferred.
+## Optional maintenance requiring a later decision
 
-The user's Character-tab refinement is implemented for visual review: the layered void vortex fades at its bounds, and a follow-up connects resource fragments and four favorite seals, restores favorite icons at every width and tightens spacing. See [CHARACTER-OVERVIEW.md](CHARACTER-OVERVIEW.md); controls/data remain unchanged. Form portraits/framing, Base naming, meters, quieter native title, race icon and typography are already implemented. Review item 2 above resumes the base-sheet checklist after this requested polish.
+- GitHub release/manifest installation: retain the current verified-copy workflow until requested.
+- Delete stale remote branches only after the user approves a concrete list.
+- Real data migrations require an approved schema change, a verified world backup and compatibility tests. The current schema runner does no migration or world-data rewrite.
 
-Before the final audit, the user requested a cosmic overview with circular artwork/stats, compact vitals and four favorite abilities. This takes priority and is implemented for visual review in CHARACTER-OVERVIEW.md. The user requested item/ability bonuses, Command and potion AP after the base sheet tabs. These are implemented for validation. Forms belong to Abilities and Status shows only active sources. Opportunity attacks are deferred again: later combat work should prompt when a creature moves away from an armed character with a reaction. Do not add a standalone React button. Broader casting, timers and combat automation remain below.
+## Topic guides
 
-1. **Mana, holy power and custom resources — base pools user-validated; refinements awaiting validation.** See [RESOURCES.md](RESOURCES.md). Custom pools offer any-stat scaling; all optional pools have points/percentage display, final maximum overrides and minimum spending floors. Optional overflow lets gains exceed the normal cap, including Health when explicitly enabled. [Whole-number controls/display](NUMBER-DISPLAY.md) preserve internal fractional balances. Recovery has manual defaults and opt-in own-turn gains; see [recovery settings](RECOVERY.md).
-2. **Ability records on the sheet — user-validated.** Native Ability Items, grouped rows, descriptions, AP previews/resource cost records, manual uses/cooldowns, duration and notes. See [ABILITIES.md](ABILITIES.md). Self-bonus activation/payment is implemented; attack/damage casting follows later.
-3. **Ability/item bonuses, forms and Status — implemented, awaiting validation.** Native item-owned bonuses, Form-type Ability Items with one selected form, and active-only Status. Saved actor-owned forms/adjustments remain under Abilities, with no new standalone effect creator. Base scores and expenditure are preserved. See [EFFECTS-FORMS.md](EFFECTS-FORMS.md). Portrait/loadout switching is implemented for validation below; optional timers are available.
-4. **Milestone details — implemented, awaiting validation.** All 16 Notion rules, current effective-score unlock states and current-value previews in an expandable reference opened from the diamonds or Attributes toolbar. Existing Adamantine Body/reaction/Defy Fate passives verified; actions and usage remain manual. See [MILESTONES.md](MILESTONES.md).
-5. **Character details and notes — user-validated.** Class/Race, Background, Appearance, Backstory and Notes fields, with plain-text editing and readable observer output. Six blank-default fields leave existing actors and rules data intact. See [CHARACTER-DETAILS.md](CHARACTER-DETAILS.md).
-6. **Organization and validation — implemented, awaiting in-world validation.** Native Character/Details/Equipment/Abilities/Status/Notes tabs, fixed identity/navigation, independently scrolling panels and narrow layout. Character is the play overview; Details retains all original editors. Forms stay in Abilities; Status shows active sources only. Offline checks cover all tabs, unchanged form controls, existing actor data and save/reload regressions. The user still needs to check the live client and phone layout; see [SHEET-TABS.md](SHEET-TABS.md).
-7. **Consumable benefits and resource-triggered forms — implemented, awaiting validation.** Consumables restore Health or one selected resource with points/dice/percentage and apply numeric bonuses. Active per-use groups live only in Status. Form triggers detect resource crossings, defaulting to Ask first and Ask to end on newly configured forms. Declining ending keeps the transformation active. See [CONSUMABLES-TRIGGERS.md](CONSUMABLES-TRIGGERS.md).
+[Sheet](SHEET.md) · [Resources](RESOURCES.md) · [Equipment](EQUIPMENT.md) · [Abilities/forms](ABILITIES-FORMS.md) · [Combat](COMBAT.md)
 
-### Remaining sheet mechanics before wider combat
-
-- **Resistance tracking — implemented, awaiting validation:** blank-default character list, Notion-confirmed suggestions plus custom entries, Details editor and Character summary. Damage application and equipment/ability grants remain later work.
-- **Next review decisions:** equipping/stowing AP costs (confirm armor versus hand gear), then an 11 AP Spell preset (confirm Active preset versus separate type). These are the remaining section 4 items from the supplied review; ask before implementing each.
-- **Queued asset follow-up:** switch Roman's Monstrous token from the large PNG to the existing `worlds/echoes-of-the-end-ver-1/tokens/roman-solvaris-monstrous.webp`; preserve 2×2, scale 1.15 and 1.5 seconds, verify in-world appearance, and keep the original PNG. This is a world form setting and is not changed by this system release.
-
-- **Ability restoration — user-validated:** self healing/resource gains with fixed amounts, dice or percentage, combined with existing costs and bonuses. Full pure-restoration uses spend nothing; failed actions roll back gains and costs. See [ABILITY-RESTORATION.md](ABILITY-RESTORATION.md).
-- **Consumable lifetimes and bonus hints — user-validated:** optional rounds/minutes/hours expire native applied bonuses; Status shows remaining time, and equipment/consumable rows plus potion cards show compact bonuses. Existing potions default to manual End. See [POTION-DURATIONS.md](POTION-DURATIONS.md).
-- **Ability durations and cooldowns — user-validated:** optional native Active duration ends bonuses/forms, with an independent automatic round cooldown. Manual defaults and corrections remain; End does not clear cooldown. See [ABILITY-TIMERS.md](ABILITY-TIMERS.md).
-- **Recovery settings — implemented, awaiting full validation:** explicit ability-use reset policies, fixed-point manual/own-turn resource recovery and configurable optional-pool long-rest refill. Manual defaults, replay receipts and compensating updates preserve existing trackers. See [RECOVERY.md](RECOVERY.md). The user confirmed the corrected Command recipient picker/delivery works; see [COMMAND-DELIVERY.md](COMMAND-DELIVERY.md).
-- **Form loadouts — implemented, awaiting validation:** portraits and saved gear presets from a shared inventory, remembered equipped changes, ability/resource visibility with Show all, Base restoration and expiry/deletion reconciliation. Balances, counters and base stats remain shared; visibility does not deactivate buffs or impose new costs. See [FORM-LOADOUTS.md](FORM-LOADOUTS.md).
-- **Character overview — user-approved visual direction:** the user's Infinite Archive palette, engraved spiral portrait, eight unclipped live stat medallions, luminous resource meters and connected favorite/utility foundation. Base Form can be renamed, with previewed vertical framing per native form and a form portrait picker. Original controls remain in Details. See [CHARACTER-OVERVIEW.md](CHARACTER-OVERVIEW.md).
-- **Remaining tab polish — implemented, awaiting visual review:** matching ledger frames, controls, equipment/ability rows, active Status and a numbered Notes chronicle across Details/Equipment/Abilities/Status/Notes. Saved fields, source balances and action bindings remain unchanged; narrow/read-only layouts checked offline. See [SHEET-TABS.md](SHEET-TABS.md).
-- **Resource colors — implemented, awaiting review:** per-pool hex solid/gradient fills on Character and Details, plus core bar colors. Blank defaults preserve the theme and all balances/calculations remain unchanged. See [RESOURCES.md](RESOURCES.md).
-- **Final sheet validation:** verify existing-character saves, base/effective stats, resource bounds and payments, inventory, ability/consumable benefits, forms, active Status and narrow/read-only sheets in the live client. Resolve sheet defects before expanding combat.
-
-The base sheet completion gate is restoration, lifetimes/recovery, form loadouts and the final validation pass above. Explicitly tell the user when these are complete and work is about to move into combat, spell effects or module integrations. No module installation is part of this sheet task.
-
-Ability damage/save/target resolution, movement AP, opportunity prompts and automatic damage/defenses belong to the later combat phase. Richer advantage/dice adjustments, damage defenses and condition presets follow their settled Notion rules there. A simple area ability editor and optional visuals also follow later.
-
-### Deferred combat work and wider roadmap
-
-3. **Equipment — catalog implemented, awaiting validation.** Item records (PR #6), worn armor (PR #7) and inventory/consumables (PR #8) are merged. The Notion weapon, armor and shield tables now import into a world compendium; see the [catalog checklist](CATALOG.md). This finishes step 3 once validated.
-4. **Attacks and damage — implemented, awaiting validation.** Single and two-weapon attacks, damage scaling, Loading/reload and the capped AP costs are in [ATTACKS.md](ATTACKS.md). Signature properties stay reminders and get automated one at a time alongside later steps. Original scope: Attack vs Natural Evasion, damage dice scaling at levels 5/10/15/20, Finesse/Paragon crit range 18–20, Heavy and Paragon double modifiers, two-handed hits halving AR, Block dice. Signature properties start as descriptive text and get automated one at a time.
-5. **Combat flow — linked defenses implemented, awaiting validation.** Shared chat theming and grouped equipment rows are implemented; see [VISUAL-POLISH.md](VISUAL-POLISH.md). Attack cards now open linked Block/Dodge/Parry dialogs with per-hand use tracking and correction resets; see [LINKED-DEFENSES.md](LINKED-DEFENSES.md). Health adjustments remain manual. Non-stacking Command AP transfer and potion AP integration are implemented for validation; opportunity attacks wait for later movement-triggered prompts. See [ITEM-BONUSES-ACTIONS.md](ITEM-BONUSES-ACTIONS.md).
-   The user's token-click attack and hand-equipment request takes priority before the remaining combat actions; implemented in [TOKEN-ATTACKS.md](TOKEN-ATTACKS.md), awaiting in-world validation.
-6. **Mana, holy power and custom resources — implemented for sheet use, awaiting validation.** Max = INT or FTH × (level + 2) from the current stat. Custom pools have current/max, manual/opt-in own-turn recovery and optional long-rest refill. Recovery controls are part of the sheet work above.
-7. **Abilities, forms and milestones.** Ability records, cost previews and manual forms/effects are implemented for sheet use; self-bonus payments/activation are implemented; optional timer/recovery settings are implemented above; attack/damage casting remains. Stat AP discounts cap changes at half the base cost rounded down in either direction. Milestone actions. After the sheet is mostly finished, revisit a simple area/damage ability creator and optional Sequencer/JB2A visuals, plus module integrations. Likely several PRs.
-8. **AP movement on the map.** Moving a token spends AP at the character's movement rate using Foundry's token movement. Difficult terrain costs double.
-9. **Statuses.** Once the status rules (bleeding, burning, unconscious, exhaustion) are settled in Notion.
-
-## Open questions
-
-- **Compendiums and folder depth — resolved.** The user connected the system folder itself to Claude, so nesting is counted from `worlds-beyond\` and compendium packs (`packs/<name>/…`) can be copied into Foundry. Packs can live in the repo as normal.
-- **Desktop priority — resolved.** On 2026-11-02 the user deprioritized phone support. Focus development and validation on desktop Foundry and ordinary window resizing. Preserve the existing narrow layout; additional phone-specific work can wait.
+These consolidate the earlier per-PR notes and their detailed regression cases. Version-specific counts and observations in those reference sections are historical; release status is tracked only here and in the audit.

@@ -1,96 +1,33 @@
 # Worlds Beyond for Foundry VTT
 
-The Worlds Beyond homebrew as a Foundry VTT v14 game system.
+The Worlds Beyond homebrew as a Foundry VTT v14 game system, verified against build 365. Rules come from Notion → D&D → Game Systems; the original Worlds Beyond website supplies interface references.
 
-## What's in it so far
+## Character sheet
 
-- **Character overview:** a large circular portrait with eight stat medallions, live Health/resources/AP/reactions/Wonder, defenses/movement/initiative and four source-linked favorite abilities. Name/level/race/form stay prominent. Stat circles roll; value cards jump to the existing editors in Details. See [overview setup and validation](docs/CHARACTER-OVERVIEW.md).
-- **Infinite Archive polish:** a layered void-vortex portrait background, unclipped medallions, visible resource meters and a connected four-seal favorite foundation. Appearance offers a renameable Base Form and live vertical framing per form; Form loadout has a portrait picker. Existing rules, balances and quick actions are preserved.
-- **Matching ledger tabs:** Details, Equipment, Abilities, Status and Notes share framed navy/brass sections, readable controls, clear equipped/active states and a numbered Notes chronicle. All original fields/actions remain. See [sheet organization and validation](docs/SHEET-TABS.md).
-- **Resource bar colors:** each optional resource's Settings accepts one hex color for a solid fill or two for a gradient. Core bar colors under Details configures Health/AP/Reactions/Wonder. Clear both fields for the theme default; balances are unchanged. See [resources](docs/RESOURCES.md).
+- **Stats and identity:** eight stats, rolls/Wonder, milestone references, roll-and-assign setup, level-up points, editable identity and notes. A circular portrait, live medallions and four favorite abilities form the Character overview. [Sheet guide](docs/SHEET.md)
+- **Resources and rests:** Health, AP, reactions, Wonder, optional Mana/Holy power and custom pools; final maximum/minimum overrides, overflow, percentage displays, solid/gradient colors and configurable recovery. Short rests spend level-based hit dice with VIT; long rests refill them. [Resources](docs/RESOURCES.md) · [Rests](docs/SHEET.md#core-numbers-short-rests-and-hit-dice)
+- **Equipment:** native Items, catalog, compact inventory, currency, hand-gear rules, equipped bonuses, consumables and combat equip/stow AP. Seven supplied illustrations use WebP thumbnails. [Equipment guide](docs/EQUIPMENT.md)
+- **Abilities and forms:** editable abilities, spell presets, costs, restoration, bonuses, durations, uses/cooldowns, resource triggers, form portraits/token transformations and saved loadouts. Status shows active sources. [Abilities and forms](docs/ABILITIES-FORMS.md)
+- **Existing combat support:** weapon rolls, damage previews, Block/Dodge/Parry, Command AP, reload, potion costs and turn refills. Resistance recording is available; damage application remains manual. [Combat guide](docs/COMBAT.md)
+- **Interface:** Infinite Archive navy/brass styling, bundled fonts, separate tabs, optional rules/help and editable corrections. Desktop use and ordinary window resizing are the priority.
 
-- A **character** actor with a level and the eight stats: Strength, Dexterity, Vitality, Agility, Intelligence, Wisdom, Charisma and Faith.
-- **Roll & assign** generates eight 2d6 + 1d12 scores or accepts typed scores, with swappable destinations and an explicit Apply. **Stat points** tracks 4-point awards at levels 4/8/12/16/19, at most 2 per stat per award, separately from bases and gear. See [stat setup](docs/STAT-SETUP.md).
-- Modifiers are calculated from the score. Strength and Dexterity use (score − 12) ÷ 2, rounded down. The other six move 1 per 3 points away from 12.
-- Milestone diamonds light up at 21 and 28. Stat fields show the effective score and reveal the base while editing, including earned level-up points in the normal base color. Gear/effect changes are teal, manual edits gold, and both together purple. Clearing restores the remembered pre-edit base plus earned points and active adjustments (older edits without reset history use default 12 plus earned points).
-- Tap a diamond or use **Attributes → Milestones** for all 16 milestone rules, current unlock states and useful previews. Details expand on demand and link to Notion; action resolution remains manual. Existing Adamantine Body, reaction maxima and Defy Fate calculations stay in effect. See [milestone details](docs/MILESTONES.md).
-- **Character details & notes:** the Notes tab holds free-text Class, Race, Background, Appearance, Backstory and Notes. Owners edit; read-only viewers get wrapped text. Text saves with the actor and retains line breaks, spacing and symbols. See [character details](docs/CHARACTER-DETAILS.md).
-- Clicking a stat's abbreviation opens a check/save dialog with normal, advantage or disadvantage dice and posts a chat card.
-- Cards show the die result + bonus = total. Advantage/disadvantage show both dice and which one was kept, instead of raw keep-highest/lowest formula notation.
-- Initiative is d20 + Wisdom modifier.
-- Wonder has an editable current pool and maximum override, plus a long-rest refill button. Use it from check/save and combat-tracker initiative messages. At FTH 21, Defy Fate declares a failed check/save successful; initiative still rerolls.
-- Wonder requires one available use. Each result can use Wonder once; the new reroll can use it again. Used results stay disabled after refills and reloads.
-- **Long rest** restores all current resource pools (Health, AP, reactions and Wonder) to their maximums, including manual maximum overrides.
-- **Short rest:** choose how many hit-die uses to spend; each rolls the current hit die plus VIT and heals up to maximum Health. Uses equal level and refill on a long rest. Remaining uses appear on Character/Details, with a spent-use correction under Adjust values. See [short rests](docs/CORE-NUMBERS.md#short-rests-and-hit-dice).
-- **Mana, holy power and custom resources:** Resources → Manage enables optional INT/FTH pools and adds custom trackers. Custom pools can scale from any current stat × (level + 2), or use a manual maximum. Every pool has a clearable final maximum override and minimum override; a negative minimum allows spending below zero. Points/percentage display and fill meters preserve the underlying point balance; action amounts stay in points. Current totals and settings are editable, with Spend/Restore/Fill, manual recovery, opt-in own-turn recovery and per-pool long-rest refill. Mana/holy power can be selected as token bars. See [resource pools](docs/RESOURCES.md).
-- **Whole-number presentation:** character/equipment numeric controls and numeric roll dialogs round typed decimals down. Totals and resource percentages display whole numbers while internal fractional balances are retained. Unchanged whole-sheet saves preserve those fractions; formula text such as 1.5× remains intact. See [number display](docs/NUMBER-DISPLAY.md).
-- **Ability records:** native Ability Items and a grouped character list, with editable icons, descriptions, categories, AP/resource costs, uses, cooldowns, duration and notes. Add ability offers Active/Passive/Reaction/Other; Add form has a fixed Form editor. AP previews use the chosen current stat; custom resource references use stable IDs. Use checks and pays recorded costs even without a started encounter, spends a tracked use, starts cooldown and enables self bonuses; End disables them. Passive bonuses apply while owned. Optional duration/cooldown clocks are available; uses can reset manually, on long rest, new combat or own turn; attack/damage casting and animations follow later. Abilities take no inventory slots. See [ability records](docs/ABILITIES.md).
-- **Bonuses, forms and Status:** create bonuses on equipment or Ability Items. Forms are abilities, with Use/End and Base form controls under Abilities. Status lists only currently active sources; ending an ability or stowing its equipment removes that source. There is no standalone effect creator. Saved forms/adjustments from earlier sheets remain accessible in Abilities without rewriting their stored data. Final manual overrides retain priority. See [bonuses and forms](docs/EFFECTS-FORMS.md).
-- Weapon, armor and shield records with **Bonuses → Add bonus** (for example STR +3 while equipped), editable sheets and a character equipment list (add/edit/equip/remove and native drops). Equipped armor/shields contribute to defenses and effective AGL; see [calculation scope and checklist](docs/ARMOR-CALCULATIONS.md).
-- Each equipment type has its own data model. Weapons use a family dropdown, an independent Ranged weapon flag, property/signature checkboxes, numeric normal/long ranges and numeric loading. Standard ranged weapons use no special family, ranged Paragon keeps Paragon, and Thrown stays separate.
-- Inventory slots: 10 + STR modifier, +6 with a backpack, with an override. Shields and Two-handed weapons take 2 slots, stackable items set how many fit in a slot, and worn or held equipment takes none. Going over capacity is shown, never blocked. See [inventory](docs/INVENTORY.md).
-- **Currency:** Equipment tracks gold coins (gc) and platinum coins (pc), with 1 pc = 1,000 gc and a combined gold value. Edit each balance directly; coin denominations stay as entered. See [currency](docs/EQUIPMENT.md#currency).
-- Consumable items (potions, ammunition, other) with optional healing dice and a Use one button, and Miscellaneous items for carried gear. Healing at full Health says so and spends nothing; reaching full Health before Apply refunds the item and recorded AP cost once. Older cards without a cost receipt require manual restoration.
-- **Custom consumables:** choose Health, Mana, Holy power or an owned custom resource; restore a fixed amount, dice or a percentage of maximum. Add numeric bonuses with the normal bonus editor. Use posts a card; Apply benefits restores the pool and adds bonuses to Status until their configured duration expires or they are ended. Carrying the item grants nothing, and buffs survive using up the original. See [consumables and form triggers](docs/CONSUMABLES-TRIGGERS.md).
-- **Resource overflow & form triggers:** optional Allow over maximum enables e.g. Blood 105/100 while retaining the normal cap. Forms can watch a resource threshold; new triggers ask before entry and ask whether to end when it falls back. Declining leaves the form active. Existing forms remain manual until configured. See [configuration and limits](docs/CONSUMABLES-TRIGGERS.md).
-- A **Worlds Beyond Catalog** compendium with every weapon, armor piece and shield from Notion. The GM is offered the import on first load and can refresh it from Configure Settings. See [catalog](docs/CATALOG.md).
-- **Weapon attacks:** an Attack button on equipped weapons rolls d20 + the right stat against a targeted token's Natural Evasion, spends AP in combat (10 − modifier, from 5 to 15), supports attacking with two Light weapons and Loading/reload, flags automatic disadvantage and crits, then rolls level-scaled damage with double modifiers, charges and Armor Rating notes. See [attacks](docs/ATTACKS.md).
-- **Click a token to attack:** select one owned character token, then click another visible token. Choose an equipped weapon if needed; the existing attack dialog uses that exact target. Alt-click preserves normal selection. Equipping stows conflicting hand gear while allowing two Light weapons, one-handed weapon + shield and no-hand Strapped weapons. See [token attacks and hand gear](docs/TOKEN-ATTACKS.md).
-- Attack, reload and consumable cards respect the selected chat visibility. Failed actions restore spent resources or report when manual correction is needed; damage/healing cards can retry after failure. See [review findings and validation](docs/ACTION-REVIEW.md).
-- Block dice scale with level (1d4, 2d4 at 5th and so on), and the largest equipped shield sets the die size.
-- **Block reaction:** the Block button under Worn armor and corrections rolls those dice + STR into chat. Its editable formula supports special equipment; Spend 1 reaction defaults on during combat and off outside combat. Failed posting refunds the reaction. Apply damage to Health manually for now; see [Block scope and checklist](docs/BLOCK.md).
-- **Dodge reaction:** roll d20 + AGL against an entered attack total or area save DC, with optional reaction spending, heavy-armor disadvantage defaults and Wonder support. Direct Dodge must beat the attack; an area save meets its DC for half damage. Health changes stay manual; see [Dodge scope and checklist](docs/DODGE.md).
-- **Parry reaction:** roll d20 + DEX against an attack total, with ally protection, optional reaction spending and once-per-round tracking, a reset correction, Overwhelming Force reminders and Wonder support. DEX 21 and held-equipment requirements are shown in the dialog. See [Parry scope and checklist](docs/PARRY.md).
-- **Defend from attack cards:** Block, Dodge and Parry open with the incoming weapon roll's total and relevant flags. Choose an owned defender when needed, including an unlinked token. Each defense can spend once per character per incoming hand, with reset corrections and unspent practice. Replies retain the source audience and Wonder keeps the link. Health stays manual; see [linked defenses](docs/LINKED-DEFENSES.md).
-- **Combat actions:** Command costs a fixed 5 own AP and grants an ally 2 + CHA modifier, capped at 5, without stacking. The main sheet AP number includes the grant, with an Includes Command AP breakdown; the normal maximum stays unchanged. Its picker defaults to sidebar Characters and labels separate Token copies with their scene/ID. Cards/notices identify the recipient and distinguish a new offer from a higher retained grant. Delivery verifies the saved grant and refreshes Receive buttons. See [Command delivery and validation](docs/COMMAND-DELIVERY.md). Potions spend DEX-adjusted 5 AP in combat. Opportunity attacks are deferred until combat work resumes; there is no React button or movement prompt yet. See [item bonuses and combat actions](docs/ITEM-BONUSES-ACTIONS.md).
-- Starting combat or advancing a turn refills the incoming character's AP and reactions to their current maxima. One active GM performs the update; unlinked tokens use their own actor. See [turn-refill scope and checklist](docs/TURN-REFILLS.md).
-- Core numbers: Health, hit die, AP, reactions, Natural Evasion, Armor Rating and movement per AP, with clearable manual overrides and editable current pools.
-- **Resistances:** Details → Resistances → Edit records Notion-confirmed damage types plus custom entries, with a compact summary on Character. Existing characters start empty; damage application remains manual. See [resistance tracking](docs/CORE-NUMBERS.md#resistance-tracking).
-- Health and AP are selectable token bars; newly created characters default to those two bars. Existing tokens keep their settings.
-- The sheet includes a narrow layout and touch-sized controls. The user tested core numbers and rolls/Wonder; equipment awaits [in-world validation](docs/EQUIPMENT.md).
-- **Sheet tabs:** Character, Details, Equipment, Abilities, Status and Notes keep each view shorter. Name/level/race/form and navigation remain above independently scrolling panels; the large portrait is on Character; narrow sheets wrap navigation buttons. Forms live in Abilities, and Status is an active-only list. Switching tabs preserves form controls, and the current tab survives actor refreshes in that window. See [sheet organization](docs/SHEET-TABS.md).
-- The interface keeps totals and common actions up front. **Adjust values** holds overrides; **Rules & help** and per-dialog help sections open on click, tap or keyboard. Item details and longer chat explanations are also collapsible. See [interface scope and checks](docs/INTERFACE.md).
-- System chat cards share the navy/brass theme, including attacks, damage, reloads and consumables. Equipment uses grouped rows with fitting icons, key stats, clear equipped states and compact actions. See [chat and equipment polish](docs/VISUAL-POLISH.md).
-- All 70 catalog entries have unique image paths: 63 stock matches and 7 user-supplied illustrations. Old default images and matching placeholders resolve in inventories, editor previews and Item directories/compendiums; custom images stay chosen. See [equipment artwork](docs/EQUIPMENT-ART.md).
+The implementation is ready for the [final desktop character-sheet audit](docs/CHARACTER-SHEET-AUDIT.md). The audit and any resulting fixes come before wider combat automation, spell visuals or modules. See the [roadmap](docs/ROADMAP.md) for the single completion gate.
 
-- **Ability restoration:** open an ability's Restoration section to restore Health, Mana, Holy power or an owned custom resource using points, dice or a percentage of maximum. Use pays its costs and applies restoration and bonuses together. Pure restoration at full spends nothing; End does not undo healing. See [ability restoration](docs/ABILITY-RESTORATION.md).
+## Installing and testing
 
-- **Timed potion bonuses:** consumables have Bonus duration in rounds, minutes or hours; blank/0 keeps manual End. Timers start on Apply benefits and use Foundry v14's native expiry. Status shows time left. Equipment/consumable rows and potion chat cards show compact bonuses such as +3 STR, including configured duration. See [durations and hints](docs/POTION-DURATIONS.md).
+Copy the system into `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond`. Back up the existing system first, preserve unrelated files, restart Foundry and refresh player browsers. Keep the system ID and folder name `worlds-beyond`. Current workflow installs tested PR commits so the user can review before merging; no automatic merges.
 
-- **Ability timers:** optional Active duration expires ability bonuses/forms in rounds, minutes or hours. Count cooldown automatically runs an independent round clock. End keeps the cooldown; manual corrections remain available. Existing abilities retain manual defaults. See [ability timers](docs/ABILITY-TIMERS.md).
+With Node 24 or later, run `npm test` or `node --test`. There are no dependencies or build step. GitHub Actions runs the same regression suite on PRs and main. Passing it does not replace the live Foundry audit.
 
-**Recovery settings:** abilities offer explicit uses-reset policies; optional resources offer fixed-point manual/own-turn recovery and long-rest opt-out. Existing records retain manual turn defaults. See [recovery configuration and validation](docs/RECOVERY.md).
+## Repository layout
 
-**Form loadouts:** Form editors can save portraits, token art/size/scale with native timed transitions, and equipped gear from the same inventory, plus ability/resource visibility. Use switches the preset; End/Base restores the original portrait/gear. Gear edits are remembered per saved form, with shared balances/counters and Show all access. Existing forms remain unchanged until configured. See [form loadouts and validation](docs/FORM-LOADOUTS.md).
+- `module/`: native models, sheets, hooks and small rules modules. `*-core.mjs` generally contains Foundry-free projections/rules; `*-actions.mjs` adapts dialogs and chat. Pure modules such as `stats.mjs` and `attacks.mjs` also hold rules math.
+- `templates/`: shallow Handlebars files, including native character header/tab parts and dialogs.
+- `styles/`: system-scoped sheet/chat styles.
+- `icons/`, `fonts/`: local visuals, optimized thumbnails and licensed theme fonts. Original image paths remain available for compatibility.
+- `tests/`: dependency-free Node rules and adapter regressions. Foundry APIs are mocked where needed.
+- `docs/`: five topic guides, the roadmap and one release audit. Older filenames redirect to the consolidated sections for existing links.
+- `.github/workflows/`: PR test automation.
+- `system.json`: system manifest; `en.json`: English labels.
 
-## Installing
-
-Put this folder in `%LOCALAPPDATA%\FoundryVTT\Data\systems\worlds-beyond` (the folder name must be `worlds-beyond`), restart Foundry, and create a new world with the Worlds Beyond system.
-
-## Layout
-
-- `system.json`: the manifest
-- `module/stats.mjs`: stat list and modifier math (no Foundry code, so it can be tested on its own)
-- `module/core-numbers.mjs`: Health, hit dice, AP, reactions, defenses and movement math
-- `module/character-actor.mjs`: editable token bars, including Health corrections
-- `module/rolls.mjs`: Foundry-free check modes, Wonder pool and Defy Fate rules
-- `module/roll-actions.mjs`: roll dialogs, chat cards, Wonder use and refill
-- `module/character-combatant.mjs`: initiative context for Wonder
-- `module/equipment-core.mjs`: Foundry-free worn armor/shield totals and effective AGL
-- `module/equipment.mjs`: item data models, sheets and character controls
-- `module/attacks.mjs`: Foundry-free attack, crit, damage-scaling and Armor Rating rules
-- `module/attack-actions.mjs`: attack dialog and attack/damage chat cards
-- `module/defenses.mjs`: Foundry-free Dodge/Parry readiness, comparison and outcome rules
-- `module/reaction-actions.mjs`: Block/Dodge/Parry dialogs, reaction spending, Parry use tracking and chat results
-- `module/catalog.mjs`: Foundry-free weapon/armor/shield tables transcribed from Notion
-- `module/catalog-import.mjs`: GM import of the catalog into a world compendium
-- `module/worlds-beyond.mjs`: data model, character sheet and registration
-- `templates/character-*.hbs`: native header/tab parts and small Details partials
-- `styles/worlds-beyond.css`: sheet styles
-- `tests/`: rules and sheet/token/roll adapter tests (`node --test`)
-- `docs/ROADMAP.md`: what gets built next, in order
-- `docs/CORE-NUMBERS.md`: rule sources, data behavior and Foundry validation checklist
-- `docs/ROLLS.md`: roll/Wonder sources, data behavior and Foundry validation checklist
-- `docs/INVENTORY.md`: inventory, consumable and Block dice rules, data changes and Foundry validation checklist
-
-Keep the folder layout shallow. Claude can copy files up to about 6 folders below the system folder into Foundry.
+Contributor workflow, schema compatibility and installation rules are in [AGENTS.md](AGENTS.md).
