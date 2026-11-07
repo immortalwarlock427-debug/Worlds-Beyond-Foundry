@@ -1,5 +1,6 @@
 import { promptAttack, targetFromToken } from "./attack-actions.mjs";
 import { itemList, loadoutError } from "./loadout.mjs";
+import { targetedAbilities, promptAbilityStrike } from "./ability-strikes.mjs";
 const pending = new Set();
 
 export function clickAttacker(target, event = {}) {
@@ -34,28 +35,36 @@ export async function promptTokenAttack(actor, targetToken) {
 async function chooseTokenAttack(actor, targetToken) {
   const target = targetFromToken(targetToken);
   if (!target) return;
-  const error = loadoutError(actor.items);
-  if (error) throw new Error(`${error} Re-equip your intended weapon on the sheet to correct the loadout.`);
   const weapons = itemList(actor.items).filter(item => item.type === "weapon" && item.system.equipped);
-  if (!weapons.length) throw new Error("Equip a weapon on your character sheet first.");
-  let weapon = weapons[0];
-  if (weapons.length > 1) {
-    const choice = await foundry.applications.api.DialogV2.input({
+  const abilities = targetedAbilities(actor);
+  if (!weapons.length && !abilities.length)
+    throw new Error("Equip a weapon, or set an ability's Targeting in its editor, to attack from the map.");
+  // With weapons as the only option, refuse a broken loadout before asking anything.
+  const loadout = loadoutError(actor.items);
+  if (loadout && !abilities.length) throw new Error(`${loadout} Re-equip your intended weapon on the sheet to correct the loadout.`);
+  let choice = weapons.length ? `weapon:${weapons[0].id}` : `ability:${abilities[0].id}`;
+  if (weapons.length + abilities.length > 1) {
+    const form = await foundry.applications.api.DialogV2.input({
       classes: ["worlds-beyond", "wb-roll-dialog"],
       position: { width: 380 },
       rejectClose: false,
       window: { title: `Attack ${target.name}` },
-      ok: { label: "Choose attack" },
+      ok: { label: "Choose" },
       content: await foundry.applications.handlebars.renderTemplate("systems/worlds-beyond/templates/token-attack-dialog.hbs", {
         attacker: actor.name,
         target: target.name,
-        weapons: weapons.map(item => ({ id: item.id, name: item.name }))
+        weapons: weapons.map(item => ({ value: `weapon:${item.id}`, name: item.name })),
+        abilities: abilities.map(item => ({ value: `ability:${item.id}`, name: item.name }))
       })
     });
-    if (!choice) return;
-    weapon = actor.items.get(choice.itemId);
-    if (weapon?.type !== "weapon" || !weapon.system.equipped) throw new Error("That weapon is no longer equipped.");
+    if (!form) return;
+    choice = form.choice;
   }
+  const [kind, id] = String(choice ?? "").split(":");
+  if (kind === "ability") return promptAbilityStrike(actor, id, target);
+  const weapon = actor.items.get(id);
+  if (weapon?.type !== "weapon" || !weapon.system.equipped) throw new Error("That weapon is no longer equipped.");
+  if (loadout) throw new Error(`${loadout} Re-equip your intended weapon on the sheet to correct the loadout.`);
   return promptAttack(actor, weapon.id, target);
 }
 

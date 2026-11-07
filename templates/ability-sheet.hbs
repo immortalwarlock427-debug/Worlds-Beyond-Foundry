@@ -208,6 +208,46 @@
       {{#if selected}}selected{{/if}}
     >{{label}}</option>{{/each}}</select></label>
   </div><p class="wb-item-brief">Applied once on Use. Uses the resource's overflow setting; percentage amounts use its maximum. A pure restoration ability spends nothing if the pool is already full.</p></details>{{/unless}}
+  {{#unless passive}}{{#unless isForm}}<details class="wb-disclosure" data-sync="ability-targeting"{{#if targeting.enabled}} open{{/if}}><summary>Targeting</summary><div class="wb-equipment-fields">
+    <label>Target<select name="system.targeting.mode" {{#unless editable}}disabled{{/unless}}>{{#each targeting.modes}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    {{#if targeting.enabled}}<label>Uses stat<select name="system.targeting.stat" {{#unless editable}}disabled{{/unless}}>{{#each targeting.stats}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    {{#if targeting.save}}<label>Target saves with<select name="system.targeting.saveStat" {{#unless editable}}disabled{{/unless}}>{{#each targeting.saveStats}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>
+    <label>Save DC<input
+      type="number"
+      name="system.targeting.dc"
+      value="{{system.targeting.dc}}"
+      placeholder="{{targeting.dcDefault}}"
+      step="1"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>On a successful save<select name="system.targeting.onSave" {{#unless editable}}disabled{{/unless}}>{{#each targeting.onSave}}<option
+      value="{{value}}"
+      {{#if selected}}selected{{/if}}
+    >{{label}}</option>{{/each}}</select></label>{{/if}}
+    <label>Damage<input
+      type="text"
+      name="system.targeting.damage"
+      value="{{system.targeting.damage}}"
+      placeholder="2d8 + str, 1d10 + int; blank for none"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
+    <label>Damage type<input
+      type="text"
+      name="system.targeting.damageType"
+      value="{{system.targeting.damageType}}"
+      placeholder="Fire, Lightning, Slashing…"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>{{/if}}
+  </div><p class="wb-item-brief">{{#if targeting.enabled}}Alt-click a token with your character selected to use this on it. In Damage, a stat's short name adds its modifier (2d8 + str, 1d10 + int); mod means the stat chosen above.{{#if targeting.save}}{{#if targeting.dcPreview}} Current DC: {{targeting.dcPreview}}.{{/if}} A blank DC uses 12 + the stat's modifier.{{else}} The attack rolls d20 + modifier against Natural Evasion; a natural 20 is a critical hit.{{/if}}{{else}}Choose an attack roll or a save to use this ability on a target.{{/if}}</p></details>{{/unless}}{{/unless}}
   <section class="wb-item-bonuses" aria-label="Item bonuses">
     <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button
       type="button"

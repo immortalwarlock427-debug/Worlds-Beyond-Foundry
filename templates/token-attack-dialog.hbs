@@ -1,4 +1,4 @@
 <div class="wb-check-options">
   <p class="wb-dialog-meta">{{attacker}} → {{target}}</p>
-  <label>Equipped weapon<select name="itemId">{{#each weapons}}<option value="{{id}}">{{name}}</option>{{/each}}</select></label>
+  <label>Use<select name="choice">{{#if weapons.length}}<optgroup label="Weapons in hand">{{#each weapons}}<option value="{{value}}">{{name}}</option>{{/each}}</optgroup>{{/if}}{{#if abilities.length}}<optgroup label="Abilities">{{#each abilities}}<option value="{{value}}">{{name}}</option>{{/each}}</optgroup>{{/if}}</select></label>
 </div>
