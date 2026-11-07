@@ -1,6 +1,7 @@
 // Incoming attack association. Resource changes still use the defender's action queue.
 import { incomingWeaponAttack } from "./defenses.mjs";
 import { queuedAction } from "./action-support.mjs";
+import { handledAutomatically } from "./strike-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const KINDS = ["block", "dodge", "parry"];
@@ -114,7 +115,9 @@ export function decorateAttackDefenses(message, html) {
   const card = html.querySelector(".wb-attack-card");
   if (!data || !card || card.querySelector(".wb-defense-actions")) return;
   const count = Array.isArray(data.hands) ? data.hands.length : 1;
+  const strike = message.getFlag?.(SYSTEM_ID, "strike");
   for (let index = 0; index < count; index++) {
+    if (handledAutomatically(data, strike, index)) continue;
     const incoming = incomingWeaponAttack(data, message.rolls, index);
     if (!incoming || !defenseActors(incoming).length) continue;
     const group = document.createElement("div");

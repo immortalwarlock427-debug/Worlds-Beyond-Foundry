@@ -9,6 +9,7 @@ The sections below preserve rules sources and historical implementation checks. 
 
 ## Contents
 
+- [Automatic attack resolution](#resolution)
 - [Weapon attacks and damage](#attacks)
 - [Block reaction](#block)
 - [Dodge reaction](#dodge)
@@ -19,6 +20,42 @@ The sections below preserve rules sources and historical implementation checks. 
 - [Start-of-turn resources](#turn-refills)
 - [Review of the inventory, catalog and attack additions](#action-review)
 
+
+<a id="resolution"></a>
+## Automatic attack resolution
+
+Requested by the user on 2026-11-06. Follows Notion Defenses → Order of a Hit.
+
+### Flow
+
+1. With your character's token selected, Alt-click the target. Choose a weapon in hand or an ability whose **Targeting** is set, then the dice (normal, advantage, disadvantage). Weapon attacks keep their existing dialog and AP cost; abilities pay their costs through Use.
+2. A hit (or a save ability) opens a popup for whoever answers for the target: the player assigned to that character, another owning player, or the GM. Weapon and attack-roll hits offer **Dodge**, **Parry** (DEX 21, armed, unused this round) and **Let it hit**. Save abilities offer the ability's save, or a save with the defender's choice of stat. A failed Dodge reopens the popup with what's left.
+3. The GM's client rolls damage, applies a half-damage save, Resistance and Armor Rating, then asks the defender whether to **Block** what gets through.
+4. Block is subtracted, Overwhelming Force raises the result back to half the rolled damage (weapons only, never through a Dodge), and the target's Health drops. A result card reports the outcome; the GM can **Undo** or **Apply** it from that card.
+
+Options with nothing to choose (no reactions in combat, no damage past Armor Rating) are skipped. Outside combat reactions aren't spent, so every defense stays available. The attack card shows who is being waited on; its owner can reopen the popup with **Respond**, and the GM can **Let it hit**, **Skip Block** or **Resolve by hand**, which brings back the manual damage and defense buttons.
+
+### Settings and opt-outs
+
+- **Automatic attack resolution** (world setting, on): off restores the manual attack card buttons.
+- **Apply damage automatically** (world setting, on): off leaves Health alone and puts an **Apply** button on the result card.
+- Automation needs a connected GM, because only the GM's client can change every combatant's Health. Without one, attacks use the manual buttons.
+
+### Ability targeting
+
+The ability editor's **Targeting** section sets: attack roll vs Natural Evasion or a target save; the stat used (blank uses the AP discount stat); the save stat or the target's choice; the DC (blank is 12 + the stat's modifier, per Notion Stats); no damage or half damage on a successful save; a damage formula where `@mod` is the stat's modifier; and a damage type. Ability attacks crit on a natural 20 and add the dice maximum, like weapons.
+
+### Rule choices to confirm
+
+- Weapon attacks don't offer a stat save. Notion defends against them with Natural Evasion and reactions; a free save would make Dodge pointless.
+- Resistance to a multi-type weapon (Mace: Bludgeoning, Piercing) needs every listed type resisted.
+- Immunity isn't recorded on characters yet; use Undo or Resolve by hand for an immune target.
+- Wonder isn't offered inside the popup. Undo and reroll by hand if a defender uses it.
+- Areas, multiple targets and map effects are roadmap step 4.
+
+### Code
+
+`module/strike-core.mjs` holds the rules (tested in `tests/strike-core.test.mjs`). `module/strike.mjs` runs exchanges on the active GM's client, stores progress on the attack card's `flags.worlds-beyond.strike`, and talks to the defender's client over the system socket (tested in `tests/strike.test.mjs`). `module/ability-strikes.mjs` uses a targeted ability; `module/strike-settings.mjs` registers the two settings.
 
 <a id="attacks"></a>
 ## Weapon attacks and damage
