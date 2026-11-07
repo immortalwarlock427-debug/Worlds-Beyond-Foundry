@@ -77,9 +77,11 @@ A token counts when its center, or a point a quarter of the way in from any corn
 - Every target is asked at the same time. Damage is rolled once for the whole area; each target then applies its own Resistance, Armor Rating and Block. Only the first result card carries the dice.
 - Single-target abilities are unchanged: Alt-click a token, or target one token and press Use.
 
+Placement listens for the map's own pointer events in the window capture phase: on 14.365 Foundry claims mouse-down on the map before PixiJS delivers it to canvas objects, so a PixiJS click catcher never saw the click (verified live 2026-11-06, with placement, right-click cancel and token capture rechecked afterwards). Changing scenes cancels a placement.
+
 ### Map effects
 
-**Map effect** offers None, Lightning, Fire, Ice, Arcane, Holy, Shadow, Poison and Force, each with a default color and an optional hex color override. Single targets get a streak from the caster to the target and an impact; areas fill their shape. Effects are drawn with the canvas itself (no modules or image assets), play for every connected client viewing that scene, and leave nothing behind. `module/draw.mjs` adapts drawing to PixiJS v8 (Foundry v14) with a v7 fallback.
+**Map effect** offers None, Lightning, Fire, Ice, Arcane, Holy, Shadow, Poison and Force, each with a default color and an optional hex color override. Single targets get a streak from the caster to the target and an impact; areas fill their shape. Effects are drawn with the canvas itself (no modules or image assets), play for every connected client viewing that scene, and leave nothing behind. `module/draw.mjs` draws with whichever PixiJS API is present; the user's 14.365 build runs PixiJS 7.4.3 (checked live), and the v8 path is kept in case a later build switches.
 
 ### Code
 

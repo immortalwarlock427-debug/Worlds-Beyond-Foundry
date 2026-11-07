@@ -2,7 +2,7 @@
 // confirm who it hits, then roll it. Shapes and hit-testing live in area-core.mjs.
 import { areaSettings, areaLabel, buildShape, tokensInShape, visualSettings, isArea } from "./area-core.mjs";
 import { drawArea } from "./vfx.mjs";
-import { circle, rect as drawRect } from "./draw.mjs";
+import { circle } from "./draw.mjs";
 import { targetFromToken } from "./attack-actions.mjs";
 import { abilityRecord } from "./abilities-core.mjs";
 import { abilityActive } from "./ability-timers-core.mjs";
@@ -59,24 +59,23 @@ function candidateTokens() {
 }
 
 // Interactive placement: the shape follows the mouse, click to confirm, right-click or Esc to cancel.
+// Foundry claims mouse-down on the map before PixiJS delivers it to canvas objects (found live on
+// 14.365), so this listens on the window in the capture phase and only for the map's own element.
 export function placeArea({ settings, origin, aim = null, color = 0xd6a85c, casterId = null }) {
   return new Promise(resolve => {
     const pixelsPerFoot = canvas.dimensions.size / canvas.dimensions.distance;
-    const overlay = new PIXI.Container();
-    const catcher = new PIXI.Graphics();
-    const rect = canvas.dimensions.rect;
-    drawRect(catcher, rect.x, rect.y, rect.width, rect.height, { fill: { color: 0x000000, alpha: 0.001 } });
-    catcher.hitArea = new PIXI.Rectangle(rect.x, rect.y, rect.width, rect.height);
-    catcher.eventMode = "static";
-    catcher.cursor = "crosshair";
+    const board = canvas.app.view;
     const preview = new PIXI.Graphics();
-    overlay.addChild(catcher, preview);
-    canvas.stage.addChild(overlay);
+    preview.eventMode = "none";
+    canvas.stage.addChild(preview);
     const tokens = candidateTokens();
     const boxes = tokens.map(token => ({ id: token.id, x: token.document.x, y: token.document.y, width: token.w, height: token.h }));
     let point = aim ?? { x: origin.x + canvas.dimensions.size * 2, y: origin.y };
     let shape = null,
-      inside = [];
+      inside = [],
+      done = false;
+    const previousCursor = board.style.cursor;
+    board.style.cursor = "crosshair";
 
     const snap = position => {
       if (settings.shape !== "circle") return position;
@@ -87,6 +86,8 @@ export function placeArea({ settings, origin, aim = null, color = 0xd6a85c, cast
         return position;
       }
     };
+    const toCanvas = event => snap(canvas.canvasCoordinatesFromClient({ x: event.clientX, y: event.clientY }));
+    const onBoard = event => event.target === board;
     const redraw = () => {
       shape = buildShape(settings, { origin, point, pixelsPerFoot });
       const hit = new Set(tokensInShape(shape, boxes, { excludeId: settings.includeSelf ? null : casterId }).map(box => box.id));
@@ -100,35 +101,50 @@ export function placeArea({ settings, origin, aim = null, color = 0xd6a85c, cast
       }
     };
     const finish = result => {
-      catcher.off("pointermove", move);
-      catcher.off("pointerdown", down);
+      if (done) return;
+      done = true;
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerdown", down, true);
+      window.removeEventListener("contextmenu", menu, true);
       window.removeEventListener("keydown", key, true);
-      overlay.destroy({ children: true });
+      Hooks.off("canvasTearDown", teardownHook);
+      board.style.cursor = previousCursor;
+      preview.destroy();
       resolve(result);
     };
     const move = event => {
-      point = snap(event.getLocalPosition(canvas.stage));
+      if (!onBoard(event)) return;
+      point = toCanvas(event);
       redraw();
     };
     const down = event => {
-      event.stopPropagation();
+      if (!onBoard(event)) return;
+      // Keep the click away from Foundry so it doesn't select, deselect or drag anything.
+      event.preventDefault();
+      event.stopImmediatePropagation();
       if (event.button === 2) return finish(null);
       if (event.button !== 0) return;
-      point = snap(event.getLocalPosition(canvas.stage));
+      point = toCanvas(event);
       redraw();
       finish({ shape, tokens: inside });
+    };
+    const menu = event => {
+      if (onBoard(event)) event.preventDefault();
     };
     const key = event => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       finish(null);
     };
-    catcher.on("pointermove", move);
-    catcher.on("pointerdown", down);
+    const teardown = () => finish(null);
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerdown", down, true);
+    window.addEventListener("contextmenu", menu, true);
     window.addEventListener("keydown", key, true);
+    const teardownHook = Hooks.once("canvasTearDown", teardown);
     redraw();
-    ui.notifications.info(`Aim ${areaLabel(settings)}: click to place it, right-click or Esc to cancel.`);
+    ui.notifications.info(`Aim ${areaLabel(settings)}: click the map to place it, right-click or Esc to cancel.`);
   });
 }
 
