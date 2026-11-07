@@ -120,7 +120,7 @@ export function scaleDice(expression, times = 1) {
 }
 
 // Everything a damage roll needs, without rolling.
-// An off-hand hit from attacking with both weapons deals half damage, rounded down,
+// An off-hand hit from attacking with both weapons deals full dice damage
 // and adds no modifier.
 export function damagePlan({
   weapon,
