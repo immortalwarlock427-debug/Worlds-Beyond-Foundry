@@ -216,3 +216,22 @@ test("Defy Fate turns a failed defense roll into a success", () => {
   assert.equal(avoidOutcome(strike, "dodge", 5, true).success, true);
   assert.equal(avoidOutcome({ check: "save", dc: 15, onSave: "half" }, "save", 3, true).multiplier, 0.5);
 });
+
+test("an area attack makes Dodge the save: meet the DC for half damage", () => {
+  const strike = strikeInfo(
+    {
+      attackerName: "Mage",
+      ability: { name: "Fireball", check: "attack", area: "circle", dc: 15, damageType: "Fire" },
+      hands: [{ hand: "main", name: "Fireball", hit: true, target: { name: "Orc" } }]
+    },
+    0
+  );
+  assert.equal(strike.check, "area");
+  assert.equal(strike.dc, 15);
+  const options = avoidOptions(strike, defenderState({ inCombat: true, reactions: 1, parry: { unlocked: true, armed: true } }));
+  assert.deepEqual(kinds(options), ["dodge", "take"]);
+  assert.match(options[0].label, /DC 15, half damage/);
+  assert.deepEqual(kinds(avoidOptions(strike, defenderState({ inCombat: true, reactions: 0 }))), ["take"]);
+  assert.deepEqual(avoidOutcome(strike, "dodge", 15), { success: true, multiplier: 0.5, negated: false, done: true });
+  assert.deepEqual(avoidOutcome(strike, "dodge", 14), { success: false, multiplier: 1, negated: false, done: true });
+});
