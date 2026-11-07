@@ -303,7 +303,10 @@ test("unlinked token actors keep their own form receipt while the sidebar actor 
       }
     }
   };
+  // Foundry stores the delta's source on the token's source; the system reads it
+  // there, because the lazy token.delta getter re-prepares this same actor.
   token.delta = { _source: { flags: {} } };
+  Object.defineProperty(token, "_source", { get: () => ({ ...token, texture: { ...token.texture }, delta: token.delta._source }) });
   const view = () => {
     f.actor.flags = structuredClone(sidebar);
     merge(f.actor.flags, structuredClone(token.delta._source.flags));
