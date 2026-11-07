@@ -23,6 +23,7 @@ import { abilityTimerPlans, validateAbilityTimers, startAbilityTimers, stopAbili
 import { USES_RECOVERY } from "./recovery-core.mjs";
 import { formLoadoutSchema, formLoadoutContext, copyFormEquipment, syncFormLoadout } from "./form-loadouts.mjs";
 import { formLoadoutFormUpdates } from "./form-loadout-core.mjs";
+import { TARGETING_MODES, TARGETING_STATS, SAVE_STATS, SAVE_SUCCESS, saveDc, targetingStat } from "./strike-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 
@@ -67,6 +68,15 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
         spent: number(0),
         recovery: text(),
         resetOn: text("manual", { choices: USES_RECOVERY, blank: false })
+      }),
+      targeting: new SchemaField({
+        mode: text("none", { choices: TARGETING_MODES, blank: false }),
+        stat: text("", { choices: TARGETING_STATS }),
+        saveStat: text("", { choices: SAVE_STATS }),
+        dc: number(null, { integer: true }),
+        onSave: text("none", { choices: SAVE_SUCCESS, blank: false }),
+        damage: text(),
+        damageType: text()
       }),
       cooldown: new SchemaField({
         rounds: number(null, { min: 0 }),
@@ -157,6 +167,7 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
       resources: abilityResources(character, system.resourceId),
       restorationResources: recoveryChoices(character, system.restoration?.target ?? "health"),
       restorationUnits: choices(ABILITY_COST_UNITS, system.restoration?.unit ?? "points"),
+      targeting: targetingContext(system, character, choices),
       hasActor: !!character,
       formLoadout: formLoadoutContext(this.item),
       triggerModes: choices(TRIGGER_MODES, system.trigger?.mode ?? "manual"),
@@ -180,6 +191,23 @@ export class AbilitySheet extends foundry.applications.api.HandlebarsApplication
     for (const button of this.element?.querySelectorAll('[data-action="itemEffect"][data-operation="edit"]') ?? []) button.disabled = false;
     if (this.isEditable) bindWholeNumbers(this.element);
   }
+}
+
+// Ability editor choices for Targeting, with the DC this character would set.
+function targetingContext(system, character, choices) {
+  const targeting = system.targeting ?? {};
+  const statKey = targetingStat(system);
+  const modifier = statKey && character ? character.stats?.[statKey]?.mod : null;
+  return {
+    enabled: (targeting.mode ?? "none") !== "none",
+    save: targeting.mode === "save",
+    modes: choices(TARGETING_MODES, targeting.mode ?? "none"),
+    stats: choices(TARGETING_STATS, targeting.stat ?? ""),
+    saveStats: choices(SAVE_STATS, targeting.saveStat ?? ""),
+    onSave: choices(SAVE_SUCCESS, targeting.onSave ?? "none"),
+    dcPreview: modifier == null ? null : saveDc(modifier, targeting.dc),
+    dcDefault: modifier == null ? "12 + modifier" : String(saveDc(modifier))
+  };
 }
 
 export async function createAbility(actor, kind = "active", { spellStat } = {}) {

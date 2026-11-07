@@ -7,6 +7,8 @@ import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
 import { inCombat, availableAp, payAp } from "./combat-support.mjs";
+import { strikeAutomation } from "./strike-settings.mjs";
+import { handledAutomatically, abilityDamagePlan } from "./strike-core.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices,
@@ -252,6 +254,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
                 attackerName: actor.name,
                 target,
                 overwhelmingForce: scores(actor).str >= 28,
+                automated: strikeAutomation() && !!target?.actorUuid,
                 mounted: !!options.mounted,
                 mountedFeet: Number(options.mountedFeet) || 0,
                 hands: hands.map(({ item, hand, stat, mod, hit, critical, total, natural }) => ({
@@ -265,6 +268,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
                   critical,
                   total,
                   natural,
+                  damageType: item.system.damageType ?? "",
                   damageRolled: false
                 }))
               }
@@ -312,6 +316,7 @@ export async function rollDamage(message, index, critical) {
       const actor = data && (await foundry.utils.fromUuid(data.actorUuid));
       const weapon = actor?.items.get(hand?.itemId);
       if (!actor?.isOwner || !hand || hand.damageRolled) return;
+      if (data.ability) return rollAbilityDamage(message, data, hands, index, critical, change);
       if (!weapon) throw new Error(`${hand.name ?? "That weapon"} is no longer on this character.`);
       const offhand = hand.hand === "off";
       const plan = damagePlan({
@@ -355,7 +360,9 @@ export async function rollDamage(message, index, critical) {
       }
       lines.push("Subtract Block next. Apply Health changes manually.");
       if (overwhelming) {
-        lines.push(`Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower. Immunity still applies.`);
+        lines.push(
+          `Overwhelming Force then raises damage back to ${hit.minimum} if Resistance, Armor Rating or Block brought it lower. Immunity still applies.`
+        );
       }
       for (const [key, on] of Object.entries(weapon.system.signature ?? {})) {
         if (on && key !== "puncture" && SIGNATURE_TEXT[key]) lines.push(escapeHTML(SIGNATURE_TEXT[key]));
@@ -383,6 +390,32 @@ export async function rollDamage(message, index, critical) {
       });
     })
   );
+}
+
+// Manual damage for a targeted ability's card when automatic resolution is off.
+async function rollAbilityDamage(message, data, hands, index, critical, change) {
+  const hand = hands[index];
+  const plan = abilityDamagePlan({ formula: data.ability.damage, modifier: hand.mod, critical });
+  if (!plan.formula) throw new Error(`${data.ability.name} has no damage. Set it under Targeting in the ability editor.`);
+  if (!foundry.dice.Roll.validate(plan.formula)) throw new Error(`Couldn't read ${data.ability.name}'s damage "${plan.formula}".`);
+  const roll = await new foundry.dice.Roll(plan.formula).evaluate({ allowInteractive: !message.blind });
+  const updated = hands.map((entry, i) => (i === index ? { ...entry, damageRolled: true } : entry));
+  await change(
+    () => message.setFlag(SYSTEM_ID, "attack", { ...data, hands: updated }),
+    () => message.setFlag(SYSTEM_ID, "attack", data)
+  );
+  const type = data.ability.damageType ? ` ${escapeHTML(data.ability.damageType)}` : "";
+  return createActionMessage({
+    speaker: message.speaker,
+    content:
+      `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(data.ability.name)} damage</h3>` +
+      `<p class="wb-result">${finalDamage(roll.total)}${type} damage${plan.critical ? " (critical: maximum damage plus a second roll)" : ""}.</p>` +
+      (await roll.render()) +
+      "<p>Apply Resistance, Armor Rating and Block, then change Health on the sheet.</p></div>",
+    rolls: [roll],
+    whisper: [...message.whisper],
+    blind: message.blind
+  });
 }
 
 // Foundry shows advantage as "2d20kh1"; show the same plain wording as check cards.
@@ -413,8 +446,9 @@ export function decorateAttackMessage(message, html) {
   const actor = foundry.utils.fromUuidSync(data.actorUuid);
   if (!actor?.isOwner) return;
   const hands = attackHands(data);
+  const strike = message.getFlag(SYSTEM_ID, "strike");
   hands.forEach((hand, index) => {
-    if (hand.hit === false) return;
+    if (hand.hit === false || handledAutomatically(data, strike, index)) return;
     const prefix = hands.length > 1 ? `${hand.hand === "off" ? "Off-hand" : "Main-hand"} ` : "";
     const buttons =
       hand.critical === true

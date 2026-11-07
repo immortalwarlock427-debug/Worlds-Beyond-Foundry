@@ -130,8 +130,8 @@ test("weapon chooser lists equipped weapons, excludes armor/stowed gear and canc
   await promptTokenAttack(f.actor, f.target);
   assert.match(f.calls.templates[0].path, /token-attack-dialog/);
   assert.deepEqual(
-    f.calls.templates[0].data.weapons.map(w => w.id),
-    ["Sword", "Dagger"]
+    f.calls.templates[0].data.weapons.map(w => w.value),
+    ["weapon:Sword", "weapon:Dagger"]
   );
   assert.deepEqual(
     dualWieldPartners(f.weapon, f.actor.items).map(w => w.id),
@@ -168,4 +168,31 @@ test("repeated token clicks do not open simultaneous attack dialogs", async () =
   assert.equal(f.calls.dialogs.length, 1);
   release(null);
   await first;
+});
+
+test("alt-click lists targeted abilities beside weapons and opens the ability dialog", async () => {
+  const f = fixture();
+  f.actor.items.set("bolt", {
+    id: "bolt",
+    name: "Lightning Bolt",
+    type: "ability",
+    system: { kind: "active", apDiscountStat: "int", targeting: { mode: "attack", stat: "" }, uses: {}, cooldown: {} }
+  });
+  let call = 0;
+  f.DialogV2.input = async options => {
+    f.calls.dialogs.push(options);
+    return call++ === 0 ? { choice: "ability:bolt" } : null;
+  };
+  await promptTokenAttack(f.actor, f.target);
+  const data = f.calls.templates[0].data;
+  assert.deepEqual(
+    data.weapons.map(w => w.value),
+    ["weapon:Sword"]
+  );
+  assert.deepEqual(
+    data.abilities.map(a => a.value),
+    ["ability:bolt"]
+  );
+  assert.equal(f.calls.dialogs[1].window.title, "Use Lightning Bolt");
+  assert.equal(f.calls.rolls, 0);
 });
