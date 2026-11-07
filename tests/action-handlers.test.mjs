@@ -164,6 +164,25 @@ test("ordinary attacks still spend AP without spending reactions", async () => {
   assert.doesNotMatch(f.calls.posts[0].data.content, /Opportunity|reaction spent/);
 });
 
+test("opportunity attacks spend a reaction instead of AP and can opt out", async () => {
+  const f = fixture();
+  f.weapon.system.ranged = false;
+  f.weapon.system.loading = 0;
+  f.weapon.system.shots = null;
+  f.actor.system.reactions = { value: 1 };
+  await rollAttack(f.actor, f.weapon, { opportunity: "leave", spendReaction: "on", spendAp: false }, { name: "Orc", evasion: 0 });
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.reactions.value, 0);
+  assert.match(f.calls.posts[0].data.content, /Opportunity attack · 1 reaction spent/);
+  await assert.rejects(
+    rollAttack(f.actor, f.weapon, { opportunity: "leave", spendReaction: "on" }, { name: "Orc", evasion: 0 }),
+    /No reactions left/
+  );
+  await rollAttack(f.actor, f.weapon, { opportunity: "enter" }, { name: "Orc", evasion: 0 });
+  assert.equal(f.actor.system.reactions.value, 0);
+  assert.match(f.calls.posts.at(-1).data.content, /Opportunity attack \(Bulwark\)\./);
+});
+
 test("potions use bounded DEX-adjusted AP, spend eligible Command first, and refund both AP and quantity on failure", async () => {
   const f = fixture();
   f.potion.system.kind = "potion";

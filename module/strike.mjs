@@ -28,7 +28,12 @@ const openPrompts = new Set();
 
 const attackData = message => message?.getFlag?.(SYSTEM_ID, "attack") ?? null;
 const strikeState = message => message?.getFlag?.(SYSTEM_ID, "strike") ?? null;
-const defenderOf = data => (data?.target?.actorUuid ? foundry.utils.fromUuidSync(data.target.actorUuid) : null);
+// Area abilities give each hand its own target; weapon attacks share the card's target.
+const targetOf = (data, index = 0) => data?.hands?.[index]?.target ?? data?.target ?? null;
+const defenderOf = (data, index = 0) => {
+  const uuid = targetOf(data, index)?.actorUuid;
+  return uuid ? foundry.utils.fromUuidSync(uuid) : null;
+};
 
 /* -------------------------------------------- */
 /*  Registration                                */
@@ -90,9 +95,8 @@ export async function beginStrike(message) {
   return queuedAction(`strike:${message.id}`, async () => {
     if (!game.user.isActiveGM || strikeState(message)) return;
     const data = attackData(message);
-    const defender = defenderOf(data);
     const exchanges = (data?.hands ?? []).map((hand, index) => {
-      if (!defender) return { index, status: "manual", step: "done", note: "The target is no longer on the map." };
+      if (!defenderOf(data, index)) return { index, status: "manual", step: "done", note: "The target is no longer on the map." };
       if (hand.hit === false) return { index, status: "done", step: "done", outcome: "miss", used: [], log: [] };
       if (hand.hit == null) return { index, status: "manual", step: "done", note: "Compare the attack with the target's Natural Evasion." };
       return { index, status: "waiting", step: "avoid", used: [], log: [] };
@@ -102,14 +106,34 @@ export async function beginStrike(message) {
   });
 }
 
-// Prompt for the first open exchange, or settle steps with only one sensible choice.
+// Move every open exchange forward. Different targets are asked at the same time;
+// one target's hands (two-weapon attacks) are asked one after another.
 async function advance(message) {
+  for (let guard = 0; guard < 100; guard++) {
+    const state = strikeState(message);
+    const data = attackData(message);
+    const busy = new Set();
+    let progressed = false;
+    for (const ex of state?.exchanges ?? []) {
+      if (ex.status !== "waiting") continue;
+      const key = targetOf(data, ex.index)?.actorUuid ?? `hand${ex.index}`;
+      if (busy.has(key)) continue;
+      busy.add(key);
+      if (ex.prompt) continue;
+      await stepExchange(message, ex.index);
+      progressed = true;
+      break;
+    }
+    if (!progressed) return;
+  }
+}
+
+// Settle a step with only one sensible choice, or ask the target's owner.
+async function stepExchange(message, index) {
   const state = strikeState(message);
-  const index = state?.exchanges?.findIndex(ex => ex.status === "waiting");
-  if (index == null || index < 0) return;
   const ex = state.exchanges[index];
   const data = attackData(message);
-  const defender = defenderOf(data);
+  const defender = defenderOf(data, index);
   const strike = strikeInfo(data, index);
   const situation = defenderSituation(defender);
   if (ex.step === "avoid" && avoidOptions(strike, situation, ex.used).length === 1) return takeDamage(message, index, 1, false);
@@ -137,7 +161,7 @@ export async function handleStrikeResult({ messageId, index, token, choice, roll
     const ex = state?.exchanges?.[index];
     if (!ex || ex.status !== "waiting" || ex.prompt?.token !== token) return;
     const data = attackData(message);
-    const defender = defenderOf(data);
+    const defender = defenderOf(data, index);
     const user = game.users.get(userId);
     if (!defender || !user || !(user.isGM || defender.testUserPermission(user, "OWNER"))) return;
     const strike = strikeInfo(data, index);
@@ -150,17 +174,19 @@ export async function handleStrikeResult({ messageId, index, token, choice, roll
       entry.used.push(...(choice === "block" ? ["block"] : []));
       entry.log.push({ kind: choice, total });
       await saveState(message, next);
-      return finish(message, index, choice === "block" ? total : 0);
+      await finish(message, index, choice === "block" ? total : 0);
+      return advance(message);
     }
     const outcome = avoidOutcome(strike, choice, total, !!roll?.forced);
     if (["dodge", "parry"].includes(choice)) entry.used.push(choice);
     entry.log.push({ kind: choice, total, success: outcome.success, ...(roll?.wonder ? { wonder: roll.wonder } : {}) });
     await saveState(message, next);
-    if (choice === "dodge" && outcome.success) return settle(message, index, "dodged");
-    if (choice === "parry" && outcome.success && !strike.overwhelming) return settle(message, index, "parried");
-    if (choice === "save" && outcome.negated) return settle(message, index, "resisted");
-    if (!outcome.done && !(choice === "parry" && outcome.success)) return advance(message);
-    return takeDamage(message, index, outcome.multiplier, choice === "parry" && outcome.success);
+    if (choice === "dodge" && outcome.success && strike.check !== "area") await settle(message, index, "dodged");
+    else if (choice === "parry" && outcome.success && !strike.overwhelming) await settle(message, index, "parried");
+    else if (choice === "save" && outcome.negated) await settle(message, index, "resisted");
+    else if (outcome.done || (choice === "parry" && outcome.success))
+      await takeDamage(message, index, outcome.multiplier, choice === "parry" && outcome.success);
+    return advance(message);
   });
 }
 
@@ -199,17 +225,20 @@ function defenseTotal(roll, choice, defender, userId) {
 // Roll damage on the GM's client, then offer Block if anything gets through Armor Rating.
 async function takeDamage(message, index, multiplier, negated) {
   const data = attackData(message);
-  const rolled = await rollStrikeDamage(data, index);
+  // An area rolls its damage once for every target (Notion: one roll, each target defends).
+  const shared = data.ability?.area ? strikeState(message).sharedDamage : null;
+  const rolled = shared ?? (await rollStrikeDamage(data, index));
   const state = foundry.utils.deepClone(strikeState(message));
   const entry = state.exchanges[index];
-  const defender = defenderOf(data);
-  entry.damage = { ...rolled.info, rolled: rolled.total, roll: rolled.roll?.toJSON() ?? null, multiplier, negated };
+  const defender = defenderOf(data, index);
+  const roll = shared ? shared.roll : (rolled.roll?.toJSON() ?? null);
+  if (data.ability?.area && !shared) state.sharedDamage = { total: rolled.total, roll, info: rolled.info };
+  entry.damage = { ...rolled.info, rolled: rolled.total, roll, multiplier, negated, shared: !!shared };
   const preview = strikeDamage(mitigation(entry.damage, strikeInfo(data, index), defender, 0));
   entry.afterArmor = preview.afterArmor;
   entry.step = negated ? "done" : "block";
   await saveState(message, state);
   if (negated) return finish(message, index, 0);
-  return advance(message);
 }
 
 function mitigation(damage, strike, defender, block) {
@@ -278,12 +307,11 @@ async function settle(message, index, outcome) {
   Object.assign(state.exchanges[index], { status: "done", step: "done", outcome, prompt: null });
   await saveState(message, state);
   await postResult(message, index, { outcome, amount: 0 });
-  return advance(message);
 }
 
 async function finish(message, index, block) {
   const data = attackData(message);
-  const defender = defenderOf(data);
+  const defender = defenderOf(data, index);
   const state = foundry.utils.deepClone(strikeState(message));
   const entry = state.exchanges[index];
   const breakdown = strikeDamage(mitigation(entry.damage, strikeInfo(data, index), defender, block));
@@ -297,7 +325,6 @@ async function finish(message, index, block) {
   Object.assign(entry, { status: "done", step: "done", outcome: "hit", prompt: null, total: breakdown.total, applied });
   await saveState(message, state);
   await postResult(message, index, { outcome: "hit", amount: breakdown.total, breakdown, applied, previous });
-  return advance(message);
 }
 
 /* -------------------------------------------- */
@@ -325,10 +352,10 @@ function defenseLine(entry) {
 
 async function postResult(message, index, { outcome, amount, breakdown = null, applied = false, previous = null }) {
   const data = attackData(message);
-  const defender = defenderOf(data);
+  const defender = defenderOf(data, index);
   const entry = strikeState(message).exchanges[index];
   const strike = strikeInfo(data, index);
-  const name = escapeHTML(data.target?.name ?? defender?.name ?? "The target");
+  const name = escapeHTML(targetOf(data, index)?.name ?? defender?.name ?? "The target");
   const headline = {
     dodged: `${name} dodges ${escapeHTML(strike.name)}.`,
     parried: `${name} parries ${escapeHTML(strike.name)}.`,
@@ -363,11 +390,19 @@ async function postResult(message, index, { outcome, amount, breakdown = null, a
   return createActionMessage({
     speaker: message.speaker,
     content,
-    rolls: roll ? [roll] : [],
+    rolls: roll && !entry.damage?.shared ? [roll] : [],
     ...resultAudience(message, defender),
     flags: {
       [SYSTEM_ID]: {
-        strikeResult: { messageId: message.id, index, actorUuid: data.target?.actorUuid, amount, applied, previous, undone: false }
+        strikeResult: {
+          messageId: message.id,
+          index,
+          actorUuid: targetOf(data, index)?.actorUuid,
+          amount,
+          applied,
+          previous,
+          undone: false
+        }
       }
     }
   });
@@ -400,7 +435,7 @@ export async function showDefensePrompt(messageId, index, snapshot = null) {
   const message = game.messages.get(messageId);
   const data = snapshot?.data ?? attackData(message);
   const ex = snapshot?.exchange ?? strikeState(message)?.exchanges?.[index];
-  const defender = defenderOf(data);
+  const defender = defenderOf(data, index);
   if (!ex?.prompt || ex.status !== "waiting" || !defender?.isOwner) return;
   const key = `${messageId}:${index}:${ex.prompt.token}`;
   if (openPrompts.has(key)) return;
@@ -557,7 +592,7 @@ async function rollDefense(actor, strike, { kind, mode, stat }) {
 /* -------------------------------------------- */
 
 function statusText(ex, data) {
-  const name = escapeHTML(data.target?.name ?? "The target");
+  const name = escapeHTML(targetOf(data, ex.index)?.name ?? "The target");
   if (ex.status === "manual") return ex.note ? `Resolve by hand: ${escapeHTML(ex.note)}` : "Resolve by hand with the buttons below.";
   if (ex.status === "waiting") {
     const user = game.users.get(ex.prompt?.userId);
@@ -589,7 +624,7 @@ export function decorateStrike(message, html) {
     const text = document.createElement("p");
     text.innerHTML = ex ? statusText(ex, data) : "Waiting for the GM's client…";
     box.append(text);
-    const defender = defenderOf(data);
+    const defender = defenderOf(data, index);
     if (ex?.status === "waiting" && ex.prompt) {
       if (defender?.isOwner && (ex.prompt.userId === game.user.id || game.user.isGM)) {
         box.append(button("Respond", () => showDefensePrompt(message.id, index)));

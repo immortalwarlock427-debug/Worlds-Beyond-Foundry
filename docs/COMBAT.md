@@ -2,7 +2,7 @@
 
 The sheet already supports weapon attack cards, damage previews, Block/Dodge/Parry, Command, reload, potion AP and turn refills. Command spends 5 own AP and offers 2 + CHA modifier (maximum 5); the recipient's AP total includes the grant. Sidebar actors and unlinked token copies are distinct recipients.
 
-Resistance is recorded on the sheet; damage application remains manual. Movement AP, opportunity prompts, further milestone automation, spell targeting/areas and modules are deferred until the character-sheet audit passes. See [roadmap](ROADMAP.md).
+Attacks, abilities and areas resolve automatically (below), token movement spends AP in combat, and leaving an enemy's reach offers an opportunity attack. Further milestone automation and modules are still to come. See [roadmap](ROADMAP.md).
 
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
@@ -10,6 +10,9 @@ The sections below preserve rules sources and historical implementation checks. 
 ## Contents
 
 - [Automatic attack resolution](#resolution)
+- [Ability areas, multiple targets and map effects](#areas)
+- [Movement AP](#movement)
+- [Opportunity attacks](#opportunity)
 - [Weapon attacks and damage](#attacks)
 - [Block reaction](#block)
 - [Dodge reaction](#dodge)
@@ -57,6 +60,109 @@ The ability editor's **Targeting** section sets: attack roll vs Natural Evasion 
 ### Code
 
 `module/strike-core.mjs` holds the rules (tested in `tests/strike-core.test.mjs`). `module/strike.mjs` runs exchanges on the active GM's client, stores progress on the attack card's `flags.worlds-beyond.strike`, and talks to the defender's client over the system socket (tested in `tests/strike.test.mjs`). `module/ability-strikes.mjs` uses a targeted ability; `module/strike-settings.mjs` registers the two settings.
+
+<a id="areas"></a>
+## Ability areas, multiple targets and map effects
+
+Requested by the user on 2026-11-06 (roadmap step 4).
+
+### Using an area ability
+
+Set **Area** in the ability's Targeting section: Single target, Circle (placed), Around you, Cone from you, or Line from you, with its size in feet (cone angle and line width where they apply; blanks use 10 ft circles, a 15 ft 60° cone and a 30 ft × 5 ft line). Press **Use** on the sheet or a favorite, or Alt-click a token and choose the ability. The shape follows the mouse (circles snap to the grid; cones and lines aim from your token); tokens inside are ringed. Click to place it, right-click or Esc to cancel. A dialog lists everyone caught, all ticked; untick anyone it shouldn't hit, then **Use** pays the costs once and posts one card with a line per target.
+
+A token counts when its center, or a point a quarter of the way in from any corner, is inside, so clipping a corner doesn't count. You're left out of your own area unless **Can include you** is ticked.
+
+### How targets defend
+
+- **Area attack** (Targeting set to attack roll with an area): no attack roll. Each target may **Dodge** against the DC, using a reaction, for half damage (Notion Defenses: against an area attack your Dodge is the save).
+- **Area save**: each target makes the ability's save (or one of their choice) against the DC, with no or half damage on a success.
+- Every target is asked at the same time. Damage is rolled once for the whole area; each target then applies its own Resistance, Armor Rating and Block. Only the first result card carries the dice.
+- Single-target abilities are unchanged: Alt-click a token, or target one token and press Use.
+
+Placement listens for the map's own pointer events in the window capture phase: on 14.365 Foundry claims mouse-down on the map before PixiJS delivers it to canvas objects, so a PixiJS click catcher never saw the click (verified live 2026-11-06, with placement, right-click cancel and token capture rechecked afterwards). Changing scenes cancels a placement.
+
+### Map effects
+
+**Map effect** offers None, Lightning, Fire, Ice, Arcane, Holy, Shadow, Poison and Force, each with a default color and an optional hex color override. Single targets get a streak from the caster to the target and an impact; areas fill their shape. Effects are drawn with the canvas itself (no modules or image assets), play for every connected client viewing that scene, and leave nothing behind. `module/draw.mjs` draws with whichever PixiJS API is present; the user's 14.365 build runs PixiJS 7.4.3 (checked live), and the v8 path is kept in case a later build switches.
+
+### Code
+
+Shapes and hit-testing: `module/area-core.mjs` (tests in `tests/area-core.test.mjs`). Placement and target confirmation: `module/area-targeting.mjs`. Effects: `module/vfx.mjs` (smoke-tested against fake PixiJS v7 and v8 in `tests/vfx.test.mjs`). Multi-target cards and area attacks: `module/ability-strikes.mjs` and `module/strike.mjs`.
+
+### Not yet
+
+- Lasting areas (a wall of fire that stays), and effects for weapon attacks.
+- Range limits on placed circles aren't enforced; the GM rules on reach.
+- Areas don't check walls or cover.
+
+<a id="movement"></a>
+## Movement AP
+
+Requested by the user on 2026-11-06 (roadmap step 2). Follows Notion Stats → Agility and Armor Types Information.
+
+### Rules applied
+
+- In a started combat, moving a character's token on its own turn spends AP at its **Movement / AP** rate (5 ft + 5 ft per AGL modifier, minimum 5, plus gear and the sheet's corrections).
+- AP is spent in whole points. Feet bought but not walked carry over for the rest of that turn: at 15 ft/AP, moving 10 ft costs 1 AP and the next 5 ft is free. Unused feet are lost when the turn ends.
+- Heavy armor makes each 5 ft square cost 10 ft of movement. Difficult terrain is a Foundry Region with the core **Modify Movement Cost** behavior set to 2×, so a square there costs 10 ft, or 20 ft in heavy armor.
+- **Surge** (AGL 21, from gear too) gives 2 AP each turn that only pay for movement, spent before the character's own AP. Command AP is spent next, then own AP, as for every other action.
+- A move that costs more AP than the character has is stopped with a message saying what it needs. Nothing is spent.
+- The ruler shows the cost while dragging, for example `30 ft · 1 AP + 1 Surge`, or `60 ft · 12 AP (8 left)` when it can't be afforded.
+- Undoing a move (Ctrl+Z or Foundry's movement undo) refunds what that move spent, including Surge and Command AP.
+- Moves off the character's turn are free and don't count: being shoved, the GM repositioning a token, or moving into a Parry.
+
+### Opt-outs
+
+- World settings, all on by default: **Movement costs AP**, **Heavy armor slows movement** and **Surge gives free movement AP**.
+- The sheet's **Movement / AP** override sets the rate; **Square cost (ft)** under Adjust values replaces the automatic 5 or 10 ft per square for one character.
+- The GM's **Displace** movement action (token HUD) is free, for a one-off move that shouldn't cost anything.
+
+### Rule choices to confirm
+
+- Feet left over after paying AP carry over within the turn. Without this, two 5 ft steps at 15 ft/AP would cost 2 AP while one 10 ft step costs 1.
+- Blink (teleport) movement is charged like walking. A teleport ability pays its own AP through the ability instead, so its move can use Displace.
+
+### Code
+
+`module/movement-core.mjs` holds the rules (tested in `tests/movement-core.test.mjs`). `module/movement.mjs` registers the settings, charges AP before a token moves and refunds undone moves (`TokenDocument#_preUpdateMovement` / `_onUpdateMovement`), applies the square cost to Foundry's movement measurement and adds the AP cost to the ruler label. Each turn's payments are stored on the actor as `flags.worlds-beyond.movement`, keyed by combat, round and turn; a new turn starts empty.
+
+It finds the current combatant by searching the combats, not through `TokenDocument#combatant`: that reads the combat tracker, which is briefly empty while it re-renders after an actor change (seen live on 14.365, where Foundry then also skipped recording the move).
+
+### Not yet
+
+- Moves while it isn't anyone's turn in the combat are free.
+
+<a id="opportunity"></a>
+## Opportunity attacks
+
+Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (opportunity attacks use a reaction and no AP) and Weapons Explained (Reach, Bulwark).
+
+### When you're asked
+
+- In a started combat, when a token leaves the reach of an enemy combatant holding a melee weapon, that enemy's owner gets a popup: **Attack with** a weapon, or **Let them go**. The player assigned to the character answers, otherwise another owner, otherwise the GM.
+- Reach is 5 ft, or 10 ft with a Reach weapon; any diagonal neighbor counts as 5 ft. Your reach is your longest held melee weapon's, so stepping from 5 ft to 10 ft of a glaive wielder doesn't provoke even if they also hold a dagger. Only weapons that reach the mover's last square inside your reach are offered.
+- **Bulwark** weapons (Spear, Pike) also offer an attack when a creature moves *into* their reach.
+- Enemies are friendly vs hostile (or secret) token dispositions. Neutral tokens never provoke or attack.
+- No prompt when: the attacker has no reactions left, is hidden or defeated; the mover is hidden or has **Flicker** (AGL 28); the move is a teleport (Blink), Displace or an undo; the scene uses a hex grid.
+
+### The attack
+
+**Attack with** opens the normal attack dialog as an opportunity attack: one weapon, melee only, no AP cost shown. **Spend a reaction** is ticked in combat; untick it to roll without spending one. The card says "Opportunity attack · 1 reaction spent", and automatic resolution (Dodge, Block, damage) runs as for any attack. The mover has already finished moving when the attack resolves.
+
+### Opt-outs
+
+- World setting **Offer opportunity attacks** (on).
+- **Let them go** on each popup, and the **Spend a reaction** checkbox.
+
+### Rule choices to confirm
+
+- Notion doesn't say what provokes an opportunity attack. This uses D&D's rule: leaving an enemy's reach, which includes walking through it.
+- Bulwark attacks count as opportunity attacks, so they use a reaction and Flicker avoids them.
+- The attack happens after the move, not before the mover steps out. A hit doesn't stop the move.
+
+### Code
+
+`module/opportunity-core.mjs` holds the rules (tested in `tests/opportunity-core.test.mjs`). `module/opportunity.mjs` checks each finished move on the active GM's client (`moveToken` hook) and sends the popup to the attacker's owner over the system socket. `promptAttack`/`rollAttack` in `module/attack-actions.mjs` take an `opportunity` option that spends a reaction instead of AP (tested in `tests/action-handlers.test.mjs`).
 
 <a id="attacks"></a>
 ## Weapon attacks and damage

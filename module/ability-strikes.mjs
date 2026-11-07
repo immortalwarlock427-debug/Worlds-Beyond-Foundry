@@ -10,6 +10,8 @@ import { wholeNumber } from "./number-display.mjs";
 import { strikeAutomation } from "./strike-settings.mjs";
 import { saveDc, targetingStat, resolveStatTerms } from "./strike-core.mjs";
 import { itemList } from "./loadout.mjs";
+import { areaLabel, visualSettings } from "./area-core.mjs";
+import { broadcastEffect } from "./vfx.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const escapeHTML = value =>
@@ -64,15 +66,18 @@ export async function promptAbilityStrike(actor, itemId, target) {
   return rollAbilityStrike(actor, item, target, { rollMode: form.rollMode ?? "normal" });
 }
 
-export async function rollAbilityStrike(actor, item, target, { rollMode = "normal" } = {}) {
-  const { useAbility } = await import("./abilities.mjs");
+// One target, or every target caught in an area (`area` is the shape key). An area ability set
+// to attack has no attack roll: each target Dodges against the DC for half damage (Notion Defenses).
+export async function rollAbilityStrike(actor, item, targets, { rollMode = "normal", area = null, visual = null, use = null } = {}) {
+  const list = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
   // Use pays AP (in combat), resource costs and uses, and starts cooldowns and bonuses.
-  const used = await useAbility(actor, item.id);
+  const pay = use ?? (await import("./abilities.mjs")).useAbility;
+  const used = await pay(actor, item.id);
   if (!used) return;
   const plan = abilityStrikePlan(actor, item);
   const messageMode = game.settings.get("core", "messageMode");
   const targeting = item.system.targeting;
-  const hand = {
+  const base = {
     hand: "main",
     abilityId: item.id,
     name: item.name,
@@ -80,15 +85,17 @@ export async function rollAbilityStrike(actor, item, target, { rollMode = "norma
     mod: plan.mod,
     damageType: targeting.damageType ?? ""
   };
-  let section = "",
-    rolls = [];
-  if (plan.check === "attack") {
+  const hands = [];
+  const sections = [];
+  let rolls = [];
+  if (!area && plan.check === "attack") {
+    const target = list[0];
     const roll = await new foundry.dice.Roll(checkMode(rollMode).formula, { mod: plan.mod }).evaluate({
       allowInteractive: messageMode !== "blind"
     });
     const natural = roll.dice[0]?.total;
-    const outcome = attackOutcome({ natural, total: roll.total, evasion: target.evasion ?? null, threshold: 20 });
-    Object.assign(hand, { total: roll.total, natural, ...outcome });
+    const outcome = attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: 20 });
+    hands.push({ ...base, target, total: roll.total, natural, ...outcome });
     const breakdown = describeD20Roll(roll, rollMode);
     const result =
       outcome.hit === null
@@ -98,25 +105,33 @@ export async function rollAbilityStrike(actor, item, target, { rollMode = "norma
             ? `Critical hit on ${escapeHTML(target.name)}!`
             : `Hits ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`
           : `Misses ${escapeHTML(target.name)} (Natural Evasion ${target.evasion}).`;
-    section =
+    sections.push(
       `<p>Attack with ${plan.stat ? `${statLabel(plan.stat)} (${formatModifier(plan.mod)})` : "no modifier"} · ${checkMode(rollMode).label}</p>` +
-      `<p>${result}</p>` +
-      (await roll.render()) +
-      (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "");
+        `<p>${result}</p>` +
+        (await roll.render()) +
+        (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "")
+    );
     rolls = [roll];
   } else {
-    Object.assign(hand, { hit: true, critical: false, total: null, natural: null });
-    section = `<p>${escapeHTML(target.name)} makes ${plan.saveStat ? `a ${statLabel(plan.saveStat)}` : "a"} save against DC ${wholeNumber(plan.dc)}${targeting.onSave === "half" ? " for half damage" : ""}.</p>`;
+    const how =
+      plan.check === "save"
+        ? `makes ${plan.saveStat ? `a ${statLabel(plan.saveStat)}` : "a"} save against DC ${wholeNumber(plan.dc)}${targeting.onSave === "half" ? " for half damage" : ""}`
+        : `can Dodge against DC ${wholeNumber(plan.dc)} for half damage`;
+    for (const target of list) {
+      hands.push({ ...base, target, hit: true, critical: false, total: null, natural: null });
+      sections.push(`<p>${escapeHTML(target.name)} ${how}.</p>`);
+    }
   }
   // Stat names resolve to this character's current modifiers at the moment of use.
   const mods = Object.fromEntries(STATS.map(stat => [stat.key, actor.system.stats[stat.key]?.mod ?? 0]));
   const damage = resolveStatTerms(targeting.damage, mods, plan.mod);
   const content =
     `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(item.name)}</h3>` +
-    `<section class="wb-attack-hand" data-hand="0">${section}</section>` +
+    (area ? `<p class="wb-dialog-meta">${escapeHTML(areaLabel(targeting.area))}${list.length ? "" : " · no one inside"}</p>` : "") +
+    sections.map((section, index) => `<section class="wb-attack-hand" data-hand="${index}">${section}</section>`).join("") +
     (damage ? `<p>Damage: ${escapeHTML(damage)}${targeting.damageType ? ` ${escapeHTML(targeting.damageType)}` : ""}.</p>` : "") +
     "</div>";
-  return createActionMessage(
+  const message = await createActionMessage(
     {
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
       content,
@@ -126,24 +141,46 @@ export async function rollAbilityStrike(actor, item, target, { rollMode = "norma
           attack: {
             actorUuid: actor.uuid,
             attackerName: actor.name,
-            target,
+            target: area ? null : (list[0] ?? null),
             overwhelmingForce: false,
-            automated: strikeAutomation() && !!target?.actorUuid,
+            automated: strikeAutomation() && hands.length > 0 && hands.every(hand => !!hand.target?.actorUuid),
             ability: {
               id: item.id,
               name: item.name,
               check: plan.check,
-              dc: plan.check === "save" ? plan.dc : null,
+              area,
+              dc: plan.check === "save" || area ? plan.dc : null,
               saveStat: plan.saveStat,
               onSave: targeting.onSave === "half" ? "half" : "none",
               damage,
               damageType: targeting.damageType ?? ""
             },
-            hands: [{ ...hand, damageRolled: false }]
+            hands: hands.map(hand => ({ ...hand, damageRolled: false }))
           }
         }
       }
     },
     { messageMode }
   );
+  playAbilityVisual(actor, item, list, visual);
+  return message;
+}
+
+// Single targets get a streak from the caster to the target; areas fill their shape.
+function playAbilityVisual(actor, item, targets, visual) {
+  try {
+    const settings = visual ?? visualSettings(item.system.targeting?.visual);
+    if (!settings || settings.effect === "none" || !globalThis.canvas?.ready) return;
+    const center = target => (target?.tokenUuid ? foundry.utils.fromUuidSync(target.tokenUuid)?.object?.center : null);
+    const caster = actor.isToken ? actor.token?.object : actor.getActiveTokens?.()?.[0];
+    broadcastEffect({
+      effect: settings.effect,
+      color: settings.color,
+      shape: settings.shape ?? null,
+      origin: settings.origin ?? caster?.center ?? null,
+      targets: settings.targets ?? targets.map(center).filter(Boolean)
+    });
+  } catch (error) {
+    console.warn("Worlds Beyond | ability effect failed", error);
+  }
 }

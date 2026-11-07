@@ -76,7 +76,7 @@ const rules = {
       summary: "Gain 2 free movement AP each turn and an extra reaction.",
       paragraphs: [
         "Each turn, you get 2 AP of movement for free. You also gain an additional reaction.",
-        "The extra reaction is included in the calculated reaction maximum. Free movement AP stays separate from normal AP; track its use manually for now."
+        "The extra reaction is included in the calculated reaction maximum. When your token moves on your turn in combat, the free movement AP is spent before your own AP. It can't pay for anything else and doesn't carry over to the next turn."
       ]
     },
     {
@@ -84,7 +84,7 @@ const rules = {
       summary: "Avoid opportunity attacks; sight-based attackers have disadvantage.",
       paragraphs: [
         "You cannot be hit by opportunity attacks. Any attack that relies on sight to hit you has disadvantage, whether melee, ranged or a spell. You have advantage on saves against spells that need sight to target you. You also gain an additional reaction.",
-        "The extra reaction is included in the calculated maximum. Sight conditions, advantage and opportunity-attack immunity are resolved manually."
+        "The extra reaction is included in the calculated maximum. Opportunity attack prompts skip you automatically. Sight conditions and advantage are resolved manually."
       ]
     }
   ],

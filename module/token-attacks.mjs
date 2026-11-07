@@ -1,6 +1,6 @@
 import { promptAttack, targetFromToken } from "./attack-actions.mjs";
 import { itemList, loadoutError } from "./loadout.mjs";
-import { targetedAbilities, promptAbilityStrike } from "./ability-strikes.mjs";
+import { targetedAbilities } from "./ability-strikes.mjs";
 const pending = new Set();
 
 export function clickAttacker(target, event = {}) {
@@ -61,7 +61,10 @@ async function chooseTokenAttack(actor, targetToken) {
     choice = form.choice;
   }
   const [kind, id] = String(choice ?? "").split(":");
-  if (kind === "ability") return promptAbilityStrike(actor, id, target);
+  if (kind === "ability") {
+    const { useTargetedAbility } = await import("./area-targeting.mjs");
+    return useTargetedAbility(actor, actor.items.get(id), { aimToken: targetToken });
+  }
   const weapon = actor.items.get(id);
   if (weapon?.type !== "weapon" || !weapon.system.equipped) throw new Error("That weapon is no longer equipped.");
   if (loadout) throw new Error(`${loadout} Re-equip your intended weapon on the sheet to correct the loadout.`);

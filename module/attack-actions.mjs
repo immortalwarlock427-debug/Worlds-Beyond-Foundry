@@ -73,15 +73,17 @@ function scores(actor) {
   return Object.fromEntries(STATS.map(({ key }) => [key, actor.system.stats[key].effective ?? actor.system.stats[key].value]));
 }
 
-export async function promptAttack(actor, itemId, target = currentTarget()) {
+// `opportunity` ("leave" or "enter") makes it an opportunity attack: one melee weapon,
+// a reaction instead of AP.
+export async function promptAttack(actor, itemId, target = currentTarget(), { opportunity = null } = {}) {
   const weapon = actor.items.get(itemId);
   if (!actor.isOwner || weapon?.type !== "weapon") return;
   requireWeaponReady(actor, weapon);
-  const modes = attackModes(weapon);
+  const modes = opportunity ? ["melee"] : attackModes(weapon);
   const choices = [...new Set(modes.flatMap(mode => attackStatChoices(weapon, mode)))];
   const best = choices.reduce((a, b) => (actor.system.stats[b].mod > actor.system.stats[a].mod ? b : a));
   const reasons = attackDisadvantages({ weapon, scores: scores(actor), heavyArmor: !!actor.system.equipment?.heavyDisadvantage });
-  const partners = dualWieldPartners(weapon, actor.items);
+  const partners = opportunity ? [] : dualWieldPartners(weapon, actor.items);
   const shots = shotsLeft(weapon);
   const content = await foundry.applications.handlebars.renderTemplate(
     `systems/${SYSTEM_ID}/templates/attack-dialog.hbs`,
@@ -90,13 +92,16 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
       target,
       apLeft: availableAp(actor),
       spendAp: inCombat(actor),
+      opportunity: !!opportunity,
+      reactionsLeft: actor.system.reactions?.value ?? 0,
       partners: partners.map(item => ({ id: item.id, name: item.name })),
       shots,
       loading: weapon.system.loading,
       modes: modes.map(value => ({ value, label: MODE_LABELS[value] })),
       stats: choices.map(key => {
         const mod = actor.system.stats[key].mod;
-        return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)}) · ${attackApCost(mod)} AP` };
+        const cost = opportunity ? "" : ` · ${attackApCost(mod)} AP`;
+        return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)})${cost}` };
       }),
       versatile: !!weapon.system.properties.versatile,
       damage: weapon.system.damage,
@@ -108,7 +113,7 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"],
     position: { width: 380 },
-    window: { title: `${weapon.name} attack` },
+    window: { title: `${weapon.name} ${opportunity ? "opportunity attack" : "attack"}` },
     content,
     ok: { label: "Attack" },
     rejectClose: false,
@@ -118,7 +123,12 @@ export async function promptAttack(actor, itemId, target = currentTarget()) {
     }
   });
   if (!form) return;
-  return rollAttack(actor, weapon, { ...form, mode: form.mode ?? modes[0], stat: form.stat ?? best }, target);
+  return rollAttack(
+    actor,
+    weapon,
+    { ...form, mode: form.mode ?? modes[0], stat: form.stat ?? best, ...(opportunity ? { opportunity, spendAp: false, hands: "" } : {}) },
+    target
+  );
 }
 
 // Keep the listed disadvantage reasons and the pre-selected dice in step with the
@@ -171,6 +181,12 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       if (options.spendAp && !(availableAp(actor) >= cost)) {
         throw new Error(`Not enough AP: this attack costs ${cost} and you have ${availableAp(actor)}. Untick Spend AP to roll anyway.`);
       }
+      // Opportunity attacks use a reaction instead of AP (Notion Defenses).
+      const reactionSpent = !!options.opportunity && !!options.spendReaction && inCombat(actor);
+      const reactions = actor.system.reactions?.value ?? 0;
+      if (reactionSpent && !(reactions >= 1)) {
+        throw new Error("No reactions left for an opportunity attack. Untick Spend a reaction to roll anyway.");
+      }
       const rollMode = options.rollMode ?? "normal";
       const sections = [];
       const rolls = [];
@@ -220,6 +236,11 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         rolls.push(roll);
       }
       if (options.spendAp) await payAp(actor, cost, change);
+      if (reactionSpent)
+        await change(
+          () => actor.update({ "system.reactions.value": reactions - 1 }),
+          () => actor.update({ "system.reactions.value": reactions })
+        );
       for (const { item } of hands) {
         const shots = shotsLeft(item);
         if (shots !== null)
@@ -229,6 +250,9 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           );
       }
       const footer = [
+        options.opportunity
+          ? `Opportunity attack${options.opportunity === "enter" ? " (Bulwark)" : ""}${reactionSpent ? " · 1 reaction spent" : ""}.`
+          : "",
         options.spendAp ? `${cost} AP spent.` : "",
         ...hands
           .filter(({ item }) => shotsLeft(item) !== null)
