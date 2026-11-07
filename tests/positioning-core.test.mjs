@@ -50,3 +50,28 @@ test("melee uses reach, thrown and ranged use normal/long range", () => {
   assert.equal(rangeStatus(sword, "melee", null), "ok");
   assert.equal(rangeText(sword, "melee", null), "");
 });
+
+test("a growing form takes the nearest free placement that covers its space, or none", async () => {
+  const { sizePlacement } = await import("../module/positioning-core.mjs");
+  const current = at(5, 5);
+  // Centered growth isn't possible for 1 → 2, so the planned spot is the current corner.
+  const planned = at(5, 5, 2, 2);
+  assert.deepEqual(sizePlacement({ current, planned }), at(5, 5, 2, 2));
+  // Someone stands to the right: grow to the left instead, staying as close as possible.
+  assert.deepEqual(sizePlacement({ current, planned, others: [at(6, 5)] }), at(4, 5, 2, 2));
+  // Neighbours on all four diagonals and sides: no room.
+  const ring = [at(4, 4), at(5, 4), at(6, 4), at(4, 5), at(6, 5), at(4, 6), at(5, 6), at(6, 6)];
+  assert.equal(sizePlacement({ current, planned, others: ring }), null);
+  // One side open is enough.
+  const openUpRight = ring.filter(o => !(o.i === 6 && o.j <= 5) && !(o.i === 5 && o.j === 4));
+  assert.deepEqual(sizePlacement({ current, planned, others: openUpRight }), at(5, 4, 2, 2));
+  // The map edge counts as blocked.
+  const bounds = { i0: 0, j0: 0, i1: 20, j1: 20 };
+  assert.deepEqual(sizePlacement({ current: at(0, 0), planned: at(0, 0, 2, 2), bounds }), at(0, 0, 2, 2));
+  assert.deepEqual(
+    sizePlacement({ current: at(20, 20), planned: at(20, 20, 2, 2), bounds }),
+    at(19, 19, 2, 2)
+  );
+  // 1 → 3 grows evenly around the creature when it can.
+  assert.deepEqual(sizePlacement({ current, planned: at(4, 4, 3, 3) }), at(4, 4, 3, 3));
+});

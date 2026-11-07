@@ -148,7 +148,11 @@ Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (o
 
 ### The attack
 
-**Attack with** opens the normal attack dialog as an opportunity attack: one weapon, melee only, no AP cost shown. **Spend a reaction** is ticked in combat; untick it to roll without spending one. The card says "Opportunity attack · 1 reaction spent", and automatic resolution (Dodge, Block, damage) runs as for any attack. The mover has already finished moving when the attack resolves.
+**Attack with** opens the normal attack dialog as an opportunity attack: one weapon, melee only, no AP cost shown. **Spend a reaction** is ticked in combat; untick it to roll without spending one. The card says "Opportunity attack · 1 reaction spent". The mover has already finished moving when the attack resolves.
+
+**The target can't Dodge, Parry or Block an opportunity attack** (user ruling, 2026-11-07). If it hits, Resistance and Armor Rating still reduce the damage, which is applied without a popup. Normal attacks keep every defense.
+
+Reactions come back at the start of each creature's own turn. A character who spends their only reaction on an opportunity attack has none left to Dodge or Block until their next turn.
 
 ### Opt-outs
 
@@ -160,7 +164,8 @@ Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (o
 
 - Notion doesn't say what provokes an opportunity attack. This uses D&D's rule: leaving an enemy's reach, which includes walking through it.
 - Bulwark attacks count as opportunity attacks, so they use a reaction and Flicker avoids them.
-- The attack happens after the move, not before the mover steps out. A hit doesn't stop the move.
+- The attack happens after the move, not before the mover steps out. A hit doesn't stop the move (confirmed 2026-11-07).
+- No defensive reactions against opportunity attacks (decided 2026-11-07). Notion Defenses still says you can defend against any attack while you have reactions.
 
 ### Code
 
@@ -180,6 +185,7 @@ Right-click a token: the left column of the token HUD has a **handshake** (Ally,
 - Enemies block movement: a move through an enemy's space is stopped with "Orc is an enemy in the way. Go around it."
 - Allies, neutral tokens and downed creatures (0 Health or less) can be moved through, but no token can end its move in another token's space.
 - Applies in and out of combat. Hidden tokens never block, so they aren't revealed. Tokens at a different elevation don't block. The whole move is refused; nothing is spent.
+- **Transforming into a bigger form** (for example Roman's 2×2 Monstrous form) looks for room: the new size is placed over the token's current space, nearest its usual growth spot, without overlapping any token or leaving the map. If no placement fits, the form doesn't activate: "There isn't enough space for Roman to transform here. Move somewhere with more room." Nothing is spent. Ending the form shrinks back inside the big space, so it always fits. Turning off **Tokens block movement** turns this off too.
 
 ### Warning before provoking
 

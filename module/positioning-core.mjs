@@ -52,3 +52,25 @@ export function rangeText(weapon, mode, distance, targetName = "The target") {
   const verdict = status === "out" ? out : status === "long" ? "Past normal range: disadvantage." : "In range.";
   return `${targetName} is ${distance} ft away · ${limit}. ${verdict}`;
 }
+
+// Where a creature that changes size can stand. Every placement of the new footprint
+// that still covers its current one (or stays inside it, when shrinking) is a
+// candidate; the nearest to the planned spot that overlaps no other token and stays
+// inside `bounds` wins. Null when there's no room.
+export function sizePlacement({ current, planned, others = [], bounds = null }) {
+  const span = (start, size, next) => {
+    const a = start,
+      b = start + size - next;
+    return [Math.min(a, b), Math.max(a, b)];
+  };
+  const [iLow, iHigh] = span(current.i, current.w, planned.w);
+  const [jLow, jHigh] = span(current.j, current.h, planned.h);
+  const candidates = [];
+  for (let i = iLow; i <= iHigh; i++)
+    for (let j = jLow; j <= jHigh; j++) candidates.push({ i, j, w: planned.w, h: planned.h });
+  const inside = c =>
+    !bounds || (c.i >= bounds.i0 && c.j >= bounds.j0 && c.i + c.w - 1 <= bounds.i1 && c.j + c.h - 1 <= bounds.j1);
+  const free = c => !others.some(other => spacesBetween(c, other) === 0);
+  const distance = c => Math.abs(c.i - planned.i) + Math.abs(c.j - planned.j);
+  return candidates.filter(c => inside(c) && free(c)).sort((a, b) => distance(a) - distance(b))[0] ?? null;
+}
