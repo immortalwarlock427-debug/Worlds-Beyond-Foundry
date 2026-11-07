@@ -235,3 +235,19 @@ test("an area attack makes Dodge the save: meet the DC for half damage", () => {
   assert.deepEqual(avoidOutcome(strike, "dodge", 15), { success: true, multiplier: 0.5, negated: false, done: true });
   assert.deepEqual(avoidOutcome(strike, "dodge", 14), { success: false, multiplier: 1, negated: false, done: true });
 });
+
+test("opportunity attacks offer no Dodge, Parry or Block; normal attacks keep them", () => {
+  const data = opportunity => ({
+    attackerName: "Orc",
+    opportunity,
+    hands: [{ hand: "main", name: "Axe", hit: true, total: 15, natural: 12 }]
+  });
+  const defender = defenderState({ inCombat: true, reactions: 2, parry: { unlocked: true, armed: true } });
+  const opportunityStrike = strikeInfo(data("leave"), 0);
+  assert.equal(opportunityStrike.opportunity, true);
+  assert.deepEqual(kinds(avoidOptions(opportunityStrike, defender)), ["take"]);
+  assert.equal(canBlock(defender, [], 5, opportunityStrike), false);
+  const normal = strikeInfo(data(null), 0);
+  assert.deepEqual(kinds(avoidOptions(normal, defender)), ["dodge", "parry", "take"]);
+  assert.equal(canBlock(defender, [], 5, normal), true);
+});
