@@ -2,7 +2,7 @@
 
 The sheet already supports weapon attack cards, damage previews, Block/Dodge/Parry, Command, reload, potion AP and turn refills. Command spends 5 own AP and offers 2 + CHA modifier (maximum 5); the recipient's AP total includes the grant. Sidebar actors and unlinked token copies are distinct recipients.
 
-Resistance is recorded on the sheet; damage application remains manual. Movement AP, opportunity prompts, further milestone automation, spell targeting/areas and modules are deferred until the character-sheet audit passes. See [roadmap](ROADMAP.md).
+Attacks, abilities and areas resolve automatically (below), and token movement spends AP in combat. Opportunity prompts, further milestone automation and modules are still to come. See [roadmap](ROADMAP.md).
 
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
@@ -11,6 +11,7 @@ The sections below preserve rules sources and historical implementation checks. 
 
 - [Automatic attack resolution](#resolution)
 - [Ability areas, multiple targets and map effects](#areas)
+- [Movement AP](#movement)
 - [Weapon attacks and damage](#attacks)
 - [Block reaction](#block)
 - [Dodge reaction](#dodge)
@@ -92,6 +93,44 @@ Shapes and hit-testing: `module/area-core.mjs` (tests in `tests/area-core.test.m
 - Lasting areas (a wall of fire that stays), and effects for weapon attacks.
 - Range limits on placed circles aren't enforced; the GM rules on reach.
 - Areas don't check walls or cover.
+
+<a id="movement"></a>
+## Movement AP
+
+Requested by the user on 2026-11-06 (roadmap step 2). Follows Notion Stats → Agility and Armor Types Information.
+
+### Rules applied
+
+- In a started combat, moving a character's token on its own turn spends AP at its **Movement / AP** rate (5 ft + 5 ft per AGL modifier, minimum 5, plus gear and the sheet's corrections).
+- AP is spent in whole points. Feet bought but not walked carry over for the rest of that turn: at 15 ft/AP, moving 10 ft costs 1 AP and the next 5 ft is free. Unused feet are lost when the turn ends.
+- Heavy armor makes each 5 ft square cost 10 ft of movement. Difficult terrain is a Foundry Region with the core **Modify Movement Cost** behavior set to 2×, so a square there costs 10 ft, or 20 ft in heavy armor.
+- **Surge** (AGL 21, from gear too) gives 2 AP each turn that only pay for movement, spent before the character's own AP. Command AP is spent next, then own AP, as for every other action.
+- A move that costs more AP than the character has is stopped with a message saying what it needs. Nothing is spent.
+- The ruler shows the cost while dragging, for example `30 ft · 1 AP + 1 Surge`, or `60 ft · 12 AP (8 left)` when it can't be afforded.
+- Undoing a move (Ctrl+Z or Foundry's movement undo) refunds what that move spent, including Surge and Command AP.
+- Moves off the character's turn are free and don't count: being shoved, the GM repositioning a token, or moving into a Parry.
+
+### Opt-outs
+
+- World settings, all on by default: **Movement costs AP**, **Heavy armor slows movement** and **Surge gives free movement AP**.
+- The sheet's **Movement / AP** override sets the rate; **Square cost (ft)** under Adjust values replaces the automatic 5 or 10 ft per square for one character.
+- The GM's **Displace** movement action (token HUD) is free, for a one-off move that shouldn't cost anything.
+
+### Rule choices to confirm
+
+- Feet left over after paying AP carry over within the turn. Without this, two 5 ft steps at 15 ft/AP would cost 2 AP while one 10 ft step costs 1.
+- Blink (teleport) movement is charged like walking. A teleport ability pays its own AP through the ability instead, so its move can use Displace.
+
+### Code
+
+`module/movement-core.mjs` holds the rules (tested in `tests/movement-core.test.mjs`). `module/movement.mjs` registers the settings, charges AP before a token moves and refunds undone moves (`TokenDocument#_preUpdateMovement` / `_onUpdateMovement`), applies the square cost to Foundry's movement measurement and adds the AP cost to the ruler label. Each turn's payments are stored on the actor as `flags.worlds-beyond.movement`, keyed by combat, round and turn; a new turn starts empty.
+
+It finds the current combatant by searching the combats, not through `TokenDocument#combatant`: that reads the combat tracker, which is briefly empty while it re-renders after an actor change (seen live on 14.365, where Foundry then also skipped recording the move).
+
+### Not yet
+
+- Opportunity prompts when a creature leaves an armed character's reach (the rest of roadmap step 2).
+- Moves while it isn't anyone's turn in the combat are free.
 
 <a id="attacks"></a>
 ## Weapon attacks and damage

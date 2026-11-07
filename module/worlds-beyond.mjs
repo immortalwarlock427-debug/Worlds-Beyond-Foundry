@@ -51,6 +51,7 @@ import { decorateAttackDefenses } from "./attack-defense.mjs";
 import { registerEquipmentItem } from "./equipment-item.mjs";
 import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
+import { registerMovement, movementSetting } from "./movement.mjs";
 import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
@@ -181,6 +182,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         armorRating: override(),
         movement: override(),
         armorAgilityPenalty: override(),
+        squareCost: number(null, { nullable: true, min: 0 }),
         inventorySlots: override()
       })
     };
@@ -199,7 +201,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       items: this.parent?.items ?? [],
       agility: this.stats.agl.value,
       strength: this.stats.str.value,
-      penaltyOverride: this.overrides.armorAgilityPenalty
+      penaltyOverride: this.overrides.armorAgilityPenalty,
+      squareCostOverride: this.overrides.squareCost,
+      heavySquares: movementSetting("heavyArmorSquares")
     });
     for (const { key } of STATS) {
       const stat = this.stats[key];
@@ -713,6 +717,7 @@ Hooks.once("init", () => {
   registerStrikes();
   registerVfx();
   registerMovementRuler();
+  registerMovement();
   registerTokenConfig();
   registerCombatPortraits();
   CONFIG.Actor.documentClass = CharacterActor;
