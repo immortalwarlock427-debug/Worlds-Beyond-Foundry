@@ -52,6 +52,7 @@ import { registerEquipmentItem } from "./equipment-item.mjs";
 import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
 import { registerMovement, movementSetting } from "./movement.mjs";
+import { registerOpportunityAttacks } from "./opportunity.mjs";
 import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
@@ -718,6 +719,7 @@ Hooks.once("init", () => {
   registerVfx();
   registerMovementRuler();
   registerMovement();
+  registerOpportunityAttacks();
   registerTokenConfig();
   registerCombatPortraits();
   CONFIG.Actor.documentClass = CharacterActor;

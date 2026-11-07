@@ -16,7 +16,12 @@
   {{#if canRange}}<label class="wb-check-toggle"><input type="checkbox" name="longRange"> Past normal range (disadvantage)</label>{{/if}}
   {{#if mount}}<label class="wb-check-toggle"><input type="checkbox" name="mounted"> Mounted</label>
   <label><span>Feet moved in a straight line this turn</span><input type="number" name="mountedFeet" value="0" min="0" step="5"></label>{{/if}}
-  <label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>
+  {{#if opportunity}}<label class="wb-check-toggle"><input
+    type="checkbox"
+    name="spendReaction"
+    {{#if spendAp}}checked{{/if}}
+  > Opportunity attack: spend a reaction, no AP ({{reactionsLeft}} left)</label>
+  {{else}}<label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>{{/if}}
   {{#if target}}<p class="wb-dialog-meta">{{target.name}} · Evasion {{target.evasion}}</p>{{else}}<p class="wb-dialog-meta">No target · compare manually</p>{{/if}}
   <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
