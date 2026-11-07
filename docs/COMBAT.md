@@ -10,6 +10,7 @@ The sections below preserve rules sources and historical implementation checks. 
 ## Contents
 
 - [Automatic attack resolution](#resolution)
+- [Ability areas, multiple targets and map effects](#areas)
 - [Weapon attacks and damage](#attacks)
 - [Block reaction](#block)
 - [Dodge reaction](#dodge)
@@ -57,6 +58,40 @@ The ability editor's **Targeting** section sets: attack roll vs Natural Evasion 
 ### Code
 
 `module/strike-core.mjs` holds the rules (tested in `tests/strike-core.test.mjs`). `module/strike.mjs` runs exchanges on the active GM's client, stores progress on the attack card's `flags.worlds-beyond.strike`, and talks to the defender's client over the system socket (tested in `tests/strike.test.mjs`). `module/ability-strikes.mjs` uses a targeted ability; `module/strike-settings.mjs` registers the two settings.
+
+<a id="areas"></a>
+## Ability areas, multiple targets and map effects
+
+Requested by the user on 2026-11-06 (roadmap step 4).
+
+### Using an area ability
+
+Set **Area** in the ability's Targeting section: Single target, Circle (placed), Around you, Cone from you, or Line from you, with its size in feet (cone angle and line width where they apply; blanks use 10 ft circles, a 15 ft 60° cone and a 30 ft × 5 ft line). Press **Use** on the sheet or a favorite, or Alt-click a token and choose the ability. The shape follows the mouse (circles snap to the grid; cones and lines aim from your token); tokens inside are ringed. Click to place it, right-click or Esc to cancel. A dialog lists everyone caught, all ticked; untick anyone it shouldn't hit, then **Use** pays the costs once and posts one card with a line per target.
+
+A token counts when its center, or a point a quarter of the way in from any corner, is inside, so clipping a corner doesn't count. You're left out of your own area unless **Can include you** is ticked.
+
+### How targets defend
+
+- **Area attack** (Targeting set to attack roll with an area): no attack roll. Each target may **Dodge** against the DC, using a reaction, for half damage (Notion Defenses: against an area attack your Dodge is the save).
+- **Area save**: each target makes the ability's save (or one of their choice) against the DC, with no or half damage on a success.
+- Every target is asked at the same time. Damage is rolled once for the whole area; each target then applies its own Resistance, Armor Rating and Block. Only the first result card carries the dice.
+- Single-target abilities are unchanged: Alt-click a token, or target one token and press Use.
+
+Placement listens for the map's own pointer events in the window capture phase: on 14.365 Foundry claims mouse-down on the map before PixiJS delivers it to canvas objects, so a PixiJS click catcher never saw the click (verified live 2026-11-06, with placement, right-click cancel and token capture rechecked afterwards). Changing scenes cancels a placement.
+
+### Map effects
+
+**Map effect** offers None, Lightning, Fire, Ice, Arcane, Holy, Shadow, Poison and Force, each with a default color and an optional hex color override. Single targets get a streak from the caster to the target and an impact; areas fill their shape. Effects are drawn with the canvas itself (no modules or image assets), play for every connected client viewing that scene, and leave nothing behind. `module/draw.mjs` draws with whichever PixiJS API is present; the user's 14.365 build runs PixiJS 7.4.3 (checked live), and the v8 path is kept in case a later build switches.
+
+### Code
+
+Shapes and hit-testing: `module/area-core.mjs` (tests in `tests/area-core.test.mjs`). Placement and target confirmation: `module/area-targeting.mjs`. Effects: `module/vfx.mjs` (smoke-tested against fake PixiJS v7 and v8 in `tests/vfx.test.mjs`). Multi-target cards and area attacks: `module/ability-strikes.mjs` and `module/strike.mjs`.
+
+### Not yet
+
+- Lasting areas (a wall of fire that stays), and effects for weapon attacks.
+- Range limits on placed circles aren't enforced; the GM rules on reach.
+- Areas don't check walls or cover.
 
 <a id="attacks"></a>
 ## Weapon attacks and damage

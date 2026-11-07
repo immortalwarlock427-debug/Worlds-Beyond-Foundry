@@ -98,7 +98,18 @@ function world({ autoApply = true, defenderStats = {}, attacker = {}, combat = t
     items: new Map([[weapon.id, weapon]]),
     ...attacker
   };
-  const actors = { "Actor.def": defender, "Actor.orc": attackerActor };
+  // A second target owned only by the GM (an enemy), for area abilities.
+  const enemy = {
+    ...defender,
+    id: "gob",
+    uuid: "Actor.gob",
+    name: "Goblin",
+    flags: {},
+    system: structuredClone(defender.system),
+    testUserPermission: user => user.isGM
+  };
+  enemy.system.core.armorRating = 0;
+  const actors = { "Actor.def": defender, "Actor.orc": attackerActor, "Actor.gob": enemy };
   const settings = { autoResolveAttacks: true, autoApplyDamage: autoApply };
   globalThis.game = {
     user: gm,
@@ -152,6 +163,7 @@ function world({ autoApply = true, defenderStats = {}, attacker = {}, combat = t
     makeMessage(id, { author, rolls: [{ total }], flags: { "worlds-beyond": flags } });
   return {
     calls,
+    enemy,
     defender,
     attackerActor,
     attack,
@@ -350,4 +362,47 @@ test("a Wonder reroll and a Defy Fate result count as the defense", async () => 
   await handleStrikeResult({ messageId: "attack", index: 0, token: prompt(save).token, choice: "save", rollMessageId: "fate" }, "p1");
   assert.equal(state(save).exchanges[0].outcome, "resisted");
   assert.match(v.calls.posts.at(-1).content, /Save: success with Defy Fate/);
+});
+
+test("an area ability asks every target at once, rolls damage once and halves a successful Dodge", async () => {
+  const w = world();
+  w.setDamage([20]);
+  const fireball = {
+    name: "Fireball",
+    check: "attack",
+    area: "circle",
+    dc: 15,
+    saveStat: "",
+    onSave: "none",
+    damage: "6d6",
+    damageType: "Fire"
+  };
+  const target = (name, actorUuid) => ({ name, actorUuid });
+  const message = w.attack(
+    [
+      { hand: "main", abilityId: "fb", name: "Fireball", mod: 3, hit: true, target: target("Bram", "Actor.def") },
+      { hand: "main", abilityId: "fb", name: "Fireball", mod: 3, hit: true, target: target("Goblin", "Actor.gob") }
+    ],
+    { ability: fireball, target: null }
+  );
+  await beginStrike(message);
+  const [bram, goblin] = state(message).exchanges;
+  // The player is sent a popup; the GM answers for the Goblin locally.
+  assert.equal(bram.prompt.userId, "p1");
+  assert.equal(goblin.prompt.userId, "gm");
+  assert.equal(w.calls.dialogs.length, 1);
+  w.defenseRoll("d1", 15, { check: { defense: { type: "dodge" }, actorUuid: "Actor.def" } });
+  await handleStrikeResult({ messageId: "attack", index: 0, token: bram.prompt.token, choice: "dodge", rollMessageId: "d1" }, "p1");
+  // Bram met the DC: 20 halved to 10, minus Armor Rating 6, then a Block step.
+  assert.equal(state(message).exchanges[0].step, "block");
+  await handleStrikeResult({ messageId: "attack", index: 0, token: state(message).exchanges[0].prompt.token, choice: "take" }, "p1");
+  assert.equal(w.defender.system.health.damage, 4);
+  await handleStrikeResult({ messageId: "attack", index: 1, token: goblin.prompt.token, choice: "take" }, "gm");
+  await handleStrikeResult({ messageId: "attack", index: 1, token: state(message).exchanges[1].prompt.token, choice: "take" }, "gm");
+  // Same 20 for the Goblin: one roll for the whole area.
+  assert.equal(w.enemy.system.health.damage, 20);
+  const results = w.calls.posts.filter(post => post.flags?.["worlds-beyond"]?.strikeResult);
+  assert.equal(results.length, 2);
+  assert.equal(results[0].rolls.length, 1);
+  assert.equal(results[1].rolls.length, 0);
 });

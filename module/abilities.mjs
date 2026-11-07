@@ -24,6 +24,7 @@ import { USES_RECOVERY } from "./recovery-core.mjs";
 import { formLoadoutSchema, formLoadoutContext, copyFormEquipment, syncFormLoadout } from "./form-loadouts.mjs";
 import { formLoadoutFormUpdates } from "./form-loadout-core.mjs";
 import { TARGETING_MODES, TARGETING_STATS, SAVE_STATS, SAVE_SUCCESS, saveDc, targetingStat } from "./strike-core.mjs";
+import { AREA_SHAPES, VISUAL_EFFECTS, VISUAL_COLORS, areaSettings, areaLabel } from "./area-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 
@@ -76,7 +77,18 @@ export class AbilityData extends foundry.abstract.TypeDataModel {
         dc: number(null, { integer: true }),
         onSave: text("none", { choices: SAVE_SUCCESS, blank: false }),
         damage: text(),
-        damageType: text()
+        damageType: text(),
+        area: new SchemaField({
+          shape: text("single", { choices: AREA_SHAPES, blank: false }),
+          size: number(null, { min: 0 }),
+          width: number(null, { min: 0 }),
+          angle: number(null, { min: 1, max: 360 }),
+          includeSelf: new foundry.data.fields.BooleanField({ initial: false })
+        }),
+        visual: new SchemaField({
+          effect: text("none", { choices: VISUAL_EFFECTS, blank: false }),
+          color: text()
+        })
       }),
       cooldown: new SchemaField({
         rounds: number(null, { min: 0 }),
@@ -206,7 +218,17 @@ function targetingContext(system, character, choices) {
     saveStats: choices(SAVE_STATS, targeting.saveStat ?? ""),
     onSave: choices(SAVE_SUCCESS, targeting.onSave ?? "none"),
     dcPreview: modifier == null ? null : saveDc(modifier, targeting.dc),
-    dcDefault: modifier == null ? "12 + modifier" : String(saveDc(modifier))
+    dcDefault: modifier == null ? "12 + modifier" : String(saveDc(modifier)),
+    areaShapes: choices(AREA_SHAPES, targeting.area?.shape ?? "single"),
+    area: { ...areaSettings(targeting.area), label: areaLabel(targeting.area) },
+    areaAttack: targeting.mode === "attack" && (targeting.area?.shape ?? "single") !== "single",
+    needsDc: targeting.mode === "save" || (targeting.mode === "attack" && (targeting.area?.shape ?? "single") !== "single"),
+    showSize: (targeting.area?.shape ?? "single") !== "single",
+    showAngle: targeting.area?.shape === "cone",
+    showWidth: targeting.area?.shape === "line",
+    visualEffects: choices(VISUAL_EFFECTS, targeting.visual?.effect ?? "none"),
+    visualDefault: VISUAL_COLORS[targeting.visual?.effect] ?? "",
+    hasVisual: (targeting.visual?.effect ?? "none") !== "none"
   };
 }
 

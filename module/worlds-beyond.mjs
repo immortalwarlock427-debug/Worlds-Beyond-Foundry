@@ -55,6 +55,8 @@ import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
+import { registerVfx } from "./vfx.mjs";
+import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
 import { promptStatCheck, longRest, decorateRollMessage, refreshWonderControls } from "./roll-actions.mjs";
 import { CHARACTER_DETAILS, prepareCharacterSheetContext } from "./character-context.mjs";
@@ -600,6 +602,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const item = this.actor.items.get(target.closest("[data-ability-id]")?.dataset.abilityId);
       if (item?.type !== "ability") throw new Error("That ability no longer exists. Reopen the sheet.");
       if (operation === "edit") return item.sheet.render({ force: true });
+      if (operation === "use" && isTargetedAbility(item)) return await useTargetedAbility(this.actor, item);
       if (["use", "end"].includes(operation)) return await useAbility(this.actor, item.id, { end: operation === "end" });
       if (
         operation === "delete" &&
@@ -708,6 +711,7 @@ Hooks.once("init", () => {
   registerEquipmentItem();
   registerTokenAttacks();
   registerStrikes();
+  registerVfx();
   registerMovementRuler();
   registerTokenConfig();
   registerCombatPortraits();

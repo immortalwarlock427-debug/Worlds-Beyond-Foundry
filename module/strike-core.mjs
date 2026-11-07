@@ -36,7 +36,8 @@ export function strikeInfo(data, index = 0) {
   const hand = Array.isArray(data?.hands) ? data.hands[index] : null;
   if (!hand) return null;
   const ability = data.ability ?? null;
-  const check = ability?.check === "save" ? "save" : "attack";
+  // An area ability set to attack is an area attack: Notion makes Dodge the save, for half damage.
+  const check = ability?.check === "save" ? "save" : ability?.area ? "area" : "attack";
   return {
     check,
     name: hand.name ?? ability?.name ?? "Attack",
@@ -45,7 +46,7 @@ export function strikeInfo(data, index = 0) {
     natural20: hand.natural === 20,
     hit: hand.hit,
     critical: hand.critical === true,
-    dc: check === "save" ? numberOr(ability.dc, 12) : null,
+    dc: check === "attack" ? null : numberOr(ability.dc, 12),
     saveStat: check === "save" ? ability.saveStat || "" : "",
     onSave: ability?.onSave === "half" ? "half" : "none",
     overwhelming: !ability && !!data.overwhelmingForce,
@@ -68,7 +69,10 @@ export function defenderState({ inCombat = false, reactions = 0, parry = {}, res
 // Choices at the first popup. A save costs no reaction. "take" is always offered.
 export function avoidOptions(strike, defender, used = []) {
   const options = [];
-  if (strike.check === "save") {
+  if (strike.check === "area") {
+    if (defender.reactionsLeft >= 1 && !used.includes("dodge"))
+      options.push({ kind: "dodge", label: `Dodge (DC ${strike.dc}, half damage)` });
+  } else if (strike.check === "save") {
     options.push({
       kind: "save",
       stat: strike.saveStat,
@@ -96,6 +100,10 @@ export function avoidOutcome(strike, kind, total, forced = false) {
   if (kind === "take") return { success: false, multiplier: 1, negated: false, done: true };
   const value = forced ? Infinity : Number(total);
   if (!Number.isFinite(value) && !forced) throw new Error("That defense roll has no total.");
+  if (kind === "dodge" && strike.check === "area") {
+    const success = value >= strike.dc;
+    return { success, multiplier: success ? 0.5 : 1, negated: false, done: true };
+  }
   if (kind === "dodge") {
     if (strike.natural20) throw new Error("A natural 20 can't be dodged.");
     const success = value > strike.total;
