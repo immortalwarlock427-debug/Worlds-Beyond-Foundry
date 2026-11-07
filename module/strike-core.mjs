@@ -52,7 +52,8 @@ export function strikeInfo(data, index = 0) {
     overwhelming: !ability && !!data.overwhelmingForce,
     damageType: hand.damageType ?? ability?.damageType ?? "",
     offhand: hand.hand === "off",
-    weapon: !ability
+    weapon: !ability,
+    opportunity: !!data.opportunity
   };
 }
 
@@ -67,9 +68,12 @@ export function defenderState({ inCombat = false, reactions = 0, parry = {}, res
 }
 
 // Choices at the first popup. A save costs no reaction. "take" is always offered.
+// Opportunity attacks can't be dodged, parried or blocked (user ruling, 2026-11-07).
 export function avoidOptions(strike, defender, used = []) {
   const options = [];
-  if (strike.check === "area") {
+  if (strike.opportunity) {
+    // No defensive reaction: only the "take" choice below.
+  } else if (strike.check === "area") {
     if (defender.reactionsLeft >= 1 && !used.includes("dodge"))
       options.push({ kind: "dodge", label: `Dodge (DC ${strike.dc}, half damage)` });
   } else if (strike.check === "save") {
@@ -90,8 +94,8 @@ export function avoidOptions(strike, defender, used = []) {
 }
 
 // Block comes after Armor Rating, once per attack, and needs a reaction.
-export function canBlock(defender, used = [], afterArmor = 0) {
-  return defender.reactionsLeft >= 1 && !used.includes("block") && afterArmor > 0;
+export function canBlock(defender, used = [], afterArmor = 0, strike = null) {
+  return !strike?.opportunity && defender.reactionsLeft >= 1 && !used.includes("block") && afterArmor > 0;
 }
 
 // Outcome of the avoid step. Dodge must beat the attack; a save meets or beats the DC.

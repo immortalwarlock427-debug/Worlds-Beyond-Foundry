@@ -310,6 +310,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
                 attackerName: actor.name,
                 target,
                 overwhelmingForce: scores(actor).str >= 28,
+                opportunity: options.opportunity || null,
                 automated: strikeAutomation() && !!target?.actorUuid,
                 mounted: !!options.mounted,
                 mountedFeet: Number(options.mountedFeet) || 0,

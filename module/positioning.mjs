@@ -1,7 +1,7 @@
 // Positioning on the map: the token HUD's Ally/Enemy toggle, token collision and
 // attack distances. Rules live in positioning-core.mjs. Opt-outs: the world settings
 // below and the GM's Displace movement, which ignores collision.
-import { movementBlock, blockMessage } from "./positioning-core.mjs";
+import { movementBlock, blockMessage, sizePlacement } from "./positioning-core.mjs";
 import { opposed, spacesBetween } from "./opportunity-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -125,4 +125,35 @@ export function attackDistance(actor, target) {
     actor.token?.parent === scene ? actor.token : actor.getActiveTokens?.(false, true).find(token => token.parent === scene);
   if (!own) return null;
   return spacesBetween(footprint(scene, own), footprint(scene, targetToken)) * (scene.grid.distance || 5);
+}
+
+/* -------------------------------------------- */
+/*  Room to change size                          */
+/* -------------------------------------------- */
+
+// Where a placed token can stand after a size change (a form transformation), as
+// { x, y }; false when no placement fits; null when nothing needs checking.
+// `data` is the token's stored source; `updates` are the planned token changes.
+export function sizeChangePlacement(token, data, updates) {
+  const scene = token?.parent;
+  if (!positioningSetting("tokenCollision") || typeof scene?.grid?.getOffset !== "function" || scene.grid.isHexagonal) return null;
+  const width = updates.width ?? data.width,
+    height = updates.height ?? data.height;
+  if (width <= data.width && height <= data.height) return null; // Shrinking always fits inside the old space.
+  const current = footprint(scene, data);
+  const planned = footprint(scene, { x: updates.x ?? data.x, y: updates.y ?? data.y, width, height });
+  const others = scene.tokens
+    .filter(other => other.id !== token.id && !other.hidden && (other.elevation ?? 0) === (data.elevation ?? 0))
+    .map(other => footprint(scene, other));
+  const rect = scene.dimensions?.sceneRect;
+  let bounds = null;
+  if (rect) {
+    const start = scene.grid.getOffset({ x: rect.x + 1, y: rect.y + 1 });
+    const end = scene.grid.getOffset({ x: rect.x + rect.width - 1, y: rect.y + rect.height - 1 });
+    bounds = { i0: start.j, j0: start.i, i1: end.j, j1: end.i };
+  }
+  const spot = sizePlacement({ current, planned, others, bounds });
+  if (!spot) return false;
+  const point = scene.grid.getTopLeftPoint({ i: spot.j, j: spot.i });
+  return { x: point.x, y: point.y };
 }

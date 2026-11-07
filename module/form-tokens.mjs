@@ -1,4 +1,5 @@
 import { hasTokenLoadout, tokenAppearance, tokenTransform } from "./form-token-core.mjs";
+import { sizeChangePlacement } from "./positioning.mjs";
 const operation = () => ({ worldsBeyondFormLoadout: true });
 const keyFor = token => `${token.parent?.id ?? "scene"}_${token.id}`;
 // v14 interpolates a token's prepared width, scale and texture while it animates.
@@ -32,6 +33,21 @@ export async function syncFormTokens(actor, form, change, previous) {
       saved = { ...previous.targets.prototype, offsetX: 0, offsetY: 0 };
     if (!active && !saved) continue;
     const plan = tokenTransform(data, config, saved, target.placed ? (token.parent?.grid?.size ?? 0) : 0, !active);
+    // A bigger form needs room: shift it to the nearest free placement that still
+    // covers the token's current space, or refuse the transformation.
+    if (active && target.placed) {
+      const spot = sizeChangePlacement(token, data, plan.updates);
+      if (spot === false)
+        throw new Error(`There isn't enough space for ${token.name ?? actor.name} to transform here. Move somewhere with more room.`);
+      if (spot) {
+        plan.record.offsetX += spot.x - (plan.updates.x ?? data.x);
+        plan.record.offsetY += spot.y - (plan.updates.y ?? data.y);
+        if (spot.x !== data.x) plan.updates.x = spot.x;
+        else delete plan.updates.x;
+        if (spot.y !== data.y) plan.updates.y = spot.y;
+        else delete plan.updates.y;
+      }
+    }
     if (active) records[target.key] = plan.record;
     if (!Object.keys(plan.updates).length) continue;
     const restore = Object.fromEntries(Object.keys(plan.updates).map(path => [path, foundry.utils.getProperty(data, path)]));

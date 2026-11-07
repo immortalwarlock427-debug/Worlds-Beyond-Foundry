@@ -137,7 +137,7 @@ async function stepExchange(message, index) {
   const strike = strikeInfo(data, index);
   const situation = defenderSituation(defender);
   if (ex.step === "avoid" && avoidOptions(strike, situation, ex.used).length === 1) return takeDamage(message, index, 1, false);
-  if (ex.step === "block" && !canBlock(situation, ex.used, ex.afterArmor)) return finish(message, index, 0);
+  if (ex.step === "block" && !canBlock(situation, ex.used, ex.afterArmor, strike)) return finish(message, index, 0);
   const user = answeringUser(defender);
   const next = foundry.utils.deepClone(state);
   next.exchanges[index].prompt = { token: foundry.utils.randomID(), userId: user.id, step: ex.step };
@@ -446,7 +446,7 @@ export async function showDefensePrompt(messageId, index, snapshot = null) {
     const block = ex.step === "block";
     const options = block
       ? [
-          ...(canBlock(situation, ex.used, ex.afterArmor)
+          ...(canBlock(situation, ex.used, ex.afterArmor, strike)
             ? [{ kind: "block", label: `Block (${defender.system.block?.formula ?? "1d4"} + STR)` }]
             : []),
           { kind: "take", label: `Take ${wholeNumber(ex.afterArmor)}` }

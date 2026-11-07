@@ -157,7 +157,8 @@ export function registerMovement() {
         this.#undoneFrom = movement.history.recorded.waypoints.map(waypoint => waypoint.movementId);
         return;
       }
-      if (operation.isPaste) return;
+      // Form transformations find their own room (form-tokens.mjs) and cost no movement.
+      if (operation.isPaste || operation.worldsBeyondFormLoadout) return;
       try {
         const blocked = collisionBlock(this, [...movement.passed.waypoints, ...movement.pending.waypoints]);
         if (blocked) {
