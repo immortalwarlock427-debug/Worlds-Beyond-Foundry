@@ -83,7 +83,7 @@ Not yet checked in a running world:
 - [ ] Handaxe: Thrown option rolls with DEX. Longbow: long-range checkbox adds a reason.
 - [ ] Untick Spend AP with 0 AP: still rolls. Ticked: refused with a message.
 - [ ] Player client: only the owner sees the damage buttons.
-- [ ] Equip a Dagger and a Scimitar. Attack with the Dagger, Hands → Both: two to-hit rolls, one AP cost, two damage buttons. Off-hand damage is half with no modifier.
+- [ ] Equip a Dagger and a Scimitar. Attack with the Dagger, Hands → Both: two to-hit rolls, one AP cost, two damage buttons. Off-hand damage is full dice damage with no modifier.
 - [ ] Revolver: attack 6 times, the row shows shots falling to 0 and the 7th attack is refused. Reload in combat costs 5 − DEX mod AP, outside combat nothing.
 - [ ] Start a combat with the character in it: Spend AP starts ticked. Outside combat it starts unticked.
 - [ ] DEX 6 (−3): attacks cost 13 AP. Very low modifiers stop at 15.
