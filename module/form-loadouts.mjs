@@ -11,11 +11,13 @@ const SCOPE = "worlds-beyond",
 const operation = () => ({ worldsBeyondFormLoadout: true });
 // An unlinked token's actor merges its own flags over the sidebar actor's, so it
 // inherits the sidebar receipt and can never drop keys from it. Token actors read
-// and verify only the receipt stored on their own token.
-const receipt = actor =>
-  actor?.isToken && actor.token?.delta
-    ? foundry.utils.getProperty(actor.token.delta._source ?? actor.token.delta, `flags.${SCOPE}.${KEY}`)
-    : actor?.getFlag?.(SCOPE, KEY);
+// and verify only the receipt stored on their own token. Read the token's source,
+// never token.delta: that getter builds the delta lazily, and building it prepares
+// this same synthetic actor, which would call back here forever (stack overflow).
+const receipt = actor => {
+  const own = actor?.isToken ? actor.token?._source?.delta : null;
+  return own ? foundry.utils.getProperty(own, `flags.${SCOPE}.${KEY}`) : actor?.getFlag?.(SCOPE, KEY);
+};
 
 export const formResourceState = actor => receipt(actor)?.formResources;
 
