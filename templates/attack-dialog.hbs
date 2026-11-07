@@ -22,6 +22,7 @@
     {{#if spendAp}}checked{{/if}}
   > Opportunity attack: spend a reaction, no AP ({{reactionsLeft}} left)</label>
   {{else}}<label class="wb-check-toggle"><input type="checkbox" name="spendAp" {{#if spendAp}}checked{{/if}}> Spend AP ({{apLeft}} left)</label>{{/if}}
+  <p class="wb-attack-range" hidden></p>
   {{#if target}}<p class="wb-dialog-meta">{{target.name}} · Evasion {{target.evasion}}</p>{{else}}<p class="wb-dialog-meta">No target · compare manually</p>{{/if}}
   <fieldset class="wb-dice-choices">
     <legend>Dice</legend>

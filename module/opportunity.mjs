@@ -7,6 +7,7 @@ import { opposed, threateningWeapons, opportunityWeapons, immuneToOpportunity } 
 import { answeringUser } from "./strike.mjs";
 import { promptAttack, targetFromToken } from "./attack-actions.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { footprint, positioningSetting } from "./positioning.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const SOCKET = `system.${SYSTEM_ID}`;
@@ -50,31 +51,16 @@ export function registerOpportunityAttacks() {
   });
 }
 
-// A token's footprint in grid spaces at a position.
-function footprint(scene, position) {
-  const grid = scene.grid;
-  const size = grid.size || 100;
-  const offset = grid.getOffset({ x: position.x + 1, y: position.y + 1 });
-  return {
-    i: offset.j,
-    j: offset.i,
-    w: Math.max(1, Math.round(position.width ?? 1)),
-    h: Math.max(1, Math.round(position.height ?? 1)),
-    size
-  };
-}
-
-function checkMove(token, movement, operation) {
+// Every enemy combatant who could make an opportunity attack against this path, as
+// { attacker, actor, offer }. `path` lists positions, starting where the mover began.
+export function provokers(token, path, { visibleOnly = false } = {}) {
   const scene = token.parent;
-  if (!scene || operation?.isUndo || movement.method === "undo" || token.hidden) return;
-  if (scene.grid.isHexagonal) return; // Reach is counted in square spaces.
-  const waypoints = movement.passed?.waypoints ?? [];
-  if (!waypoints.length) return;
-  const actions = CONFIG.Token.movement?.actions ?? {};
-  if (waypoints.some(waypoint => actions[waypoint.action]?.teleport)) return;
-  if (token.actor?.type === "character" && immuneToOpportunity(token.actor.system.stats?.agl?.effective)) return;
-  const path = [movement.origin, ...waypoints].map(position => footprint(scene, position));
+  if (!scene || scene.grid.isHexagonal || token.hidden || path.length < 2) return [];
+  if (token.actor?.type === "character" && immuneToOpportunity(token.actor.system.stats?.agl?.effective)) return [];
+  const sized = position => ({ ...position, width: position.width ?? token.width, height: position.height ?? token.height });
+  const footprints = path.map(position => footprint(scene, sized(position)));
   const gridFeet = scene.grid.distance || 5;
+  const found = [];
   for (const combat of game.combats ?? []) {
     if (!combat.started) continue;
     for (const combatant of combat.combatants) {
@@ -82,25 +68,65 @@ function checkMove(token, movement, operation) {
       const attacker = combatant.token;
       const actor = combatant.actor;
       if (!attacker || attacker.id === token.id || attacker.hidden || combatant.isDefeated) continue;
+      if (visibleOnly && attacker.object && !attacker.object.visible) continue; // Don't warn about unseen enemies.
       if (actor?.type !== "character" || !(actor.system.reactions?.value >= 1)) continue;
       if (!opposed(attacker.disposition, token.disposition)) continue;
       const weapons = threateningWeapons(actor.items);
-      const offer = opportunityWeapons({ attacker: footprint(scene, attacker), path, weapons, gridFeet });
-      if (!offer) continue;
-      const user = answeringUser(actor);
-      const payload = {
-        type: "opportunityPrompt",
-        userId: user.id,
-        attackerTokenUuid: attacker.uuid,
-        moverTokenUuid: token.uuid,
-        kind: offer.kind,
-        weaponIds: offer.weapons.map(weapon => weapon.id),
-        movementId: movement.id
-      };
-      if (user.isSelf) showOpportunityPrompt(payload).catch(error => ui.notifications.error(error.message));
-      else game.socket.emit(SOCKET, payload);
+      const offer = opportunityWeapons({ attacker: footprint(scene, attacker), path: footprints, weapons, gridFeet });
+      if (offer && !found.some(entry => entry.attacker.id === attacker.id)) found.push({ attacker, actor, offer });
     }
   }
+  return found;
+}
+
+const teleporting = waypoints => waypoints.some(waypoint => CONFIG.Token.movement?.actions?.[waypoint.action]?.teleport);
+
+function checkMove(token, movement, operation) {
+  if (operation?.isUndo || movement.method === "undo") return;
+  const waypoints = movement.passed?.waypoints ?? [];
+  if (!waypoints.length || teleporting(waypoints)) return;
+  for (const { attacker, actor, offer } of provokers(token, [movement.origin, ...waypoints])) {
+    const user = answeringUser(actor);
+    const payload = {
+      type: "opportunityPrompt",
+      userId: user.id,
+      attackerTokenUuid: attacker.uuid,
+      moverTokenUuid: token.uuid,
+      kind: offer.kind,
+      weaponIds: offer.weapons.map(weapon => weapon.id),
+      movementId: movement.id
+    };
+    if (user.isSelf) showOpportunityPrompt(payload).catch(error => ui.notifications.error(error.message));
+    else game.socket.emit(SOCKET, payload);
+  }
+}
+
+// Before a move leaves an enemy's reach, ask the mover to confirm. Returns false to cancel.
+const confirmed = new Set();
+export async function confirmProvoking(token, movement) {
+  if (!enabled() || !positioningSetting("warnBeforeProvoking") || confirmed.has(movement.id)) return true;
+  const waypoints = [...(movement.passed?.waypoints ?? []), ...(movement.pending?.waypoints ?? [])];
+  if (!waypoints.length || teleporting(waypoints)) return true;
+  const path = [movement.origin, ...waypoints];
+  const leaving = provokers(token, path, { visibleOnly: true }).filter(entry => entry.offer.kind === "leave");
+  if (!leaving.length) return true;
+  const names = leaving.map(entry => escapeHTML(entry.attacker.name)).join(", ");
+  const ok = await foundry.applications.api.DialogV2.confirm({
+    classes: [SYSTEM_ID, "wb-roll-dialog"],
+    window: { title: `${token.name}: provoke an opportunity attack?` },
+    content:
+      `<div class="worlds-beyond"><p class="wb-result">This move leaves ${names}'s reach.</p>` +
+      `<p>${leaving.length > 1 ? "Each" : "They"} can spend a reaction to attack ${escapeHTML(token.name)} as it goes. ` +
+      "Move anyway?</p></div>",
+    yes: { label: "Move anyway" },
+    no: { label: "Stay", default: true },
+    rejectClose: false
+  });
+  if (ok) {
+    confirmed.add(movement.id);
+    setTimeout(() => confirmed.delete(movement.id), 60_000);
+  }
+  return !!ok;
 }
 
 export async function showOpportunityPrompt({ attackerTokenUuid, moverTokenUuid, kind, weaponIds, movementId }) {

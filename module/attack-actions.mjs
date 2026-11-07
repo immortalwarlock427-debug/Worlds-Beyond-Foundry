@@ -8,6 +8,8 @@ import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
 import { inCombat, availableAp, payAp } from "./combat-support.mjs";
 import { strikeAutomation } from "./strike-settings.mjs";
+import { attackDistance, positioningSetting } from "./positioning.mjs";
+import { rangeStatus, rangeText } from "./positioning-core.mjs";
 import { handledAutomatically, abilityDamagePlan } from "./strike-core.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
@@ -84,6 +86,8 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
   const best = choices.reduce((a, b) => (actor.system.stats[b].mod > actor.system.stats[a].mod ? b : a));
   const reasons = attackDisadvantages({ weapon, scores: scores(actor), heavyArmor: !!actor.system.equipment?.heavyDisadvantage });
   const partners = opportunity ? [] : dualWieldPartners(weapon, actor.items);
+  // An opportunity attack happens as the target leaves, so it skips the range check.
+  const distance = !opportunity && positioningSetting("checkAttackRange") ? attackDistance(actor, target) : null;
   const shots = shotsLeft(weapon);
   const content = await foundry.applications.handlebars.renderTemplate(
     `systems/${SYSTEM_ID}/templates/attack-dialog.hbs`,
@@ -118,11 +122,25 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
     ok: { label: "Attack" },
     rejectClose: false,
     render: (event, dialog) => {
-      bindAttackDialog(dialog.element, actor, weapon);
+      bindAttackDialog(dialog.element, actor, weapon, { distance, targetName: target?.name });
       fitDialogDisclosures(dialog);
     }
   });
   if (!form) return;
+  const mode = form.mode ?? modes[0];
+  if (rangeStatus(weapon, mode, distance) === "out") {
+    const proceed = await foundry.applications.api.DialogV2.confirm({
+      classes: [SYSTEM_ID, "wb-roll-dialog"],
+      window: { title: `${weapon.name}: out of ${mode === "melee" ? "reach" : "range"}` },
+      content:
+        `<div class="worlds-beyond"><p class="wb-result">${escapeHTML(rangeText(weapon, mode, distance, target?.name))}</p>` +
+        "<p>Attack anyway?</p></div>",
+      yes: { label: "Attack anyway" },
+      no: { label: "Cancel", default: true },
+      rejectClose: false
+    });
+    if (!proceed) return;
+  }
   return rollAttack(
     actor,
     weapon,
@@ -133,13 +151,27 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
 
 // Keep the listed disadvantage reasons and the pre-selected dice in step with the
 // dialog's choices. The player can still pick any dice after a change.
-export function bindAttackDialog(element, actor, weapon) {
+export function bindAttackDialog(element, actor, weapon, { distance = null, targetName } = {}) {
   const form = element?.querySelector("form") ?? element;
   const field = name => form?.querySelector(`[name="${name}"]`);
   const text = form?.querySelector(".wb-attack-reasons");
   if (!form || !text) return;
   let previous = null;
+  let previousRange = null;
+  const range = element?.querySelector?.(".wb-attack-range");
   const update = () => {
+    // Past normal range ticks the long-range box once per change of mode or distance band.
+    const mode = field("mode")?.value ?? attackModes(weapon)[0];
+    const status = rangeStatus(weapon, mode, distance);
+    if (range) {
+      range.textContent = rangeText(weapon, mode, distance, targetName);
+      range.hidden = !range.textContent;
+      range.classList.toggle("wb-warning", status === "out");
+    }
+    const band = `${mode}:${status}`;
+    if (Number.isFinite(distance) && band !== previousRange && field("longRange") && mode !== "melee")
+      field("longRange").checked = status !== "ok";
+    previousRange = band;
     const reasons = attackDisadvantages({
       weapon,
       scores: scores(actor),

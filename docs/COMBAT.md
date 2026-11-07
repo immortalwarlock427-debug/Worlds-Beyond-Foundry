@@ -13,6 +13,7 @@ The sections below preserve rules sources and historical implementation checks. 
 - [Ability areas, multiple targets and map effects](#areas)
 - [Movement AP](#movement)
 - [Opportunity attacks](#opportunity)
+- [Sides, collision and attack range](#positioning)
 - [Weapon attacks and damage](#attacks)
 - [Block reaction](#block)
 - [Dodge reaction](#dodge)
@@ -142,7 +143,7 @@ Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (o
 - In a started combat, when a token leaves the reach of an enemy combatant holding a melee weapon, that enemy's owner gets a popup: **Attack with** a weapon, or **Let them go**. The player assigned to the character answers, otherwise another owner, otherwise the GM.
 - Reach is 5 ft, or 10 ft with a Reach weapon; any diagonal neighbor counts as 5 ft. Your reach is your longest held melee weapon's, so stepping from 5 ft to 10 ft of a glaive wielder doesn't provoke even if they also hold a dagger. Only weapons that reach the mover's last square inside your reach are offered.
 - **Bulwark** weapons (Spear, Pike) also offer an attack when a creature moves *into* their reach.
-- Enemies are friendly vs hostile (or secret) token dispositions. Neutral tokens never provoke or attack.
+- Enemies are friendly vs hostile (or secret) token dispositions: green vs red. Neutral tokens never provoke or attack. Use the token HUD's Ally/Enemy button (below) to switch sides.
 - No prompt when: the attacker has no reactions left, is hidden or defeated; the mover is hidden or has **Flicker** (AGL 28); the move is a teleport (Blink), Displace or an undo; the scene uses a hex grid.
 
 ### The attack
@@ -153,6 +154,7 @@ Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (o
 
 - World setting **Offer opportunity attacks** (on).
 - **Let them go** on each popup, and the **Spend a reaction** checkbox.
+- Before moving, the mover is asked to confirm a move that would provoke (see below).
 
 ### Rule choices to confirm
 
@@ -163,6 +165,45 @@ Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (o
 ### Code
 
 `module/opportunity-core.mjs` holds the rules (tested in `tests/opportunity-core.test.mjs`). `module/opportunity.mjs` checks each finished move on the active GM's client (`moveToken` hook) and sends the popup to the attacker's owner over the system socket. `promptAttack`/`rollAttack` in `module/attack-actions.mjs` take an `opportunity` option that spends a reaction instead of AP (tested in `tests/action-handlers.test.mjs`).
+
+<a id="positioning"></a>
+## Sides, collision and attack range
+
+Requested by the user on 2026-11-07, after opportunity attacks never fired: every token in their test combat was Hostile, so all of them were on the same side.
+
+### Ally or enemy
+
+Right-click a token: the left column of the token HUD has a **handshake** (Ally, green) or **skull** (Enemy, red) button. Clicking it switches the token between Foundry's Friendly and Hostile dispositions. Green and red tokens are enemies; tokens of the same color are teammates; Neutral (yellow, set in Token settings) is nobody's enemy. Owners of the token can use it.
+
+### Collision
+
+- Enemies block movement: a move through an enemy's space is stopped with "Orc is an enemy in the way. Go around it."
+- Allies, neutral tokens and downed creatures (0 Health or less) can be moved through, but no token can end its move in another token's space.
+- Applies in and out of combat. Hidden tokens never block, so they aren't revealed. Tokens at a different elevation don't block. The whole move is refused; nothing is spent.
+
+### Warning before provoking
+
+In combat, a move that would leave the reach of a visible enemy who has a reaction and a melee weapon asks first: "This move leaves Orc's reach. They can spend a reaction to attack... Move anyway?" **Stay** cancels the move; **Move anyway** goes ahead and is asked only once per move.
+
+### Weapon reach and attack range
+
+- Weapons have a **Melee reach (ft)** field (Range & loading on the weapon sheet). Blank means 5 ft, or 10 ft with the Reach property. It sets both melee attack reach and opportunity-attack reach.
+- With a target token on the map, the attack dialog shows the distance and reach or range: "Orc is 15 ft away · reach 5 ft. Out of reach: move closer." Thrown and ranged attacks use the weapon's normal/long range: past normal range ticks **Past normal range** (disadvantage); past long range is out of range.
+- Attacking out of reach or range asks **Attack anyway?** first. Opportunity attacks skip the check, because the target has already moved away. Weapons with no listed range aren't checked.
+
+### Opt-outs
+
+World settings, all on: **Tokens block movement**, **Warn before provoking opportunity attacks**, **Check attack range**. The GM's **Displace** movement ignores collision and doesn't provoke. **Attack anyway** overrides a range check.
+
+### Rule choices to confirm
+
+- Distance and reach count any diagonal step as 5 ft, the same as movement on this world's grid.
+- Neutral tokens can be moved through.
+- Collision ignores creature size (a Tiny creature can't slip through a Huge enemy's space).
+
+### Code
+
+`module/positioning-core.mjs` (collision, attack range; tests in `tests/positioning-core.test.mjs`) and `module/positioning.mjs` (settings, token HUD button, footprints, attack distance). Collision and the provoke warning run in `TokenDocument#_preUpdateMovement` in `module/movement.mjs`, before movement AP is paid. `provokers` and `confirmProvoking` in `module/opportunity.mjs` share one check with the GM's prompts.
 
 <a id="attacks"></a>
 ## Weapon attacks and damage

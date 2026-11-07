@@ -33,6 +33,15 @@
     <label>Damage type<input type="text" name="system.damageType" value="{{system.damageType}}" {{#unless editable}}disabled{{/unless}}></label>
   </div>
   <details class="wb-disclosure" data-sync="weapon-range"><summary>Range &amp; loading</summary><div class="wb-equipment-fields">
+    <label data-tooltip="How far this weapon hits in melee and threatens opportunity attacks.">Melee reach (ft)<input
+      type="number"
+      name="system.reach"
+      value="{{system.reach}}"
+      min="0"
+      step="5"
+      placeholder="Auto {{automaticReach}}"
+      {{#unless editable}}disabled{{/unless}}
+    ></label>
     <label>Normal range (ft)<input
       type="number"
       name="system.range.normal"
