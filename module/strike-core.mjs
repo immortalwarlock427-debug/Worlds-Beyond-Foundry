@@ -91,10 +91,11 @@ export function canBlock(defender, used = [], afterArmor = 0) {
 }
 
 // Outcome of the avoid step. Dodge must beat the attack; a save meets or beats the DC.
-export function avoidOutcome(strike, kind, total) {
+// `forced` is Defy Fate (FTH 21 Wonder): the roll counts as a success whatever its total.
+export function avoidOutcome(strike, kind, total, forced = false) {
   if (kind === "take") return { success: false, multiplier: 1, negated: false, done: true };
-  const value = Number(total);
-  if (!Number.isFinite(value)) throw new Error("That defense roll has no total.");
+  const value = forced ? Infinity : Number(total);
+  if (!Number.isFinite(value) && !forced) throw new Error("That defense roll has no total.");
   if (kind === "dodge") {
     if (strike.natural20) throw new Error("A natural 20 can't be dodged.");
     const success = value > strike.total;
@@ -161,16 +162,37 @@ export function damagedHealth(damage, amount) {
 
 const TERM = /^([+-]?)(\d*)d(\d+)$|^([+-]?)(\d+)$/i;
 
-// Ability damage: "2d8 + @mod". A critical hit adds the dice maximum once, like weapons
-// (Notion: maximum damage, then roll the dice again). Unusual formulas roll as written.
-export function abilityDamagePlan({ formula = "", modifier = 0, critical = false } = {}) {
-  const mod = Number(modifier) || 0;
-  const expression = String(formula ?? "")
-    .replace(/@mod/gi, String(mod))
+const STAT_WORDS = Object.freeze({
+  strength: "str",
+  dexterity: "dex",
+  vitality: "vit",
+  agility: "agl",
+  intelligence: "int",
+  wisdom: "wis",
+  charisma: "cha",
+  faith: "fth",
+  ...Object.fromEntries(STATS.map(stat => [stat.key, stat.key]))
+});
+const STAT_TERM = /@?\b(strength|dexterity|vitality|agility|intelligence|wisdom|charisma|faith|str|dex|vit|agl|int|wis|cha|fth|mod)\b/gi;
+
+// "2d8 + str" adds the Strength modifier; "mod" (or "@mod") is the ability's chosen stat.
+// Full names and an optional @ work too. Signs are tidied so "+ -2" reads "- 2".
+export function resolveStatTerms(formula, mods = {}, selected = 0) {
+  return String(formula ?? "")
+    .replace(STAT_TERM, (_match, word) => {
+      const key = STAT_WORDS[word.toLowerCase()];
+      return String(Number(key ? mods[key] : selected) || 0);
+    })
     .replace(/−/g, "-")
     .replace(/\+\s*-/g, "- ")
     .replace(/-\s*-/g, "+ ")
     .trim();
+}
+
+// Ability damage: "2d8 + str" or "2d8 + mod". A critical hit adds the dice maximum once, like weapons
+// (Notion: maximum damage, then roll the dice again). Unusual formulas roll as written.
+export function abilityDamagePlan({ formula = "", modifier = 0, mods = {}, critical = false } = {}) {
+  const expression = resolveStatTerms(formula, mods, modifier);
   if (!expression) return { formula: "", critical: false, simple: true };
   const terms = expression.replace(/\s+/g, "").match(/[+-]?[^+-]+/g) ?? [];
   let diceMax = 0,

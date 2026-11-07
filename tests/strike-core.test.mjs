@@ -197,3 +197,22 @@ test("targeted abilities: plan uses the targeting stat, its modifier and the def
   assert.equal(abilityStrikePlan(actor, custom).dc, 17);
   assert.equal(abilityStrikePlan(actor, custom).mod, 1);
 });
+
+test("damage formulas take plain stat names, full names, @ forms and mod", async () => {
+  const { resolveStatTerms } = await import("../module/strike-core.mjs");
+  const mods = { str: 3, dex: -1, int: 4 };
+  assert.equal(resolveStatTerms("2d8 + str", mods), "2d8 + 3");
+  assert.equal(resolveStatTerms("2d8 + STR", mods), "2d8 + 3");
+  assert.equal(resolveStatTerms("2d8 + Strength", mods), "2d8 + 3");
+  assert.equal(resolveStatTerms("2d8 + @dex", mods), "2d8 - 1");
+  assert.equal(resolveStatTerms("2d8 - dex", mods), "2d8 + 1");
+  assert.equal(resolveStatTerms("1d10 + int + mod", mods, 2), "1d10 + 4 + 2");
+  assert.equal(resolveStatTerms("1d6 + wis", mods), "1d6 + 0");
+  assert.equal(abilityDamagePlan({ formula: "2d8 + str", mods, critical: true }).formula, "2d8 + 3 + 16");
+});
+
+test("Defy Fate turns a failed defense roll into a success", () => {
+  const strike = { check: "attack", total: 18, natural20: false };
+  assert.equal(avoidOutcome(strike, "dodge", 5, true).success, true);
+  assert.equal(avoidOutcome({ check: "save", dc: 15, onSave: "half" }, "save", 3, true).multiplier, 0.5);
+});

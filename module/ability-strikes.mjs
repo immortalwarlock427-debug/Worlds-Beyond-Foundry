@@ -8,7 +8,7 @@ import { abilityActive } from "./ability-timers-core.mjs";
 import { createActionMessage } from "./action-support.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { strikeAutomation } from "./strike-settings.mjs";
-import { saveDc, targetingStat } from "./strike-core.mjs";
+import { saveDc, targetingStat, resolveStatTerms } from "./strike-core.mjs";
 import { itemList } from "./loadout.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -108,13 +108,13 @@ export async function rollAbilityStrike(actor, item, target, { rollMode = "norma
     Object.assign(hand, { hit: true, critical: false, total: null, natural: null });
     section = `<p>${escapeHTML(target.name)} makes ${plan.saveStat ? `a ${statLabel(plan.saveStat)}` : "a"} save against DC ${wholeNumber(plan.dc)}${targeting.onSave === "half" ? " for half damage" : ""}.</p>`;
   }
-  const damage = String(targeting.damage ?? "").trim();
+  // Stat names resolve to this character's current modifiers at the moment of use.
+  const mods = Object.fromEntries(STATS.map(stat => [stat.key, actor.system.stats[stat.key]?.mod ?? 0]));
+  const damage = resolveStatTerms(targeting.damage, mods, plan.mod);
   const content =
     `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(item.name)}</h3>` +
     `<section class="wb-attack-hand" data-hand="0">${section}</section>` +
-    (damage
-      ? `<p>Damage: ${escapeHTML(damage.replace(/@mod/gi, formatModifier(plan.mod)))}${targeting.damageType ? ` ${escapeHTML(targeting.damageType)}` : ""}.</p>`
-      : "") +
+    (damage ? `<p>Damage: ${escapeHTML(damage)}${targeting.damageType ? ` ${escapeHTML(targeting.damageType)}` : ""}.</p>` : "") +
     "</div>";
   return createActionMessage(
     {

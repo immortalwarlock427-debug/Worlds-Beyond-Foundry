@@ -141,7 +141,8 @@ export async function handleStrikeResult({ messageId, index, token, choice, roll
     const user = game.users.get(userId);
     if (!defender || !user || !(user.isGM || defender.testUserPermission(user, "OWNER"))) return;
     const strike = strikeInfo(data, index);
-    const total = choice === "take" ? null : defenseTotal(await findMessage(rollMessageId), choice, defender, userId);
+    const roll = choice === "take" ? null : defenseTotal(await findMessage(rollMessageId), choice, defender, userId);
+    const total = roll?.total ?? null;
     const next = foundry.utils.deepClone(state);
     const entry = next.exchanges[index];
     entry.prompt = null;
@@ -151,9 +152,9 @@ export async function handleStrikeResult({ messageId, index, token, choice, roll
       await saveState(message, next);
       return finish(message, index, choice === "block" ? total : 0);
     }
-    const outcome = avoidOutcome(strike, choice, total);
+    const outcome = avoidOutcome(strike, choice, total, !!roll?.forced);
     if (["dodge", "parry"].includes(choice)) entry.used.push(choice);
-    entry.log.push({ kind: choice, total, success: outcome.success });
+    entry.log.push({ kind: choice, total, success: outcome.success, ...(roll?.wonder ? { wonder: roll.wonder } : {}) });
     await saveState(message, next);
     if (choice === "dodge" && outcome.success) return settle(message, index, "dodged");
     if (choice === "parry" && outcome.success && !strike.overwhelming) return settle(message, index, "parried");
@@ -190,7 +191,9 @@ function defenseTotal(roll, choice, defender, userId) {
     throw new Error("That defense roll doesn't match the attack. Respond again from the attack card.");
   const total = roll.rolls?.[0]?.total;
   if (!Number.isFinite(total)) throw new Error("That defense roll has no total. Respond again from the attack card.");
-  return total;
+  // A Wonder result keeps the original's context; Defy Fate marks it a success.
+  const wonder = check?.previousMessageId ? (check.success ? "Defy Fate" : "Wonder") : null;
+  return { total, forced: !!check?.success, wonder };
 }
 
 // Roll damage on the GM's client, then offer Block if anything gets through Armor Rating.
@@ -313,7 +316,9 @@ function defenseLine(entry) {
     .map(step =>
       step.kind === "block"
         ? `Block ${wholeNumber(step.total)}.`
-        : `${KIND_LABELS[step.kind]} ${wholeNumber(step.total)}: ${step.success ? "success" : "failed"}.`
+        : step.wonder === "Defy Fate"
+          ? `${KIND_LABELS[step.kind]}: success with Defy Fate.`
+          : `${KIND_LABELS[step.kind]} ${wholeNumber(step.total)}${step.wonder ? " after Wonder" : ""}: ${step.success ? "success" : "failed"}.`
     )
     .join(" ");
 }
@@ -431,7 +436,7 @@ export async function showDefensePrompt(messageId, index, snapshot = null) {
       }))
     });
     if (!choice) return;
-    const rollMessage = await rollDefense(defender, strike, choice);
+    const rollMessage = await offerWonder(defender, strike, choice.kind, await rollDefense(defender, strike, choice));
     const payload = {
       type: "strikeResult",
       messageId,
@@ -485,6 +490,39 @@ function promptContent({ strike, ex, defender, situation, block, options }) {
     );
   }
   return `<div class="wb-check-options">${lines.join("")}${fields.join("")}</div>`;
+}
+
+// Wonder can change any non-attack d20: a failed Dodge, Parry or save may spend it to reroll,
+// or at FTH 21 (Defy Fate) to succeed. Each new result may use Wonder again.
+async function offerWonder(actor, strike, kind, rollMessage) {
+  if (!rollMessage || !["dodge", "parry", "save"].includes(kind)) return rollMessage;
+  const { useWonder } = await import("./roll-actions.mjs");
+  const { wonderAction } = await import("./rolls.mjs");
+  let current = rollMessage;
+  for (;;) {
+    const context = current.getFlag?.(SYSTEM_ID, "check");
+    const total = current.rolls?.[0]?.total;
+    if (!context || avoidOutcome(strike, kind, total, !!context.success).success) return current;
+    const left = Number(actor.system.wonder?.value) || 0;
+    const action = wonderAction(context.kind, actor.system.stats.fth?.effective ?? actor.system.stats.fth?.value);
+    if (left < 1 || !action) return current;
+    const label = KIND_LABELS[kind];
+    const needs = kind === "save" ? `meet DC ${wholeNumber(strike.dc)}` : `beat ${wholeNumber(strike.total)}`;
+    const use = await foundry.applications.api.DialogV2.confirm({
+      classes: [SYSTEM_ID, "wb-roll-dialog", "wb-defense-prompt"],
+      window: { title: `${actor.name}: use Wonder?` },
+      content: `<div class="wb-check-options"><p class="wb-result">${label} ${wholeNumber(total)} doesn't ${needs}.</p><p>${
+        action === "success" ? "Defy Fate: spend 1 Wonder to succeed instead." : "Spend 1 Wonder to reroll it."
+      } ${wholeNumber(left)} left.</p></div>`,
+      yes: { label: action === "success" ? "Defy Fate" : "Use Wonder" },
+      no: { label: "Keep result" },
+      rejectClose: false
+    });
+    if (!use) return current;
+    const next = await useWonder(current);
+    if (!next) return current;
+    current = next;
+  }
 }
 
 // Roll with the existing sheet actions so reactions, Parry's round use and chat cards stay identical.

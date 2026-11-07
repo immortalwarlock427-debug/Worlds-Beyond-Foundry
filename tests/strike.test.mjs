@@ -328,3 +328,26 @@ test("outside combat reactions aren't spent, so Block is still offered", async (
   await handleStrikeResult({ messageId: "attack", index: 0, token: prompt(message).token, choice: "take" }, "p1");
   assert.equal(state(message).exchanges[0].step, "block");
 });
+
+test("a Wonder reroll and a Defy Fate result count as the defense", async () => {
+  const w = world();
+  const message = w.attack([hand()]);
+  await beginStrike(message);
+  w.defenseRoll("rerolled", 20, { check: { defense: { type: "dodge" }, actorUuid: "Actor.def", previousMessageId: "d0" } });
+  await handleStrikeResult(
+    { messageId: "attack", index: 0, token: prompt(message).token, choice: "dodge", rollMessageId: "rerolled" },
+    "p1"
+  );
+  assert.equal(state(message).exchanges[0].outcome, "dodged");
+  assert.match(w.calls.posts.at(-1).content, /Dodge 20 after Wonder: success/);
+
+  const v = world();
+  const save = v.attack([{ hand: "main", abilityId: "ray", name: "Frost Ray", mod: 3, hit: true }], {
+    ability: { name: "Frost Ray", check: "save", dc: 15, saveStat: "vit", onSave: "none", damage: "3d6", damageType: "Ice" }
+  });
+  await beginStrike(save);
+  v.defenseRoll("fate", 4, { check: { kind: "save", actorUuid: "Actor.def", previousMessageId: "s0", success: true } });
+  await handleStrikeResult({ messageId: "attack", index: 0, token: prompt(save).token, choice: "save", rollMessageId: "fate" }, "p1");
+  assert.equal(state(save).exchanges[0].outcome, "resisted");
+  assert.match(v.calls.posts.at(-1).content, /Save: success with Defy Fate/);
+});
