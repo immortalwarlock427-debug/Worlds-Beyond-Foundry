@@ -20,7 +20,9 @@ export function threateningWeapons(items = []) {
   );
 }
 
-export const weaponReach = weapon => BASE_REACH_FEET + (weapon?.system?.properties?.reach ? 5 : 0);
+// A weapon's own Reach field wins; otherwise 5 ft, or 10 ft with the Reach property.
+export const automaticReach = weapon => BASE_REACH_FEET + (weapon?.system?.properties?.reach ? 5 : 0);
+export const weaponReach = weapon => numberOr(weapon?.system?.reach, automaticReach(weapon));
 
 // Gap between two tokens' footprints in grid spaces, counting any diagonal step as one
 // space (reach on a grid: an adjacent diagonal square is within 5 ft).

@@ -53,6 +53,7 @@ import { registerSheetLog, openSheetLog } from "./dm-log.mjs";
 import { registerMovementRuler } from "./movement-ruler.mjs";
 import { registerMovement, movementSetting } from "./movement.mjs";
 import { registerOpportunityAttacks } from "./opportunity.mjs";
+import { registerPositioning } from "./positioning.mjs";
 import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
@@ -720,6 +721,7 @@ Hooks.once("init", () => {
   registerMovementRuler();
   registerMovement();
   registerOpportunityAttacks();
+  registerPositioning();
   registerTokenConfig();
   registerCombatPortraits();
   CONFIG.Actor.documentClass = CharacterActor;

@@ -4,6 +4,8 @@
 // Movement / AP and Square cost overrides, and the GM's Displace movement, which is free.
 import { apAvailable, apSpendPlan } from "./ap.mjs";
 import { queuedAction } from "./action-support.mjs";
+import { collisionBlock } from "./positioning.mjs";
+import { confirmProvoking } from "./opportunity.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import {
   SURGE_AP,
@@ -157,9 +159,15 @@ export function registerMovement() {
       }
       if (operation.isPaste) return;
       try {
+        const blocked = collisionBlock(this, [...movement.passed.waypoints, ...movement.pending.waypoints]);
+        if (blocked) {
+          ui.notifications.warn(blocked);
+          return false;
+        }
+        if (!(await confirmProvoking(this, movement))) return false;
         if ((await payForMovement(this, movement)) === false) return false;
       } catch (error) {
-        ui.notifications.error(`Movement AP could not be spent: ${error.message}`);
+        ui.notifications.error(`Movement could not be checked: ${error.message}`);
         return false;
       }
     }

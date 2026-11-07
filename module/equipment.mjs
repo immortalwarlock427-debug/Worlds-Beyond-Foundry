@@ -7,6 +7,7 @@ import { itemEffectRows, itemBonusSummary } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { inCombat, payAp } from "./combat-support.mjs";
 import { actionApCost } from "./attacks.mjs";
+import { automaticReach } from "./opportunity-core.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
 import { consumableBonusData, applyConsumableBonuses, consumableDurationStart } from "./consumable-effects.mjs";
 import { BONUS_DURATION_UNITS, bonusDurationText } from "./effect-duration.mjs";
@@ -115,6 +116,8 @@ export class WeaponData extends EquipmentData {
       properties: flags(WEAPON_PROPERTIES),
       signature: flags(SIGNATURE_PROPERTIES),
       range: new foundry.data.fields.SchemaField({ normal: number(), long: number() }),
+      // Melee reach in feet; blank uses 5 ft, or 10 ft with the Reach property.
+      reach: new foundry.data.fields.NumberField({ required: true, nullable: true, initial: null, min: 0 }),
       loading: number(),
       // Shots left before reloading; null means fully loaded.
       shots: new foundry.data.fields.NumberField({ required: true, nullable: true, initial: null, min: 0, integer: true })
@@ -244,6 +247,7 @@ export class EquipmentSheet extends foundry.applications.api.HandlebarsApplicati
         label,
         selected: value === this.item.system.kind
       })),
+      automaticReach: automaticReach(this.item),
       weaponFamilies: Object.entries(WEAPON_FAMILIES).map(([value, label]) => ({
         value,
         label,
