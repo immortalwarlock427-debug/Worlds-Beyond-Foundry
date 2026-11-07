@@ -76,7 +76,7 @@ const rules = {
       summary: "Gain 2 free movement AP each turn and an extra reaction.",
       paragraphs: [
         "Each turn, you get 2 AP of movement for free. You also gain an additional reaction.",
-        "The extra reaction is included in the calculated reaction maximum. Free movement AP stays separate from normal AP; track its use manually for now."
+        "The extra reaction is included in the calculated reaction maximum. When your token moves on your turn in combat, the free movement AP is spent before your own AP. It can't pay for anything else and doesn't carry over to the next turn."
       ]
     },
     {

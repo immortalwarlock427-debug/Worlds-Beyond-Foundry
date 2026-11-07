@@ -2,7 +2,14 @@
 import { numberOr } from "./core-numbers.mjs";
 import { wornGear } from "./loadout.mjs";
 
-export function wornEquipment({ items = [], agility = 12, strength = 12, penaltyOverride = null } = {}) {
+export function wornEquipment({
+  items = [],
+  agility = 12,
+  strength = 12,
+  penaltyOverride = null,
+  squareCostOverride = null,
+  heavySquares = true
+} = {}) {
   const armor = Array.from(items).filter(item => item.type === "armor" && item.system.equipped);
   const shields = Array.from(items).filter(item => item.type === "shield" && item.system.equipped);
   const rank = { light: 1, medium: 2, heavy: 3 };
@@ -30,6 +37,9 @@ export function wornEquipment({ items = [], agility = 12, strength = 12, penalty
     });
   const automaticPenalty = type === "heavy" ? Math.min(3, Math.max(0, armorAR - 3)) : 0;
   const agilityPenalty = numberOr(penaltyOverride, automaticPenalty);
+  // Heavy armor makes each 5 ft square cost 10 ft of movement (difficult terrain doubles it again).
+  const automaticSquareCost = type === "heavy" && heavySquares ? 10 : 5;
+  const squareCost = Math.max(0, numberOr(squareCostOverride, automaticSquareCost));
   return {
     type,
     armorAR,
@@ -43,8 +53,9 @@ export function wornEquipment({ items = [], agility = 12, strength = 12, penalty
     agilityPenalty,
     effectiveAgility: numberOr(agility, 12) - agilityPenalty,
     heavyDisadvantage: type === "heavy" && numberOr(strength, 12) < 21,
-    squareCost: type === "heavy" ? 10 : 5,
-    difficultSquareCost: type === "heavy" ? 20 : 10,
+    automaticSquareCost,
+    squareCost,
+    difficultSquareCost: squareCost * 2,
     blockDice: shields.map(item => String(item.system.blockDie ?? "1d6")),
     duplicatePieces: [...new Set(armor.map(item => item.system.piece))].filter(
       piece => piece !== "arms" && armor.filter(item => item.system.piece === piece).length > 1

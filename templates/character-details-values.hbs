@@ -195,6 +195,16 @@
         step="1"
         {{#unless editable}}disabled{{/unless}}
       ></label>
+      <label class="wb-override-label" data-tooltip="Movement each 5 ft square uses. Heavy armor makes it 10 ft; difficult terrain doubles it."><span>Square cost (ft)</span><input
+        type="number"
+        name="system.overrides.squareCost"
+        value="{{system.overrides.squareCost}}"
+        placeholder="Auto {{worn.automaticSquareCost}}"
+        min="0"
+        step="1"
+        aria-label="Square cost override; clear for automatic"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
       <label class="wb-override-label"><span>Inventory slots</span><input
         type="number"
         name="system.overrides.inventorySlots"
