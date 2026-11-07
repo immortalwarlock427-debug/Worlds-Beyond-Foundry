@@ -2,7 +2,7 @@
 
 The sheet already supports weapon attack cards, damage previews, Block/Dodge/Parry, Command, reload, potion AP and turn refills. Command spends 5 own AP and offers 2 + CHA modifier (maximum 5); the recipient's AP total includes the grant. Sidebar actors and unlinked token copies are distinct recipients.
 
-Attacks, abilities and areas resolve automatically (below), and token movement spends AP in combat. Opportunity prompts, further milestone automation and modules are still to come. See [roadmap](ROADMAP.md).
+Attacks, abilities and areas resolve automatically (below), token movement spends AP in combat, and leaving an enemy's reach offers an opportunity attack. Further milestone automation and modules are still to come. See [roadmap](ROADMAP.md).
 
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
@@ -12,6 +12,7 @@ The sections below preserve rules sources and historical implementation checks. 
 - [Automatic attack resolution](#resolution)
 - [Ability areas, multiple targets and map effects](#areas)
 - [Movement AP](#movement)
+- [Opportunity attacks](#opportunity)
 - [Weapon attacks and damage](#attacks)
 - [Block reaction](#block)
 - [Dodge reaction](#dodge)
@@ -129,8 +130,39 @@ It finds the current combatant by searching the combats, not through `TokenDocum
 
 ### Not yet
 
-- Opportunity prompts when a creature leaves an armed character's reach (the rest of roadmap step 2).
 - Moves while it isn't anyone's turn in the combat are free.
+
+<a id="opportunity"></a>
+## Opportunity attacks
+
+Requested by the user on 2026-11-07 (roadmap step 2). Follows Notion Defenses (opportunity attacks use a reaction and no AP) and Weapons Explained (Reach, Bulwark).
+
+### When you're asked
+
+- In a started combat, when a token leaves the reach of an enemy combatant holding a melee weapon, that enemy's owner gets a popup: **Attack with** a weapon, or **Let them go**. The player assigned to the character answers, otherwise another owner, otherwise the GM.
+- Reach is 5 ft, or 10 ft with a Reach weapon; any diagonal neighbor counts as 5 ft. Your reach is your longest held melee weapon's, so stepping from 5 ft to 10 ft of a glaive wielder doesn't provoke even if they also hold a dagger. Only weapons that reach the mover's last square inside your reach are offered.
+- **Bulwark** weapons (Spear, Pike) also offer an attack when a creature moves *into* their reach.
+- Enemies are friendly vs hostile (or secret) token dispositions. Neutral tokens never provoke or attack.
+- No prompt when: the attacker has no reactions left, is hidden or defeated; the mover is hidden or has **Flicker** (AGL 28); the move is a teleport (Blink), Displace or an undo; the scene uses a hex grid.
+
+### The attack
+
+**Attack with** opens the normal attack dialog as an opportunity attack: one weapon, melee only, no AP cost shown. **Spend a reaction** is ticked in combat; untick it to roll without spending one. The card says "Opportunity attack · 1 reaction spent", and automatic resolution (Dodge, Block, damage) runs as for any attack. The mover has already finished moving when the attack resolves.
+
+### Opt-outs
+
+- World setting **Offer opportunity attacks** (on).
+- **Let them go** on each popup, and the **Spend a reaction** checkbox.
+
+### Rule choices to confirm
+
+- Notion doesn't say what provokes an opportunity attack. This uses D&D's rule: leaving an enemy's reach, which includes walking through it.
+- Bulwark attacks count as opportunity attacks, so they use a reaction and Flicker avoids them.
+- The attack happens after the move, not before the mover steps out. A hit doesn't stop the move.
+
+### Code
+
+`module/opportunity-core.mjs` holds the rules (tested in `tests/opportunity-core.test.mjs`). `module/opportunity.mjs` checks each finished move on the active GM's client (`moveToken` hook) and sends the popup to the attacker's owner over the system socket. `promptAttack`/`rollAttack` in `module/attack-actions.mjs` take an `opportunity` option that spends a reaction instead of AP (tested in `tests/action-handlers.test.mjs`).
 
 <a id="attacks"></a>
 ## Weapon attacks and damage

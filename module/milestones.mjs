@@ -84,7 +84,7 @@ const rules = {
       summary: "Avoid opportunity attacks; sight-based attackers have disadvantage.",
       paragraphs: [
         "You cannot be hit by opportunity attacks. Any attack that relies on sight to hit you has disadvantage, whether melee, ranged or a spell. You have advantage on saves against spells that need sight to target you. You also gain an additional reaction.",
-        "The extra reaction is included in the calculated maximum. Sight conditions, advantage and opportunity-attack immunity are resolved manually."
+        "The extra reaction is included in the calculated maximum. Opportunity attack prompts skip you automatically. Sight conditions and advantage are resolved manually."
       ]
     }
   ],
