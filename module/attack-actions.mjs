@@ -21,6 +21,7 @@ import {
   critThreshold,
   attackOutcome,
   damagePlan,
+  gripDamage,
   hitDamage,
   dualWieldPartners,
   shotsLeft,
@@ -109,8 +110,8 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
         return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)})${cost}` };
       }),
       versatile: !!weapon.system.properties.versatile,
-      damage: weapon.system.damage,
-      versatileDamage: weapon.system.versatileDamage,
+      damage: gripDamage(weapon, actor.system.level).one,
+      versatileDamage: gripDamage(weapon, actor.system.level).two,
       canRange: modes.some(mode => mode !== "melee"),
       mount: !!weapon.system.properties.mount,
       singularity: singularityReady(actor)
