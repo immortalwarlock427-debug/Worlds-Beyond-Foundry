@@ -177,14 +177,13 @@ test("Overexert grants five AP and one level once on each own turn; off-turn and
   assert.equal(actor.system.exhaustion, 2);
 });
 
-test("Knocked Out only adds exhaustion for damage, not corrections or sync, and healing level 10 lowers it to 9", async () => {
+test("Knocked Out adds exhaustion on a down transition except corrections/sync, and healing level 10 lowers it to 9", async () => {
   const { actor } = fixture(1);
   actor.statuses.add("unconscious");
   actor.system.health.value = 0;
   await syncDying(actor, { worldsBeyondHealthBefore: 5, worldsBeyondDamage: true }, {});
   assert.equal(actor.system.exhaustion, 2);
   for (const options of [
-    {},
     { worldsBeyondDamage: true, worldsBeyondCorrection: true },
     { worldsBeyondDamage: true, worldsBeyondDeathSync: true }
   ]) {
@@ -192,6 +191,9 @@ test("Knocked Out only adds exhaustion for damage, not corrections or sync, and 
     await syncDying(actor, { worldsBeyondHealthBefore: 5, ...options }, {});
     assert.equal(actor.system.exhaustion, 2);
   }
+  actor.system.health.value = 0;
+  await syncDying(actor, { worldsBeyondHealthBefore: 5 }, {});
+  assert.equal(actor.system.exhaustion, 3);
   actor.statuses.clear();
   actor.system.exhaustion = 10;
   actor.system.health.value = 1;

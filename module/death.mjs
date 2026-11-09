@@ -82,8 +82,8 @@ export async function syncDying(actor, options, changes) {
   const after = actor.system.health.value;
   const turn = healthTransition(before, after);
   const updates = {};
-  if (exhaustionAutomated() && !options.worldsBeyondCorrection && !options.worldsBeyondDeathSync) {
-    if (turn.knockedOut && options.worldsBeyondDamage)
+  if (exhaustionAutomated() && !options.worldsBeyondDeathSync) {
+    if (turn.knockedOut && !options.worldsBeyondCorrection)
       updates["system.exhaustion"] = Math.min(10, exhaustionLevel(actor.system.exhaustion) + 1);
     if (after >= 1 && exhaustionLevel(actor.system.exhaustion) === 10) updates["system.exhaustion"] = 9;
   }
