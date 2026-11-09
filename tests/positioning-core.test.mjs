@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { movementBlock, blockMessage, attackRange, rangeStatus, rangeText } from "../module/positioning-core.mjs";
+import { movementBlock, blockMessage, attackRange, rangeStatus, rangeText, dialogBeside } from "../module/positioning-core.mjs";
 import { weaponReach, automaticReach } from "../module/opportunity-core.mjs";
 
 const at = (i, j, w = 1, h = 1) => ({ i, j, w, h });
@@ -74,4 +74,25 @@ test("a growing form takes the nearest free placement that covers its space, or 
   );
   // 1 → 3 grows evenly around the creature when it can.
   assert.deepEqual(sizePlacement({ current, planned: at(4, 4, 3, 3) }), at(4, 4, 3, 3));
+});
+
+test("the provoke warning opens beside the tokens instead of on top of them", () => {
+  const view = { left: 60, top: 0, right: 1600, bottom: 900 };
+  const size = { width: 400, height: 200 };
+  const overlaps = (pos, box) =>
+    pos.left < box.right && pos.left + size.width > box.left && pos.top < box.bottom && pos.top + size.height > box.top;
+  // Tokens in the middle: more room on the right, so it goes there.
+  const middle = { left: 700, top: 400, right: 800, bottom: 500 };
+  assert.deepEqual(dialogBeside(middle, size, view), { left: 824, top: 350 });
+  // Tokens near the right edge: it goes on the left.
+  const right = { left: 1400, top: 100, right: 1550, bottom: 200 };
+  const pos = dialogBeside(right, size, view);
+  assert.equal(pos.left, 1400 - 24 - 400);
+  assert.equal(pos.top, 50);
+  assert.ok(!overlaps(pos, right));
+  // A box nearly as wide as the screen: it goes above or below.
+  const wide = { left: 100, top: 100, right: 1500, bottom: 300 };
+  const under = dialogBeside(wide, size, view);
+  assert.equal(under.top, 324);
+  assert.ok(!overlaps(under, wide));
 });
