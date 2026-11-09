@@ -74,3 +74,24 @@ export function sizePlacement({ current, planned, others = [], bounds = null }) 
   const distance = c => Math.abs(c.i - planned.i) + Math.abs(c.j - planned.j);
   return candidates.filter(c => inside(c) && free(c)).sort((a, b) => distance(a) - distance(b))[0] ?? null;
 }
+
+// Where to open a dialog so it doesn't cover the tokens it's about. `box` is the
+// tokens' screen rectangle { left, top, right, bottom }; `view` is the usable screen
+// area { left, top, right, bottom } (inside the scene controls and sidebar). Puts the
+// dialog beside the box on whichever side has room, else above or below it.
+export function dialogBeside(box, size, view, gap = 24) {
+  const clamp = (value, low, high) => Math.max(low, Math.min(value, Math.max(low, high)));
+  const y = clamp((box.top + box.bottom) / 2 - size.height / 2, view.top, view.bottom - size.height);
+  const x = clamp((box.left + box.right) / 2 - size.width / 2, view.left, view.right - size.width);
+  const roomRight = view.right - box.right - gap,
+    roomLeft = box.left - gap - view.left;
+  if (roomRight >= size.width || roomLeft >= size.width) {
+    const right = roomRight >= roomLeft;
+    return { left: Math.round(right ? box.right + gap : box.left - gap - size.width), top: Math.round(y) };
+  }
+  const roomBelow = view.bottom - box.bottom - gap,
+    roomAbove = box.top - gap - view.top;
+  const below = roomBelow >= roomAbove;
+  const top = below ? box.bottom + gap : box.top - gap - size.height;
+  return { left: Math.round(x), top: Math.round(clamp(top, view.top, view.bottom - size.height)) };
+}

@@ -10,6 +10,7 @@ import {
   damageMultiplier,
   scaleDice,
   damagePlan,
+  gripDamage,
   effectiveArmor,
   actionApCost,
   dualWieldPartners,
@@ -276,4 +277,12 @@ test("attack cards replace Foundry's kh/kl notation with plain wording", async (
     ]
   };
   assert.equal(describeD20Roll(roll, "disadvantage").diceLabel, "2d20 · keep lowest");
+});
+
+test("the Grip line shows the dice the attack will roll at the attacker's level", () => {
+  const longsword = { damage: "1d8", versatileDamage: "1d10", properties: { versatile: true } };
+  assert.deepEqual(gripDamage(longsword, 1), { one: "1d8", two: "1d10" });
+  assert.deepEqual(gripDamage({ system: longsword }, 5), { one: "2d8", two: "2d10" });
+  assert.equal(gripDamage(longsword, 7).one, damagePlan({ weapon: longsword, level: 7 }).formula);
+  assert.equal(gripDamage({ damage: "1d6" }, 10).two, "3d6");
 });

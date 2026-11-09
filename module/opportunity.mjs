@@ -8,6 +8,7 @@ import { answeringUser } from "./strike.mjs";
 import { promptAttack, targetFromToken } from "./attack-actions.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { footprint, positioningSetting } from "./positioning.mjs";
+import { dialogBeside } from "./positioning-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const SOCKET = `system.${SYSTEM_ID}`;
@@ -101,6 +102,32 @@ function checkMove(token, movement, operation) {
   }
 }
 
+// The screen rectangle around token documents and path points, or null.
+function screenBox(scene, places) {
+  const size = scene.grid.size;
+  const corners = places.flatMap(place => [
+    { x: place.x, y: place.y },
+    { x: place.x + (place.width ?? 1) * size, y: place.y + (place.height ?? 1) * size }
+  ]);
+  const points = corners.map(point => canvas.clientCoordinatesFromCanvas(point));
+  if (!points.length || points.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y))) return null;
+  const xs = points.map(point => point.x),
+    ys = points.map(point => point.y);
+  return { left: Math.min(...xs), top: Math.min(...ys), right: Math.max(...xs), bottom: Math.max(...ys) };
+}
+
+// The part of the window not covered by Foundry's scene controls and sidebar.
+function openScreen() {
+  const controls = document.getElementById("scene-controls")?.getBoundingClientRect();
+  const sidebar = document.getElementById("sidebar")?.getBoundingClientRect();
+  return {
+    left: Math.max(0, controls?.right ?? 0) + 8,
+    top: 8,
+    right: (sidebar?.width ? sidebar.left : window.innerWidth) - 8,
+    bottom: window.innerHeight - 8
+  };
+}
+
 // Before a move leaves an enemy's reach, ask the mover to confirm. Returns false to cancel.
 const confirmed = new Set();
 export async function confirmProvoking(token, movement) {
@@ -120,7 +147,18 @@ export async function confirmProvoking(token, movement) {
       "Move anyway?</p></div>",
     yes: { label: "Move anyway" },
     no: { label: "Stay", default: true },
-    rejectClose: false
+    rejectClose: false,
+    // Open beside the mover, its path and the enemies so the dialog doesn't hide them.
+    render: (event, dialog) => {
+      try {
+        const box = screenBox(token.parent, [token, ...path, ...leaving.map(entry => entry.attacker)]);
+        if (!box) return;
+        const { width, height } = dialog.element.getBoundingClientRect();
+        dialog.setPosition(dialogBeside(box, { width, height }, openScreen()));
+      } catch (error) {
+        console.warn("Worlds Beyond | couldn't move the provoke warning aside", error);
+      }
+    }
   });
   if (ok) {
     confirmed.add(movement.id);
