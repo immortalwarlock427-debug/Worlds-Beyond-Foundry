@@ -29,7 +29,7 @@ const rules = {
       timing: "Passive",
       summary: "Weapon and unarmed damage cannot be reduced below half.",
       paragraphs: [
-        "Your weapon and unarmed attacks cannot have their damage reduced below half by anything, including Armor Rating, blocks and parries. A dodge still avoids them entirely. This does not bypass immunities."
+        "Your weapon and unarmed attacks cannot have their damage reduced below half by anything, including Resistance, Armor Rating, blocks and parries. A dodge still avoids them entirely. This does not bypass immunities."
       ]
     }
   ],

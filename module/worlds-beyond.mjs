@@ -28,6 +28,7 @@ import { registerFormTriggers } from "./form-triggers.mjs";
 import { registerAbilityTimers } from "./ability-timers.mjs";
 import { registerRecovery } from "./recovery-actions.mjs";
 import { openMilestones } from "./milestone-sheet.mjs";
+import { milestoneActionRows, useMilestone, setMilestoneUses, rollStabilize, registerMilestoneActions } from "./milestone-actions.mjs";
 import { STAT_AWARD_LEVELS, statIncreases } from "./stat-advancement.mjs";
 import { openStatSetup } from "./stat-setup.mjs";
 import {
@@ -288,6 +289,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rollStat: CharacterSheet.#onRollStat,
       statSetup: CharacterSheet.#onStatSetup,
       milestones: CharacterSheet.#onMilestones,
+      milestoneAction: CharacterSheet.#onMilestoneAction,
       longRest: CharacterSheet.#onLongRest,
       resistances: async function () {
         if (!this.isEditable) return;
@@ -426,7 +428,8 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         showAllFormAbilities: this._showAllFormAbilities,
         showAllFormResources: this._showAllFormResources,
         commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false
-      })
+      }),
+      { milestoneActions: milestoneActionRows(this.actor) }
     );
   }
 
@@ -507,6 +510,18 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       '[data-action="milestones"], [data-action="formView"], [data-action="overviewEdit"], .wb-sheet-tabs [data-action="tab"], [data-action="viewTab"], .wb-favorite-name'
     ))
       button.disabled = false;
+    if (this.isEditable)
+      for (const input of this.element.querySelectorAll("[data-milestone-uses]"))
+        input.addEventListener("change", async event => {
+          // A tracker correction, not a sheet field: keep it out of the form submit.
+          event.stopPropagation();
+          try {
+            await setMilestoneUses(this.actor, input.dataset.milestoneUses, input.value);
+          } catch (error) {
+            ui.notifications.error(error.message);
+            this.render();
+          }
+        });
     if (this.isEditable) bindWholeNumbers(this.element);
     if (this.isEditable) for (const input of this.element.querySelectorAll("[data-stat-score]")) bindStatInput(input);
   }
@@ -535,6 +550,16 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   static async #onMilestones(event, target) {
     try {
       return await openMilestones(this.actor, target.dataset.stat, target.dataset.threshold);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    }
+  }
+
+  static async #onMilestoneAction(event, target) {
+    if (!this.isEditable) return;
+    try {
+      if (target.dataset.operation === "stabilize") return await rollStabilize(this.actor);
+      return await useMilestone(this.actor, target.closest("[data-milestone-action]")?.dataset.milestoneAction);
     } catch (error) {
       ui.notifications.error(error.message);
     }
@@ -768,6 +793,7 @@ registerFormTriggers();
 registerAbilityTimers();
 registerFormLoadouts();
 registerRecovery();
+registerMilestoneActions();
 Hooks.on("renderItemDirectory", decorateEquipmentDirectory);
 Hooks.on("renderCompendium", decorateEquipmentDirectory);
 Hooks.on("renderChatMessageHTML", decorateSystemMessage);

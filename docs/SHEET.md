@@ -327,6 +327,29 @@ Use **Attributes → Milestones** for the full reference, or tap/click a milesto
 
 This reference is a native v14 DocumentSheetV2 window tied to the actor, so actor refreshes update its values. It uses a non-form root, no named data inputs and no document submit writes. Owners and read-only viewers can filter and open rules. Native permissions still govern access. Reopening a diamond reuses the actor's reference window, expands the requested rule and scrolls it into view; disclosure and scroll state otherwise use native Handlebars synchronization.
 
+<a id="milestone-actions"></a>
+### Milestone actions
+
+The Abilities tab lists each unlocked milestone that you use, with a **Use** button and a uses field. Passive milestones (Overwhelming Force, Parry, Adamantine Body, Surge, Flicker, Unassailable Self, Defy Fate) are applied elsewhere and aren't listed.
+
+| Milestone | Limit in combat | AP in combat | Use posts |
+| --- | --- | --- | --- |
+| Titan's Might (STR 21) | Once per round | 0 | Push 15 ft or knock prone, resolved at the table |
+| Singularity (DEX 28) | Once per round | 0 | Declared with the **Declare Singularity** box in the attack dialog. A hit becomes a critical hit; a miss still spends it. Applies to the main-hand roll of a two-weapon attack. |
+| Indomitable (VIT 21) | Once per combat | 0 | Status negation card. **Stabilize** rolls d20 + VIT modifier against DC 12 and isn't limited. |
+| Stratagem (INT 21) | Once per round | 5 | The INT modifier the ally adds |
+| Absolute Comprehension (INT 28) | Once per round | 5 | A card for the GM to answer |
+| Sixth Sense (WIS 21) | Once per round | 0 | A card for the GM to answer |
+| Eyes of Truth (WIS 28) | Once per round | 5 | A card, then a Wisdom check card (Wonder works on it) |
+| Commanding Presence (CHA 21) | Once per round | 5 | The save DC, 12 + CHA modifier |
+| Miracle (FTH 28) | Once per long rest | 0 | A card for the GM to adjudicate |
+
+- In combat, a once-per-round milestone comes back when the round changes and a once-per-combat one when a new combat starts. Outside combat, once-per-round milestones get uses equal to the stat's modifier and once-per-combat milestones get one use, regained on a long rest (Notion Stats → Stat Milestones). Uses spent outside combat and in combat are tracked separately.
+- AP is the listed cost and is only paid in combat. The listed cost isn't lowered by the stat's modifier.
+- Type in the uses field to correct the tracker. In combat, 1 means unused this round (or combat) and 0 means used.
+- A long rest clears every milestone's spent uses. Uses are saved in the actor flag `worlds-beyond.milestoneUses`; no data model field was added.
+- Code: `module/milestone-actions-core.mjs` (rules, tests in `tests/milestone-actions-core.test.mjs`) and `module/milestone-actions.mjs` (buttons, cards, Singularity).
+
 <a id="milestones-rules-and-calculations"></a>
 ### Rules and calculations
 
