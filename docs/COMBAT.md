@@ -166,7 +166,7 @@ Reactions come back at the start of each creature's own turn. A character who sp
 
 - World setting **Offer opportunity attacks** (on).
 - **Let them go** on each popup, and the **Spend a reaction** checkbox.
-- Before moving, the mover is asked to confirm a move that would provoke (see below).
+- Before moving, the mover is asked to confirm a move that would provoke (see below). The warning opens beside the mover, its path and the enemies, so it doesn't cover them.
 
 ### Rule choices to confirm
 
@@ -203,6 +203,7 @@ In combat, a move that would leave the reach of a visible enemy who has a reacti
 
 - Weapons have a **Melee reach (ft)** field (Range & loading on the weapon sheet). Blank means 5 ft, or 10 ft with the Reach property. It sets both melee attack reach and opportunity-attack reach.
 - With a target token on the map, the attack dialog shows the distance and reach or range: "Orc is 15 ft away · reach 5 ft. Out of reach: move closer." Thrown and ranged attacks use the weapon's normal/long range: past normal range ticks **Past normal range** (disadvantage); past long range is out of range.
+- The **Grip** choice for a Versatile weapon shows the dice rolled at the attacker's level, such as 2d8 / 2d10 for a Longsword at level 5.
 - Attacking out of reach or range asks **Attack anyway?** first. Opportunity attacks skip the check, because the target has already moved away. Weapons with no listed range aren't checked.
 
 ### Opt-outs

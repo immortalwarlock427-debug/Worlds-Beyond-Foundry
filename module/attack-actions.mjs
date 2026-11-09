@@ -11,6 +11,7 @@ import { strikeAutomation } from "./strike-settings.mjs";
 import { attackDistance, positioningSetting } from "./positioning.mjs";
 import { rangeStatus, rangeText } from "./positioning-core.mjs";
 import { handledAutomatically, abilityDamagePlan } from "./strike-core.mjs";
+import { singularityReady, singularityPlan, singularityUpdate } from "./milestone-actions.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices,
@@ -20,6 +21,7 @@ import {
   critThreshold,
   attackOutcome,
   damagePlan,
+  gripDamage,
   hitDamage,
   dualWieldPartners,
   shotsLeft,
@@ -108,10 +110,11 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
         return { key, selected: key === best, label: `${statLabel(key)} (${formatModifier(mod)})${cost}` };
       }),
       versatile: !!weapon.system.properties.versatile,
-      damage: weapon.system.damage,
-      versatileDamage: weapon.system.versatileDamage,
+      damage: gripDamage(weapon, actor.system.level).one,
+      versatileDamage: gripDamage(weapon, actor.system.level).two,
       canRange: modes.some(mode => mode !== "melee"),
-      mount: !!weapon.system.properties.mount
+      mount: !!weapon.system.properties.mount,
+      singularity: singularityReady(actor)
     })
   );
   const form = await foundry.applications.api.DialogV2.input({
@@ -219,6 +222,8 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       if (reactionSpent && !(reactions >= 1)) {
         throw new Error("No reactions left for an opportunity attack. Untick Spend a reaction to roll anyway.");
       }
+      // Singularity (DEX 28): declared before rolling; a hit becomes a critical hit.
+      const singularity = options.singularity ? singularityPlan(actor) : null;
       const rollMode = options.rollMode ?? "normal";
       const sections = [];
       const rolls = [];
@@ -240,6 +245,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           hand,
           attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: critThreshold(hand.item) })
         );
+        if (singularity && hand.hand === "main" && hand.hit !== false) hand.critical = hand.hit ? true : "if it hits";
         const breakdown = describeD20Roll(roll, rollMode);
         const result =
           hand.hit === null
@@ -268,6 +274,11 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         rolls.push(roll);
       }
       if (options.spendAp) await payAp(actor, cost, change);
+      if (singularity)
+        await change(
+          () => actor.update(singularityUpdate(singularity.next)),
+          () => actor.update(singularityUpdate(singularity.previous))
+        );
       if (reactionSpent)
         await change(
           () => actor.update({ "system.reactions.value": reactions - 1 }),
@@ -285,6 +296,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         options.opportunity
           ? `Opportunity attack${options.opportunity === "enter" ? " (Bulwark)" : ""}${reactionSpent ? " · 1 reaction spent" : ""}.`
           : "",
+        singularity ? `Singularity declared: ${hands[0].hit === false ? "the attack missed, and it's spent for the round" : "a hit is a critical hit"}.` : "",
         options.spendAp ? `${cost} AP spent.` : "",
         ...hands
           .filter(({ item }) => shotsLeft(item) !== null)

@@ -119,6 +119,18 @@ export function scaleDice(expression, times = 1) {
   return { formula: parts.join("").replace(/^\+/, ""), maximum, valid: true };
 }
 
+// The dice a weapon rolls at this level for each grip, for dialog labels.
+// Matches what damagePlan rolls, so the Grip line and the card agree.
+export function gripDamage(weapon, level = 1) {
+  const system = weapon?.system ?? weapon ?? {};
+  const times = damageMultiplier(level);
+  const shown = listed => {
+    const dice = scaleDice(listed, times);
+    return dice.valid && dice.formula ? dice.formula : String(listed ?? "");
+  };
+  return { one: shown(system.damage), two: shown(system.versatileDamage || system.damage) };
+}
+
 // Everything a damage roll needs, without rolling.
 // An off-hand hit from attacking with both weapons deals full dice damage
 // and adds no modifier.
