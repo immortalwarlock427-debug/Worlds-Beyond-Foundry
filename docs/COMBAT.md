@@ -11,6 +11,7 @@ The sections below preserve rules sources and historical implementation checks. 
 
 - [Automatic attack resolution](#resolution)
 - [Ability areas, multiple targets and map effects](#areas)
+- [Status conditions, Bleeding and Burning](#conditions)
 - [Movement AP](#movement)
 - [Opportunity attacks](#opportunity)
 - [Sides, collision and attack range](#positioning)
@@ -69,6 +70,22 @@ The ability editor's **Targeting** section sets: attack roll vs Natural Evasion 
 ### Code
 
 `module/strike-core.mjs` holds the rules (tested in `tests/strike-core.test.mjs`). `module/strike.mjs` runs exchanges on the active GM's client, stores progress on the attack card's `flags.worlds-beyond.strike`, and talks to the defender's client over the system socket (tested in `tests/strike.test.mjs`). `module/ability-strikes.mjs` uses a targeted ability; `module/strike-settings.mjs` registers the two settings.
+
+<a id="conditions"></a>
+## Status conditions, Bleeding and Burning
+
+Roadmap step 5, first part (2026-11-09). Follows Notion Status Effects Explained and Vitality (Shake It Off).
+
+- **Token HUD:** Notion's 16 statuses use Notion's names and rules (the HUD sorts every status alphabetically): Bleeding, Blinded, Burning, Charmed, Deafened, Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned and Unconscious. They reuse Foundry's ids where Foundry has the status (`fear` is Frightened, `restrain` Restrained, `stun` Stunned, `paralysis` Paralyzed), so statuses already on tokens carry over. Foundry's other statuses (Dead, Degenerating and the rest) stay available.
+- **Status tab:** a status shows its Notion rule. **End** removes it, like clicking it off in the token HUD.
+- **Bleeding and Burning at the start of the turn:** when a creature's turn starts, the active GM's client rolls 1d4 (Bleeding) or 1d6 fire (Burning), plus a die at each of levels 5, 10, 15 and 20 of the creature that caused it. Armor Rating doesn't reduce it. Burning counts as Fire, so Fire resistance halves it and Fire immunity stops it. Health drops and a card shows the roll; the GM can **Undo** it from the card.
+- **Source level:** a Bleed weapon records its wielder's level. A status added from the token HUD has no source, so it uses the creature's own level and the card says so.
+- **Bleed signature:** with automatic resolution, a weapon with Bleed starts Bleeding when its hit deals damage. A fully blocked hit doesn't cut in, so it doesn't. Bleeding doesn't stack.
+- **Ending them:** any healing ends Bleeding (healing abilities, potions, rests, raising Health by hand). **Shake it off** (Status tab or the tick card) rolls d20 + VIT modifier against DC 12 and costs 5 AP lowered by VIT in combat. **Put out** ends Burning for 5 AP in combat. Entering water ends Burning too; remove it by hand.
+- **Opt-out:** world setting **Automate Bleeding and Burning** (on). Off: no turn-start damage, Bleed weapons don't start Bleeding and healing doesn't end it.
+- Undoing a damage result or a tick doesn't count as healing.
+
+Not automated yet: the other statuses' advantage, disadvantage and movement effects, Unconscious at 0 Health, Bleeding Out, Death's Mercy, Trauma and exhaustion. Code: `module/conditions-core.mjs` (tests in `tests/conditions-core.test.mjs`) and `module/conditions.mjs`.
 
 <a id="areas"></a>
 ## Ability areas, multiple targets and map effects

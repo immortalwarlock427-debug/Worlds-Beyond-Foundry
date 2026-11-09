@@ -5,6 +5,7 @@ import { numberOr } from "./core-numbers.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { effectTimeLeft } from "./effect-duration.mjs";
 import { timerKind, abilityActive, abilityTimeLeft } from "./ability-timers-core.mjs";
+import { condition, TICKS, endActionCost } from "./conditions-core.mjs";
 
 export const EFFECT_SCOPE = "worlds-beyond";
 export const effectFlags = effect => effect.flags?.[EFFECT_SCOPE] ?? {};
@@ -113,6 +114,15 @@ export function effectSnapshot(effect) {
   ]);
 }
 
+// The Notion status condition an effect applies (token HUD statuses), if any.
+export function conditionOf(effect) {
+  for (const id of effect?.statuses ?? []) {
+    const found = condition(id);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function effectRows(actor) {
   const all = actor.allApplicableEffects ? Array.from(actor.allApplicableEffects()) : effectList(actor.effects);
   return all
@@ -139,7 +149,10 @@ export function effectRows(actor) {
         summary:
           effectChanges(effect)
             .map(change => effectChangeText(change, actor.system))
-            .join(" · ") || "No bonuses",
+            .join(" · ") ||
+          conditionOf(effect)?.description ||
+          "No bonuses",
+        condition: conditionOf(effect)?.id ?? null,
         effect,
         timeLeft: boundItem(effect)?.type === "ability" ? abilityTimeLeft(boundItem(effect)) : effectTimeLeft(effect)
       };
@@ -189,6 +202,16 @@ export function effectContext(actor) {
             : "Equipment"
           : row.source,
       canEnd: item ? item.type === "ability" && item.system.kind !== "passive" && abilityActive(item) : true,
+      condition: item ? null : row.condition,
+      // Bleeding and Burning have their own actions: Shake It Off and putting out the flames.
+      endAction:
+        !item && TICKS[row.condition]
+          ? {
+              id: row.condition,
+              label: row.condition === "bleeding" ? "Shake it off" : "Put out",
+              ap: endActionCost(row.condition, actor.system?.stats?.vit?.mod ?? 0)
+            }
+          : null,
       summaries: [row.summary],
       timers: row.timeLeft ? [row.timeLeft] : []
     });
