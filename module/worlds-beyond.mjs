@@ -60,6 +60,7 @@ import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
 import { registerHealing } from "./healing.mjs";
+import { registerConditions, endConditionAction, removeCondition } from "./conditions.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -687,6 +688,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         return await (item
           ? item.sheet.render({ force: true })
           : openEffect(effectRows(this.actor).find(effect => effect.uuid === uuid).effect));
+      if (operation === "condition" && row.endAction) return await endConditionAction(this.actor, row.endAction.id);
+      // A status condition ends by removing it, like clicking it off in the token HUD.
+      if (operation === "end" && row.condition) return await removeCondition(this.actor, row.condition);
       if (operation === "end" && row.canEnd)
         return await (row.abilityId
           ? useAbility(this.actor, row.abilityId, { end: true })
@@ -745,6 +749,7 @@ Hooks.once("init", () => {
   registerTokenAttacks();
   registerStrikes();
   registerHealing();
+  registerConditions();
   registerVfx();
   registerMovementRuler();
   registerMovement();

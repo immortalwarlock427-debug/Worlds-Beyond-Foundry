@@ -6,6 +6,7 @@ import { queuedAction, createActionMessage } from "./action-support.mjs";
 import { inCombat } from "./combat-support.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { autoApplyDamage, registerStrikeSettings } from "./strike-settings.mjs";
+import { applyCondition, conditionsAutomated } from "./conditions.mjs";
 import {
   strikeInfo,
   defenderState,
@@ -330,7 +331,29 @@ async function finish(message, index, block) {
   }
   Object.assign(entry, { status: "done", step: "done", outcome: "hit", prompt: null, total: breakdown.total, applied });
   await saveState(message, state);
-  await postResult(message, index, { outcome: "hit", amount: breakdown.total, breakdown, applied, previous });
+  const bleeds = await startBleeding(data, index, defender, breakdown.total);
+  await postResult(message, index, {
+    outcome: "hit",
+    amount: breakdown.total,
+    breakdown,
+    applied,
+    previous,
+    extra: bleeds ? `${defender.name} starts Bleeding.` : ""
+  });
+}
+
+// Weapons with the Bleed signature start Bleeding on a hit that gets through (Weapons Explained).
+async function startBleeding(data, index, defender, total) {
+  if (data.ability || !(total > 0) || !conditionsAutomated() || defender?.statuses?.has("bleeding")) return false;
+  const attacker = foundry.utils.fromUuidSync(data.actorUuid);
+  const weapon = attacker?.items?.get(data.hands[index]?.itemId);
+  if (!weapon?.system?.signature?.bleed) return false;
+  try {
+    return !!(await applyCondition(defender, "bleeding", { sourceLevel: attacker.system?.level, sourceName: attacker.name }));
+  } catch (error) {
+    ui.notifications.warn(`Couldn't start Bleeding on ${defender.name}: ${error.message}`);
+    return false;
+  }
 }
 
 /* -------------------------------------------- */
@@ -356,7 +379,7 @@ function defenseLine(entry) {
     .join(" ");
 }
 
-async function postResult(message, index, { outcome, amount, breakdown = null, applied = false, previous = null }) {
+async function postResult(message, index, { outcome, amount, breakdown = null, applied = false, previous = null, extra = "" }) {
   const data = attackData(message);
   const defender = defenderOf(data, index);
   const entry = strikeState(message).exchanges[index];
@@ -385,6 +408,7 @@ async function postResult(message, index, { outcome, amount, breakdown = null, a
     if (amount > 0 && !applied)
       lines.push(autoApplyDamage() ? "Health was not changed. Apply it from this card." : "Automatic damage is off.");
   }
+  if (extra) lines.push(escapeHTML(extra));
   const roll = entry.damage?.roll ? foundry.dice.Roll.fromData(entry.damage.roll) : null;
   const content =
     `<div class="worlds-beyond wb-attack-card wb-strike-result"><h3>${escapeHTML(strike.name)} → ${name}</h3>` +
@@ -426,7 +450,7 @@ export async function changeResultHealth(message, operation) {
     const amount = Math.max(0, Number(result.amount) || 0);
     const current = actor.system.health.damage;
     if (operation === "undo" && result.applied && !result.undone) {
-      await actor.update({ "system.health.damage": current - amount });
+      await actor.update({ "system.health.damage": current - amount }, { worldsBeyondCorrection: true });
       await message.setFlag(SYSTEM_ID, "strikeResult", { ...result, undone: true });
     } else if (operation === "apply" && (!result.applied || result.undone)) {
       await actor.update({ "system.health.damage": damagedHealth(current, amount) });
