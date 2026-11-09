@@ -59,6 +59,7 @@ import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
+import { registerHealing } from "./healing.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -126,6 +127,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       });
     return {
       resistances: new ArrayField(new StringField({ required: true, nullable: false, blank: false }), { initial: [] }),
+      immunities: new ArrayField(new StringField({ required: true, nullable: false, blank: false }), { initial: [] }),
       appearance: new SchemaField({
         baseFormName: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
         portraitY: number(35, { integer: true, min: 0, max: 100 })
@@ -742,6 +744,7 @@ Hooks.once("init", () => {
   registerEquipmentItem();
   registerTokenAttacks();
   registerStrikes();
+  registerHealing();
   registerVfx();
   registerMovementRuler();
   registerMovement();

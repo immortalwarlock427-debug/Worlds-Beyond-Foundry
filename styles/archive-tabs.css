@@ -204,6 +204,7 @@
   color: #f3ebdd;
   background: #0f1630;
 }
+.worlds-beyond .wb-resistance-list .wb-immunity { border-color: rgba(212, 176, 106, .6); color: #e7c98e; }
 .worlds-beyond .wb-resistance-list .wb-resistance-empty {
   border: 0;
   padding-left: 0;

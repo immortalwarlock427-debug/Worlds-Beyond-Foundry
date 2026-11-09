@@ -213,6 +213,7 @@ function targetingContext(system, character, choices) {
   return {
     enabled: (targeting.mode ?? "none") !== "none",
     save: targeting.mode === "save",
+    heal: targeting.mode === "heal",
     modes: choices(TARGETING_MODES, targeting.mode ?? "none"),
     stats: choices(TARGETING_STATS, targeting.stat ?? ""),
     saveStats: choices(SAVE_STATS, targeting.saveStat ?? ""),

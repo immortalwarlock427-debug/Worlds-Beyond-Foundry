@@ -21,7 +21,9 @@ const statLabel = key => STATS.find(stat => stat.key === key)?.label ?? key;
 export function targetedAbilities(actor) {
   return itemList(actor.items).filter(
     item =>
-      item.type === "ability" && !["passive", "form"].includes(item.system.kind) && ["attack", "save"].includes(item.system.targeting?.mode)
+      item.type === "ability" &&
+      !["passive", "form"].includes(item.system.kind) &&
+      ["attack", "save", "heal"].includes(item.system.targeting?.mode)
   );
 }
 
@@ -41,7 +43,9 @@ export async function promptAbilityStrike(actor, itemId, target) {
   const lines = [
     `<p class="wb-dialog-meta">${escapeHTML(actor.name)} → ${escapeHTML(target.name)}</p>`,
     `<p>${escapeHTML(record.summary)}</p>`,
-    plan.check === "save"
+    plan.check === "heal"
+      ? `<p>Heals ${escapeHTML(target.name)} for ${escapeHTML(healFormula(actor, item, plan) || "nothing")}.</p>`
+      : plan.check === "save"
       ? `<p>${escapeHTML(target.name)} makes ${plan.saveStat ? `a ${statLabel(plan.saveStat)}` : "a"} save against DC ${wholeNumber(plan.dc)}.</p>`
       : `<p>Attack with ${plan.stat ? `${statLabel(plan.stat)} (${formatModifier(plan.mod)})` : "no modifier"} against Natural Evasion ${wholeNumber(target.evasion ?? "?")}.</p>`
   ];
@@ -70,13 +74,21 @@ export async function promptAbilityStrike(actor, itemId, target) {
 // to attack has no attack roll: each target Dodges against the DC for half damage (Notion Defenses).
 export async function rollAbilityStrike(actor, item, targets, { rollMode = "normal", area = null, visual = null, use = null } = {}) {
   const list = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
+  const plan = abilityStrikePlan(actor, item);
+  const healing = plan.check === "heal" ? healFormula(actor, item, plan) : null;
+  if (healing !== null && (!healing || !foundry.dice.Roll.validate(healing)))
+    throw new Error(`Set ${item.name}'s healing amount, such as 2d8 + fth, in Targeting → Healing.`);
   // Use pays AP (in combat), resource costs and uses, and starts cooldowns and bonuses.
   const pay = use ?? (await import("./abilities.mjs")).useAbility;
   const used = await pay(actor, item.id);
   if (!used) return;
-  const plan = abilityStrikePlan(actor, item);
   const messageMode = game.settings.get("core", "messageMode");
   const targeting = item.system.targeting;
+  if (healing !== null) {
+    const message = await postHealing(actor, item, list, { formula: healing, area, messageMode });
+    playAbilityVisual(actor, item, list, visual);
+    return message;
+  }
   const base = {
     hand: "main",
     abilityId: item.id,
@@ -164,6 +176,44 @@ export async function rollAbilityStrike(actor, item, targets, { rollMode = "norm
   );
   playAbilityVisual(actor, item, list, visual);
   return message;
+}
+
+// The healing formula with stat names turned into this character's modifiers.
+function healFormula(actor, item, plan) {
+  const mods = Object.fromEntries(STATS.map(stat => [stat.key, actor.system.stats[stat.key]?.mod ?? 0]));
+  return resolveStatTerms(item.system.targeting?.damage, mods, plan.mod).trim();
+}
+
+// One roll heals every target by the same amount. The active GM's client applies it (healing.mjs).
+async function postHealing(actor, item, list, { formula, area, messageMode }) {
+  const roll = await new foundry.dice.Roll(formula).evaluate({ allowInteractive: messageMode !== "blind" });
+  const amount = Math.max(0, Math.floor(roll.total));
+  const names = list.map(target => escapeHTML(target.name)).join(", ");
+  const content =
+    `<div class="worlds-beyond wb-attack-card wb-heal-card"><h3>${escapeHTML(item.name)}</h3>` +
+    (area ? `<p class="wb-dialog-meta">${escapeHTML(areaLabel(item.system.targeting.area))}${list.length ? "" : " · no one inside"}</p>` : "") +
+    `<p class="wb-result">Heals ${wholeNumber(amount)}${names ? `: ${names}` : ""}.</p>` +
+    (await roll.render()) +
+    "</div>";
+  return createActionMessage(
+    {
+      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+      content,
+      rolls: [roll],
+      flags: {
+        [SYSTEM_ID]: {
+          heal: {
+            actorUuid: actor.uuid,
+            name: item.name,
+            amount,
+            targets: list.map(target => ({ actorUuid: target.actorUuid ?? null, name: target.name })),
+            status: "pending"
+          }
+        }
+      }
+    },
+    { messageMode }
+  );
 }
 
 // Single targets get a streak from the caster to the target; areas fill their shape.

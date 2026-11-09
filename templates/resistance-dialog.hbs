@@ -1,5 +1,5 @@
 <div class="wb-check-options wb-resistance-editor">
-  <fieldset><legend>Damage types</legend>
+  <fieldset><legend>Resistant to</legend>
     <div class="wb-resistance-options">
     {{#each types}}
       <label class="wb-equipment-check"><input
@@ -12,11 +12,27 @@
   </fieldset>
   <label>Custom resistances <small>One per line</small><textarea
     name="custom"
-    rows="4"
+    rows="3"
     placeholder="Lightning&#10;Cold"
   >{{custom}}</textarea></label>
-  <details class="wb-disclosure wb-help"><summary>Resistance help</summary>
-    <p>Resistance halves damage, rounded down, before Armor Rating. Apply damage manually for now.</p>
-    <p>Presets cover types named in Game Systems. Add any other types or conditions above. Clear all entries and checkboxes to remove your recorded resistances.</p>
+  <fieldset><legend>Immune to</legend>
+    <div class="wb-resistance-options">
+    {{#each immunity.types}}
+      <label class="wb-equipment-check"><input
+        type="checkbox"
+        name="{{field}}"
+        {{#if selected}}checked{{/if}}
+      > {{label}}</label>
+    {{/each}}
+    </div>
+  </fieldset>
+  <label>Custom immunities <small>One per line</small><textarea
+    name="customImmunity"
+    rows="3"
+    placeholder="Poison&#10;Necrotic"
+  >{{immunity.custom}}</textarea></label>
+  <details class="wb-disclosure wb-help"><summary>Resistance and immunity help</summary>
+    <p>Resistance halves damage of that type, rounded down, before Armor Rating. Immunity stops it completely, Overwhelming Force included. A weapon with two damage types (Mace: Bludgeoning, Piercing) needs both resisted or both immune.</p>
+    <p>Automatic attack resolution applies both. Presets cover types named in Game Systems; add any other types above. Clear all entries and checkboxes to remove them.</p>
   </details>
 </div>

@@ -271,20 +271,20 @@
       {{#if system.targeting.area.includeSelf}}checked{{/if}}
       {{#unless editable}}disabled{{/unless}}
     > Can include you</label>{{/if}}
-    <label>Damage<input
+    <label>{{#if targeting.heal}}Healing{{else}}Damage{{/if}}<input
       type="text"
       name="system.targeting.damage"
       value="{{system.targeting.damage}}"
-      placeholder="2d8 + str, 1d10 + int; blank for none"
+      placeholder="{{#if targeting.heal}}2d8 + fth, 1d10 + wis{{else}}2d8 + str, 1d10 + int; blank for none{{/if}}"
       {{#unless editable}}disabled{{/unless}}
     ></label>
-    <label>Damage type<input
+    {{#unless targeting.heal}}<label>Damage type<input
       type="text"
       name="system.targeting.damageType"
       value="{{system.targeting.damageType}}"
       placeholder="Fire, Lightning, Slashing…"
       {{#unless editable}}disabled{{/unless}}
-    ></label>
+    ></label>{{/unless}}
     <label>Map effect<select name="system.targeting.visual.effect" {{#unless editable}}disabled{{/unless}}>{{#each targeting.visualEffects}}<option
       value="{{value}}"
       {{#if selected}}selected{{/if}}
@@ -301,7 +301,7 @@
       spellcheck="false"
       {{#unless editable}}disabled{{/unless}}
     ></label>{{/if}}{{/if}}
-  </div><p class="wb-item-brief">{{#if targeting.enabled}}{{#if targeting.showSize}}Area: {{targeting.area.label}}. Use it from the sheet or Alt-click a token, then place the area and confirm who it hits.{{#if targeting.areaAttack}} An area attack has each target Dodge against the DC for half damage.{{/if}}{{else}}Alt-click a token with your character selected to use this on it, or target one and press Use.{{/if}} In Damage, a stat's short name adds its modifier (2d8 + str, 1d10 + int); mod means the stat chosen above.{{#if targeting.save}}{{#if targeting.dcPreview}} Current DC: {{targeting.dcPreview}}.{{/if}} A blank DC uses 12 + the stat's modifier.{{else}} The attack rolls d20 + modifier against Natural Evasion; a natural 20 is a critical hit.{{/if}}{{else}}Choose an attack roll or a save to use this ability on a target.{{/if}}</p></details>{{/unless}}{{/unless}}
+  </div><p class="wb-item-brief">{{#if targeting.enabled}}{{#if targeting.showSize}}Area: {{targeting.area.label}}. Use it from the sheet or Alt-click a token, then place the area and confirm who it hits.{{#if targeting.areaAttack}} An area attack has each target Dodge against the DC for half damage.{{/if}}{{else}}Alt-click a token with your character selected to use this on it, or target one and press Use.{{/if}} In {{#if targeting.heal}}Healing{{else}}Damage{{/if}}, a stat's short name adds its modifier (2d8 + str, 1d10 + int); mod means the stat chosen above.{{#if targeting.heal}} One roll heals every target; the GM's client applies it, up to full Health.{{else}}{{#if targeting.save}}{{#if targeting.dcPreview}} Current DC: {{targeting.dcPreview}}.{{/if}} A blank DC uses 12 + the stat's modifier.{{else}} The attack rolls d20 + modifier against Natural Evasion; a natural 20 is a critical hit.{{/if}}{{/if}}{{else}}Choose an attack roll, a save or healing to use this ability on a target.{{/if}}</p></details>{{/unless}}{{/unless}}
   <section class="wb-item-bonuses" aria-label="Item bonuses">
     <div class="wb-section-heading"><h2 class="wb-section-title">Bonuses</h2><button
       type="button"

@@ -7,12 +7,12 @@
     {{/each}}
   </section>
 
-  <section class="wb-resistances" aria-label="Resistances">
-    <div class="wb-section-heading"><h2 class="wb-section-title">Resistances</h2>
+  <section class="wb-resistances" aria-label="Resistances and immunities">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Resistances &amp; immunities</h2>
       {{#if editable}}<button type="button" data-action="resistances"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>{{/if}}
     </div>
     <ul class="wb-resistance-list">
-      {{#each resistances}}<li>{{this}}</li>{{else}}<li class="wb-resistance-empty">None recorded</li>{{/each}}
+      {{#each resistances}}<li>{{this}}</li>{{/each}}{{#each immunities}}<li class="wb-immunity" data-tooltip="Immune">Immune: {{this}}</li>{{/each}}{{#unless resistances.length}}{{#unless immunities.length}}<li class="wb-resistance-empty">None recorded</li>{{/unless}}{{/unless}}
     </ul>
   </section>
 

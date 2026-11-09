@@ -14,19 +14,33 @@ export function normalizeResistances(values = []) {
   });
 }
 
-export function resistanceEditor(values) {
+// One editor section. `prefix` names its fields: "resistance" keeps the original field names
+// (resistance0…, custom); "immunity" uses immunity0… and customImmunity.
+function editorSection(values, prefix) {
   const entries = normalizeResistances(values);
   return {
-    types: RESISTANCE_TYPES.map((label, index) => ({ label, field: `resistance${index}`, selected: entries.includes(label) })),
+    types: RESISTANCE_TYPES.map((label, index) => ({ label, field: `${prefix}${index}`, selected: entries.includes(label) })),
     custom: entries.filter(label => !RESISTANCE_TYPES.includes(label)).join("\n")
   };
 }
 
-export function resistanceSelection(form) {
+function sectionSelection(form, prefix, customField) {
   return normalizeResistances([
-    ...RESISTANCE_TYPES.filter((_type, index) => form[`resistance${index}`] === true),
-    ...String(form.custom ?? "").split(/\r?\n/)
+    ...RESISTANCE_TYPES.filter((_type, index) => form[`${prefix}${index}`] === true),
+    ...String(form[customField] ?? "").split(/\r?\n/)
   ]);
+}
+
+export function resistanceEditor(values, immunities = []) {
+  return { ...editorSection(values, "resistance"), immunity: editorSection(immunities, "immunity") };
+}
+
+export function resistanceSelection(form) {
+  return sectionSelection(form, "resistance", "custom");
+}
+
+export function immunitySelection(form) {
+  return sectionSelection(form, "immunity", "customImmunity");
 }
 
 // Exact individual-type lookup for later damage integration. Combined/conditional
