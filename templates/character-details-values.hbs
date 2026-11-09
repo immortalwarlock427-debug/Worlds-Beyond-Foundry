@@ -16,6 +16,27 @@
     </ul>
   </section>
 
+  <section class="wb-resistances wb-dying-details" aria-label="Death and dying">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Death &amp; dying</h2></div>
+    <p class="wb-hint">Death Threshold {{dying.threshold}}: dies at {{dying.diesAt}} Health. Level + VIT, 5 lower for each Trauma.</p>
+    <div class="wb-equipment-fields">
+      <label class="wb-override-label"><span>Trauma</span><input
+        type="number"
+        name="system.dying.trauma"
+        value="{{system.dying.trauma}}"
+        min="0"
+        step="1"
+        {{#unless editable}}disabled{{/unless}}
+      ></label>
+      <label class="wb-equipment-check" data-tooltip="Stops Bleeding Out until healed"><input
+        type="checkbox"
+        name="system.dying.stabilized"
+        {{#if system.dying.stabilized}}checked{{/if}}
+        {{#unless editable}}disabled{{/unless}}
+      > Stabilized</label>
+    </div>
+  </section>
+
   <section class="wb-defenses" aria-label="Defenses">
     <h2 class="wb-section-title">Defenses <span>1 reaction</span></h2>
     <div class="wb-defense-actions">

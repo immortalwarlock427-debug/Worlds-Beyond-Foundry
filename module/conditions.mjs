@@ -105,7 +105,8 @@ export async function tick(actor, id, combat) {
   const amount = immune ? 0 : resistant ? Math.floor(rolled / 2) : rolled;
   const previous = actor.system.health.damage;
   let applied = false;
-  if (amount > 0) applied = !!(await actor.update({ "system.health.damage": damagedHealth(previous, amount) }));
+  if (amount > 0)
+    applied = !!(await actor.update({ "system.health.damage": damagedHealth(previous, amount) }, { worldsBeyondDamage: true }));
   const notes = [
     `${formula} for a level ${wholeNumber(source.level)} source${source.name ? ` (${escapeHTML(source.name)})` : source.known ? "" : " (its own level; none was recorded)"}.`,
     "Armor Rating doesn't reduce it.",

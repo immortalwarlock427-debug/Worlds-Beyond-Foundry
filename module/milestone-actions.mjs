@@ -5,6 +5,7 @@ import { planApPayment, payAp } from "./combat-support.mjs";
 import { rollStatCheck } from "./roll-actions.mjs";
 import { formatModifier } from "./stats.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { selfStabilize } from "./death.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const FLAG = "milestoneUses";
@@ -125,6 +126,7 @@ export async function rollStabilize(actor) {
     allowInteractive: messageMode !== "blind"
   });
   const success = roll.total >= 12;
+  if (success) await selfStabilize(actor);
   return roll.toMessage(
     {
       speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),

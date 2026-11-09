@@ -326,19 +326,25 @@ async function finish(message, index, block) {
     previous = null;
   if (breakdown.total > 0 && autoApplyDamage()) {
     previous = defender.system.health.damage;
-    const result = await defender.update({ "system.health.damage": damagedHealth(previous, breakdown.total) });
+    const result = await defender.update(
+      { "system.health.damage": damagedHealth(previous, breakdown.total) },
+      { worldsBeyondDamage: true }
+    );
     applied = !!result;
   }
   Object.assign(entry, { status: "done", step: "done", outcome: "hit", prompt: null, total: breakdown.total, applied });
   await saveState(message, state);
   const bleeds = await startBleeding(data, index, defender, breakdown.total);
+  // Death's Mercy may have stopped part of the hit at the Health floor.
+  const reached = applied ? defender.system.health.damage - previous : breakdown.total;
+  const mercy = applied && reached < breakdown.total ? `Death's Mercy: only ${wholeNumber(reached)} reaches Health.` : "";
   await postResult(message, index, {
     outcome: "hit",
     amount: breakdown.total,
     breakdown,
     applied,
     previous,
-    extra: bleeds ? `${defender.name} starts Bleeding.` : ""
+    extra: [mercy, bleeds ? `${defender.name} starts Bleeding.` : ""].filter(Boolean).join(" ")
   });
 }
 
@@ -453,7 +459,7 @@ export async function changeResultHealth(message, operation) {
       await actor.update({ "system.health.damage": current - amount }, { worldsBeyondCorrection: true });
       await message.setFlag(SYSTEM_ID, "strikeResult", { ...result, undone: true });
     } else if (operation === "apply" && (!result.applied || result.undone)) {
-      await actor.update({ "system.health.damage": damagedHealth(current, amount) });
+      await actor.update({ "system.health.damage": damagedHealth(current, amount) }, { worldsBeyondDamage: true });
       await message.setFlag(SYSTEM_ID, "strikeResult", { ...result, applied: true, undone: false });
     }
   });

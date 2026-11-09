@@ -12,6 +12,7 @@ The sections below preserve rules sources and historical implementation checks. 
 - [Automatic attack resolution](#resolution)
 - [Ability areas, multiple targets and map effects](#areas)
 - [Status conditions, Bleeding and Burning](#conditions)
+- [Death and dying](#dying)
 - [Movement AP](#movement)
 - [Opportunity attacks](#opportunity)
 - [Sides, collision and attack range](#positioning)
@@ -86,6 +87,23 @@ Roadmap step 5, first part (2026-11-09). Follows Notion Status Effects Explained
 - Undoing a damage result or a tick doesn't count as healing.
 
 Not automated yet: the other statuses' advantage, disadvantage and movement effects, Unconscious at 0 Health, Bleeding Out, Death's Mercy, Trauma and exhaustion. Code: `module/conditions-core.mjs` (tests in `tests/conditions-core.test.mjs`) and `module/conditions.mjs`.
+
+<a id="dying"></a>
+## Death and dying
+
+Roadmap step 5, second part (2026-11-09). Follows Notion Death and Dying.
+
+- **Death Threshold:** level + current VIT, 5 lower for each Trauma. A character dies at the negative of it (level 5, VIT 21: dies at −26). With a threshold of 0 or less, any Health below 0 kills. Details → **Death & dying** shows it, with **Trauma** and **Stabilized** fields to correct.
+- **Death's Mercy:** a hit that takes a character from 0 or above into the negative can't take them further below 0 than half their Death Threshold. Once below 0, damage hits in full. It applies to damage the system deals (attack results, Apply, Bleeding/Burning and Bleeding Out ticks). Health typed on the sheet stays as typed. The attack result card says when Mercy stopped part of a hit.
+- **Unconscious:** at 0 Health or below the character gets the Unconscious status. It comes off when Health rises to 1 or more.
+- **Bleeding Out:** at the start of their turn, a character at 0 or below who isn't stabilized loses 4 Health, with no Armor Rating or resistance. A card shows it with **Stabilize** and the GM's **Undo**.
+- **Stabilize:** another creature spends 5 AP in combat and rolls d20 + its INT modifier against DC 12. Select that creature's token, then press **Stabilize** on the card or on the dying character's Overview. On a success they stop bleeding out and stay unconscious until healed. The GM's client applies it when a player stabilizes someone else's character. Indomitable's **Stabilize** roll (VIT 21) stabilizes yourself on a success.
+- **Treat:** out of combat, a stabilized character can be treated for 10 minutes and brought back to 1 Health (Overview button).
+- **Trauma:** each time a character at 0 or below recovers to 1 or more, Trauma goes up by 1. Undoing a damage result doesn't count. A long rest sets it back to 0 and clears Stabilized.
+- **Death:** at the threshold the character gets the Dead status, and their combatants are marked defeated.
+- **Opt-out:** world setting **Automate death and dying** (on).
+
+Not automated yet: Knocked Out's exhaustion level (exhaustion is the next part of step 5) and "taking damage wakes a creature knocked out by something else". Code: `module/death-core.mjs` (tests in `tests/death-core.test.mjs`) and `module/death.mjs`.
 
 <a id="areas"></a>
 ## Ability areas, multiple targets and map effects

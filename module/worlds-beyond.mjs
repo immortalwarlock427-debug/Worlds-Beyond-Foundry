@@ -61,6 +61,7 @@ import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
 import { registerHealing } from "./healing.mjs";
 import { registerConditions, endConditionAction, removeCondition } from "./conditions.mjs";
+import { registerDeath, dyingContext, stabilize, treat } from "./death.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -159,6 +160,11 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         maxOverride: override(),
         value: number(0, { persisted: false }),
         max: number(0, { persisted: false })
+      }),
+      // Death and Dying: Trauma lowers the Death Threshold until a long rest; stabilized stops Bleeding Out.
+      dying: new SchemaField({
+        trauma: number(0, { integer: true, min: 0 }),
+        stabilized: new BooleanField({ initial: false })
       }),
       ap: pool(),
       command: new SchemaField({ value: number(), fresh: new BooleanField({ initial: false }) }),
@@ -293,6 +299,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       statSetup: CharacterSheet.#onStatSetup,
       milestones: CharacterSheet.#onMilestones,
       milestoneAction: CharacterSheet.#onMilestoneAction,
+      dying: async function (event, target) {
+        try {
+          if (target.dataset.operation === "treat") return await treat(this.actor);
+          if (target.dataset.operation === "stabilize") return await stabilize(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       longRest: CharacterSheet.#onLongRest,
       resistances: async function () {
         if (!this.isEditable) return;
@@ -432,7 +446,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         showAllFormResources: this._showAllFormResources,
         commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false
       }),
-      { milestoneActions: milestoneActionRows(this.actor) }
+      { milestoneActions: milestoneActionRows(this.actor), dying: dyingContext(this.actor) }
     );
   }
 
@@ -750,6 +764,7 @@ Hooks.once("init", () => {
   registerStrikes();
   registerHealing();
   registerConditions();
+  registerDeath();
   registerVfx();
   registerMovementRuler();
   registerMovement();
