@@ -80,7 +80,7 @@ export async function useMilestone(actor, id) {
           speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
           content:
             `<div class="worlds-beyond wb-ability-card wb-milestone-card"><h3>${escapeHTML(usage.label)}</h3>` +
-            `<p class="wb-dialog-meta">${usage.statLabel} ${usage.at} milestone · ${usage.ap ? `${usage.ap} AP spent · ` : ""}${escapeHTML(usageText(after))} left</p>` +
+            `<p class="wb-dialog-meta">${usage.statLabel} ${usage.at} milestone${usage.ap ? ` · ${usage.ap} AP spent` : ""} · Uses left: ${after.remaining} / ${after.maximum} ${after.period}</p>` +
             extra +
             `<p>${escapeHTML(usage.text)}</p></div>`,
           flags: { [SYSTEM_ID]: { sheetActivity: { actorUuid: actor.uuid, label: `Used ${usage.label}` } } }
