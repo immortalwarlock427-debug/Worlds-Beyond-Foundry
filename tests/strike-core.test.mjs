@@ -9,7 +9,9 @@ import {
   canBlock,
   avoidOutcome,
   resistantTo,
+  immuneTo,
   strikeDamage,
+  TARGETING_MODES,
   damagedHealth,
   abilityDamagePlan
 } from "../module/strike-core.mjs";
@@ -250,4 +252,21 @@ test("opportunity attacks offer no Dodge, Parry or Block; normal attacks keep th
   const normal = strikeInfo(data(null), 0);
   assert.deepEqual(kinds(avoidOptions(normal, defender)), ["dodge", "parry", "take"]);
   assert.equal(canBlock(defender, [], 5, normal), true);
+});
+
+test("immunity stops a hit's damage completely, Overwhelming Force included", () => {
+  assert.equal(immuneTo(["Fire"], "Fire"), true);
+  assert.equal(immuneTo(["Bludgeoning"], "Bludgeoning, Piercing"), false);
+  assert.equal(immuneTo(["Bludgeoning", "Piercing"], "Bludgeoning, Piercing"), true);
+  assert.equal(immuneTo(["Fire"], ""), false);
+  const hit = strikeDamage({ rolled: 30, armor: 2, overwhelming: true, immune: true });
+  assert.equal(hit.total, 0);
+  assert.equal(hit.immune, true);
+  assert.equal(hit.original, 30);
+  // Without immunity the same hit keeps Overwhelming Force's floor.
+  assert.equal(strikeDamage({ rolled: 30, armor: 40, overwhelming: true }).total, 15);
+});
+
+test("abilities can target to heal", () => {
+  assert.equal(TARGETING_MODES.heal, "Heal the target");
 });

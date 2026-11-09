@@ -58,6 +58,7 @@ import { registerTokenConfig } from "./token-config.mjs";
 import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
+import { registerHealing } from "./healing.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -718,6 +719,7 @@ Hooks.once("init", () => {
   registerEquipmentItem();
   registerTokenAttacks();
   registerStrikes();
+  registerHealing();
   registerVfx();
   registerMovementRuler();
   registerMovement();

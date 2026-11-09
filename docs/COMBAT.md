@@ -41,6 +41,14 @@ After a failed Dodge, Parry or save, the popup offers **Wonder** while uses rema
 
 Options with nothing to choose (no reactions in combat, no damage past Armor Rating) are skipped. Outside combat reactions aren't spent, so every defense stays available. The attack card shows who is being waited on; its owner can reopen the popup with **Respond**, and the GM can **Let it hit**, **Skip Block** or **Resolve by hand**, which brings back the manual damage and defense buttons.
 
+### Immunity
+
+Record immunities with **Resistances & immunities → Edit** on the Details tab (the same editor as resistances). A hit of a type the target is immune to deals no damage, Overwhelming Force included (Notion Defenses). A weapon hit on an immune target skips the defense popup and posts "X is immune to Y". Ability hits still ask, since the ability may do more than damage; the result card then shows the rolled damage and "immune".
+
+### Healing
+
+Set an ability's **Targeting** to **Heal the target**. **Healing** takes a formula like Damage (`2d8 + fth`) and the Area settings work the same way, so a circle can heal everyone ticked inside it. Using it pays the ability's costs, rolls once and posts a card. The active GM's client heals every target by that amount, up to full Health and up from below 0. The card then lists who healed how much. The GM gets **Undo healing** (puts the amount back on top of any damage taken since) and **Apply healing**. With **Automatic attack resolution** or **Apply damage automatically** off, the card waits for the GM's **Apply healing**. Healing doesn't end statuses yet; conditions are roadmap step 5.
+
 ### Settings and opt-outs
 
 - **Automatic attack resolution** (world setting, on): off restores the manual attack card buttons.
@@ -55,7 +63,7 @@ The ability editor's **Targeting** section sets: attack roll vs Natural Evasion 
 
 - Weapon attacks don't offer a stat save. Notion defends against them with Natural Evasion and reactions; a free save would make Dodge pointless.
 - Resistance to a multi-type weapon (Mace: Bludgeoning, Piercing) needs every listed type resisted.
-- Immunity isn't recorded on characters yet; use Undo or Resolve by hand for an immune target.
+- Immunity to a multi-type weapon needs every listed type, like Resistance.
 - Areas, multiple targets and map effects are roadmap step 4.
 
 ### Code
@@ -165,7 +173,7 @@ Reactions come back at the start of each creature's own turn. A character who sp
 - Notion doesn't say what provokes an opportunity attack. This uses D&D's rule: leaving an enemy's reach, which includes walking through it.
 - Bulwark attacks count as opportunity attacks, so they use a reaction and Flicker avoids them.
 - The attack happens after the move, not before the mover steps out. A hit doesn't stop the move (confirmed 2026-11-07).
-- No defensive reactions against opportunity attacks (decided 2026-11-07). Notion Defenses still says you can defend against any attack while you have reactions.
+- No defensive reactions against opportunity attacks (decided 2026-11-07). Notion Defenses says so since 2026-11-09: the target can't Dodge, Parry or Block it; Resistance and Armor Rating still apply.
 
 ### Code
 

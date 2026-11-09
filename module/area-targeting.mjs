@@ -19,7 +19,7 @@ export function casterToken(actor) {
 }
 
 export function isTargetedAbility(item) {
-  return item?.type === "ability" && ["attack", "save"].includes(item.system.targeting?.mode);
+  return item?.type === "ability" && ["attack", "save", "heal"].includes(item.system.targeting?.mode);
 }
 
 // Sheet Use button, favorites and the Alt-click chooser all start here.
@@ -153,9 +153,11 @@ async function confirmTargets(actor, item, tokens, settings) {
   const plan = abilityStrikePlan(actor, item);
   const record = abilityRecord(item, actor.system);
   const defense =
-    plan.check === "save"
-      ? `Each target makes a save against DC ${wholeNumber(plan.dc)}.`
-      : `Area attack: each target can Dodge against DC ${wholeNumber(plan.dc)} for half damage.`;
+    plan.check === "heal"
+      ? "Each ticked target is healed by the same roll."
+      : plan.check === "save"
+        ? `Each target makes a save against DC ${wholeNumber(plan.dc)}.`
+        : `Area attack: each target can Dodge against DC ${wholeNumber(plan.dc)} for half damage.`;
   const rows = tokens.length
     ? tokens
         .map(

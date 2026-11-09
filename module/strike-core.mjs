@@ -9,7 +9,8 @@ import { isResistant } from "./resistances.mjs";
 export const TARGETING_MODES = Object.freeze({
   none: "No target",
   attack: "Attack roll vs Natural Evasion",
-  save: "Target makes a save"
+  save: "Target makes a save",
+  heal: "Heal the target"
 });
 export const TARGETING_STATS = Object.freeze(
   Object.fromEntries([["", "Same as AP discount stat"], ...STATS.map(stat => [stat.key, stat.label])])
