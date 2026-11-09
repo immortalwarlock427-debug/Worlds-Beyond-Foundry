@@ -85,6 +85,53 @@
       </ul>
     </section>
     {{else}}<p class="wb-empty">Add an ability or drop one from the Items directory.</p>{{/each}}
+    {{#if milestoneActions.length}}
+    <section class="wb-equipment-group wb-milestone-actions" aria-label="Milestone actions"><h3 class="wb-equipment-group-title">Milestones <span>{{milestoneActions.length}}</span></h3>
+      <ul class="wb-equipment-list">
+        {{#each milestoneActions}}
+        <li class="wb-equipment-row wb-milestone-action {{#unless ready}}is-spent{{/unless}}" data-milestone-action="{{id}}">
+          <span class="wb-item-icon wb-milestone-icon" aria-hidden="true">◆</span>
+          <div class="wb-item-main"><button
+            type="button"
+            class="wb-equipment-name"
+            data-action="milestones"
+            data-stat="{{stat}}"
+            data-threshold="{{threshold}}"
+            aria-label="Open the {{label}} rule"
+            data-tooltip="{{text}}"
+          >
+            <span class="wb-item-title">{{label}} <span class="wb-quantity">{{statLabel}} {{threshold}}</span></span>
+            <span class="wb-item-brief">{{usage}}{{#if attack}} · Declare in the attack dialog{{/if}}</span>
+          </button></div>
+          <div class="wb-row-actions"><label class="wb-milestone-uses" data-tooltip="Uses left. Change it to correct the tracker."><input
+            type="number"
+            min="0"
+            max="{{maximum}}"
+            step="1"
+            value="{{remaining}}"
+            data-milestone-uses="{{id}}"
+            aria-label="{{label}} uses left"
+            {{#unless @root.editable}}disabled{{/unless}}
+          ><span>/ {{maximum}}</span></label>{{#if stabilize}}<button
+            type="button"
+            class="wb-row-use"
+            data-action="milestoneAction"
+            data-operation="stabilize"
+            data-tooltip="Below 0 Health: d20 + VIT modifier against DC 12"
+            {{#unless @root.editable}}disabled{{/unless}}
+          >Stabilize</button>{{/if}}{{#unless attack}}<button
+            type="button"
+            class="wb-row-use"
+            data-action="milestoneAction"
+            data-operation="use"
+            {{#unless ready}}disabled{{/unless}}
+            {{#unless @root.editable}}disabled{{/unless}}
+          >Use</button>{{/unless}}</div>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{/if}}
   </section>
 
   </section>

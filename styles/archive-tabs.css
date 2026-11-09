@@ -285,3 +285,10 @@
 @media (prefers-reduced-motion: reduce) {
   .worlds-beyond.wb-character-sheet .wb-doll-figure *, .worlds-beyond.wb-character-sheet .wb-doll-slot, .worlds-beyond.wb-character-sheet .wb-doll-hand { transition: none; }
 }
+
+/* Milestone actions on the Abilities tab */
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-icon { display: grid; place-items: center; color: var(--wb-brass); font-size: 20px; background: #D4B06A0E; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-action.is-spent .wb-milestone-icon { color: #8E9AB2; background: transparent; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-uses { display: inline-flex; align-items: center; gap: 4px; color: #959CB2; font: 13px var(--wb-font-body); white-space: nowrap; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-uses input { width: 3.2em; height: 28px; text-align: center; }
+.worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > .wb-row-use:disabled { opacity: 0.45; cursor: default; }

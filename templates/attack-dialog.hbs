@@ -13,6 +13,11 @@
   {{#if versatile}}<label><span>Grip</span>
     <select name="grip"><option value="one">One hand · {{damage}}</option><option value="two">Two hands · {{versatileDamage}} (counts as Two-handed)</option></select>
   </label>{{/if}}
+  {{#if singularity}}<label class="wb-check-toggle" data-tooltip="DEX 28: if this attack hits, it's a critical hit. A miss still spends it for the round."><input
+    type="checkbox"
+    name="singularity"
+    {{#unless singularity.ready}}disabled{{/unless}}
+  > Declare Singularity ({{singularity.text}})</label>{{/if}}
   {{#if canRange}}<label class="wb-check-toggle"><input type="checkbox" name="longRange"> Past normal range (disadvantage)</label>{{/if}}
   {{#if mount}}<label class="wb-check-toggle"><input type="checkbox" name="mounted"> Mounted</label>
   <label><span>Feet moved in a straight line this turn</span><input type="number" name="mountedFeet" value="0" min="0" step="5"></label>{{/if}}
