@@ -7,6 +7,7 @@ import { rollCard } from "./roll-actions.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 import { linkedDefense, requireUnusedDefense, markLinkedDefense, linkedResetButtons } from "./attack-defense.mjs";
+import { exhaustionMode } from "./exhaustion.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const template = (name, data) =>
@@ -112,6 +113,8 @@ export async function promptDodge(actor, source) {
     content: await template("dodge-dialog", {
       modifier: actor.system.stats.agl.mod,
       heavyArmor: !!actor.system.equipment?.heavyDisadvantage,
+      disadvantage: !!actor.system.equipment?.heavyDisadvantage || exhaustionMode(actor, "dodge") === "disadvantage",
+      exhaustion: exhaustionMode(actor, "dodge") === "disadvantage",
       reactions: actor.system.reactions.value,
       spendReaction: inCombat(actor) && !link?.used,
       ...(link ? { incoming: link.incoming, linkedUsed: link.used } : {})
@@ -130,7 +133,7 @@ export async function rollDodge(actor, { against = "attack", target = null, natu
       requireUnusedDefense(link, "dodge", spendReaction);
       const defense = dodgeContext({ against, target, natural20 });
       const heavyArmor = !!actor.system.equipment?.heavyDisadvantage;
-      mode ??= heavyArmor ? "disadvantage" : "normal";
+      mode ??= heavyArmor ? "disadvantage" : exhaustionMode(actor, "dodge");
       const plan = checkMode(mode);
       if (spendReaction && !(actor.system.reactions.value >= 1)) {
         throw new Error("No reactions left. Correct the pool or untick Spend 1 reaction to roll without spending.");
@@ -228,6 +231,7 @@ export async function promptParry(actor, source) {
     ],
     content: await template("parry-dialog", {
       ...state,
+      disadvantage: exhaustionMode(actor, "parry") === "disadvantage",
       modifier: actor.system.stats.dex.mod,
       reactions: actor.system.reactions.value,
       spendReaction: !!state.combatId && !state.used && state.unlocked && state.armed && !link?.used,
@@ -246,7 +250,7 @@ export async function promptParry(actor, source) {
 
 export async function rollParry(
   actor,
-  { target = null, ally = false, overwhelmingForce = false, mode = "normal", spendReaction = false, source } = {}
+  { target = null, ally = false, overwhelmingForce = false, mode, spendReaction = false, source } = {}
 ) {
   if (!actor.isOwner || actor.type !== "character") return;
   const messageMode = game.settings.get("core", "messageMode");
@@ -256,6 +260,7 @@ export async function rollParry(
       requireUnusedDefense(link, "parry", spendReaction);
       const defense = parryContext({ target, ally, overwhelmingForce });
       const state = parryState(actor);
+      mode ??= exhaustionMode(actor, "parry");
       const plan = checkMode(mode);
       if (spendReaction && state.used)
         throw new Error("Parry was already used this round. Reset Parry use for a correction, or untick spending for a practice roll.");

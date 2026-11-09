@@ -17,6 +17,8 @@ import { queuedAction, reversibleAction, createActionMessage } from "./action-su
 import { inCombat, planApPayment, payAp } from "./combat-support.mjs";
 import { formatModifier } from "./stats.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { exhaustionAutomated } from "./exhaustion.mjs";
+import { exhaustionLevel } from "./exhaustion-core.mjs";
 
 const SCOPE = "worlds-beyond";
 const escapeHTML = value =>
@@ -59,7 +61,8 @@ export function registerDeath() {
     }
   });
   Hooks.on("updateActor", (actor, changes, options, userId) => {
-    if (userId !== game.user.id || actor.type !== "character" || options.worldsBeyondHealthBefore == null || !deathAutomated()) return;
+    if (userId !== game.user.id || actor.type !== "character" || options.worldsBeyondHealthBefore == null) return;
+    if (!deathAutomated() && !exhaustionAutomated()) return;
     syncDying(actor, options, changes).catch(error => ui.notifications.error(`Death and dying: ${error.message}`));
   });
   Hooks.on("combatTurnChange", (combat, previous, current) =>
@@ -74,11 +77,20 @@ export function registerDeath() {
 }
 
 // After a Health change: Unconscious at 0 or below, waking and Trauma on recovery, death at the threshold.
-async function syncDying(actor, options, changes) {
+export async function syncDying(actor, options, changes) {
   const before = Number(options.worldsBeyondHealthBefore);
   const after = actor.system.health.value;
   const turn = healthTransition(before, after);
   const updates = {};
+  if (exhaustionAutomated() && !options.worldsBeyondDeathSync) {
+    if (turn.knockedOut && !options.worldsBeyondCorrection)
+      updates["system.exhaustion"] = Math.min(10, exhaustionLevel(actor.system.exhaustion) + 1);
+    if (after >= 1 && exhaustionLevel(actor.system.exhaustion) === 10) updates["system.exhaustion"] = 9;
+  }
+  if (!deathAutomated()) {
+    if (Object.keys(updates).length) await actor.update(updates, { worldsBeyondDeathSync: true });
+    return;
+  }
   if (turn.recovered) {
     // An explicit Trauma edit in the same update (a long rest) wins.
     // Undoing a damage result isn't a recovery.

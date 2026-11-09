@@ -16,6 +16,15 @@
     </ul>
   </section>
 
+  <section class="wb-resistances wb-exhaustion-details" aria-label="Exhaustion">
+    <div class="wb-section-heading"><h2 class="wb-section-title">Exhaustion</h2>
+      {{#if exhaustion.automated}}<button type="button" data-action="overexert" {{#unless exhaustion.ready}}disabled{{/unless}} {{#unless editable}}disabled{{/unless}}>Overexert · +5 AP / +1 level</button>{{/if}}
+    </div>
+    <label class="wb-override-label"><span>Level (0–10)</span><input type="number" name="system.exhaustion" value="{{exhaustion.level}}" min="0" max="10" step="1" {{#unless editable}}disabled{{/unless}}></label>
+    <p class="wb-hint">{{exhaustion.summary}}{{#unless exhaustion.automated}} · Automation off; manual tracker only.{{/unless}}</p>
+    <details class="wb-disclosure wb-help"><summary>Exhaustion rules</summary><p>Effects accumulate; −1d8 replaces −1d4, and −4 AP replaces −2. Long rest removes 2 levels. Overexert is once per own turn in combat. Dice and maximum overrides remain editable. At level 9, stay Prone until moved or exhaustion drops; manually removing the status remains a GM correction.</p></details>
+  </section>
+
   <section class="wb-resistances wb-dying-details" aria-label="Death and dying">
     <div class="wb-section-heading"><h2 class="wb-section-title">Death &amp; dying</h2></div>
     <p class="wb-hint">Death Threshold {{dying.threshold}}: dies at {{dying.diesAt}} Health. Level + VIT, 5 lower for each Trauma.</p>

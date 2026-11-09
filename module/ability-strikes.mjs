@@ -12,6 +12,7 @@ import { saveDc, targetingStat, resolveStatTerms } from "./strike-core.mjs";
 import { itemList } from "./loadout.mjs";
 import { areaLabel, visualSettings } from "./area-core.mjs";
 import { broadcastEffect } from "./vfx.mjs";
+import { exhaustionAttackDie } from "./exhaustion.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const escapeHTML = value =>
@@ -46,8 +47,8 @@ export async function promptAbilityStrike(actor, itemId, target) {
     plan.check === "heal"
       ? `<p>Heals ${escapeHTML(target.name)} for ${escapeHTML(healFormula(actor, item, plan) || "nothing")}.</p>`
       : plan.check === "save"
-      ? `<p>${escapeHTML(target.name)} makes ${plan.saveStat ? `a ${statLabel(plan.saveStat)}` : "a"} save against DC ${wholeNumber(plan.dc)}.</p>`
-      : `<p>Attack with ${plan.stat ? `${statLabel(plan.stat)} (${formatModifier(plan.mod)})` : "no modifier"} against Natural Evasion ${wholeNumber(target.evasion ?? "?")}.</p>`
+        ? `<p>${escapeHTML(target.name)} makes ${plan.saveStat ? `a ${statLabel(plan.saveStat)}` : "a"} save against DC ${wholeNumber(plan.dc)}.</p>`
+        : `<p>Attack with ${plan.stat ? `${statLabel(plan.stat)} (${formatModifier(plan.mod)})` : "no modifier"} against Natural Evasion ${wholeNumber(target.evasion ?? "?")}.</p>`
   ];
   const modes =
     plan.check === "attack"
@@ -58,21 +59,33 @@ export async function promptAbilityStrike(actor, itemId, target) {
           )
           .join("")}</fieldset>`
       : "";
+  const penalty = plan.check === "attack" ? exhaustionAttackDie(actor) : "";
+  const exhaustionControl = penalty
+    ? `<label class="wb-check-toggle"><input type="checkbox" name="exhaustionPenalty" checked> Exhaustion: −${penalty} attack</label>`
+    : "";
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"],
     position: { width: 380 },
     window: { title: `Use ${item.name}` },
-    content: `<div class="wb-check-options">${lines.join("")}${modes}</div>`,
+    content: `<div class="wb-check-options">${lines.join("")}${modes}${exhaustionControl}</div>`,
     ok: { label: "Use" },
     rejectClose: false
   });
   if (!form) return;
-  return rollAbilityStrike(actor, item, target, { rollMode: form.rollMode ?? "normal" });
+  return rollAbilityStrike(actor, item, target, {
+    rollMode: form.rollMode ?? "normal",
+    exhaustionPenalty: form.exhaustionPenalty !== false
+  });
 }
 
 // One target, or every target caught in an area (`area` is the shape key). An area ability set
 // to attack has no attack roll: each target Dodges against the DC for half damage (Notion Defenses).
-export async function rollAbilityStrike(actor, item, targets, { rollMode = "normal", area = null, visual = null, use = null } = {}) {
+export async function rollAbilityStrike(
+  actor,
+  item,
+  targets,
+  { rollMode = "normal", area = null, visual = null, use = null, exhaustionPenalty = true } = {}
+) {
   const list = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
   const plan = abilityStrikePlan(actor, item);
   const healing = plan.check === "heal" ? healFormula(actor, item, plan) : null;
@@ -102,7 +115,9 @@ export async function rollAbilityStrike(actor, item, targets, { rollMode = "norm
   let rolls = [];
   if (!area && plan.check === "attack") {
     const target = list[0];
-    const roll = await new foundry.dice.Roll(checkMode(rollMode).formula, { mod: plan.mod }).evaluate({
+    const exhaustionDie = exhaustionAttackDie(actor, exhaustionPenalty);
+    const formula = checkMode(rollMode).formula + (exhaustionDie ? ` - ${exhaustionDie}` : "");
+    const roll = await new foundry.dice.Roll(formula, { mod: plan.mod }).evaluate({
       allowInteractive: messageMode !== "blind"
     });
     const natural = roll.dice[0]?.total;
@@ -120,6 +135,7 @@ export async function rollAbilityStrike(actor, item, targets, { rollMode = "norm
     sections.push(
       `<p>Attack with ${plan.stat ? `${statLabel(plan.stat)} (${formatModifier(plan.mod)})` : "no modifier"} · ${checkMode(rollMode).label}</p>` +
         `<p>${result}</p>` +
+        (exhaustionDie ? `<p>Exhaustion: subtract ${exhaustionDie} from the attack roll.</p>` : "") +
         (await roll.render()) +
         (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "")
     );
@@ -191,7 +207,9 @@ async function postHealing(actor, item, list, { formula, area, messageMode }) {
   const names = list.map(target => escapeHTML(target.name)).join(", ");
   const content =
     `<div class="worlds-beyond wb-attack-card wb-heal-card"><h3>${escapeHTML(item.name)}</h3>` +
-    (area ? `<p class="wb-dialog-meta">${escapeHTML(areaLabel(item.system.targeting.area))}${list.length ? "" : " · no one inside"}</p>` : "") +
+    (area
+      ? `<p class="wb-dialog-meta">${escapeHTML(areaLabel(item.system.targeting.area))}${list.length ? "" : " · no one inside"}</p>`
+      : "") +
     `<p class="wb-result">Heals ${wholeNumber(amount)}${names ? `: ${names}` : ""}.</p>` +
     (await roll.render()) +
     "</div>";

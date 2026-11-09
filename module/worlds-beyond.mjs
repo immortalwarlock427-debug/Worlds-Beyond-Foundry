@@ -62,6 +62,7 @@ import { registerStrikes } from "./strike.mjs";
 import { registerHealing } from "./healing.mjs";
 import { registerConditions, endConditionAction, removeCondition } from "./conditions.mjs";
 import { registerDeath, dyingContext, stabilize, treat } from "./death.mjs";
+import { registerExhaustion, exhaustionAutomated, exhaustionContext, overexert } from "./exhaustion.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
 import { promptBlock, promptDodge, promptParry, decorateReactionMessage } from "./reaction-actions.mjs";
@@ -136,6 +137,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       }),
       favorites: new ArrayField(new StringField({ required: true, nullable: false, blank: true, initial: "" }), { initial: [] }),
       level: new NumberField({ required: true, nullable: false, integer: true, min: 1, initial: 1 }),
+      exhaustion: number(0, { integer: true, min: 0, max: 10 }),
       details: new SchemaField(
         Object.fromEntries(
           CHARACTER_DETAILS.map(({ key }) => [
@@ -225,6 +227,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     }
     this.core = coreNumbers({
       level: this.level,
+      exhaustion: exhaustionAutomated() ? this.exhaustion : 0,
       stats: { ...this.stats, agl: { value: this.equipment.effectiveAgility } },
       bonuses: {
         armor: this.equipment.armor + this.bonuses.armor,
@@ -308,6 +311,14 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         }
       },
       longRest: CharacterSheet.#onLongRest,
+      overexert: async function () {
+        if (!this.isEditable) return;
+        try {
+          return await overexert(this.actor);
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      },
       resistances: async function () {
         if (!this.isEditable) return;
         try {
@@ -446,7 +457,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         showAllFormResources: this._showAllFormResources,
         commandPending: system.command?.value > 0 ? !commandReady(this.actor) : false
       }),
-      { milestoneActions: milestoneActionRows(this.actor), dying: dyingContext(this.actor) }
+      { milestoneActions: milestoneActionRows(this.actor), dying: dyingContext(this.actor), exhaustion: exhaustionContext(this.actor) }
     );
   }
 
@@ -764,6 +775,7 @@ Hooks.once("init", () => {
   registerStrikes();
   registerHealing();
   registerConditions();
+  registerExhaustion();
   registerDeath();
   registerVfx();
   registerMovementRuler();

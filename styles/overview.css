@@ -231,3 +231,9 @@
   .worlds-beyond.wb-character-sheet .wb-identity-tags { gap: 0 6px; }
   .worlds-beyond.wb-character-sheet .wb-identity-tags button { font-size: 11px; min-height: 32px; }
 }
+
+/* Exhaustion belongs to the same archive strip as Health and action economy. */
+.worlds-beyond .wb-exhaustion-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 10px; border-block: 1px solid #D4B06A40; color: #AEB8D0; font-size: 13px; }
+.worlds-beyond .wb-exhaustion-strip button { flex: 0 1 auto; width: auto; min-height: 28px; padding: 2px 8px; background: transparent; border: 0; color: #D4B06A; }
+.worlds-beyond .wb-exhaustion-strip strong { color: #F3EBDD; }
+.worlds-beyond .wb-exhaustion-details .wb-override-label { max-width: 180px; }

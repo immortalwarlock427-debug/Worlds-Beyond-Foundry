@@ -13,6 +13,7 @@ The sections below preserve rules sources and historical implementation checks. 
 - [Ability areas, multiple targets and map effects](#areas)
 - [Status conditions, Bleeding and Burning](#conditions)
 - [Death and dying](#dying)
+- [Exhaustion](#exhaustion)
 - [Movement AP](#movement)
 - [Opportunity attacks](#opportunity)
 - [Sides, collision and attack range](#positioning)
@@ -86,7 +87,7 @@ Roadmap step 5, first part (2026-11-09). Follows Notion Status Effects Explained
 - **Opt-out:** world setting **Automate Bleeding and Burning** (on). Off: no turn-start damage, Bleed weapons don't start Bleeding and healing doesn't end it.
 - Undoing a damage result or a tick doesn't count as healing.
 
-Not automated yet: the other statuses' advantage, disadvantage and movement effects, Unconscious at 0 Health, Bleeding Out, Death's Mercy, Trauma and exhaustion. Code: `module/conditions-core.mjs` (tests in `tests/conditions-core.test.mjs`) and `module/conditions.mjs`.
+Not automated yet: the other statuses' advantage, disadvantage and movement effects. Death/dying and exhaustion are covered below. Code: `module/conditions-core.mjs` (tests in `tests/conditions-core.test.mjs`) and `module/conditions.mjs`.
 
 <a id="dying"></a>
 ## Death and dying
@@ -103,7 +104,35 @@ Roadmap step 5, second part (2026-11-09). Follows Notion Death and Dying.
 - **Death:** at the threshold the character gets the Dead status, and their combatants are marked defeated.
 - **Opt-out:** world setting **Automate death and dying** (on).
 
-Not automated yet: Knocked Out's exhaustion level (exhaustion is the next part of step 5) and "taking damage wakes a creature knocked out by something else". Code: `module/death-core.mjs` (tests in `tests/death-core.test.mjs`) and `module/death.mjs`.
+Not automated yet: "taking damage wakes a creature knocked out by something else". Code: `module/death-core.mjs` (tests in `tests/death-core.test.mjs`) and `module/death.mjs`.
+
+<a id="exhaustion"></a>
+## Exhaustion
+
+Roadmap step 5, third part, version 0.50.0. Checked against [Notion: Exhaustion Effects Explained](https://www.notion.so/351c72092efb81179300c9b271b8960f) on 2026-11-09. The Overview strip links to the editable 0–10 level in Details; hover the strip for current effects. Changes are included in the existing DM activity log.
+
+| Level | Added effect |
+| --- | --- |
+| 1 | Subtract 1d4 from weapon and ability attack rolls. |
+| 2 | 2 fewer AP per turn (reduces computed maximum and refill). |
+| 3 | Ability checks default to Disadvantage. |
+| 4 | Movement costs ×2, including banked movement and Surge accounting. |
+| 5 | Subtract 1d8 from attacks, replacing 1d4. |
+| 6 | 4 fewer AP per turn, replacing 2. |
+| 7 | Dodge, save and requested Parry dialogs/resolution default to Disadvantage. |
+| 8 | Halve computed maximum Health, rounding down. Current Health is capped to the new maximum; lower Health is preserved. |
+| 9 | Apply Prone. Cannot stand unaided until exhaustion drops; moving/standing remains GM-correctable through the status controls. |
+| 10 | Drop Health to 0, clear Stabilized, and let death/dying apply Unconscious and Bleeding Out. Healing to at least 1 lowers exhaustion to 9. |
+
+Effects accumulate, except the two explicit replacements. Final manual Health/AP maximum overrides win. Attack dialogs have an **Exhaustion** checkbox; uncheck to omit the penalty die. All dice choices remain editable, including Normal in the automatic defense prompt. Area attacks that require saves have no attack roll, so no attack penalty die. Prone's movement multiplier is not additionally implemented here: whether it stacks with exhaustion's ×2 is unresolved. Heavy armor/difficult terrain still contribute their existing movement costs.
+
+**Overexert** grants 5 AP and 1 exhaustion once per own turn in a started encounter. Its receipt includes encounter ID, round and turn; it works again next turn. AP may go above the normal maximum. A failed chat post refunds the grant and receipt. **Knocked Out** adds 1 exhaustion, capped at 10, when Health falls from positive to 0 or below; updates flagged as corrections or death sync do not trigger it. **Long rest** removes 2 levels, minimum 0. Other removals/gains use the editable tracker.
+
+World setting **Automate exhaustion** defaults on. Off leaves the level as a manual tracker: no penalties, automatic gains/removals, Overexert, collapse or forced Prone. Restart clients after changing it. **Automate death and dying** remains independent; if disabled, track the dying conditions manually even at exhaustion 10.
+
+Rule questions: does Prone's ×2 movement cost stack with exhaustion 4? Should half maximum Health round down? Parry is included with level-7 defense defaults as requested; Notion explicitly names only Dodges and saves at that level.
+
+Code: `module/exhaustion-core.mjs` (Foundry-free projection), `module/exhaustion.mjs` (setting, hooks, Overexert) and the existing roll, movement, death and sheet adapters. New schema field `system.exhaustion` defaults to 0; no migration.
 
 <a id="areas"></a>
 ## Ability areas, multiple targets and map effects

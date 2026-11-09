@@ -12,6 +12,7 @@ export function actorLogSnapshot(actor) {
     fields[`${key} Maximum`] = value(system[key]?.max);
   }
   fields["Hit dice spent"] = system.hitDice?.spent;
+  fields.Exhaustion = system.exhaustion;
   fields["Command AP"] = system.command?.value;
   for (const [key, stat] of Object.entries(system.stats ?? {})) {
     fields[`${key.toUpperCase()} Base`] = stat.value;

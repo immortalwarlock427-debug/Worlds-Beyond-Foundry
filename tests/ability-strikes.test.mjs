@@ -120,3 +120,22 @@ test("a refused Use posts nothing", async () => {
   await rollAbilityStrike(s.actor, s.ability({}), [s.target("Orc")], { use: async () => undefined });
   assert.equal(s.posts.length, 0);
 });
+
+test("ability attacks subtract exhaustion's replacement die; explicit opt-out and area saves omit it", async () => {
+  const s = setup();
+  for (const [level, die] of [
+    [1, "1d4"],
+    [4, "1d4"],
+    [5, "1d8"],
+    [10, "1d8"]
+  ]) {
+    s.actor.system.exhaustion = level;
+    await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc"), { use });
+    assert.equal(s.posts.at(-1).rolls[0].formula, `1d20 + @mod - ${die}`);
+    assert.match(s.posts.at(-1).content, new RegExp(`Exhaustion: subtract ${die}`));
+  }
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc"), { use, exhaustionPenalty: false });
+  assert.equal(s.posts.at(-1).rolls[0].formula, "1d20 + @mod");
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), [s.target("Orc")], { use, area: "cone" });
+  assert.equal(s.posts.at(-1).rolls.length, 0);
+});
