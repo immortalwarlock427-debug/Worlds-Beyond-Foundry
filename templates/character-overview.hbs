@@ -87,6 +87,12 @@
             aria-valuetext="{{overviewHealth.value}} / {{overviewHealth.max}} Health"
           ><span style="width:{{overviewHealth.meter}}%;{{overviewHealth.barStyle}}"></span></span>
         </button>
+        {{#if dying.show}}<div class="wb-dying {{#if dying.down}}is-down{{/if}} {{#if dying.dead}}is-dead{{/if}}" role="status">
+          <span class="wb-eyebrow">{{#if dying.dead}}Dead{{else if dying.down}}{{#if dying.stabilized}}Stabilized · unconscious{{else}}Bleeding out{{/if}}{{else}}Trauma{{/if}}</span>
+          <span>Dies at {{dying.diesAt}} Health{{#if dying.trauma}} · Trauma {{dying.trauma}}{{/if}}</span>
+          {{#if dying.bleedingOut}}<button type="button" data-action="dying" data-operation="stabilize" data-tooltip="Select the helper's token: they spend 5 AP and roll d20 + INT modifier against DC 12" {{#unless editable}}disabled{{/unless}}>Stabilize</button>{{/if}}
+          {{#if dying.canTreat}}<button type="button" data-action="dying" data-operation="treat" data-tooltip="10 minutes after combat: back to 1 Health" {{#unless editable}}disabled{{/unless}}>Treat</button>{{/if}}
+        </div>{{/if}}
         <div class="wb-overview-economy">{{#each overviewEconomy}}<button
           type="button"
           data-action="overviewEdit"

@@ -293,3 +293,11 @@
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-uses { display: inline-flex; align-items: center; gap: 4px; color: #959CB2; font: 13px var(--wb-font-body); white-space: nowrap; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-milestone-uses input { width: 3.2em; height: 28px; text-align: center; }
 .worlds-beyond.wb-character-sheet [data-record-tab] .wb-row-actions > .wb-row-use:disabled { opacity: 0.45; cursor: default; }
+
+/* Death and dying strip under Health on the Overview */
+.worlds-beyond .wb-dying { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px; border: 1px solid rgba(212, 176, 106, .35); border-radius: 4px; color: #e7dccb; font: 13px var(--wb-font-body, "Alegreya Sans", sans-serif); }
+.worlds-beyond .wb-dying.is-down { border-color: rgba(214, 90, 90, .7); background: rgba(120, 20, 30, .25); }
+.worlds-beyond .wb-dying.is-dead { border-color: #8e9ab2; background: rgba(40, 40, 50, .5); }
+.worlds-beyond .wb-dying button { padding: 0 10px; min-height: 26px; }
+.worlds-beyond .wb-dying-details .wb-equipment-fields { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: 6px; }
+.worlds-beyond .wb-dying-details .wb-override-label input { width: 4.5em; }

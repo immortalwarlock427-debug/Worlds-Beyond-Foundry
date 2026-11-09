@@ -114,6 +114,8 @@ export async function longRest(actor) {
       ...(actor.system.hitDice ? { "system.hitDice.spent": 0 } : {}),
       ...(actor.system.command ? { "system.command.value": 0, "system.command.fresh": false } : {}),
       ...resourceRestUpdates(actor.system),
+      // A long rest clears Trauma (Notion Death and Dying).
+      ...(actor.system.dying ? { "system.dying.trauma": 0, "system.dying.stabilized": false } : {}),
       // Spent milestone uses come back on a long rest.
       ...(actor.getFlag?.(SYSTEM_ID, "milestoneUses") ? { [`flags.${SYSTEM_ID}.-=milestoneUses`]: null } : {})
     })
