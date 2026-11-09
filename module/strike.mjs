@@ -8,6 +8,7 @@ import { wholeNumber } from "./number-display.mjs";
 import { autoApplyDamage, registerStrikeSettings } from "./strike-settings.mjs";
 import { applyCondition, conditionsAutomated } from "./conditions.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
+import { actorConditionRoll, conditionRollText } from "./condition-rolls.mjs";
 import {
   strikeInfo,
   defenderState,
@@ -550,6 +551,9 @@ function promptContent({ strike, ex, defender, situation, block, options }) {
   if (ex.log?.length) lines.push(`<p>${defenseLine(ex)}</p>`);
   if (reactions) lines.push(`<p class="wb-dialog-meta">${reactions}</p>`);
   const fields = [];
+  const conditionText = conditionRollText(actorConditionRoll(defender, "dodge"));
+  if (!block && conditionText && options.some(option => option.kind === "dodge"))
+    lines.push(`<p class="wb-dialog-meta">Dodge · ${escapeHTML(conditionText)}</p>`);
   if (options.some(option => option.kind === "save" && !option.stat)) {
     const best = STATS.reduce((a, b) => (defender.system.stats[b.key].mod > defender.system.stats[a.key].mod ? b : a));
     fields.push(

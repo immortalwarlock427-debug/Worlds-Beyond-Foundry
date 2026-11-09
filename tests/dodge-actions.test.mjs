@@ -123,6 +123,7 @@ test("Dodge dialog uses prepared AGL, heavy armor and combat spending defaults; 
     heavyArmor: true,
     disadvantage: true,
     exhaustion: false,
+    conditionText: "",
     reactions: 2,
     spendReaction: true
   });
@@ -295,4 +296,18 @@ test("Dodge cards use readable d20 results and Wonder controls; hidden results e
     }
   });
   assert.equal(f.actor.system.wonder.value, 2);
+});
+
+test("Blinded and Restrained default Dodge to disadvantage and preserve Normal corrections", async () => {
+  for (const id of ["blind", "restrain"]) {
+    const f = fixture();
+    f.actor.statuses = new Set([id]);
+    await rollDodge(f.actor);
+    assert.equal(f.calls.evaluations.at(-1).formula, "2d20kl1 + @mod");
+    await rollDodge(f.actor, { mode: "normal" });
+    assert.equal(f.calls.evaluations.at(-1).formula, "1d20 + @mod");
+    game.settings.get = (scope, key) => (key === "automateConditionRolls" ? false : "public");
+    await rollDodge(f.actor);
+    assert.equal(f.calls.evaluations.at(-1).formula, "1d20 + @mod");
+  }
 });

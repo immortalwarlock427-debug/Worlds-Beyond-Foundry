@@ -234,7 +234,7 @@ test("the attack dialog switches the dice when range or mounting changes the rea
       if (selector === ".wb-attack-reasons") return text;
       const radio = /value="(\w+)"/.exec(selector);
       if (radio) return radios[radio[1]];
-      return fields[/name="(\w+)"/.exec(selector)[1]];
+      return fields[/name="(\w+)"/.exec(selector)?.[1]];
     }
   };
   globalThis.foundry ??= {};

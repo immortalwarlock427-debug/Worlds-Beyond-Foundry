@@ -139,3 +139,31 @@ test("ability attacks subtract exhaustion's replacement die; explicit opt-out an
   await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), [s.target("Orc")], { use, area: "cone" });
   assert.equal(s.posts.at(-1).rolls.length, 0);
 });
+
+test("ability attacks share status dice while saves/areas do not invent attack rolls", async () => {
+  const s = setup();
+  s.actor.statuses = new Set(["blind"]);
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc"), { use });
+  assert.equal(s.posts.at(-1).rolls[0].formula, "2d20kl1 + @mod");
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc"), { use, rollMode: "normal" });
+  assert.equal(s.posts.at(-1).rolls[0].formula, "1d20 + @mod");
+  s.actor.statuses = new Set(["invisible"]);
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc"), { use });
+  assert.equal(s.posts.at(-1).rolls[0].formula, "2d20kh1 + @mod");
+  await rollAbilityStrike(s.actor, s.ability({ mode: "save" }), s.target("Orc"), { use });
+  assert.equal(s.posts.at(-1).rolls.length, 0);
+});
+
+test("a close Paralyzed target also makes a successful ability attack critical", async () => {
+  const s = setup();
+  const scene = {
+    grid: { distance: 5, isHexagonal: false, getOffset: ({ x, y }) => ({ i: Math.floor(y / 100), j: Math.floor(x / 100) }) }
+  };
+  s.actor.token = { parent: scene, x: 0, y: 0, width: 1, height: 1 };
+  const token = { parent: scene, x: 100, y: 0, width: 1, height: 1 };
+  foundry.utils = { fromUuidSync: id => (id === "Token.Orc" ? token : { statuses: new Set(["paralysis"]) }) };
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc", 1), { use });
+  assert.equal(flag(s.posts.at(-1)).hands[0].critical, true);
+  await rollAbilityStrike(s.actor, s.ability({ mode: "attack" }), s.target("Orc", 1), { use, conditionCritical: false });
+  assert.equal(flag(s.posts.at(-1)).hands[0].critical, false);
+});

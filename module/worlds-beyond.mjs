@@ -62,6 +62,7 @@ import { registerStrikes } from "./strike.mjs";
 import { registerHealing } from "./healing.mjs";
 import { registerConditions, endConditionAction, removeCondition } from "./conditions.mjs";
 import { registerDeath, dyingContext, stabilize, treat } from "./death.mjs";
+import { registerConditionRolls } from "./condition-rolls.mjs";
 import { registerExhaustion, exhaustionAutomated, exhaustionContext, overexert } from "./exhaustion.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
@@ -777,6 +778,7 @@ Hooks.once("init", () => {
   registerConditions();
   registerExhaustion();
   registerDeath();
+  registerConditionRolls();
   registerVfx();
   registerMovementRuler();
   registerMovement();

@@ -433,3 +433,42 @@ test("combat initiative retains Foundry's roll and records exact combatant conte
     combatantId: "hero-turn"
   });
 });
+
+test("Poisoned and visible fear affect checks; saves, opt-outs and explicit dice corrections stay independent", async () => {
+  const f = fixture();
+  f.actor.statuses = new Set(["poison", "fear"]);
+  await rollStatCheck(f.actor, "str");
+  assert.equal(f.calls.rolls.at(-1).formula, "2d20kl1 + @mod");
+  assert.match(f.calls.cards.at(-1).data.conditionText, /Poisoned/);
+  await rollStatCheck(f.actor, "str", { kind: "save" });
+  assert.equal(f.calls.rolls.at(-1).formula, "1d20 + @mod");
+  await rollStatCheck(f.actor, "str", { mode: "normal" });
+  assert.equal(f.calls.rolls.at(-1).formula, "1d20 + @mod");
+  f.actor.statuses = new Set(["fear"]);
+  await rollStatCheck(f.actor, "str", { fearInSight: false });
+  assert.equal(f.calls.rolls.at(-1).formula, "1d20 + @mod");
+  f.actor.statuses = new Set(["poison"]);
+  game.settings.get = (scope, key) => (key === "automateConditionRolls" ? false : "public");
+  await rollStatCheck(f.actor, "str");
+  assert.equal(f.calls.rolls.at(-1).formula, "1d20 + @mod");
+  f.actor.system.exhaustion = 3;
+  await rollStatCheck(f.actor, "str");
+  assert.equal(f.calls.rolls.at(-1).formula, "2d20kl1 + @mod");
+});
+
+test("Blinded/Deafened checks requiring their sense post failure with no dice or Wonder spend", async () => {
+  for (const [id, option] of [
+    ["blind", "requiresSight"],
+    ["deaf", "requiresHearing"]
+  ]) {
+    const f = fixture();
+    f.actor.statuses = new Set([id]);
+    const message = await rollStatCheck(f.actor, "str", { [option]: true });
+    assert.equal(f.calls.rolls.length, 0);
+    assert.equal(f.calls.updates.length, 0);
+    assert.equal(message.rolls.length, 0);
+    assert.match(message.flags["worlds-beyond"].check.automaticFailure, /requires/);
+    await rollStatCheck(f.actor, "str", { kind: "save", [option]: true });
+    assert.equal(f.calls.rolls.length, 1);
+  }
+});

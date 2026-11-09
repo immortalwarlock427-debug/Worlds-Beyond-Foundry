@@ -13,6 +13,7 @@ import { rangeStatus, rangeText } from "./positioning-core.mjs";
 import { handledAutomatically, abilityDamagePlan } from "./strike-core.mjs";
 import { singularityReady, singularityPlan, singularityUpdate } from "./milestone-actions.mjs";
 import { exhaustionAttackDie } from "./exhaustion.mjs";
+import { actorConditionRoll, targetStatuses, conditionControls, suggestedMode, conditionRollText } from "./condition-rolls.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices,
@@ -91,12 +92,25 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
   const partners = opportunity ? [] : dualWieldPartners(weapon, actor.items);
   // An opportunity attack happens as the target leaves, so it skips the range check.
   const distance = !opportunity && positioningSetting("checkAttackRange") ? attackDistance(actor, target) : null;
+  const conditionDistance = attackDistance(actor, target);
+  const conditions = actorConditionRoll(actor, "attack", {
+    target: targetStatuses(target),
+    delivery: modes[0],
+    distance: conditionDistance
+  });
+  const suggested = suggestedMode(conditions, reasons);
   const shots = shotsLeft(weapon);
   const content = await foundry.applications.handlebars.renderTemplate(
     `systems/${SYSTEM_ID}/templates/attack-dialog.hbs`,
     wholeDisplay({
       reasons,
       exhaustionDie: exhaustionAttackDie(actor),
+      conditionText: conditionRollText(conditions),
+      conditionCritical: conditions.closeCritical,
+      fear: conditionControls(actor).fear,
+      normal: suggested === "normal",
+      advantage: suggested === "advantage",
+      disadvantage: suggested === "disadvantage",
       target,
       apLeft: availableAp(actor),
       spendAp: inCombat(actor),
@@ -127,7 +141,7 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
     ok: { label: "Attack" },
     rejectClose: false,
     render: (event, dialog) => {
-      bindAttackDialog(dialog.element, actor, weapon, { distance, targetName: target?.name });
+      bindAttackDialog(dialog.element, actor, weapon, { distance, targetName: target?.name, target, conditionDistance });
       fitDialogDisclosures(dialog);
     }
   });
@@ -156,7 +170,12 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
 
 // Keep the listed disadvantage reasons and the pre-selected dice in step with the
 // dialog's choices. The player can still pick any dice after a change.
-export function bindAttackDialog(element, actor, weapon, { distance = null, targetName } = {}) {
+export function bindAttackDialog(
+  element,
+  actor,
+  weapon,
+  { distance = null, targetName, target = null, conditionDistance = distance } = {}
+) {
   const form = element?.querySelector("form") ?? element;
   const field = name => form?.querySelector(`[name="${name}"]`);
   const text = form?.querySelector(".wb-attack-reasons");
@@ -187,14 +206,25 @@ export function bindAttackDialog(element, actor, weapon, { distance = null, targ
     });
     text.hidden = !reasons.length;
     text.textContent = reasons.length ? `Disadvantage: ${reasons.join("; ")}.` : "";
-    const disadvantage = reasons.length > 0;
-    if (disadvantage !== previous) {
-      const radio = form.querySelector(`[name="rollMode"][value="${disadvantage ? "disadvantage" : "normal"}"]`);
+    const conditions = actorConditionRoll(actor, "attack", {
+      target: targetStatuses(target),
+      delivery: mode,
+      distance: conditionDistance,
+      fearInSight: field("fearInSight")?.checked !== false
+    });
+    const conditionText = form.querySelector(".wb-condition-reasons");
+    if (conditionText) {
+      conditionText.textContent = conditionRollText(conditions);
+      conditionText.hidden = !conditionText.textContent;
+    }
+    const suggested = suggestedMode(conditions, reasons);
+    if (suggested !== previous) {
+      const radio = form.querySelector(`[name="rollMode"][value="${suggested}"]`);
       if (radio) radio.checked = true;
-      previous = disadvantage;
+      previous = suggested;
     }
   };
-  for (const name of ["mode", "longRange", "mounted"]) field(name)?.addEventListener("change", update);
+  for (const name of ["mode", "longRange", "mounted", "fearInSight"]) field(name)?.addEventListener("change", update);
   update();
 }
 
@@ -226,7 +256,6 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       }
       // Singularity (DEX 28): declared before rolling; a hit becomes a critical hit.
       const singularity = options.singularity ? singularityPlan(actor) : null;
-      const rollMode = options.rollMode ?? "normal";
       const sections = [];
       const rolls = [];
       for (const hand of hands) {
@@ -239,6 +268,14 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           heavyArmor: !!actor.system.equipment?.heavyDisadvantage
         });
         const exhaustionDie = exhaustionAttackDie(actor, options.exhaustionPenalty !== false);
+        const conditions = actorConditionRoll(actor, "attack", {
+          target: targetStatuses(target),
+          delivery: mode,
+          distance: attackDistance(actor, target),
+          fearInSight: options.fearInSight !== false
+        });
+        const defaultMode = suggestedMode(conditions, reasons);
+        const rollMode = options.rollMode ?? defaultMode;
         const formula = checkMode(rollMode).formula + (exhaustionDie ? ` - ${exhaustionDie}` : "");
         const roll = await new foundry.dice.Roll(formula, { mod: hand.mod }).evaluate({
           allowInteractive: messageMode !== "blind"
@@ -250,6 +287,8 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: critThreshold(hand.item) })
         );
         if (singularity && hand.hand === "main" && hand.hit !== false) hand.critical = hand.hit ? true : "if it hits";
+        if (conditions.closeCritical && options.conditionCritical !== false && hand.hit !== false)
+          hand.critical = hand.hit ? true : "if it hits";
         const breakdown = describeD20Roll(roll, rollMode);
         const result =
           !target || hand.hit === null
@@ -265,9 +304,9 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           `${hands.length > 1 ? (hand.hand === "main" ? "Main hand · " : "Off hand · ") : ""}${MODE_LABELS[mode]} attack with ${statLabel(hand.stat)} (${formatModifier(hand.mod)}) · ${checkMode(rollMode).label}`,
           result,
           exhaustionDie ? `Exhaustion: subtract ${exhaustionDie} from the attack roll.` : "",
-          reasons.length
-            ? `Disadvantage applies: ${reasons.join("; ")}.${rollMode === "disadvantage" ? "" : " This roll did not use it."}`
-            : ""
+          escapeHTML(conditionRollText({ ...conditions, disadvantages: [...conditions.disadvantages, ...reasons] })),
+          conditions.closeCritical && options.conditionCritical === false ? "Close Paralyzed critical omitted (correction)." : "",
+          rollMode !== defaultMode ? `Dice override: ${checkMode(rollMode).label}.` : ""
         ].filter(Boolean);
         sections.push(
           `<section class="wb-attack-hand" data-hand="${sections.length}">${hands.length > 1 ? `<h4>${escapeHTML(hand.item.name)}</h4>` : ""}` +

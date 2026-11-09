@@ -1152,3 +1152,45 @@ test("failed recovery reports the manual correction instead of claiming resource
   };
   await assert.rejects(rollAttack(f.actor, f.weapon, { spendAp: true }), /Recovery also failed; check AP/);
 });
+
+test("weapon condition defaults apply to attack dice; explicit dice and world opt-out win", async () => {
+  const f = fixture();
+  f.actor.statuses = new Set(["poison"]);
+  let m = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex" }, null);
+  assert.equal(m.rolls[0].formula, "2d20kl1 + @mod");
+  assert.match(m.content, /Poisoned/);
+  f.actor.statuses = new Set(["invisible"]);
+  f.weapon.system.shots = 2;
+  m = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex" }, null);
+  assert.equal(m.rolls[0].formula, "2d20kh1 + @mod");
+  f.weapon.system.shots = 2;
+  m = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex", rollMode: "normal" }, null);
+  assert.equal(m.rolls[0].formula, "1d20 + @mod");
+  f.weapon.system.shots = 2;
+  game.settings.get = (scope, key) => (key === "automateConditionRolls" ? false : "public");
+  m = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex" }, null);
+  assert.equal(m.rolls[0].formula, "1d20 + @mod");
+});
+
+test("near Paralyzed targets turn only hits into criticals; distance and critical opt-out are respected", async () => {
+  const f = fixture(),
+    foe = { statuses: new Set(["paralysis"]) };
+  const scene = {
+    grid: { distance: 5, isHexagonal: false, getOffset: ({ x, y }) => ({ i: Math.floor(y / 100), j: Math.floor(x / 100) }) }
+  };
+  f.actor.token = { parent: scene, x: 0, y: 0, width: 1, height: 1 };
+  const token = { parent: scene, x: 100, y: 0, width: 1, height: 1 };
+  foundry.utils.fromUuidSync = id => (id === "Token.foe" ? token : foe);
+  const target = { name: "Foe", actorUuid: "Actor.foe", tokenUuid: "Token.foe", evasion: 1 };
+  const roll = async options => {
+    f.weapon.system.shots = 2;
+    return rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex", ...options }, target);
+  };
+  assert.equal((await roll()).flags["worlds-beyond"].attack.hands[0].critical, true);
+  assert.equal((await roll({ conditionCritical: false })).flags["worlds-beyond"].attack.hands[0].critical, false);
+  token.x = 200;
+  assert.equal((await roll()).flags["worlds-beyond"].attack.hands[0].critical, false);
+  token.x = 100;
+  target.evasion = 99;
+  assert.equal((await roll()).flags["worlds-beyond"].attack.hands[0].critical, false);
+});

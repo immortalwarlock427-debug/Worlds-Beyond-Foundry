@@ -87,7 +87,24 @@ Roadmap step 5, first part (2026-11-09). Follows Notion Status Effects Explained
 - **Opt-out:** world setting **Automate Bleeding and Burning** (on). Off: no turn-start damage, Bleed weapons don't start Bleeding and healing doesn't end it.
 - Undoing a damage result or a tick doesn't count as healing.
 
-Not automated yet: the other statuses' advantage, disadvantage and movement effects. Death/dying and exhaustion are covered below. Code: `module/conditions-core.mjs` (tests in `tests/conditions-core.test.mjs`) and `module/conditions.mjs`.
+Status roll effects are now applied to weapon and single-target ability attacks, ability checks and Dodges (0.51.0). See below. Death/dying and exhaustion have their own sections. Code: `module/conditions-core.mjs` (tests in `tests/conditions-core.test.mjs`) and `module/conditions.mjs`.
+
+### Status effects on rolls
+
+Checked against [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38) on 2026-11-09. Statuses select dice by default and list their reasons in the dialog and resulting card. Select Normal/Advantage/Disadvantage for a correction, or disable **Automate status roll effects** in world settings. This setting is independent of Bleeding/Burning and exhaustion.
+
+- Blinded, Poisoned, Restrained and Prone attackers have disadvantage. Unconscious includes Prone for these roll rules. Invisible attackers have advantage.
+- Attacks against Blinded, Restrained, Paralyzed, Stunned and Unconscious targets have advantage; Invisible targets impose disadvantage. A Prone target gives melee advantage and ranged/thrown disadvantage. These rules also apply to attack abilities; their dialog has an explicit **Attack delivery** choice (Ranged by default, or Melee). Areas and save abilities have no attack roll.
+- Paralyzed targets within a measured 5 ft turn a hit into a critical, including ranged/ability attacks. The dialog's checked option can be switched off. Misses remain misses. Unknown distance does not invent a close critical; hex-grid distance remains manual.
+- Poisoned affects ability checks, not ordinary saves. Frightened affects attacks/checks while its source is in sight: the dialog defaults **Fear source in sight** on; untick when it isn't. The system has no stored fear-source token relationship, so this is an explicit situational ruling rather than inferred line of sight.
+- Blinded/Restrained affect Dodges, including automatic-resolution Dodge rolls. They do not impose an invented Parry or ordinary-save penalty. Existing exhaustion and heavy-armor rules still apply.
+- A Blinded character's check only auto-fails when **This check requires sight** is checked; likewise Deafened and hearing. These boxes default off. A marked failure posts a card without rolling dice or spending resources. They do not affect saves. Untick for a correction; automatic failures have no Wonder roll to reroll.
+
+**Provisional combination rule:** one or more advantage sources and one or more disadvantage sources default to Normal, regardless of counts. Both sets of reasons remain visible. The fetched Notion pages do not specify cancellation, so this needs a GM ruling. This means ranged attacks against an Unconscious target currently combine its advantage with its inherited Prone disadvantage. No source count adds extra d20s.
+
+Not automated in this pass: movement/standing and escape actions, incapacitated AP/reaction restrictions, Petrified resistance/immunity, dropping held gear, waking from non-damage Unconscious, charm-source targeting/social advantage, and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved.
+
+Rules: `module/condition-rolls-core.mjs`. Foundry adapter, default-on setting and situational controls: `module/condition-rolls.mjs`. No actor/item schema change or migration.
 
 <a id="dying"></a>
 ## Death and dying

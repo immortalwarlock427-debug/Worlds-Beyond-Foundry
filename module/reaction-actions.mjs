@@ -8,6 +8,7 @@ import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 import { linkedDefense, requireUnusedDefense, markLinkedDefense, linkedResetButtons } from "./attack-defense.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
+import { actorConditionRoll, defaultCheckMode, conditionRollText } from "./condition-rolls.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const template = (name, data) =>
@@ -113,8 +114,9 @@ export async function promptDodge(actor, source) {
     content: await template("dodge-dialog", {
       modifier: actor.system.stats.agl.mod,
       heavyArmor: !!actor.system.equipment?.heavyDisadvantage,
-      disadvantage: !!actor.system.equipment?.heavyDisadvantage || exhaustionMode(actor, "dodge") === "disadvantage",
+      disadvantage: defaultCheckMode(actor, "dodge", { heavyArmor: actor.system.equipment?.heavyDisadvantage }) === "disadvantage",
       exhaustion: exhaustionMode(actor, "dodge") === "disadvantage",
+      conditionText: conditionRollText(actorConditionRoll(actor, "dodge")),
       reactions: actor.system.reactions.value,
       spendReaction: inCombat(actor) && !link?.used,
       ...(link ? { incoming: link.incoming, linkedUsed: link.used } : {})
@@ -133,7 +135,7 @@ export async function rollDodge(actor, { against = "attack", target = null, natu
       requireUnusedDefense(link, "dodge", spendReaction);
       const defense = dodgeContext({ against, target, natural20 });
       const heavyArmor = !!actor.system.equipment?.heavyDisadvantage;
-      mode ??= heavyArmor ? "disadvantage" : exhaustionMode(actor, "dodge");
+      mode ??= defaultCheckMode(actor, "dodge", { heavyArmor });
       const plan = checkMode(mode);
       if (spendReaction && !(actor.system.reactions.value >= 1)) {
         throw new Error("No reactions left. Correct the pool or untick Spend 1 reaction to roll without spending.");
@@ -146,6 +148,7 @@ export async function rollDodge(actor, { against = "attack", target = null, natu
         label: defense.area ? "Dodge · area save" : "Dodge",
         mode,
         actorUuid: actor.uuid,
+        conditionText: conditionRollText(actorConditionRoll(actor, "dodge")),
         defense: {
           ...defense,
           spent: !!spendReaction,
