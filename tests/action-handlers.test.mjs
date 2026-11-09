@@ -157,6 +157,21 @@ test("weapon attacks subtract only the current exhaustion die and allow leaving 
   assert.equal(corrected.rolls[0].formula, "1d20 + @mod");
 });
 
+test("an exhausted natural 20 without a selected target still posts its manual comparison card", async () => {
+  const f = fixture();
+  f.actor.system.exhaustion = 1;
+  const evaluate = f.Roll.prototype.evaluate;
+  f.Roll.prototype.evaluate = async function (...args) {
+    await evaluate.apply(this, args);
+    this.dice[0].total = 20;
+    this.total = 18;
+    return this;
+  };
+  const message = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex" }, null);
+  assert.match(message.content, /Compare with the target/);
+  assert.equal(message.flags["worlds-beyond"].attack.hands[0].natural, 20);
+});
+
 test("attack/reload/consumable cards pass all four v14 visibility modes; blind dice disable interaction", async () => {
   for (const mode of ["public", "gm", "blind", "self"]) {
     const f = fixture(mode);

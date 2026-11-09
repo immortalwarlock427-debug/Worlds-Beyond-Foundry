@@ -252,7 +252,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         if (singularity && hand.hand === "main" && hand.hit !== false) hand.critical = hand.hit ? true : "if it hits";
         const breakdown = describeD20Roll(roll, rollMode);
         const result =
-          hand.hit === null
+          !target || hand.hit === null
             ? hand.critical === "if it hits"
               ? `Natural ${natural}: a critical hit if it hits.`
               : "Compare with the target's Natural Evasion."
