@@ -127,9 +127,13 @@
           <button type="button" data-action="overviewEdit" data-tooltip="{{overviewBreakdowns.movement}}"><span class="wb-eyebrow">Movement / AP</span><strong>{{system.core.movement}} <small>ft</small></strong></button>
           <div tabindex="0" data-tooltip="{{overviewBreakdowns.initiative}}"><span class="wb-eyebrow">Initiative</span><strong>{{overviewInitiative}}</strong><small>1d20 + WIS</small></div>
         </div>
-        {{#if resistances}}<div class="wb-resistance-overview">
+        {{#if resistances.length}}<div class="wb-resistance-overview">
           <span class="wb-eyebrow">Resistances</span>
           <ul class="wb-resistance-list">{{#each resistances}}<li>{{this}}</li>{{/each}}</ul>
+        </div>{{/if}}
+        {{#if immunities.length}}<div class="wb-resistance-overview">
+          <span class="wb-eyebrow">Immunities</span>
+          <ul class="wb-resistance-list">{{#each immunities}}<li class="wb-immunity">{{this}}</li>{{/each}}</ul>
         </div>{{/if}}
       </section>
     </div>

@@ -138,6 +138,11 @@ export function resistantTo(resistances, damageType) {
   return types.length > 0 && types.every(type => isResistant(resistances, type));
 }
 
+// Immunity works like Resistance: a multi-type weapon needs every listed type.
+export function immuneTo(immunities, damageType) {
+  return resistantTo(immunities, damageType);
+}
+
 // Final damage for one hit. A Dodge or Parry that succeeds negates it; Overwhelming Force
 // still deals half the rolled damage through a Parry, never through a Dodge.
 export function strikeDamage({
@@ -150,9 +155,13 @@ export function strikeDamage({
   twoHanded = false,
   puncture = false,
   overwhelming = false,
-  block = 0
+  block = 0,
+  immune = false
 } = {}) {
   const original = finalDamage(rolled);
+  // Immunity stops the damage completely, Overwhelming Force included (Notion Defenses).
+  if (immune)
+    return { original, halved: 0, afterResistance: 0, armor: 0, afterArmor: 0, block: 0, afterBlock: 0, minimum: 0, total: 0, immune: true };
   const minimum = overwhelming && !dodged ? Math.floor(original / 2) : 0;
   if (negated)
     return { original, halved: 0, afterResistance: 0, armor: 0, afterArmor: 0, block: 0, afterBlock: 0, minimum, total: minimum };

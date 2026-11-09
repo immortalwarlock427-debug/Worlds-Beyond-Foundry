@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeResistances, resistanceEditor, resistanceSelection, isResistant } from "../module/resistances.mjs";
+import { normalizeResistances, resistanceEditor, resistanceSelection, immunitySelection, isResistant } from "../module/resistances.mjs";
 import { configureResistances } from "../module/resistance-actions.mjs";
 import { hitDamage } from "../module/attacks.mjs";
 
@@ -41,6 +41,7 @@ function fixture(response) {
     async update(data) {
       updates.push(data);
       this.system.resistances = structuredClone(data["system.resistances"]);
+      this.system.immunities = structuredClone(data["system.immunities"]);
       return this;
     }
   };
@@ -65,15 +66,29 @@ function fixture(response) {
   return { actor, updates, dialogs, contexts };
 }
 
-test("saving updates only the resistance list and clears it without leaving old entries", async () => {
-  const { actor, updates } = fixture({ resistance0: true, custom: "Radiant\n radiant " });
+test("saving updates only the resistance and immunity lists and clears them without leaving old entries", async () => {
+  const { actor, updates } = fixture({ resistance0: true, custom: "Radiant\n radiant ", immunity3: true, customImmunity: "Poison" });
   await configureResistances(actor);
-  assert.deepEqual(updates, [{ "system.resistances": ["Bludgeoning", "Radiant"] }]);
+  assert.deepEqual(updates, [{ "system.resistances": ["Bludgeoning", "Radiant"], "system.immunities": ["Fire", "Poison"] }]);
   assert.equal(actor.system.health.damage, 12.5);
   assert.equal(actor.system.ap.value, 9);
   globalThis.foundry.applications.api.DialogV2.input = async () => ({ custom: "" });
   await configureResistances(actor);
   assert.deepEqual(actor.system.resistances, []);
+  assert.deepEqual(actor.system.immunities, []);
+});
+
+test("the editor has a separate immunity section with its own fields", () => {
+  const editor = resistanceEditor(["Fire"], ["Poison", "slashing"]);
+  assert.deepEqual(
+    editor.immunity.types.filter(type => type.selected).map(type => type.field),
+    ["immunity2"]
+  );
+  assert.equal(editor.immunity.custom, "Poison");
+  const form = Object.fromEntries(editor.immunity.types.map(type => [type.field, type.selected]));
+  form.customImmunity = editor.immunity.custom;
+  assert.deepEqual(immunitySelection(form), ["Slashing", "Poison"]);
+  assert.deepEqual(immunitySelection({ resistance0: true, custom: "Fire" }), []);
 });
 
 test("cancel, unchanged selection and read-only access do not save", async () => {

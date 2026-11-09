@@ -13,6 +13,7 @@ import {
   canBlock,
   avoidOutcome,
   resistantTo,
+  immuneTo,
   strikeDamage,
   damagedHealth,
   abilityDamagePlan
@@ -99,9 +100,13 @@ export async function beginStrike(message) {
       if (!defenderOf(data, index)) return { index, status: "manual", step: "done", note: "The target is no longer on the map." };
       if (hand.hit === false) return { index, status: "done", step: "done", outcome: "miss", used: [], log: [] };
       if (hand.hit == null) return { index, status: "manual", step: "done", note: "Compare the attack with the target's Natural Evasion." };
+      // A weapon hit only deals damage, so an immune target isn't asked to defend.
+      if (!data.ability && immuneTo(defenderOf(data, index).system.immunities, hand.damageType))
+        return { index, status: "done", step: "done", outcome: "immune", used: [], log: [] };
       return { index, status: "waiting", step: "avoid", used: [], log: [] };
     });
     await saveState(message, { exchanges });
+    for (const ex of exchanges) if (ex.outcome === "immune") await postResult(message, ex.index, { outcome: "immune", amount: 0 });
     await advance(message);
   });
 }
@@ -247,6 +252,7 @@ function mitigation(damage, strike, defender, block) {
     multiplier: damage.multiplier,
     negated: damage.negated,
     resistant: resistantTo(defender.system.resistances, damage.damageType || strike.damageType),
+    immune: immuneTo(defender.system.immunities, damage.damageType || strike.damageType),
     armor: defender.system.core?.armorRating ?? 0,
     twoHanded: !!damage.twoHanded,
     puncture: !!damage.puncture,
@@ -360,13 +366,15 @@ async function postResult(message, index, { outcome, amount, breakdown = null, a
     dodged: `${name} dodges ${escapeHTML(strike.name)}.`,
     parried: `${name} parries ${escapeHTML(strike.name)}.`,
     resisted: `${name} resists ${escapeHTML(strike.name)}.`,
+    immune: `${name} is immune to ${escapeHTML(strike.name)}${strike.damageType ? ` (${escapeHTML(strike.damageType)})` : ""}.`,
     hit:
       amount > 0
         ? `${name} takes ${wholeNumber(amount)} ${escapeHTML(entry.damage?.damageType || "")} damage.`.replace(/\s+damage/, " damage")
         : `${name} takes no damage.`
   }[outcome];
   const lines = [defenseLine(entry)];
-  if (breakdown) {
+  if (breakdown?.immune) lines.push(`Rolled ${wholeNumber(breakdown.original)} · immune to ${escapeHTML(entry.damage?.damageType || "it")}.`);
+  else if (breakdown) {
     const parts = [`Rolled ${wholeNumber(breakdown.original)}`];
     if (breakdown.halved !== breakdown.original) parts.push(`halved to ${wholeNumber(breakdown.halved)}`);
     if (breakdown.afterResistance !== breakdown.halved) parts.push(`Resistance → ${wholeNumber(breakdown.afterResistance)}`);

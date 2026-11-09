@@ -125,6 +125,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       });
     return {
       resistances: new ArrayField(new StringField({ required: true, nullable: false, blank: false }), { initial: [] }),
+      immunities: new ArrayField(new StringField({ required: true, nullable: false, blank: false }), { initial: [] }),
       appearance: new SchemaField({
         baseFormName: new StringField({ required: true, nullable: false, blank: true, initial: "" }),
         portraitY: number(35, { integer: true, min: 0, max: 100 })

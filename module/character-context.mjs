@@ -401,6 +401,7 @@ export function prepareCharacterSheetContext(input) {
     system: wholeDisplay({ ...system, bonuses: source.bonuses ?? system.bonuses }),
     hitDice: hitDicePool(system),
     resistances: normalizeResistances(system.resistances),
+    immunities: normalizeResistances(system.immunities),
     editable,
     ...headerContext(state),
     ...characterContext(state),
