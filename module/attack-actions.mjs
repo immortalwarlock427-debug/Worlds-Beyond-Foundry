@@ -12,6 +12,7 @@ import { attackDistance, positioningSetting } from "./positioning.mjs";
 import { rangeStatus, rangeText } from "./positioning-core.mjs";
 import { handledAutomatically, abilityDamagePlan } from "./strike-core.mjs";
 import { singularityReady, singularityPlan, singularityUpdate } from "./milestone-actions.mjs";
+import { exhaustionAttackDie } from "./exhaustion.mjs";
 export { inCombat } from "./combat-support.mjs";
 import {
   attackStatChoices,
@@ -95,6 +96,7 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
     `systems/${SYSTEM_ID}/templates/attack-dialog.hbs`,
     wholeDisplay({
       reasons,
+      exhaustionDie: exhaustionAttackDie(actor),
       target,
       apLeft: availableAp(actor),
       spendAp: inCombat(actor),
@@ -236,7 +238,9 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           mounted: !!options.mounted,
           heavyArmor: !!actor.system.equipment?.heavyDisadvantage
         });
-        const roll = await new foundry.dice.Roll(checkMode(rollMode).formula, { mod: hand.mod }).evaluate({
+        const exhaustionDie = exhaustionAttackDie(actor, options.exhaustionPenalty !== false);
+        const formula = checkMode(rollMode).formula + (exhaustionDie ? ` - ${exhaustionDie}` : "");
+        const roll = await new foundry.dice.Roll(formula, { mod: hand.mod }).evaluate({
           allowInteractive: messageMode !== "blind"
         });
         const natural = roll.dice[0]?.total;
@@ -260,6 +264,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         const lines = [
           `${hands.length > 1 ? (hand.hand === "main" ? "Main hand · " : "Off hand · ") : ""}${MODE_LABELS[mode]} attack with ${statLabel(hand.stat)} (${formatModifier(hand.mod)}) · ${checkMode(rollMode).label}`,
           result,
+          exhaustionDie ? `Exhaustion: subtract ${exhaustionDie} from the attack roll.` : "",
           reasons.length
             ? `Disadvantage applies: ${reasons.join("; ")}.${rollMode === "disadvantage" ? "" : " This roll did not use it."}`
             : ""
@@ -296,7 +301,9 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         options.opportunity
           ? `Opportunity attack${options.opportunity === "enter" ? " (Bulwark)" : ""}${reactionSpent ? " · 1 reaction spent" : ""}.`
           : "",
-        singularity ? `Singularity declared: ${hands[0].hit === false ? "the attack missed, and it's spent for the round" : "a hit is a critical hit"}.` : "",
+        singularity
+          ? `Singularity declared: ${hands[0].hit === false ? "the attack missed, and it's spent for the round" : "a hit is a critical hit"}.`
+          : "",
         options.spendAp ? `${cost} AP spent.` : "",
         ...hands
           .filter(({ item }) => shotsLeft(item) !== null)

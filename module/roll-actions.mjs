@@ -7,6 +7,8 @@ import { resourceRestUpdates } from "./resources.mjs";
 import { queuedAction } from "./action-support.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { recoverActor } from "./recovery-actions.mjs";
+import { actorExhaustion, exhaustionMode, exhaustionAutomated } from "./exhaustion.mjs";
+import { exhaustionLevel } from "./exhaustion-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const renderTemplate = (name, context) =>
@@ -21,19 +23,31 @@ export async function promptStatCheck(actor, statKey) {
     window: { title: `${stat.label} roll` },
     content: await renderTemplate("check-dialog", {
       label: stat.label,
+      exhaustion: actorExhaustion(actor),
+      disadvantage: exhaustionMode(actor, "check") === "disadvantage",
       heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage
     }),
     ok: { label: "Roll" },
-    render: (event, dialog) => fitDialogDisclosures(dialog),
+    render: (event, dialog) => {
+      fitDialogDisclosures(dialog);
+      const form = dialog.element;
+      form.querySelector('[name="kind"]')?.addEventListener("change", event => {
+        const heavy = statKey === "agl" && actor.system.equipment?.heavyDisadvantage;
+        const mode = event.target.value === "save" && heavy ? "disadvantage" : exhaustionMode(actor, event.target.value);
+        const radio = form.querySelector(`[name="mode"][value="${mode}"]`);
+        if (radio) radio.checked = true;
+      });
+    },
     rejectClose: false
   });
   if (!choices) return;
   return rollStatCheck(actor, statKey, choices);
 }
 
-export async function rollStatCheck(actor, statKey, { kind = "check", mode = "normal" } = {}) {
+export async function rollStatCheck(actor, statKey, { kind = "check", mode } = {}) {
   const stat = STATS.find(stat => stat.key === statKey);
   if (!stat || !["check", "save"].includes(kind)) throw new Error("Choose a stat check or saving throw.");
+  mode ??= kind === "save" && statKey === "agl" && actor.system.equipment?.heavyDisadvantage ? "disadvantage" : exhaustionMode(actor, kind);
   const plan = checkMode(mode);
   const label = `${stat.label} ${kind === "save" ? "saving throw" : "check"}`;
   const messageMode = game.settings.get("core", "messageMode");
@@ -116,6 +130,9 @@ export async function longRest(actor) {
       ...resourceRestUpdates(actor.system),
       // A long rest clears Trauma (Notion Death and Dying).
       ...(actor.system.dying ? { "system.dying.trauma": 0, "system.dying.stabilized": false } : {}),
+      ...(exhaustionAutomated() && actor.system.exhaustion > 0
+        ? { "system.exhaustion": Math.max(0, exhaustionLevel(actor.system.exhaustion) - 2) }
+        : {}),
       // Spent milestone uses come back on a long rest.
       ...(actor.getFlag?.(SYSTEM_ID, "milestoneUses") ? { [`flags.${SYSTEM_ID}.-=milestoneUses`]: null } : {})
     })

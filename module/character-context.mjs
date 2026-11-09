@@ -4,6 +4,7 @@ import { STATS, MILESTONE_SCORES, formatModifier } from "./stats.mjs";
 import { MAGIC_RESOURCES, resourceEntries } from "./resources.mjs";
 import { wholeDisplay, wholeNumber } from "./number-display.mjs";
 import { apTotal } from "./ap.mjs";
+import { exhaustionEffects } from "./exhaustion-core.mjs";
 import { abilityGroups } from "./abilities-core.mjs";
 import { effectContext, itemBonusSummary } from "./effects-core.mjs";
 import { activeLoadoutForm, formShowsAbility, formShowsResource } from "./form-loadout-core.mjs";
@@ -126,7 +127,14 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
       max: wholeNumber(health.max),
       meter: overviewFill(health),
       overflow: health.value > health.max,
-      sources: [health.maxOverride != null ? `Maximum override: ${health.maxOverride}` : "VIT × level", statSources("vit")]
+      sources: [
+        health.maxOverride != null ? `Maximum override: ${health.maxOverride}` : "VIT × level",
+        health.maxOverride == null &&
+        system.core?.automatic?.healthMax < (system.stats.vit.effective ?? system.stats.vit.value) * system.level
+          ? "Exhaustion: half maximum (rounded down)"
+          : "",
+        statSources("vit")
+      ]
         .filter(Boolean)
         .join(" · "),
       low: health.max > 0 && health.value / health.max <= 0.25
@@ -139,7 +147,10 @@ export function characterContext({ actor, system, effects, activeForm, appearanc
         barColors: system.ap.barColors,
         field: "system.ap.value",
         icon: "bolt",
-        sources: system.ap.maxOverride != null ? `Maximum override: ${system.ap.maxOverride}` : "15 AP + 2 per 5 levels",
+        sources:
+          system.ap.maxOverride != null
+            ? `Maximum override: ${system.ap.maxOverride}`
+            : `15 AP + 2 per 5 levels${system.core?.apMax < 15 + 2 * Math.floor(system.level / 5) ? ` · Exhaustion −${exhaustionEffects(system.exhaustion).apReduction}` : ""}`,
         command: system.command?.value ?? 0
       },
       {
@@ -266,8 +277,10 @@ const ARMOR_WEIGHTS = { light: "Light", medium: "Medium", heavy: "Heavy" };
 // One line under an item's name: what it adds while worn or held.
 function wornDetail(item) {
   const system = item.system ?? {};
-  if (item.type === "armor") return [`AR ${wholeNumber(system.armorRating ?? 0)}`, ARMOR_WEIGHTS[system.armorType]].filter(Boolean).join(" · ");
-  if (item.type === "shield") return `Block ${system.blockDie || "1d6"}${system.armorRating ? ` · AR ${wholeNumber(system.armorRating)}` : ""}`;
+  if (item.type === "armor")
+    return [`AR ${wholeNumber(system.armorRating ?? 0)}`, ARMOR_WEIGHTS[system.armorType]].filter(Boolean).join(" · ");
+  if (item.type === "shield")
+    return `Block ${system.blockDie || "1d6"}${system.armorRating ? ` · AR ${wholeNumber(system.armorRating)}` : ""}`;
   if (item.type === "weapon") return [system.damage, system.damageType].filter(Boolean).join(" ");
   return itemBonusSummary(item);
 }
@@ -286,7 +299,9 @@ const slotView = (items, extra = {}) => {
 // The website's paper doll: body slots around the figure, both hands and the armor total.
 export function paperDollContext(items, system = {}, equipment = {}) {
   const list = Array.from(items?.values?.() ?? items ?? []);
-  const slots = DOLL_SLOTS.map(slot => slotView(slotItems(list, slot.key), { key: slot.key, label: slot.label, side: slot.side, row: slot.row }));
+  const slots = DOLL_SLOTS.map(slot =>
+    slotView(slotItems(list, slot.key), { key: slot.key, label: slot.label, side: slot.side, row: slot.row })
+  );
   const worn = Object.fromEntries(slots.map(slot => [slot.key, slot.filled]));
   const hands = handAssignment(list);
   const handSlots = Object.entries(HAND_SLOTS).map(([key, label]) => {

@@ -1,4 +1,5 @@
 <div class="wb-check-options">
+  {{#if exhaustionDie}}<label class="wb-check-toggle"><input type="checkbox" name="exhaustionPenalty" checked> Exhaustion: −{{exhaustionDie}} attack</label>{{/if}}
   <p class="wb-attack-reasons" {{#unless reasons.length}}hidden{{/unless}}>{{#if reasons.length}}Disadvantage: {{#each reasons}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}.{{/if}}</p>
   {{#if loading}}<p>{{#if shots}}{{shots}} of {{loading}} shots loaded.{{else}}Empty: reload before attacking.{{/if}}</p>{{/if}}
   {{#if partners.length}}<label><span>Hands</span>

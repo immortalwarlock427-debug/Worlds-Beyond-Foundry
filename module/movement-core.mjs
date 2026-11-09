@@ -32,8 +32,8 @@ export function ledgerTotals(ledger, surgeMax = 0) {
 }
 
 // What moving `feet` (already multiplied for heavy armor and difficult terrain) costs.
-export function movementCost({ feet, rate, bank = 0, surgeLeft = 0, available = Infinity }) {
-  const distance = Math.max(0, numberOr(feet, 0));
+export function movementCost({ feet, rate, bank = 0, surgeLeft = 0, available = Infinity, multiplier = 1 }) {
+  const distance = Math.max(0, numberOr(feet, 0)) * Math.max(1, numberOr(multiplier, 1));
   const banked = Math.max(0, numberOr(bank, 0));
   const free = { feet: distance, ap: 0, surge: 0, credit: 0, bankAfter: banked - distance, affordable: true };
   if (distance <= EPSILON) return { ...free, feet: 0, bankAfter: banked };

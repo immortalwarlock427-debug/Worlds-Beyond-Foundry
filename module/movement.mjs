@@ -7,6 +7,7 @@ import { queuedAction } from "./action-support.mjs";
 import { collisionBlock } from "./positioning.mjs";
 import { confirmProvoking } from "./opportunity.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { actorExhaustion } from "./exhaustion.mjs";
 import {
   SURGE_AP,
   squareFactor,
@@ -91,7 +92,19 @@ export function movementQuote(tokenDocument, feet) {
   const ledger = turnLedger(actor.getFlag(SCOPE, FLAG), key);
   const { bank, surgeLeft } = ledgerTotals(ledger, surgeMax(actor));
   const available = apAvailable(actor.system, true);
-  return { actor, ledger, available, ...movementCost({ feet, rate: actor.system.core?.movement, bank, surgeLeft, available }) };
+  return {
+    actor,
+    ledger,
+    available,
+    ...movementCost({
+      feet,
+      rate: actor.system.core?.movement,
+      bank,
+      surgeLeft,
+      available,
+      multiplier: actorExhaustion(actor).movementMultiplier
+    })
+  };
 }
 
 async function payForMovement(tokenDocument, movement) {

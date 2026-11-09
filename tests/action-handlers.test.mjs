@@ -140,6 +140,23 @@ function fixture(mode = "public") {
   return { actor, weapon, potion, calls, message, flags, Roll, ChatMessage };
 }
 
+test("weapon attacks subtract only the current exhaustion die and allow leaving it off", async () => {
+  const f = fixture();
+  for (const [level, die] of [
+    [1, "1d4"],
+    [5, "1d8"],
+    [6, "1d8"]
+  ]) {
+    f.actor.system.exhaustion = level;
+    const message = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex" });
+    assert.equal(message.rolls[0].formula, `1d20 + @mod - ${die}`);
+    assert.match(message.content, new RegExp(`Exhaustion: subtract ${die}`));
+    f.weapon.system.shots = 2;
+  }
+  const corrected = await rollAttack(f.actor, f.weapon, { mode: "ranged", stat: "dex", exhaustionPenalty: false });
+  assert.equal(corrected.rolls[0].formula, "1d20 + @mod");
+});
+
 test("attack/reload/consumable cards pass all four v14 visibility modes; blind dice disable interaction", async () => {
   for (const mode of ["public", "gm", "blind", "self"]) {
     const f = fixture(mode);
@@ -652,7 +669,8 @@ test("ability Use charges AP in combat and refuses insufficient AP before paying
 });
 
 test("repeated Reaction ability uses outside combat pay resources without AP or reactions", async () => {
-  const f = fixture(), item = bonusAbility(f);
+  const f = fixture(),
+    item = bonusAbility(f);
   game.combats = [];
   item.effects.clear();
   item.system.kind = "reaction";

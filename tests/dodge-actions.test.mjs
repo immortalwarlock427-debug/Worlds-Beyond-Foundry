@@ -118,7 +118,14 @@ function fixture({ mode = "public", faith = 18, heavyArmor = false } = {}) {
 test("Dodge dialog uses prepared AGL, heavy armor and combat spending defaults; cancellation changes nothing", async () => {
   const f = fixture({ heavyArmor: true });
   await promptDodge(f.actor);
-  assert.deepEqual(f.calls.templates[0].data, { modifier: -1, heavyArmor: true, reactions: 2, spendReaction: true });
+  assert.deepEqual(f.calls.templates[0].data, {
+    modifier: -1,
+    heavyArmor: true,
+    disadvantage: true,
+    exhaustion: false,
+    reactions: 2,
+    spendReaction: true
+  });
   game.combats[0].started = false;
   await promptDodge(f.actor);
   assert.equal(f.calls.templates.at(-1).data.spendReaction, false);

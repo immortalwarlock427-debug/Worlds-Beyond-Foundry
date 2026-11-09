@@ -13,9 +13,9 @@
   > Overwhelming Force</label>
   <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
-    <label><input type="radio" name="mode" value="normal" checked> Normal</label>
+    <label><input type="radio" name="mode" value="normal" {{#unless disadvantage}}checked{{/unless}}> Normal</label>
     <label data-tooltip="Roll two d20s; keep the higher"><input type="radio" name="mode" value="advantage"> Advantage</label>
-    <label data-tooltip="Roll two d20s; keep the lower"><input type="radio" name="mode" value="disadvantage"> Disadvantage</label>
+    <label data-tooltip="Roll two d20s; keep the lower"><input type="radio" name="mode" value="disadvantage" {{#if disadvantage}}checked{{/if}}> Disadvantage</label>
   </fieldset>
   {{#if used}}<p class="wb-warning">Used in round {{round}} · reset to correct.</p>{{else}}{{#if combatId}}<p class="wb-dialog-meta">Ready · round {{round}}</p>{{/if}}{{/if}}
   <label class="wb-check-toggle"><input type="checkbox" name="spendReaction" {{#if spendReaction}}checked{{/if}}> Spend 1 reaction ({{reactions}} left)</label>

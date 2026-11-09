@@ -7,6 +7,7 @@ import { inCombat } from "./combat-support.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { autoApplyDamage, registerStrikeSettings } from "./strike-settings.mjs";
 import { applyCondition, conditionsAutomated } from "./conditions.mjs";
+import { exhaustionMode } from "./exhaustion.mjs";
 import {
   strikeInfo,
   defenderState,
@@ -402,7 +403,8 @@ async function postResult(message, index, { outcome, amount, breakdown = null, a
         : `${name} takes no damage.`
   }[outcome];
   const lines = [defenseLine(entry)];
-  if (breakdown?.immune) lines.push(`Rolled ${wholeNumber(breakdown.original)} · immune to ${escapeHTML(entry.damage?.damageType || "it")}.`);
+  if (breakdown?.immune)
+    lines.push(`Rolled ${wholeNumber(breakdown.original)} · immune to ${escapeHTML(entry.damage?.damageType || "it")}.`);
   else if (breakdown) {
     const parts = [`Rolled ${wholeNumber(breakdown.original)}`];
     if (breakdown.halved !== breakdown.original) parts.push(`halved to ${wholeNumber(breakdown.halved)}`);
@@ -559,7 +561,7 @@ function promptContent({ strike, ex, defender, situation, block, options }) {
   }
   if (options.some(option => ["dodge", "parry", "save"].includes(option.kind))) {
     fields.push(
-      `<label>Roll<select name="mode"><option value="auto">Automatic</option><option value="normal">Normal</option><option value="advantage">Advantage</option><option value="disadvantage">Disadvantage</option></select></label>`
+      `<label>Roll<select name="mode"><option value="auto">Automatic${exhaustionMode(defender, "save") === "disadvantage" ? " · exhaustion disadvantage" : ""}</option><option value="normal">Normal</option><option value="advantage">Advantage</option><option value="disadvantage">Disadvantage</option></select></label>`
     );
   }
   return `<div class="wb-check-options">${lines.join("")}${fields.join("")}</div>`;
@@ -610,7 +612,7 @@ async function rollDefense(actor, strike, { kind, mode, stat }) {
     return actions.rollParry(actor, {
       target: strike.total,
       overwhelmingForce: strike.overwhelming,
-      mode: chosen ?? "normal",
+      mode: chosen ?? exhaustionMode(actor, "parry"),
       spendReaction: !!state.combatId
     });
   }
@@ -620,7 +622,7 @@ async function rollDefense(actor, strike, { kind, mode, stat }) {
     const key = strike.saveStat || stat;
     if (!STATS.some(entry => entry.key === key)) throw new Error("Choose a stat to save with.");
     const heavy = key === "agl" && !!actor.system.equipment?.heavyDisadvantage;
-    return rollStatCheck(actor, key, { kind: "save", mode: chosen ?? (heavy ? "disadvantage" : "normal") });
+    return rollStatCheck(actor, key, { kind: "save", mode: chosen ?? (heavy ? "disadvantage" : exhaustionMode(actor, "save")) });
   }
   throw new Error("Choose a defense.");
 }
