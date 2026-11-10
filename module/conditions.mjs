@@ -69,9 +69,7 @@ function prepareBleedingHealing(actor, changes, options) {
   const next = foundry.utils.getProperty(changes, "system.health.damage");
   const health = actor.system?.health;
   if (next == null || !Number.isFinite(Number(next)) || !(Number(next) < health?.damage) || !Number.isFinite(health?.value)) return;
-  const effectIds = conditionEffects(actor, "bleeding")
-    .filter(effect => !effect.isSuppressed)
-    .map(effect => effect.id);
+  const effectIds = conditionEffects(actor, "bleeding").map(effect => effect.id);
   if (effectIds.length)
     options.worldsBeyondBleedingHealing.push({ actorUuid: actor.uuid, health: health.value, damage: health.damage, effectIds });
 }
@@ -89,7 +87,9 @@ async function endBleedingAfterHealing(actor, changes, options, userId) {
 }
 
 export const conditionEffects = (actor, id) =>
-  Array.from(actor.effects ?? []).filter(effect => effect.statuses?.has(id) && !effect.disabled);
+  Array.from(actor.effects ?? []).filter(
+    effect => effect.statuses?.has(id) && !effect.disabled && !effect.isSuppressed && !effect.duration?.expired && effect.active !== false
+  );
 
 // Start a condition. `sourceLevel` is the level of the creature that caused it (Bleeding and
 // Burning scale with it). Bleeding doesn't stack, so an existing one is left alone.
