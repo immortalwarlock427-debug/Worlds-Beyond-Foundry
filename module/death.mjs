@@ -19,6 +19,7 @@ import { formatModifier } from "./stats.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { exhaustionAutomated } from "./exhaustion.mjs";
 import { exhaustionLevel } from "./exhaustion-core.mjs";
+import { unconsciousAutomated, wakeUnconscious } from "./unconscious.mjs";
 
 const SCOPE = "worlds-beyond";
 const escapeHTML = value =>
@@ -62,7 +63,7 @@ export function registerDeath() {
   });
   Hooks.on("updateActor", (actor, changes, options, userId) => {
     if (userId !== game.user.id || actor.type !== "character" || options.worldsBeyondHealthBefore == null) return;
-    if (!deathAutomated() && !exhaustionAutomated()) return;
+    if (!deathAutomated() && !exhaustionAutomated() && !unconsciousAutomated()) return;
     syncDying(actor, options, changes).catch(error => ui.notifications.error(`Death and dying: ${error.message}`));
   });
   Hooks.on("combatTurnChange", (combat, previous, current) =>
@@ -81,6 +82,7 @@ export async function syncDying(actor, options, changes) {
   const before = Number(options.worldsBeyondHealthBefore);
   const after = actor.system.health.value;
   const turn = healthTransition(before, after);
+  await wakeUnconscious(actor, options);
   const updates = {};
   if (exhaustionAutomated() && !options.worldsBeyondDeathSync) {
     if (turn.knockedOut && !options.worldsBeyondCorrection)

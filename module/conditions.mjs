@@ -70,9 +70,17 @@ export async function applyCondition(actor, id, { sourceLevel = null, sourceName
   return foundry.documents.ActiveEffect.implementation.create(data, { parent: actor, keepId: true });
 }
 
-export async function removeCondition(actor, id) {
-  const ids = conditionEffects(actor, id).map(effect => effect.id);
+export async function removeCondition(actor, id, { effectIds = null } = {}) {
+  const effects = conditionEffects(actor, id).filter(effect => !effectIds || effectIds.includes(effect.id));
+  // One ActiveEffect can carry several conditions. Waking or healing must not
+  // delete unrelated Poisoned/Blinded/etc. from that same source.
+  for (const effect of effects.filter(effect => effect.statuses.size > 1)) {
+    await effect.update({ statuses: [...effect.statuses].filter(status => status !== id) });
+    if (effect.statuses.has(id)) throw new Error(`Could not end ${id}; correct it on Status.`);
+  }
+  const ids = effects.filter(effect => effect.statuses.size === 1 && effect.statuses.has(id)).map(effect => effect.id);
   if (ids.length) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
+  if (ids.some(id => actor.effects?.get?.(id))) throw new Error(`Could not end ${id}; correct it on Status.`);
 }
 
 // The level used for a tick: the causing creature's, else the affected creature's own.
