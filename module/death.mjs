@@ -1,3 +1,4 @@
+import { applyTurnHealthLoss, undoTurnDamage } from "./turn-damage.mjs";
 // Death and Dying in Foundry: Death's Mercy on automated damage, Unconscious at 0 Health,
 // Bleeding Out at the start of the turn, stabilizing, Trauma and death.
 // Rules live in death-core.mjs.
@@ -127,32 +128,22 @@ async function bleedOutTurn(combat, previous, current) {
 }
 
 export async function bleedOut(actor) {
-  const previous = actor.system.health.damage;
-  await actor.update({ "system.health.damage": previous + BLEED_OUT }, { worldsBeyondDamage: true });
-  const lost = actor.system.health.damage - previous;
-  const summary = dyingSummary(actor.system);
-  const status = summary.dead
-    ? `${escapeHTML(actor.name)} dies.`
-    : `${escapeHTML(actor.name)} is at ${wholeNumber(summary.health)} Health and dies at ${wholeNumber(summary.diesAt)}.`;
-  return createActionMessage({
-    speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-    content:
-      `<div class="worlds-beyond wb-attack-card wb-dying-card"><h3>Bleeding out</h3>` +
-      `<p class="wb-result">${escapeHTML(actor.name)} loses ${wholeNumber(lost)} Health.</p><p>${status}</p>` +
-      `<p>Armor Rating and resistance don't reduce it. Another creature can spend ${STABILIZE_AP} AP to stabilize them: d20 + their INT modifier against DC ${STABILIZE_DC}.</p></div>`,
-    flags: { [SCOPE]: { bleedOut: { actorUuid: actor.uuid, amount: lost, undone: false } } }
-  });
-}
-
-async function undoBleedOut(message) {
-  if (!game.user.isGM) return;
-  return queuedAction(`bleedOut:${message.id}`, async () => {
-    const data = message.getFlag(SCOPE, "bleedOut");
-    if (!data || data.undone) return;
-    const actor = await foundry.utils.fromUuid(data.actorUuid);
-    if (!actor) throw new Error("That character no longer exists.");
-    await actor.update({ "system.health.damage": actor.system.health.damage - data.amount }, { worldsBeyondCorrection: true });
-    await message.setFlag(SCOPE, "bleedOut", { ...data, undone: true });
+  return queuedAction(actor.uuid, async () => {
+    // Recovery or stabilization may have completed while this tick was queued.
+    if (!dyingSummary(actor.system).bleedingOut || actor.statuses?.has("dead")) return null;
+    const lost = await applyTurnHealthLoss(actor, BLEED_OUT);
+    const summary = dyingSummary(actor.system);
+    const status = summary.dead
+      ? `${escapeHTML(actor.name)} dies.`
+      : `${escapeHTML(actor.name)} is at ${wholeNumber(summary.health)} Health and dies at ${wholeNumber(summary.diesAt)}.`;
+    return createActionMessage({
+      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+      content:
+        `<div class="worlds-beyond wb-attack-card wb-dying-card"><h3>Bleeding out</h3>` +
+        `<p class="wb-result">${escapeHTML(actor.name)} loses ${wholeNumber(lost)} Health.</p><p>${status}</p>` +
+        `<p>Armor Rating and resistance don't reduce it. Another creature can spend ${STABILIZE_AP} AP to stabilize them: d20 + their INT modifier against DC ${STABILIZE_DC}.</p></div>`,
+      flags: { [SCOPE]: { bleedOut: { actorUuid: actor.uuid, amount: lost, undone: false } } }
+    });
   });
 }
 
@@ -263,6 +254,6 @@ function decorateBleedOut(message, html) {
     row.append(button);
   };
   if (target && dyingSummary(target.system).bleedingOut) add(`Stabilize (${STABILIZE_AP} AP)`, () => stabilize(target));
-  if (game.user.isGM && !data.undone && data.amount > 0) add(`Undo ${wholeNumber(data.amount)}`, () => undoBleedOut(message));
+  if (game.user.isGM && !data.undone && data.amount > 0) add(`Undo ${wholeNumber(data.amount)}`, () => undoTurnDamage(message, "bleedOut"));
   if (row.childElementCount) card.append(row);
 }
