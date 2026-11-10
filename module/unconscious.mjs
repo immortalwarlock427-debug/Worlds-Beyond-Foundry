@@ -105,20 +105,23 @@ export async function startUnconscious(effect, options = {}, userId, updated = f
 }
 
 export function prepareUnconsciousHealth(actor, changes, options = {}) {
+  options.worldsBeyondUnconsciousHealth = (options.worldsBeyondUnconsciousHealth ?? []).filter(entry => entry.actorUuid !== actor.uuid);
   if (actor.type !== "character" || !unconsciousAutomated() || options.worldsBeyondCorrection || options.worldsBeyondDeathSync) return;
-  if (foundry.utils.getProperty(changes, "system.health.damage") == null) return;
-  options.worldsBeyondUnconsciousHealth = {
+  const next = foundry.utils.getProperty(changes, "system.health.damage");
+  if (next == null || !Number.isFinite(Number(next)) || !Number.isFinite(actor.system.health.damage)) return;
+  options.worldsBeyondUnconsciousHealth.push({
+    actorUuid: actor.uuid,
     damage: actor.system.health.damage,
     effects: Array.from(actor.effects?.values?.() ?? actor.effects ?? [])
       .filter(effect => active(effect) && effect.statuses?.has("unconscious"))
       .map(effect => ({ id: effect.id, cause: causeOf(effect, actor.system.health.value) }))
-  };
+  });
 }
 
 // Called in the ordered death/Health pipeline before it enforces zero Health.
 // Only effects present before this hit can wake; a new knockout is not erased.
 export async function wakeUnconscious(actor, options = {}) {
-  const before = options.worldsBeyondUnconsciousHealth;
+  const before = options.worldsBeyondUnconsciousHealth?.find(entry => entry.actorUuid === actor.uuid);
   if (!before || !unconsciousAutomated() || options.worldsBeyondCorrection || options.worldsBeyondDeathSync) return;
   const waking = [];
   for (const saved of before.effects) {
