@@ -1,6 +1,7 @@
 import { conditionRollPlan, suggestedMode, conditionRollText } from "./condition-rolls-core.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
 import { frightenedInSight } from "./frightened.mjs";
+import { charmInteractionAdvantage } from "./charmed.mjs";
 export { suggestedMode, conditionRollText } from "./condition-rolls-core.mjs";
 
 const SCOPE = "worlds-beyond";
@@ -19,6 +20,7 @@ export function targetStatuses(target) {
 export function actorConditionRoll(actor, kind, options = {}) {
   return conditionRollPlan({
     ...options,
+    charmedInteraction: conditionRollsAutomated() && kind === "check" && charmInteractionAdvantage(actor, options),
     fearInSight:
       options.fearInSight ?? ((kind === "check" || kind === "attack") && actor?.statuses?.has("fear") ? frightenedInSight(actor) : true),
     kind,
@@ -43,16 +45,24 @@ export function bindConditionCheck(dialog, actor, statKey) {
   const form = dialog.element;
   const update = () => {
     const kind = form.querySelector('[name="kind"]')?.value ?? "check";
+    const interactionControls = form.querySelector("[data-wb-interaction]");
+    if (interactionControls) interactionControls.hidden = kind !== "check";
+    const interaction = !!form.querySelector('[name="interaction"]')?.checked;
+    const interactionTarget = form.querySelector('[name="interactionTarget"]')?.value ?? "";
     for (const name of ["fearInSight", "requiresSight", "requiresHearing"]) {
       const label = form.querySelector(`[name="${name}"]`)?.closest("label");
       if (label) label.hidden = kind !== "check";
     }
     const plan = actorConditionRoll(actor, kind, {
+      interaction,
+      interactionTarget,
       fearInSight: form.querySelector('[name="fearInSight"]')?.checked,
       requiresSight: !!form.querySelector('[name="requiresSight"]')?.checked,
       requiresHearing: !!form.querySelector('[name="requiresHearing"]')?.checked
     });
     const mode = defaultCheckMode(actor, kind, {
+      interaction,
+      interactionTarget,
       heavyArmor: kind === "save" && statKey === "agl" && actor.system.equipment?.heavyDisadvantage,
       fearInSight: form.querySelector('[name="fearInSight"]')?.checked
     });
@@ -64,7 +74,7 @@ export function bindConditionCheck(dialog, actor, statKey) {
       text.hidden = !text.textContent;
     }
   };
-  for (const name of ["kind", "fearInSight", "requiresSight", "requiresHearing"])
+  for (const name of ["kind", "fearInSight", "requiresSight", "requiresHearing", "interaction", "interactionTarget"])
     form.querySelector(`[name="${name}"]`)?.addEventListener("change", update);
   update();
 }

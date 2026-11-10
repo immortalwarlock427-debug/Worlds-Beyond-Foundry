@@ -11,6 +11,7 @@ import { recoverActor } from "./recovery-actions.mjs";
 import { actorExhaustion, exhaustionAutomated } from "./exhaustion.mjs";
 import { exhaustionLevel } from "./exhaustion-core.mjs";
 import { escapedGrapple } from "./condition-movement-core.mjs";
+import { interactionChoices, interactionActor } from "./charmed.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const renderTemplate = (name, context) =>
@@ -28,6 +29,7 @@ export async function promptStatCheck(actor, statKey) {
       exhaustion: actorExhaustion(actor),
       disadvantage: defaultCheckMode(actor, "check") === "disadvantage",
       conditions: conditionControls(actor),
+      interactions: interactionChoices(),
       conditionText: conditionRollText(actorConditionRoll(actor, "check")),
       heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage
     }),
@@ -45,19 +47,26 @@ export async function promptStatCheck(actor, statKey) {
 export async function rollStatCheck(
   actor,
   statKey,
-  { kind = "check", mode, fearInSight, requiresSight = false, requiresHearing = false } = {}
+  { kind = "check", mode, fearInSight, requiresSight = false, requiresHearing = false, interaction = false, interactionTarget = "" } = {}
 ) {
   const stat = STATS.find(stat => stat.key === statKey);
   if (!stat || !["check", "save"].includes(kind)) throw new Error("Choose a stat check or saving throw.");
-  const conditions = actorConditionRoll(actor, kind, { fearInSight, requiresSight, requiresHearing });
+  const conditions = actorConditionRoll(actor, kind, { fearInSight, requiresSight, requiresHearing, interaction, interactionTarget });
   mode ??= defaultCheckMode(actor, kind, {
     fearInSight,
+    interaction,
+    interactionTarget,
     heavyArmor: kind === "save" && statKey === "agl" && actor.system.equipment?.heavyDisadvantage
   });
   const plan = checkMode(mode);
   const label = `${stat.label} ${kind === "save" ? "saving throw" : "check"}`;
   const messageMode = game.settings.get("core", "messageMode");
   const context = { kind, label, mode, actorUuid: actor.uuid, conditionText: conditionRollText(conditions) };
+  if (kind === "check" && interaction && interactionTarget) {
+    context.interactionTarget = interactionTarget;
+    const target = interactionActor(interactionTarget);
+    context.conditionText = [`Interaction with ${target?.name ?? "chosen target"}`, context.conditionText].filter(Boolean).join(" · ");
+  }
   if (conditions.failures.length) {
     context.automaticFailure = conditions.failures.join(" · ");
     return createActionMessage(

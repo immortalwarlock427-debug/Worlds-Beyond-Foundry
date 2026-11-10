@@ -8,6 +8,7 @@ import { abilityRecord } from "./abilities-core.mjs";
 import { abilityActive } from "./ability-timers-core.mjs";
 import { promptAbilityStrike, rollAbilityStrike, abilityStrikePlan } from "./ability-strikes.mjs";
 import { wholeNumber } from "./number-display.mjs";
+import { charmBlocksTarget, charmOverrideHTML } from "./charmed.mjs";
 
 const escapeHTML = value =>
   String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -45,12 +46,13 @@ export async function useTargetedAbility(actor, item, { aimToken = null } = {}) 
     casterId: caster.id
   });
   if (!placed) return;
-  const chosen = await confirmTargets(actor, item, placed.tokens, settings);
+  const chosen = await confirmAreaTargets(actor, item, placed.tokens, settings);
   if (!chosen) return;
-  const targets = chosen.map(token => targetFromToken(token)).filter(Boolean);
+  const targets = chosen.tokens.map(token => targetFromToken(token)).filter(Boolean);
   return rollAbilityStrike(actor, item, targets, {
     area: settings.shape,
-    visual: { ...visual, shape: placed.shape, origin: caster.center, targets: chosen.map(token => token.center) }
+    ignoreCharm: chosen.ignoreCharm,
+    visual: { ...visual, shape: placed.shape, origin: caster.center, targets: chosen.tokens.map(token => token.center) }
   });
 }
 
@@ -149,7 +151,7 @@ export function placeArea({ settings, origin, aim = null, color = 0xd6a85c, cast
 }
 
 // Everyone caught in the area starts ticked; untick allies or anyone it shouldn't hit.
-async function confirmTargets(actor, item, tokens, settings) {
+export async function confirmAreaTargets(actor, item, tokens, settings) {
   const plan = abilityStrikePlan(actor, item);
   const record = abilityRecord(item, actor.system);
   const defense =
@@ -160,19 +162,20 @@ async function confirmTargets(actor, item, tokens, settings) {
         : `Area attack: each target can Dodge against DC ${wholeNumber(plan.dc)} for half damage.`;
   const rows = tokens.length
     ? tokens
-        .map(
-          token => `<label class="wb-check-toggle"><input type="checkbox" name="t_${token.id}" checked> ${escapeHTML(token.name)}</label>`
-        )
+        .map(token => {
+          const blocked = charmBlocksTarget(actor, targetFromToken(token), { harmful: plan.check !== "heal" });
+          return `<label class="wb-check-toggle"><input type="checkbox" name="t_${token.id}"${blocked ? "" : " checked"}> ${escapeHTML(token.name)}${blocked ? " · Charmed: excluded" : ""}</label>`;
+        })
         .join("")
     : "<p>No one is inside the area.</p>";
   const form = await foundry.applications.api.DialogV2.input({
     classes: ["worlds-beyond", "wb-roll-dialog"],
     position: { width: 380 },
     window: { title: `Use ${item.name}` },
-    content: `<div class="wb-check-options"><p class="wb-dialog-meta">${escapeHTML(areaLabel(settings))} · ${escapeHTML(record.summary)}</p><p>${defense}</p><fieldset><legend>Targets</legend>${rows}</fieldset></div>`,
+    content: `<div class="wb-check-options"><p class="wb-dialog-meta">${escapeHTML(areaLabel(settings))} · ${escapeHTML(record.summary)}</p><p>${defense}</p><fieldset><legend>Targets</legend>${rows}</fieldset>${plan.check === "heal" ? "" : charmOverrideHTML(actor)}</div>`,
     ok: { label: "Use" },
     rejectClose: false
   });
   if (!form) return null;
-  return tokens.filter(token => form[`t_${token.id}`]);
+  return { tokens: tokens.filter(token => form[`t_${token.id}`]), ignoreCharm: form.ignoreCharm === true };
 }

@@ -8,6 +8,7 @@ export function conditionRollPlan({
   delivery = "melee",
   distance = null,
   fearInSight = true,
+  charmedInteraction = false,
   requiresSight = false,
   requiresHearing = false
 } = {}) {
@@ -39,6 +40,7 @@ export function conditionRollPlan({
       (delivery === "melee" ? advantages : disadvantages).push(`Prone target: ${delivery === "melee" ? "melee" : "ranged"}`);
   }
   if (kind === "check") {
+    if (charmedInteraction) advantages.push("Charmed: interacting with a creature you charmed");
     if (own.has("poison")) disadvantages.push("Poisoned");
     if (own.has("fear") && fearInSight) disadvantages.push("Frightened: source in sight");
     if (own.has("blind") && requiresSight) failures.push("Blinded: this check requires sight");

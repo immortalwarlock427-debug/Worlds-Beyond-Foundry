@@ -15,6 +15,7 @@ import { broadcastEffect } from "./vfx.mjs";
 import { exhaustionAttackDie } from "./exhaustion.mjs";
 import { actorConditionRoll, targetStatuses, conditionControls, suggestedMode, conditionRollText } from "./condition-rolls.mjs";
 import { attackDistance } from "./positioning.mjs";
+import { requireCharmedTargets, charmOverrideHTML } from "./charmed.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const escapeHTML = value =>
@@ -86,7 +87,7 @@ export async function promptAbilityStrike(actor, itemId, target) {
     classes: [SYSTEM_ID, "wb-roll-dialog"],
     position: { width: 380 },
     window: { title: `Use ${item.name}` },
-    content: `<div class="wb-check-options">${lines.join("")}${conditionHTML}${modes}${exhaustionControl}</div>`,
+    content: `<div class="wb-check-options">${lines.join("")}${plan.check === "heal" ? "" : charmOverrideHTML(actor)}${conditionHTML}${modes}${exhaustionControl}</div>`,
     render: (event, dialog) => {
       if (plan.check !== "attack") return;
       let previous = defaultMode;
@@ -117,6 +118,7 @@ export async function promptAbilityStrike(actor, itemId, target) {
     rollMode: form.rollMode,
     delivery: form.delivery ?? "ranged",
     fearInSight: form.fearInSight,
+    ignoreCharm: form.ignoreCharm === true,
     conditionCritical: form.conditionCritical !== false,
     exhaustionPenalty: form.exhaustionPenalty !== false
   });
@@ -136,11 +138,13 @@ export async function rollAbilityStrike(
     exhaustionPenalty = true,
     delivery = "ranged",
     fearInSight,
+    ignoreCharm = false,
     conditionCritical = true
   } = {}
 ) {
   const list = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
   const plan = abilityStrikePlan(actor, item);
+  requireCharmedTargets(actor, list, { harmful: plan.check !== "heal", ignoreCharm });
   const healing = plan.check === "heal" ? healFormula(actor, item, plan) : null;
   if (healing !== null && (!healing || !foundry.dice.Roll.validate(healing)))
     throw new Error(`Set ${item.name}'s healing amount, such as 2d8 + fth, in Targeting → Healing.`);
@@ -220,6 +224,7 @@ export async function rollAbilityStrike(
     `<div class="worlds-beyond wb-attack-card"><h3>${escapeHTML(item.name)}</h3>` +
     (area ? `<p class="wb-dialog-meta">${escapeHTML(areaLabel(targeting.area))}${list.length ? "" : " · no one inside"}</p>` : "") +
     sections.map((section, index) => `<section class="wb-attack-hand" data-hand="${index}">${section}</section>`).join("") +
+    (ignoreCharm ? "<p>Charmed targeting ignored (ruling).</p>" : "") +
     (damage ? `<p>Damage: ${escapeHTML(damage)}${targeting.damageType ? ` ${escapeHTML(targeting.damageType)}` : ""}.</p>` : "") +
     "</div>";
   const message = await createActionMessage(
@@ -231,6 +236,7 @@ export async function rollAbilityStrike(
         [SYSTEM_ID]: {
           attack: {
             actorUuid: actor.uuid,
+            ignoreCharm: !!ignoreCharm,
             attackerName: actor.name,
             target: area ? null : (list[0] ?? null),
             overwhelmingForce: false,

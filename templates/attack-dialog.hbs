@@ -1,4 +1,5 @@
 <div class="wb-check-options">
+  {{#if charmOverride}}<label class="wb-check-toggle" data-tooltip="Charmed normally prevents attacking your linked charmer."><input type="checkbox" name="ignoreCharm"> Ignore Charmed targeting (GM ruling)</label>{{/if}}
   <p class="wb-condition-reasons" {{#unless conditionText}}hidden{{/unless}}>{{conditionText}}</p>
   {{#if fear}}<label class="wb-check-toggle" data-tooltip="Defaults from linked sources and sight walls; change for darkness, senses or a ruling."><input type="checkbox" name="fearInSight" {{#if fearInSight}}checked{{/if}}> Fear source in sight</label>{{/if}}
   {{#if conditionCritical}}<label class="wb-check-toggle"><input type="checkbox" name="conditionCritical" checked> Paralyzed within 5 ft: a hit is critical</label>{{/if}}
