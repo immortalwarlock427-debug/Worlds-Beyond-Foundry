@@ -7,6 +7,12 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Active condition sources
+
+Version 0.64.0 aligns the condition-action/source lookup with Status: disabled, suppressed, expired and explicitly inactive native Actor effects are excluded. An inactive earlier Bleeding/Burning record can no longer supply its old source level instead of a later active source. Stand up, Escape, recovery/Wonder outcomes and active condition removal leave inactive records intact, preserving unrelated composite statuses. Manual effect editing/deletion remains available through Foundry; no inactive records are automatically deleted or migrated.
+
+This uses v14 ActiveEffect activity/suppression and expiration state, matching the existing Status projection. It does not change timing, source-level fallback, dice, costs, the non-stacking rule or the choice among multiple genuinely active sources. If no active source supplies a recorded level, the existing own-level fallback remains. Regression: `tests/active-conditions.test.mjs`, including pre-fix failures for lookup, source level and removal. Native validation and limits are recorded in the PR.
+
 ## Healing and Bleeding cleanup
 
 Version 0.63.0 makes healing’s Bleeding cleanup honor **Automate Bleeding and Burning**, both when the update begins and when queued cleanup runs. It requires an explicit reduction in damage taken **and an actual increase in prepared Health**. Reducing damage taken while lowering the maximum enough to keep Health unchanged (or lower) no longer counts as healing. Increasing the maximum alone, ordinary damage, unrelated edits and correction/Undo updates remain outside this automation.
