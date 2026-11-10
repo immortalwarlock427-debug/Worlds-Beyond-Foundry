@@ -64,6 +64,7 @@ import { registerConditions, endConditionAction, removeCondition } from "./condi
 import { registerDeath, dyingContext, stabilize, treat } from "./death.mjs";
 import { registerConditionRolls } from "./condition-rolls.mjs";
 import { registerConditionActions } from "./condition-actions.mjs";
+import { registerConditionMovement, promptMobilityAction } from "./condition-movement.mjs";
 import { registerExhaustion, exhaustionAutomated, exhaustionContext, overexert } from "./exhaustion.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
@@ -715,7 +716,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         return await (item
           ? item.sheet.render({ force: true })
           : openEffect(effectRows(this.actor).find(effect => effect.uuid === uuid).effect));
-      if (operation === "condition" && row.endAction) return await endConditionAction(this.actor, row.endAction.id);
+      if (operation === "condition" && row.endAction)
+        return await (["prone", "grappled"].includes(row.endAction.id)
+          ? promptMobilityAction(this.actor, row.endAction.id, uuid)
+          : endConditionAction(this.actor, row.endAction.id));
       // A status condition ends by removing it, like clicking it off in the token HUD.
       if (operation === "end" && row.condition) return await removeCondition(this.actor, row.condition);
       if (operation === "end" && row.canEnd)
@@ -781,6 +785,7 @@ Hooks.once("init", () => {
   registerDeath();
   registerConditionRolls();
   registerConditionActions();
+  registerConditionMovement();
   registerVfx();
   registerMovementRuler();
   registerMovement();

@@ -6,6 +6,7 @@ import { wholeNumber } from "./number-display.mjs";
 import { effectTimeLeft } from "./effect-duration.mjs";
 import { timerKind, abilityActive, abilityTimeLeft } from "./ability-timers-core.mjs";
 import { condition, TICKS, endActionCost } from "./conditions-core.mjs";
+import { MOBILITY_ACTIONS } from "./condition-movement-core.mjs";
 
 export const EFFECT_SCOPE = "worlds-beyond";
 export const effectFlags = effect => effect.flags?.[EFFECT_SCOPE] ?? {};
@@ -211,7 +212,9 @@ export function effectContext(actor) {
               label: row.condition === "bleeding" ? "Shake it off" : "Put out",
               ap: endActionCost(row.condition, actor.system?.stats?.vit?.mod ?? 0)
             }
-          : null,
+          : !item && MOBILITY_ACTIONS[row.condition]
+            ? { id: row.condition, ...MOBILITY_ACTIONS[row.condition] }
+            : null,
       summaries: [row.summary],
       timers: row.timeLeft ? [row.timeLeft] : []
     });

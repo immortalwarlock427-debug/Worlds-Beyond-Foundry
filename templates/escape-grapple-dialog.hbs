@@ -1,0 +1,13 @@
+<div class="wb-check-options">
+  <p class="wb-dialog-meta">5 AP in combat · meet DC 12 + the grappler's STR modifier.</p>
+  <label>Grappler's STR modifier<input type="number" name="grapplerStr" step="1" placeholder="Ask the GM if unknown" required></label>
+  <label>Escape with<select name="stat"><option value="str" {{#unless dexterity}}selected{{/unless}}>Strength</option><option value="dex" {{#if dexterity}}selected{{/if}}>Dexterity</option></select></label>
+  <p class="wb-condition-reasons" {{#unless conditionText}}hidden{{/unless}}>{{conditionText}}</p>
+  {{#if conditions.fear}}<label class="wb-check-toggle"><input type="checkbox" name="fearInSight" checked> Fear source in sight</label>{{/if}}
+  <fieldset class="wb-dice-choices"><legend>Dice</legend>
+    <label><input type="radio" name="mode" value="normal" {{#if normal}}checked{{/if}}> Normal</label>
+    <label><input type="radio" name="mode" value="advantage" {{#if advantage}}checked{{/if}}> Advantage</label>
+    <label><input type="radio" name="mode" value="disadvantage" {{#if disadvantage}}checked{{/if}}> Disadvantage</label>
+  </fieldset>
+  <details class="wb-disclosure wb-help"><summary>Escape details</summary><p>A failed attempt still spends 5 AP in combat. Wonder can reroll this check without paying AP again. End on Status remains a manual correction. Restrained requires its own release or ruling; this only ends Grappled.</p></details>
+</div>

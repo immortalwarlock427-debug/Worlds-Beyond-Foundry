@@ -10,6 +10,7 @@ import { wholeNumber } from "./number-display.mjs";
 import { recoverActor } from "./recovery-actions.mjs";
 import { actorExhaustion, exhaustionAutomated } from "./exhaustion.mjs";
 import { exhaustionLevel } from "./exhaustion-core.mjs";
+import { escapedGrapple } from "./condition-movement-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const renderTemplate = (name, context) =>
@@ -107,6 +108,11 @@ export async function rollCard(roll, context, { note = "", success = false } = {
     note,
     conditionText: context.conditionText,
     success,
+    escapeGrapple: context.escapeGrapple && {
+      ...context.escapeGrapple,
+      success: escapedGrapple(roll.total, context.escapeGrapple.dc, context.success),
+      reroll: !!context.previousMessageId
+    },
     defense: defense && { ...defense, target: wholeNumber(defense.target) },
     rollHTML: await roll.render()
   });
@@ -215,6 +221,14 @@ export async function useWonder(message) {
       throw error;
     }
 
+    if (context.escapeGrapple) {
+      try {
+        const { resolveGrappleEscape } = await import("./condition-movement.mjs");
+        await resolveGrappleEscape(actor, nextContext, roll);
+      } catch (error) {
+        ui.notifications.warn(`Wonder result posted, but the grapple could not be ended: ${error.message} Correct Grappled on Status.`);
+      }
+    }
     if (context.kind === "initiative") {
       const combat = game.combats.get(context.combatId);
       const combatant = combat?.combatants.get(context.combatantId);
