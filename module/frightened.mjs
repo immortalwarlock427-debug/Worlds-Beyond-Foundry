@@ -39,7 +39,7 @@ export function fearSourceToken(effect, observer) {
 }
 
 export function fearLineOfSight(observer, source) {
-  if (!sameScene(observer, source) || observer.hidden || source.hidden || !observer.object?.testCollision) return null;
+  if (!sameScene(observer, source) || observer.hidden || source.hidden || !observer.object?.checkCollision) return null;
   if (observer.actor?.statuses?.has("blind") || source.actor?.statuses?.has("invisible")) return null;
   if (observer.parent.id !== globalThis.canvas?.scene?.id) return null;
   if (observer.level !== source.level || (observer.elevation ?? 0) !== (source.elevation ?? 0)) return null;
@@ -49,7 +49,7 @@ export function fearLineOfSight(observer, source) {
     if (!points?.length) return null;
     let unknown = false;
     for (const point of points) {
-      const collision = observer.object.testCollision(point, { type: "sight", mode: "any" });
+      const collision = observer.object.checkCollision(point, { type: "sight", mode: "any" });
       if (collision === false) return true;
       if (collision !== true) unknown = true;
     }

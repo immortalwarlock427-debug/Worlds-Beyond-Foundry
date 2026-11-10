@@ -50,7 +50,7 @@ function fixture() {
     movementAction: "walk",
     hidden: false,
     object: {
-      testCollision(point, options) {
+      checkCollision(point, options) {
         calls.collisions.push({ point, options });
         return calls.blocked ?? false;
       }
@@ -176,7 +176,7 @@ test("linked sight uses the actor token's sight collision, not GM visibility, an
   f.calls.blocked = true;
   assert.equal(frightenedInSight(f.actor), false);
   assert.equal(conditionControls(f.actor).fearInSight, false);
-  f.observer.object.testCollision = point => point.x === 550;
+  f.observer.object.checkCollision = point => point.x === 550;
   assert.equal(fearLineOfSight(f.observer, f.source), true, "one unobstructed point suffices");
 });
 
@@ -195,11 +195,11 @@ test("missing/ambiguous sources, blindness/invisibility, levels, backend failure
   f.source.level = "upstairs";
   assert.equal(frightenedInSight(f.actor), true);
   f.source.level = "ground";
-  f.observer.object.testCollision = () => {
+  f.observer.object.checkCollision = () => {
     throw new Error("backend unavailable");
   };
   assert.equal(frightenedInSight(f.actor), true);
-  f.observer.object.testCollision = () => true;
+  f.observer.object.checkCollision = () => true;
   f.source.hidden = true;
   assert.equal(frightenedInSight(f.actor), true);
   f.source.hidden = false;
