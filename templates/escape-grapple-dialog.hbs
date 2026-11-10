@@ -1,6 +1,9 @@
 <div class="wb-check-options">
   <p class="wb-dialog-meta">5 AP in combat · meet DC 12 + the grappler's STR modifier.</p>
-  <label>Grappler's STR modifier<input type="number" name="grapplerStr" step="1" placeholder="Ask the GM if unknown" required></label>
+  {{#if linkedSource}}<label class="wb-check-toggle"><input type="checkbox" name="useSource" checked> Use {{linkedSource.name}}'s current STR modifier ({{linkedSource.modifier}} · DC {{linkedSource.dc}})</label>
+  <input type="hidden" name="sourceUuid" value="{{linkedSource.uuid}}">{{/if}}
+  {{#if sourceUnavailable}}<p class="wb-dialog-meta">Linked source unavailable or its STR isn't observable. Enter the modifier supplied by the GM, or correct the source on Status.</p>{{/if}}
+  <label>{{#if linkedSource}}Manual STR modifier (uncheck source to override){{else}}Grappler's STR modifier{{/if}}<input type="number" name="grapplerStr" step="1" placeholder="Ask the GM if unknown" {{#if linkedSource}}value="{{linkedSource.modifier}}"{{else}}required{{/if}}></label>
   <label>Escape with<select name="stat"><option value="str" {{#unless dexterity}}selected{{/unless}}>Strength</option><option value="dex" {{#if dexterity}}selected{{/if}}>Dexterity</option></select></label>
   <p class="wb-condition-reasons" {{#unless conditionText}}hidden{{/unless}}>{{conditionText}}</p>
   {{#if conditions.fear}}<label class="wb-check-toggle"><input type="checkbox" name="fearInSight" checked> Fear source in sight</label>{{/if}}

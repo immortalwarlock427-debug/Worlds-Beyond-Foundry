@@ -358,3 +358,54 @@ test("multiple grapples require a chosen effect; success leaves other grapples a
   assert.equal(f.effects.get("second").statuses.has("grappled"), true);
   assert.equal(f.actor.statuses.has("grappled"), true);
 });
+
+test("linked Escape reads live grappler STR at execution, while manual override and stale source rejection remain", async () => {
+  const f = fixture();
+  const effect = f.add("hold", ["grappled"]);
+  const source = { documentName: "Actor", name: "Grasper", system: { stats: { str: { mod: 7 } } }, testUserPermission: () => true };
+  effect.flags = { "worlds-beyond": { conditionSources: { grappled: { uuid: "Actor.source", name: "Grasper" } } } };
+  foundry.utils.fromUuidSync = uuid => (uuid === "Actor.source" ? source : null);
+  f.totals.push(18);
+  const failed = await escapeGrapple(f.actor, { effectId: effect.id, useSource: true, sourceUuid: "Actor.source" });
+  assert.equal(failed.getFlag("worlds-beyond", "check").escapeGrapple.dc, 19);
+  assert.equal(f.actor.statuses.has("grappled"), true);
+  source.system.stats.str.mod = 9;
+  f.totals.push(20);
+  const live = await escapeGrapple(f.actor, { effectId: effect.id, useSource: true });
+  assert.equal(live.getFlag("worlds-beyond", "check").escapeGrapple.dc, 21);
+  assert.equal(f.actor.statuses.has("grappled"), true);
+  const paid = f.actor.system.ap.value;
+  await assert.rejects(escapeGrapple(f.actor, { effectId: effect.id, useSource: true, sourceUuid: "Actor.changed" }), /grappler changed/);
+  assert.equal(f.actor.system.ap.value, paid);
+  f.totals.push(20);
+  await escapeGrapple(f.actor, { effectId: effect.id, useSource: false, grapplerStr: 0 });
+  assert.equal(f.actor.statuses.has("grappled"), false);
+});
+
+test("an unavailable linked source requires a supplied modifier and does not spend on missing live STR", async () => {
+  const f = fixture();
+  const effect = f.add("hold", ["grappled"]);
+  effect.flags = { "worlds-beyond": { conditionSources: { grappled: { uuid: "Scene.old.Token.deleted", name: "Old copy" } } } };
+  foundry.utils.fromUuidSync = () => null;
+  await assert.rejects(escapeGrapple(f.actor, { effectId: effect.id, useSource: true }), /unavailable/);
+  await assert.rejects(escapeGrapple(f.actor, { effectId: effect.id }), /grappler's Strength/);
+  assert.equal(f.actor.system.ap.value, 20);
+  assert.equal(f.calls.rolls.length, 0);
+  f.totals.push(20);
+  await escapeGrapple(f.actor, { effectId: effect.id, useSource: false, grapplerStr: 1 });
+  assert.equal(f.actor.statuses.has("grappled"), false);
+});
+
+test("Wonder retains the rolled DC and cannot remove a source replaced on the same grapple effect", async () => {
+  const f = fixture();
+  const effect = f.add("hold", ["grappled"]);
+  effect.flags = { "worlds-beyond": { conditionSources: { grappled: { uuid: "Actor.old", name: "Old source" } } } };
+  f.totals.push(1, 20);
+  const failed = await escapeGrapple(f.actor, { effectId: effect.id, useSource: false, grapplerStr: 3 });
+  effect.flags["worlds-beyond"].conditionSources.grappled = { uuid: "Actor.new", name: "New source" };
+  const reroll = await useWonder(failed);
+  assert.equal(reroll.getFlag("worlds-beyond", "check").escapeGrapple.dc, 15);
+  assert.equal(f.actor.statuses.has("grappled"), true);
+  assert.equal(f.actor.system.ap.value, 17);
+  assert.equal(f.actor.system.wonder.value, 1);
+});

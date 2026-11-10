@@ -117,6 +117,16 @@ Version 0.52.0 follows [Notion: Status Effects Explained](https://www.notion.so/
 
 This applies the written AP/reaction restriction; it does not invent a ban on all zero-cost abilities, saves, healing received or automatic resource recovery. Rules: `module/condition-actions-core.mjs`; adapter and setting: `module/condition-actions.mjs`. No actor/item schema changes or migration.
 
+### Condition sources and linked grapple checks
+
+Version 0.56.0 adds **Source** on native Actor Grappled, Frightened and Charmed entries in Status. Choose an accessible character or a specific visible token on the current scene; choosing a token retains its exact synthetic actor instead of guessing among copies. Composite effects can link each relevant condition separately. Clearing a link returns it to manual tracking without ending the condition, changing its bonuses or editing its origin. Saved UUID/name metadata does not rewrite existing actors or infer a source from the current target.
+
+**Escape** defaults to the linked grappler's current STR modifier when its actor is observable. The resulting DC is 12 + that modifier. Uncheck the source option to use a manual modifier for a ruling. A missing/unreadable token or unknown STR requires manual input, and a source changed while the dialog was open must be reselected before spending AP. Exact-token links never fall back to a different token or its world actor. Existing five-AP combat cost, failure payment, STR/DEX selection and Wonder behavior remain.
+
+The DC and source identity are recorded on each check. Wonder uses that rolled DC and cannot remove a replacement source on the same effect record. Escape and End affect the selected source, preserving other grapples and composite statuses. Legacy cards without source snapshots retain their existing behavior. Source labels store the chosen name; the UUID determines identity. Only native Actor effects are editable here, not transferred Item definitions.
+
+This first source pass records fear/charm relationships; it does **not** yet enforce fear movement/line of sight, charm targeting or social advantage, nor invent a distance-based grapple-release rule. Those rules remain manual. Explicit per-check STR overrides remain available. Rules checked against [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38), 2026-11-10. No actor/item schema changes or migration. Metadata/projection: `module/condition-sources-core.mjs`; editor/resolution: `module/condition-sources.mjs`.
+
 ### Unconscious: held gear and waking
 
 Version 0.55.0 follows [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38), checked 2026-11-10. New native Actor Unconscious applications, including HUD statuses and zero-Health knockouts, release held weapons and shields without AP and add Prone. Strapped weapons, worn armor/accessories and stowed gear remain. Changing a name or adding another source while already Unconscious does not repeatedly drop gear; manually restoring equipment stays possible. Reactivating a disabled/expired source is a fresh application.

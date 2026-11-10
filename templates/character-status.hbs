@@ -17,9 +17,17 @@
         >
           <span class="wb-item-title">{{name}}</span>
           <span class="wb-item-brief">{{#if source}}{{source}} · {{/if}}{{summary}}</span>
+          {{#if conditionSourceText}}<span class="wb-item-brief">{{conditionSourceText}}</span>{{/if}}
           {{#if timeLeft}}<span class="wb-status-time">{{timeLeft}}</span>{{/if}}
         </button></div>
-        {{#if canEnd}}<div class="wb-row-actions">{{#if endAction}}<button
+        {{#if canEnd}}<div class="wb-row-actions">{{#if canSetSource}}<button
+          type="button"
+          class="wb-row-use"
+          data-action="status"
+          data-operation="source"
+          aria-label="Set source for {{name}}"
+          {{#unless @root.editable}}disabled{{/unless}}
+        ><i class="fa-solid fa-link" aria-hidden="true"></i> Source</button>{{/if}}{{#if endAction}}<button
           type="button"
           class="wb-row-use"
           data-action="status"
