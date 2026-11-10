@@ -11,6 +11,7 @@ import { recoverActor } from "./recovery-actions.mjs";
 import { actorExhaustion, exhaustionAutomated } from "./exhaustion.mjs";
 import { exhaustionLevel } from "./exhaustion-core.mjs";
 import { shakeItOffSuccess } from "./conditions-core.mjs";
+import { stabilizeSuccess } from "./death-core.mjs";
 import { escapedGrapple } from "./condition-movement-core.mjs";
 import { interactionChoices, interactionActor } from "./charmed.mjs";
 
@@ -128,6 +129,11 @@ export async function rollCard(roll, context, { note = "", success = false } = {
       success: shakeItOffSuccess(roll.total, context.success),
       reroll: !!context.previousMessageId
     },
+    stabilizeCheck: context.stabilizeCheck && {
+      ...context.stabilizeCheck,
+      success: stabilizeSuccess(roll.total, context.success),
+      reroll: !!context.previousMessageId
+    },
     defense: defense && { ...defense, target: wholeNumber(defense.target) },
     rollHTML: await roll.render()
   });
@@ -196,6 +202,14 @@ export async function useWonder(message) {
     const roll = success ? original : original.clone();
     if (!success) await roll.evaluate({ allowInteractive: !message.blind });
     const nextContext = { ...context, success, previousMessageId: message.id };
+    if (context.stabilizeCheck) nextContext.stabilizeCheck = { ...context.stabilizeCheck, applied: false };
+    const stabilization = context.stabilizeCheck
+      ? {
+          targetUuid: context.stabilizeCheck.targetUuid,
+          success: stabilizeSuccess(roll.total, success),
+          applied: false
+        }
+      : null;
     const note = success ? "Defy Fate · 1 Wonder spent." : `Wonder · previous total ${original.total} · 1 use spent.`;
     const content = await rollCard(roll, nextContext, { note, success });
     // Prepare the dice and content before spending; no pool changes on a failed roll/render.
@@ -217,7 +231,7 @@ export async function useWonder(message) {
         blind: message.blind,
         rolls: [roll],
         content,
-        flags: { [SYSTEM_ID]: { check: nextContext } }
+        flags: { [SYSTEM_ID]: { check: nextContext, ...(stabilization ? { stabilize: stabilization } : {}) } }
       });
       if (!result) throw new Error("The Wonder result was not posted.");
     } catch (error) {
