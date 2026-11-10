@@ -2,7 +2,7 @@
   "id": "worlds-beyond",
   "title": "Worlds Beyond",
   "description": "The Worlds Beyond homebrew: eight stats, Action Points, and a combat framework of its own.",
-  "version": "0.61.0",
+  "version": "0.62.0",
   "socket": true,
   "compatibility": {
     "minimum": "14",

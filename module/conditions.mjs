@@ -1,3 +1,4 @@
+import { applyTurnHealthLoss, undoTurnDamage } from "./turn-damage.mjs";
 // Status conditions in Foundry: Notion's statuses in the token HUD, Bleeding and Burning
 // damage at the start of the creature's turn, and the actions that end them.
 // Rules live in conditions-core.mjs.
@@ -14,7 +15,7 @@ import {
 import { newerRecoveryTurn } from "./recovery-core.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { inCombat, planApPayment, payAp } from "./combat-support.mjs";
-import { immuneTo, damagedHealth } from "./strike-core.mjs";
+import { immuneTo } from "./strike-core.mjs";
 import { actorResistantTo, allowStatusApplication } from "./petrified.mjs";
 import { requireActionCapacity } from "./condition-actions.mjs";
 import { defaultCheckMode, actorConditionRoll, conditionRollText, conditionControls, bindConditionCheck } from "./condition-rolls.mjs";
@@ -119,38 +120,41 @@ async function tickTurn(combat, previous, current) {
 }
 
 export async function tick(actor, id, combat) {
-  const info = TICKS[id];
-  const source = sourceOf(actor, id);
-  const formula = tickFormula(id, source.level);
-  const roll = await new foundry.dice.Roll(formula).evaluate();
-  const rolled = Math.max(0, Math.floor(roll.total));
-  const immune = info.damageType && immuneTo(actor.system.immunities, info.damageType);
-  const resistant = !immune && actorResistantTo(actor, info.damageType);
-  const amount = immune ? 0 : resistant ? Math.floor(rolled / 2) : rolled;
-  const previous = actor.system.health.damage;
-  let applied = false;
-  if (amount > 0)
-    applied = !!(await actor.update({ "system.health.damage": damagedHealth(previous, amount) }, { worldsBeyondDamage: true }));
-  const notes = [
-    `${formula} for a level ${wholeNumber(source.level)} source${source.name ? ` (${escapeHTML(source.name)})` : source.known ? "" : " (its own level; none was recorded)"}.`,
-    "Armor Rating doesn't reduce it.",
-    immune
-      ? `Immune to ${info.damageType}.`
-      : resistant
-        ? `${info.damageType ? `Resistant to ${info.damageType}` : "Resistant to this damage"}: halved.`
-        : ""
-  ].filter(Boolean);
-  const content =
-    `<div class="worlds-beyond wb-attack-card wb-condition-card"><h3>${escapeHTML(info.label)}</h3>` +
-    `<p class="wb-result">${escapeHTML(actor.name)} takes ${wholeNumber(amount)}${info.damageType ? ` ${info.damageType.toLowerCase()}` : ""} damage.</p>` +
-    notes.map(line => `<p>${line}</p>`).join("") +
-    (await roll.render()) +
-    "</div>";
-  return createActionMessage({
-    speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-    content,
-    rolls: [roll],
-    flags: { [SCOPE]: { conditionTick: { actorUuid: actor.uuid, id, amount, applied, undone: false, combatId: combat.id } } }
+  return queuedAction(actor.uuid, async () => {
+    const info = TICKS[id];
+    const source = sourceOf(actor, id);
+    const formula = tickFormula(id, source.level);
+    const roll = await new foundry.dice.Roll(formula).evaluate();
+    const rolled = Math.max(0, Math.floor(roll.total));
+    const immune = info.damageType && immuneTo(actor.system.immunities, info.damageType);
+    const resistant = !immune && actorResistantTo(actor, info.damageType);
+    const requested = immune ? 0 : resistant ? Math.floor(rolled / 2) : rolled;
+    const amount = await applyTurnHealthLoss(actor, requested);
+    const applied = amount > 0;
+    const notes = [
+      `${formula} for a level ${wholeNumber(source.level)} source${source.name ? ` (${escapeHTML(source.name)})` : source.known ? "" : " (its own level; none was recorded)"}.`,
+      "Armor Rating doesn't reduce it.",
+      amount !== requested ? `Health loss adjusted from ${wholeNumber(requested)} to ${wholeNumber(amount)}.` : "",
+      immune
+        ? `Immune to ${info.damageType}.`
+        : resistant
+          ? `${info.damageType ? `Resistant to ${info.damageType}` : "Resistant to this damage"}: halved.`
+          : ""
+    ].filter(Boolean);
+    const content =
+      `<div class="worlds-beyond wb-attack-card wb-condition-card"><h3>${escapeHTML(info.label)}</h3>` +
+      `<p class="wb-result">${escapeHTML(actor.name)} takes ${wholeNumber(amount)}${info.damageType ? ` ${info.damageType.toLowerCase()}` : ""} damage.</p>` +
+      notes.map(line => `<p>${line}</p>`).join("") +
+      (await roll.render()) +
+      "</div>";
+    return createActionMessage({
+      speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+      content,
+      rolls: [roll],
+      flags: {
+        [SCOPE]: { conditionTick: { actorUuid: actor.uuid, id, amount, rolled, requested, applied, undone: false, combatId: combat.id } }
+      }
+    });
   });
 }
 
@@ -256,18 +260,6 @@ export const endActionLabel = id => (id === "bleeding" ? "Shake it off" : id ===
 /*  Tick cards                                  */
 /* -------------------------------------------- */
 
-async function undoTick(message) {
-  if (!game.user.isGM) return;
-  return queuedAction(`conditionTick:${message.id}`, async () => {
-    const data = message.getFlag(SCOPE, "conditionTick");
-    if (!data?.applied || data.undone) return;
-    const actor = await foundry.utils.fromUuid(data.actorUuid);
-    if (!actor) throw new Error("That character no longer exists. Correct Health on its sheet.");
-    await actor.update({ "system.health.damage": Math.max(0, actor.system.health.damage - data.amount) }, { worldsBeyondCorrection: true });
-    await message.setFlag(SCOPE, "conditionTick", { ...data, undone: true });
-  });
-}
-
 function decorateConditionCard(message, html) {
   const data = message.getFlag?.(SCOPE, "conditionTick");
   const card = html.querySelector?.(".wb-condition-card");
@@ -296,7 +288,7 @@ function decorateConditionCard(message, html) {
     add(`${endActionLabel(data.id)} (${cost} AP)`, () => promptEndConditionAction(actor, data.id));
   }
   if (game.user.isGM && data.applied && !data.undone && data.amount > 0)
-    add(`Undo ${wholeNumber(data.amount)} damage`, () => undoTick(message));
+    add(`Undo ${wholeNumber(data.amount)} damage`, () => undoTurnDamage(message, "conditionTick", { floor: 0 }));
   if (row.childElementCount) card.append(row);
 }
 

@@ -7,6 +7,14 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Turn-start damage receipts
+
+Version 0.62.0 serializes Bleeding/Burning, Bleeding Out and their Undo operations on the affected actor’s local action queue. Their simultaneous turn hooks no longer overwrite one another’s Health changes. Separate actors keep separate queues; unlinked token actors use their own UUID. Bleeding Out rechecks its eligibility when the queued operation starts, so completed stabilization/healing/death is respected.
+
+New condition cards record the **actual retained Health loss**, including Death’s Mercy, rather than the damage requested before native hooks. The dice still show the roll, resistance/immunity still apply first, and an adjustment note explains a reduced Health loss. Undo reverses the recorded amount once. A cancelled native Health update posts no false damage card; a failed Undo receipt save restores the pre-Undo Health so the operation can be retried safely. Existing manual Health corrections and automation settings remain available.
+
+This fixes bookkeeping without changing damage dice, Mercy rounding, thresholds, resistance, AP or the turn’s eligibility rules. It does not rewrite old chat receipts, add a global transaction lock across clients, deduplicate all possible turn deliveries or serialize unrelated strike/healing modules. A failed damage-card post after a successful Health change still needs manual correction; automatic compensation of death/status side effects is outside this change. Regression: `tests/turn-damage.test.mjs`, including reproductions of the previous lost-update and Mercy receipt defects. Rules checked against [Notion: Death and Dying](https://www.notion.so/707a548ff2354d0ba02e7979ca9bda1c) and [Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38). Native checks and limits are recorded in the PR.
+
 ## Shake It Off checks
 
 Version 0.61.0 brings **Shake it off** (Status and Bleeding tick cards) into the shared VIT check flow: DC 12, 5 AP lowered by VIT in combat, free outside combat. The compact dialog defaults from Poisoned, linked Frightened sight and exhaustion, with editable Normal/Advantage/Disadvantage and fear visibility. Existing world automation opt-outs remain independent. Incapacitation prevents this deliberate recovery action even outside combat; End remains a manual correction.
