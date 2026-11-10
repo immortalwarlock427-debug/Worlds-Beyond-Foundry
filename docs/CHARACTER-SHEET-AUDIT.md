@@ -1,6 +1,6 @@
 # Final character-sheet audit
 
-**Status: ready for user testing; not yet signed off.** This is the release gate before broader combat, spell visuals or modules. Allow about 30 minutes on desktop. Deeper optional cases in the topic guides help investigate failures; they do not all need repeating on every release.
+**Status: ready for user testing; not yet signed off.** Allow about 30 minutes for the desktop sheet pass, then a short [combined combat play-through](#combined-combat-play-through). Broader combat is already implemented; complete this audit before adding optional integrations. Deeper cases in the guides can help reproduce failures.
 
 ## Who does what
 
@@ -8,7 +8,9 @@ Codex reviews code, runs regressions, checks native models/templates where pract
 
 ## Prepare (3 minutes)
 
-Restart Foundry and refresh player browsers. Use two disposable test characters (A and B), ideally duplicates, plus an unlinked token copy of B on a test scene. Keep the real characters for the final read-only spot-check. Record the system version and turn off unrelated modules for the first pass. A trusted player can check ownership in their usual browser; GM-only testing cannot prove player permissions.
+Restart Foundry and refresh player browsers. Record the system version and the relevant automation settings. Use two disposable characters (A and B) on a test scene, with a linked token and a deliberate unlinked copy. Keep real characters for a read-only spot-check. Have one actual player join as a player; a second GM does not test player permissions.
+
+- [ ] Record the **Link Actor Data** setting and starting Health/AP on both the Actors sidebar sheet and each token sheet. Linked tokens share the sidebar sheet; an unlinked copy tracks its own values. Check sides in the token HUD: Ally/Friendly vs Enemy/Hostile is opposition; two tokens on the same side are teammates. See [sides](COMBAT.md#positioning).
 
 - [ ] Open an existing character: no startup errors, missing images or lost fields.
 - [ ] On the two test actors, record starting HP/AP, stats and gear. Open each tab, resize the sheet normally, close/reopen it and refresh. Values persist and controls remain reachable.
@@ -34,7 +36,7 @@ Restart Foundry and refresh player browsers. Use two disposable test characters 
 - [ ] Enter 2 pc and 37 gc: total value is 2,037 gc; denominations stay as entered.
 - [ ] Outside combat, equip/stow is free. In a started encounter, set DEX modifier 0: weapon, shield and armor equip/stow each cost 2 AP. A hand swap pays once; Quickdraw weapon actions are free. With no spendable AP, the change is refused without changing gear. Try a positive DEX modifier and check the cost never falls below 1 for ordinary gear.
 - [ ] Use a healing potion while injured, then at full Health: successful use restores Health; the full-health attempt says so and spends no item/AP. Check a resource potion targets Blood, and a +3 STR potion shows the bonus and duration. Applied bonuses appear in Status and end/expire correctly.
-- [ ] Add a Notion resistance and a custom entry, save/reopen, then remove them. Character summary follows the list. Damage is still applied manually.
+- [ ] Add a Notion resistance, a custom entry and an immunity. Save/reopen and confirm the summary follows the list. Keep one resistance and one immunity to verify in combat, then remove the test entries.
 
 ## Abilities, forms and status (7 minutes)
 
@@ -44,14 +46,29 @@ Restart Foundry and refresh player browsers. Use two disposable test characters 
 - [ ] Try the same on linked tokens and on B's unlinked copy. Linked changes affect that actor's prototype/active tokens; unlinked changes affect only that token copy. Watch the transition and restoration of position/size.
 - [ ] On a test form, delete a formerly snapshotted equipment item and switch again: no repeated warning or form oscillation. Failed switches must not leave a bonus active.
 - [ ] Set a resource threshold above 100. Crossing upward asks to enter; crossing back asks to end. Declining leaves the form active. An unrelated edit must not repeatedly reopen the prompt.
+- [ ] Set a stored Maximum bonus, then zero it. Add an effect bonus and confirm it applies to the chosen base. At 101/100 with overflow enabled, trigger a form that sets the cap to 200 with a blank Above threshold. Confirm 101/200 without oscillation, then End and confirm 101/100. Repeat on an unlinked token.
+
+For the final read-only spot-check, Roman’s Monstrous form points to `worlds/echoes-of-the-end-ver-1/tokens/roman-solvaris-monstrous.webp`. Use a disposable copy to check the visible 2×2, scale 1.15, 1.25-second transformation. Keep the PNG and old macro until that check passes.
 
 ## Existing combat integration and persistence (6 minutes)
 
 - [ ] Use +0 CHA Command from A to **B · Character**: spend 5 own AP, offer 2, and B's displayed total rises by 2 above its ordinary AP. A 6-AP ability uses the 2 Command first, then 4 ordinary AP. Repeating an old Receive card does not refill it. Test the separately labeled unlinked token recipient once and verify only that copy changes.
 - [ ] Add test combatants, start combat and advance turns: incoming AP/reactions refill once. A normal stat roll shows die + modifier; advantage/disadvantage identifies the kept die. Wonder consumes once per result, allows a new reroll to use Wonder again, and refuses use at zero.
-- [ ] Smoke-test one equipped attack, reload, Block/Dodge/Parry dialog and linked-defense chat action. Buttons stay visible/scrollable and chat matches the theme. Health/damage automation beyond existing behavior remains deferred.
+- [ ] Smoke-test an equipped attack, reload and the Block/Dodge/Parry dialogs. Buttons stay visible and scrollable. The automatic exchange updates Health when enabled; the sheet and manual attack-card controls still work for table rulings.
 - [ ] Refresh and reopen: notes, favorites, resource settings, costs, form configuration and active effects persist. A real character looks unchanged apart from the intended features.
 - [ ] If available, an owner player can edit/use their actor; an observer can read it without gaining edit controls. Report this as **not tested** if using GM only.
+
+## Combined combat play-through
+
+Use the disposable scene and a real player. Keep an active GM connected. Use opposing token sides, one player-owned linked combatant, and an unlinked combatant. Record each token's starting Health, AP and reactions separately from its sidebar actor. See the [automatic exchange](COMBAT.md#resolution) and [opportunity attacks](COMBAT.md#opportunity) for details.
+
+- [ ] Start an encounter and advance through a full round. AP and reactions refill, and enabled resource recovery runs once on the incoming character's turn. A linked token and its sidebar sheet match. The unlinked token's changes stay on that copy.
+- [ ] Have the player Alt-click a target with their own token selected, then resolve a normal weapon hit. Check the defender receives the prompt, can cancel or respond, and spends the correct reaction. Compare the result card with actual Health: Resistance → Armor Rating → Block → Overwhelming Force where applicable. Try a matching immunity and confirm no damage.
+- [ ] Try a save/area attack and a targeted heal. Check the selected targets, save result and actual Health on each token. With Bleeding automation enabled, actual healing ends Bleeding. Test **Undo** on a disposable result and verify the card and Health agree.
+- [ ] Use **Resolve by hand** on a fresh exchange. Confirm it exposes the manual controls without automatically applying damage. Leave the world's usual settings in place.
+- [ ] Move within and out of an armed enemy's reach. Check movement AP, the warning, and that an accepted opportunity attack spends one reaction and no AP. The automatic exchange skips defenses for that hit. Check completed trails clear and previews still draw.
+- [ ] On a disposable character, check 0 Health, the next Bleeding Out turn, stabilization and recovery. After combat, try treatment on a stabilized character: 1 Health, one result, and native waking/Trauma. Verify the other actor or token copy did not change.
+- [ ] Confirm the player can use their own sheet and answer its prompts but cannot edit a character they only observe. Refresh both clients and verify saved values and forms persist. Record which linked, unlinked and permission cases were actually exercised.
 
 ## Report and sign-off
 
@@ -59,10 +76,5 @@ For each failure send: actor or token copy, tab/button, values before/after, exp
 
 - [ ] No unresolved sheet defects from this checklist.
 - [ ] Untested player/linked-token cases are listed explicitly.
-- [ ] User approves the sheet and Codex confirms the next phase before starting broader combat/effects/modules.
-
-Roman’s world form now uses `worlds/echoes-of-the-end-ver-1/tokens/roman-solvaris-monstrous.webp`; its existing 2×2, scale 1.15 and current 1.25-second timing were preserved. The path persisted after reopening the editor; test the visible transformation during the audit. Keep the PNG and old macro until the integrated behavior is confirmed.
-
-- [ ] Set a stored Maximum bonus, then zero it. Add an effect bonus and confirm it still applies to the chosen base. At 101/100 with overflow enabled, trigger a form that sets the cap to 200 using a blank Above threshold. Confirm 101/200 without oscillation, then End and confirm 101/100. Repeat on an unlinked token.
-
-- [ ] In a test encounter, move one token several times. Completed trails should disappear and previews for a new move should still draw.
+- [ ] The combined combat play-through is recorded; any failures or cases not tested are listed.
+- [ ] User approves the sheet and combat audit before optional effects/module work.
