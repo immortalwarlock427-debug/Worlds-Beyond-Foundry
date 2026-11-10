@@ -7,6 +7,12 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Tracker refreshes across encounters
+
+Version 0.60.0 guards a Foundry 14.365 post-render edge case: an `updateCombat` batch for another encounter can omit the tracker’s viewed encounter, causing the native turn-scroll branch to test `turn` in `undefined`. The existing Worlds Beyond tracker subclass passes that post-render call as an ordinary refresh. The tracker still renders through Foundry; displayed-encounter turn updates and mixed batches containing it retain native scrolling. Original render options/data remain intact for other hooks. Empty update arrays and no viewed encounter are covered, and unrelated rendering errors still propagate.
+
+This changes no turns, resources, encounter selection, portraits, gameplay rules, schemas or stored documents. It does not patch Foundry binaries or install a module. Source/API checked against installed 14.365 and the [v14 CombatTracker documentation](https://foundryvtt.com/api/v14/classes/foundry.applications.sidebar.tabs.CombatTracker.html). Implementation: `module/character-combatant.mjs`; regression: `tests/combat-tracker-render.test.mjs`. Live checks and limits are recorded in the PR.
+
 ## Contents
 
 - [Automatic attack resolution](#resolution)
