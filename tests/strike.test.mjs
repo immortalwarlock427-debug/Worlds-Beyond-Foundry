@@ -194,6 +194,23 @@ const parry = { check: { defense: { type: "parry" }, actorUuid: "Actor.def" } };
 const block = { reaction: { kind: "block", actorUuid: "Actor.def" } };
 const save = { check: { kind: "save", actorUuid: "Actor.def" } };
 
+test("Stunned defense auto-resolves without asking for reactions, while a save still reaches the defender", async () => {
+  const w = world();
+  w.defender.statuses = new Set(["stun"]);
+  w.setDamage([16]);
+  const message = w.attack([hand()]);
+  await beginStrike(message);
+  assert.equal(w.calls.emits.length, 0, "no Dodge, Parry or Block request");
+  assert.equal(w.defender.system.health.damage, 13);
+  assert.equal(w.defender.system.reactions.value, 2);
+  assert.equal(state(message).exchanges[0].status, "done");
+  const next = world();
+  next.defender.statuses = new Set(["stun"]);
+  const spell = next.attack([hand()], { ability: { check: "save", saveStat: "vit", dc: 14, name: "Test spell" } });
+  await beginStrike(spell);
+  assert.equal(prompt(spell).userId, "p1");
+});
+
 test("the target's player is asked; a miss needs no answer", async () => {
   const w = world();
   assert.equal(answeringUser(w.defender).id, "p1");

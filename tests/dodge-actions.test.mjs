@@ -298,6 +298,16 @@ test("Dodge cards use readable d20 results and Wonder controls; hidden results e
   assert.equal(f.actor.system.wonder.value, 2);
 });
 
+test("Paralyzed cannot spend a Dodge reaction or roll dice; practice rolls stay available", async () => {
+  const f = fixture();
+  f.actor.statuses = new Set(["paralysis"]);
+  await assert.rejects(rollDodge(f.actor, { spendReaction: true }), /Paralyzed/);
+  assert.equal(f.calls.evaluations.length, 0);
+  assert.equal(f.calls.updates.length, 0);
+  await rollDodge(f.actor);
+  assert.equal(f.actor.system.reactions.value, 2);
+});
+
 test("Blinded and Restrained default Dodge to disadvantage and preserve Normal corrections", async () => {
   for (const id of ["blind", "restrain"]) {
     const f = fixture();

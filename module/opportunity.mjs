@@ -9,6 +9,7 @@ import { promptAttack, targetFromToken } from "./attack-actions.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { footprint, positioningSetting } from "./positioning.mjs";
 import { dialogBeside } from "./positioning-core.mjs";
+import { actorIncapacitation } from "./condition-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const SOCKET = `system.${SYSTEM_ID}`;
@@ -71,6 +72,7 @@ export function provokers(token, path, { visibleOnly = false } = {}) {
       if (!attacker || attacker.id === token.id || attacker.hidden || combatant.isDefeated) continue;
       if (visibleOnly && attacker.object && !attacker.object.visible) continue; // Don't warn about unseen enemies.
       if (actor?.type !== "character" || !(actor.system.reactions?.value >= 1)) continue;
+      if (actorIncapacitation(actor).length) continue;
       if (!opposed(attacker.disposition, token.disposition)) continue;
       const weapons = threateningWeapons(actor.items);
       const offer = opportunityWeapons({ attacker: footprint(scene, attacker), path: footprints, weapons, gridFeet });
@@ -172,6 +174,7 @@ export async function showOpportunityPrompt({ attackerTokenUuid, moverTokenUuid,
   const mover = foundry.utils.fromUuidSync(moverTokenUuid);
   const actor = attacker?.actor;
   if (!actor?.isOwner || !mover) return;
+  if (actorIncapacitation(actor).length) return;
   const key = `${attackerTokenUuid}:${moverTokenUuid}:${movementId}:${kind}`;
   if (openPrompts.has(key)) return;
   openPrompts.add(key);

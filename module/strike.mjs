@@ -9,6 +9,7 @@ import { autoApplyDamage, registerStrikeSettings } from "./strike-settings.mjs";
 import { applyCondition, conditionsAutomated } from "./conditions.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
 import { actorConditionRoll, conditionRollText } from "./condition-rolls.mjs";
+import { actorIncapacitation, requireActionCapacity } from "./condition-actions.mjs";
 import {
   strikeInfo,
   defenderState,
@@ -76,6 +77,7 @@ function defenderSituation(actor) {
   return defenderState({
     inCombat: inCombat(actor),
     reactions: actor.system.reactions?.value,
+    reactionsBlocked: actorIncapacitation(actor).length > 0,
     parry: parrySituation(actor),
     resistances: actor.system.resistances,
     armor: actor.system.core?.armorRating
@@ -550,6 +552,8 @@ function promptContent({ strike, ex, defender, situation, block, options }) {
   }
   if (ex.log?.length) lines.push(`<p>${defenseLine(ex)}</p>`);
   if (reactions) lines.push(`<p class="wb-dialog-meta">${reactions}</p>`);
+  const incapacitation = actorIncapacitation(defender);
+  if (incapacitation.length) lines.push(`<p class="wb-dialog-meta">${escapeHTML(incapacitation.join(" / "))}: no defensive reactions.</p>`);
   const fields = [];
   const conditionText = conditionRollText(actorConditionRoll(defender, "dodge"));
   if (!block && conditionText && options.some(option => option.kind === "dodge"))
@@ -607,6 +611,7 @@ async function offerWonder(actor, strike, kind, rollMessage) {
 // Roll with the existing sheet actions so reactions, Parry's round use and chat cards stay identical.
 async function rollDefense(actor, strike, { kind, mode, stat }) {
   if (kind === "take") return null;
+  requireActionCapacity(actor, { reaction: ["dodge", "parry", "block"].includes(kind) });
   const actions = await import("./reaction-actions.mjs");
   const chosen = mode === "auto" ? undefined : mode;
   if (kind === "dodge")

@@ -3,6 +3,18 @@ import assert from "node:assert/strict";
 import { promptParry, rollParry, resetParryUse, parryState, rollBlock } from "../module/reaction-actions.mjs";
 import { useWonder } from "../module/roll-actions.mjs";
 
+test("Incapacitated prevents paid Parry before dice or round-use flags; practice Parry remains available", async () => {
+  const f = fixture();
+  f.actor.statuses = new Set(["incapacitated"]);
+  await assert.rejects(rollParry(f.actor, { spendReaction: true }), /Incapacitated/);
+  assert.equal(f.calls.evaluations.length, 0);
+  assert.equal(f.calls.updates.length, 0);
+  assert.deepEqual(f.actor.flags.parryUses, {});
+  await rollParry(f.actor);
+  assert.equal(f.actor.system.reactions.value, 2);
+  assert.deepEqual(f.actor.flags.parryUses, {});
+});
+
 function fixture({ mode = "public", faith = 18 } = {}) {
   const calls = { evaluations: [], posts: [], updates: [], templates: [], dialogs: [] };
   const actor = {

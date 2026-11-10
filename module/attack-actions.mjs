@@ -7,6 +7,7 @@ import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
 import { inCombat, availableAp, payAp } from "./combat-support.mjs";
+import { requireActionCapacity } from "./condition-actions.mjs";
 import { strikeAutomation } from "./strike-settings.mjs";
 import { attackDistance, positioningSetting } from "./positioning.mjs";
 import { rangeStatus, rangeText } from "./positioning-core.mjs";
@@ -250,6 +251,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
       }
       // Opportunity attacks use a reaction instead of AP (Notion Defenses).
       const reactionSpent = !!options.opportunity && !!options.spendReaction && inCombat(actor);
+      requireActionCapacity(actor, { ap: options.spendAp ? cost : 0, reaction: reactionSpent });
       const reactions = actor.system.reactions?.value ?? 0;
       if (reactionSpent && !(reactions >= 1)) {
         throw new Error("No reactions left for an opportunity attack. Untick Spend a reaction to roll anyway.");
@@ -325,7 +327,10 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
         );
       if (reactionSpent)
         await change(
-          () => actor.update({ "system.reactions.value": reactions - 1 }),
+          () => {
+            requireActionCapacity(actor, { reaction: true });
+            return actor.update({ "system.reactions.value": reactions - 1 });
+          },
           () => actor.update({ "system.reactions.value": reactions })
         );
       for (const { item } of hands) {

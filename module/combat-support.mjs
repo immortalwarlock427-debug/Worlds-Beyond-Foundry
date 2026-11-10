@@ -1,4 +1,5 @@
 import { apAvailable, apSpendPlan } from "./ap.mjs";
+import { requireActionCapacity } from "./condition-actions.mjs";
 export function inCombat(actor) {
   return !!game.combats?.some(combat => combat.started && combat.combatants.some(c => c.actor?.uuid === actor.uuid));
 }
@@ -10,6 +11,7 @@ export function commandReady(actor) {
 }
 export const availableAp = actor => apAvailable(actor.system, commandReady(actor));
 export function planApPayment(actor, cost, { allowCommand = true } = {}) {
+  requireActionCapacity(actor, { ap: cost });
   const ready = allowCommand && commandReady(actor);
   try {
     return apSpendPlan(actor.system, cost, ready);

@@ -9,6 +9,7 @@ import { wholeDisplay } from "./number-display.mjs";
 import { linkedDefense, requireUnusedDefense, markLinkedDefense, linkedResetButtons } from "./attack-defense.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
 import { actorConditionRoll, defaultCheckMode, conditionRollText } from "./condition-rolls.mjs";
+import { requireActionCapacity } from "./condition-actions.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const template = (name, data) =>
@@ -56,6 +57,7 @@ export async function rollBlock(actor, { formula, spendReaction = false, source,
     reversibleAction(async change => {
       const link = linkedDefense(actor, source, "block");
       requireUnusedDefense(link, "block", spendReaction);
+      requireActionCapacity(actor, { reaction: spendReaction });
       if (spendReaction && !(actor.system.reactions.value >= 1)) {
         throw new Error("No reactions left. Correct the pool or untick Spend 1 reaction to roll without spending.");
       }
@@ -73,7 +75,10 @@ export async function rollBlock(actor, { formula, spendReaction = false, source,
       });
       if (spendReaction)
         await change(
-          () => actor.update({ "system.reactions.value": actor.system.reactions.value - 1 }),
+          () => {
+            requireActionCapacity(actor, { reaction: true });
+            return actor.update({ "system.reactions.value": actor.system.reactions.value - 1 });
+          },
           () => actor.update({ "system.reactions.value": actor.system.reactions.value + 1 })
         );
       if (spendReaction) await markLinkedDefense(actor, link, "block", change);
@@ -133,6 +138,7 @@ export async function rollDodge(actor, { against = "attack", target = null, natu
     reversibleAction(async change => {
       const link = linkedDefense(actor, source, "dodge");
       requireUnusedDefense(link, "dodge", spendReaction);
+      requireActionCapacity(actor, { reaction: spendReaction });
       const defense = dodgeContext({ against, target, natural20 });
       const heavyArmor = !!actor.system.equipment?.heavyDisadvantage;
       mode ??= defaultCheckMode(actor, "dodge", { heavyArmor });
@@ -159,7 +165,10 @@ export async function rollDodge(actor, { against = "attack", target = null, natu
       const content = await rollCard(roll, context);
       if (spendReaction)
         await change(
-          () => actor.update({ "system.reactions.value": actor.system.reactions.value - 1 }),
+          () => {
+            requireActionCapacity(actor, { reaction: true });
+            return actor.update({ "system.reactions.value": actor.system.reactions.value - 1 });
+          },
           () => actor.update({ "system.reactions.value": actor.system.reactions.value + 1 })
         );
       if (spendReaction) await markLinkedDefense(actor, link, "dodge", change);
@@ -261,6 +270,7 @@ export async function rollParry(
     reversibleAction(async change => {
       const link = linkedDefense(actor, source, "parry");
       requireUnusedDefense(link, "parry", spendReaction);
+      requireActionCapacity(actor, { reaction: spendReaction });
       const defense = parryContext({ target, ally, overwhelmingForce });
       const state = parryState(actor);
       mode ??= exhaustionMode(actor, "parry");
@@ -292,8 +302,13 @@ export async function rollParry(
         const key = `flags.${SYSTEM_ID}.parryUses.${state.combatId}`;
         const previous = state.combatId ? actor.getFlag?.(SYSTEM_ID, "parryUses")?.[state.combatId] : undefined;
         await change(
-          () =>
-            actor.update({ "system.reactions.value": actor.system.reactions.value - 1, ...(state.combatId ? { [key]: state.round } : {}) }),
+          () => {
+            requireActionCapacity(actor, { reaction: true });
+            return actor.update({
+              "system.reactions.value": actor.system.reactions.value - 1,
+              ...(state.combatId ? { [key]: state.round } : {})
+            });
+          },
           () =>
             actor.update({
               "system.reactions.value": actor.system.reactions.value + 1,
