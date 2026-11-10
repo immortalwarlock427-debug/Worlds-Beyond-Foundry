@@ -161,43 +161,80 @@ export function helperFor(target) {
 
 // Another creature spends 5 AP: d20 + their INT modifier against DC 12. On a success the
 // dying character stops bleeding out and stays unconscious until healed.
+function requireDown(target) {
+  if (!dyingSummary(target.system).down) throw new Error(`${target.name} isn't at 0 Health or below.`);
+}
+
+async function retainStabilized(target, change) {
+  const previous = target.system.dying?.stabilized ?? false;
+  if (previous === true) return true;
+  await change(
+    () => target.update({ "system.dying.stabilized": true }),
+    async () => {
+      const saved = await target.update({ "system.dying.stabilized": previous }, { worldsBeyondCorrection: true });
+      return saved && target.system.dying.stabilized === previous;
+    }
+  );
+  if (target.system.dying.stabilized !== true) throw new Error("Stabilization was not retained. Correct it on the target's sheet.");
+  return true;
+}
+
 export async function stabilize(target, helper = helperFor(target)) {
   if (!target || target.type !== "character") return;
   if (!helper) throw new Error(`Select the token of the character who stabilizes ${target.name}.`);
-  if (!dyingSummary(target.system).down) throw new Error(`${target.name} isn't at 0 Health or below.`);
-  return queuedAction(helper.uuid, () =>
-    reversibleAction(async change => {
-      const ap = inCombat(helper) ? STABILIZE_AP : 0;
-      if (ap) planApPayment(helper, ap);
-      const mod = helper.system.stats?.int?.mod ?? 0;
-      const messageMode = game.settings.get("core", "messageMode");
-      const roll = await new foundry.dice.Roll("1d20 + @mod", { mod }).evaluate({ allowInteractive: messageMode !== "blind" });
-      const success = roll.total >= STABILIZE_DC;
-      if (ap) await payAp(helper, ap, change);
-      const applied = success && target.isOwner ? !!(await target.update({ "system.dying.stabilized": true })) : false;
-      return createActionMessage(
-        {
-          speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor: helper }),
-          content:
-            `<div class="worlds-beyond wb-ability-card wb-dying-card"><h3>Stabilize ${escapeHTML(target.name)}</h3>` +
-            `<p class="wb-dialog-meta">d20 ${formatModifier(mod)} (INT) vs DC ${STABILIZE_DC}${ap ? ` · ${ap} AP spent` : ""}</p>` +
-            (await roll.render()) +
-            `<p class="wb-result">${success ? `${escapeHTML(target.name)} stops bleeding out and stays unconscious until healed.` : "Failure."}</p></div>`,
-          rolls: [roll],
-          flags: { [SCOPE]: { stabilize: { targetUuid: target.uuid, success, applied } } }
-        },
-        { messageMode }
-      );
-    })
+  return queuedAction(`stabilizeTarget:${target.uuid}`, () =>
+    queuedAction(helper.uuid, () =>
+      reversibleAction(async change => {
+        requireDown(target);
+        const ap = inCombat(helper) ? STABILIZE_AP : 0;
+        if (ap) planApPayment(helper, ap);
+        const mod = helper.system.stats?.int?.mod ?? 0;
+        const messageMode = game.settings.get("core", "messageMode");
+        const roll = await new foundry.dice.Roll("1d20 + @mod", { mod }).evaluate({ allowInteractive: messageMode !== "blind" });
+        const success = roll.total >= STABILIZE_DC;
+        requireDown(target);
+        if (ap) await payAp(helper, ap, change);
+        const applied = success && target.isOwner ? await retainStabilized(target, change) : false;
+        return createActionMessage(
+          {
+            speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor: helper }),
+            content:
+              `<div class="worlds-beyond wb-ability-card wb-dying-card"><h3>Stabilize ${escapeHTML(target.name)}</h3>` +
+              `<p class="wb-dialog-meta">d20 ${formatModifier(mod)} (INT) vs DC ${STABILIZE_DC}${ap ? ` · ${ap} AP spent` : ""}</p>` +
+              (await roll.render()) +
+              `<p class="wb-result">${success ? (applied ? `${escapeHTML(target.name)} stops bleeding out and stays unconscious until healed.` : "Check succeeded. The GM applies stabilization to the target.") : "Failure."}</p></div>`,
+            rolls: [roll],
+            flags: { [SCOPE]: { stabilize: { targetUuid: target.uuid, success, applied } } }
+          },
+          { messageMode }
+        );
+      })
+    )
   );
 }
 
-// A player can't edit someone else's character, so the GM's client applies their success.
-async function applyStabilized(message) {
-  const data = message.getFlag(SCOPE, "stabilize");
-  const target = await foundry.utils.fromUuid(data.targetUuid);
-  if (target && dyingSummary(target.system).down) await target.update({ "system.dying.stabilized": true });
-  await message.setFlag(SCOPE, "stabilize", { ...data, applied: true });
+// A player can't edit someone else's character, so the active GM applies the
+// published success. A failed target/receipt write must not acknowledge it.
+export async function applyStabilized(message) {
+  if (!game.user.isActiveGM) return;
+  return queuedAction(`stabilizeCard:${message.id}`, async () => {
+    const receipt = message.getFlag(SCOPE, "stabilize");
+    if (!receipt?.success || receipt.applied) return;
+    const target = await foundry.utils.fromUuid(receipt.targetUuid);
+    if (!target) throw new Error("The stabilization target no longer exists. Resolve this result manually.");
+    return queuedAction(`stabilizeTarget:${target.uuid}`, () =>
+      reversibleAction(async change => {
+        const data = message.getFlag(SCOPE, "stabilize");
+        if (!data?.success || data.applied || data.targetUuid !== target.uuid) return;
+        requireDown(target);
+        await retainStabilized(target, change);
+        const saved = await message.setFlag(SCOPE, "stabilize", { ...data, applied: true });
+        if (!saved || message.getFlag(SCOPE, "stabilize")?.applied !== true)
+          throw new Error("The stabilization receipt was not retained. The target change was cancelled; retry or correct it manually.");
+        return message;
+      })
+    );
+  });
 }
 
 // Indomitable (VIT 21) lets the dying character stabilize themselves.

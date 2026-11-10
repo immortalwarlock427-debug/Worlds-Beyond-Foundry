@@ -7,6 +7,14 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Stabilization recovery
+
+Version 0.65.0 makes Stabilize’s target flag part of its existing compensated action. If the owned target update is cancelled/not retained, or the result card cannot post, stabilization and the helper’s own/Command AP return to their previous state. A target that was already stabilized keeps that state. The target must still be at 0 Health or below when the queued check starts and after rolling, before payment. Successful and failed attempts retain the existing d20 + INT, DC 12 and fixed 5-AP combat cost; outside-combat use remains free.
+
+For an unowned target, the published result reports check success without claiming the target was already updated. The active GM acknowledges the receipt only after the native target update and receipt save succeed. A failed receipt save restores a newly changed target, leaving the receipt pending for a retry/manual correction; already-applied receipts and duplicate local deliveries are ignored. Missing/recovered targets report an error rather than a false acknowledgement. A separate per-target stabilization queue serializes attempts; helper AP uses its existing actor queue. These are local queues, not a cross-client transaction lock.
+
+No schema or gameplay-rule change. Failed compensation is reported for manual correction; remote results remain legitimate spent attempts while GM delivery is pending. This step does not add Wonder or condition dice to Stabilize, change Indomitable/treatment, resurrect dead targets or rewrite old receipts. Regression: `tests/stabilization-recovery.test.mjs`. Rules checked against [Notion: Death and Dying](https://www.notion.so/707a548ff2354d0ba02e7979ca9bda1c). Native checks and limits are recorded in the PR.
+
 ## Active condition sources
 
 Version 0.64.0 aligns the condition-action/source lookup with Status: disabled, suppressed, expired and explicitly inactive native Actor effects are excluded. An inactive earlier Bleeding/Burning record can no longer supply its old source level instead of a later active source. Stand up, Escape, recovery/Wonder outcomes and active condition removal leave inactive records intact, preserving unrelated composite statuses. Manual effect editing/deletion remains available through Foundry; no inactive records are automatically deleted or migrated.
