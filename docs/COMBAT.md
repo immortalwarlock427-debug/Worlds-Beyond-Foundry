@@ -7,6 +7,14 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Healing and Bleeding cleanup
+
+Version 0.63.0 makes healing’s Bleeding cleanup honor **Automate Bleeding and Burning**, both when the update begins and when queued cleanup runs. It requires an explicit reduction in damage taken **and an actual increase in prepared Health**. Reducing damage taken while lowering the maximum enough to keep Health unchanged (or lower) no longer counts as healing. Increasing the maximum alone, ordinary damage, unrelated edits and correction/Undo updates remain outside this automation.
+
+The native pre-update hook records each character’s prior Health and active Bleeding effect IDs separately, including in shared batch options. Only the initiating client queues cleanup on that actor. The queued removal targets those recorded IDs, so Bleeding added after the healing began survives. Composite effects keep their other statuses; disabled/suppressed sources remain intact. Manual End and all existing healing actions remain available. No stored data/schema migration or gameplay-rule change. Existing failed native effect removals still report an error for manual correction.
+
+Rules: [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38), “Any healing … ends it.” Regression: `tests/bleeding-healing.test.mjs` exercises the actual registered pre/post hooks, including opt-outs, shared options, corrected/non-healing updates, replacement effects and error reporting. Native checks and limits are recorded in the PR.
+
 ## Turn-start damage receipts
 
 Version 0.62.0 serializes Bleeding/Burning, Bleeding Out and their Undo operations on the affected actor’s local action queue. Their simultaneous turn hooks no longer overwrite one another’s Health changes. Separate actors keep separate queues; unlinked token actors use their own UUID. Bleeding Out rechecks its eligibility when the queued operation starts, so completed stabilization/healing/death is respected.
