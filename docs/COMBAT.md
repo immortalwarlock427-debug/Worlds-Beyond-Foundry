@@ -7,6 +7,12 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Health snapshots in batch updates
+
+Version 0.67.0 keeps death/recovery and Unconscious waking snapshots separate by actor UUID in native batch updates. Previously, the last character's pre-update Health and sleeper effects could be reused for another character: a real recovery could miss Trauma or waking, an already-down character could receive another knockout's exhaustion, or an AP-only edit could count as someone else's recovery. Each character now uses its own pre-update Health, damage and Unconscious source IDs. Unlinked token copies stay distinct even when they share a base actor ID. Reused options clear only the edited character's stale entries; unrelated/invalid Health edits do not run the recovery pipeline.
+
+No character fields, rules, costs or interface change. Death's Mercy, correction flags, explicit Trauma edits and the independent death/exhaustion/waking opt-outs retain their existing behavior. This does not serialize all Health updates across clients, add a global transaction lock, change maximum-only Health behavior or provide rollback for every death/status consequence. Rules: [Notion: Death and Dying](https://www.notion.so/707a548ff2354d0ba02e7979ca9bda1c). Regression: `tests/death-health-snapshots.test.mjs` exercises the registered hooks, both batch orders, duplicate effect IDs, serialized options, opt-outs, corrections and cancelled updates. Native validation and limits are recorded in the PR.
+
 ## Stabilize check dice and Wonder
 
 Version 0.66.0 makes Stabilize an ordinary INT check with the shared readable roll card. The Overview and Bleeding Out card open a compact Normal/Advantage/Disadvantage dialog. Defaults reflect the helper’s Poisoned, linked Frightened sight and exhaustion; fear visibility and dice remain editable, with the existing independent world opt-outs. Cancel is free. DC 12 and the fixed 5-AP combat cost are unchanged; initial success/failure and compensation retain 0.65.0 behavior.

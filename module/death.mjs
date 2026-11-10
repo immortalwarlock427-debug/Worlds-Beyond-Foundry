@@ -48,10 +48,13 @@ export function registerDeath() {
     default: true
   });
   Hooks.on("preUpdateActor", (actor, changes, options) => {
+    // Native Actor.updateDocuments shares options across the batch. Never let
+    // another character's Health become this actor's knockout/recovery baseline.
+    options.worldsBeyondDeathHealth = (options.worldsBeyondDeathHealth ?? []).filter(entry => entry.actorUuid !== actor.uuid);
     if (actor.type !== "character") return;
     const next = foundry.utils.getProperty(changes, "system.health.damage");
-    if (next == null) return;
-    options.worldsBeyondHealthBefore = actor.system.health.value;
+    if (next == null || !Number.isFinite(Number(next)) || !Number.isFinite(actor.system.health.value)) return;
+    options.worldsBeyondDeathHealth.push({ actorUuid: actor.uuid, health: actor.system.health.value });
     // Death's Mercy only shapes damage the system applies (attacks, ticks); sheet edits stay as typed.
     if (!options.worldsBeyondDamage || !deathAutomated()) return;
     const mercy = mercyDamage({
@@ -66,9 +69,15 @@ export function registerDeath() {
     }
   });
   Hooks.on("updateActor", (actor, changes, options, userId) => {
-    if (userId !== game.user.id || actor.type !== "character" || options.worldsBeyondHealthBefore == null) return;
+    if (userId !== game.user.id || actor.type !== "character") return;
+    if (foundry.utils.getProperty(changes, "system.health.damage") == null) return;
+    const before = options.worldsBeyondDeathHealth?.find(entry => entry.actorUuid === actor.uuid);
+    if (!before) return;
     if (!deathAutomated() && !exhaustionAutomated() && !unconsciousAutomated()) return;
-    syncDying(actor, options, changes).catch(error => ui.notifications.error(`Death and dying: ${error.message}`));
+    // Keep syncDying's single-actor input local; do not mutate the shared options.
+    return syncDying(actor, { ...options, worldsBeyondHealthBefore: before.health }, changes).catch(error =>
+      ui.notifications.error(`Death and dying: ${error.message}`)
+    );
   });
   Hooks.on("combatTurnChange", (combat, previous, current) =>
     bleedOutTurn(combat, previous, current).catch(error => ui.notifications.error(`Bleeding out: ${error.message}`))
