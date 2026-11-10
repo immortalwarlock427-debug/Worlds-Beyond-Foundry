@@ -35,15 +35,10 @@ export function registerConditions() {
   Hooks.on("combatTurnChange", (combat, previous, current) =>
     tickTurn(combat, previous, current).catch(error => ui.notifications.error(`Status damage: ${error.message}`))
   );
-  // Any healing ends Bleeding. The client that heals removes it, since it owns the actor.
-  Hooks.on("preUpdateActor", (actor, changes, options) => {
-    const next = foundry.utils.getProperty(changes, "system.health.damage");
-    if (next == null || options.worldsBeyondCorrection) return;
-    if (Number(next) < Number(actor.system?.health?.damage ?? 0)) options.worldsBeyondHealed = true;
-  });
+  // Native batch operations share options; keep each actor's healing snapshot separate.
+  Hooks.on("preUpdateActor", prepareBleedingHealing);
   Hooks.on("updateActor", (actor, changes, options, userId) => {
-    if (userId !== game.user.id || !options.worldsBeyondHealed || !actor.statuses?.has("bleeding")) return;
-    removeCondition(actor, "bleeding").catch(error => ui.notifications.error(error.message));
+    endBleedingAfterHealing(actor, changes, options, userId).catch(error => ui.notifications.error(error.message));
   });
   Hooks.on("renderChatMessageHTML", decorateConditionCard);
 }
@@ -66,6 +61,32 @@ export const conditionsAutomated = () => {
     return true;
   }
 };
+
+function prepareBleedingHealing(actor, changes, options) {
+  const previous = options.worldsBeyondBleedingHealing ?? [];
+  options.worldsBeyondBleedingHealing = previous.filter(entry => entry.actorUuid !== actor.uuid);
+  if (actor.type !== "character" || options.worldsBeyondCorrection || !conditionsAutomated()) return;
+  const next = foundry.utils.getProperty(changes, "system.health.damage");
+  const health = actor.system?.health;
+  if (next == null || !Number.isFinite(Number(next)) || !(Number(next) < health?.damage) || !Number.isFinite(health?.value)) return;
+  const effectIds = conditionEffects(actor, "bleeding")
+    .filter(effect => !effect.isSuppressed)
+    .map(effect => effect.id);
+  if (effectIds.length)
+    options.worldsBeyondBleedingHealing.push({ actorUuid: actor.uuid, health: health.value, damage: health.damage, effectIds });
+}
+
+async function endBleedingAfterHealing(actor, changes, options, userId) {
+  if (userId !== game.user.id || actor.type !== "character" || options.worldsBeyondCorrection || !conditionsAutomated()) return;
+  if (foundry.utils.getProperty(changes, "system.health.damage") == null) return;
+  const before = options.worldsBeyondBleedingHealing?.find(entry => entry.actorUuid === actor.uuid);
+  if (!before || !(actor.system.health.value > before.health) || !(actor.system.health.damage < before.damage)) return;
+  const effectIds = [...before.effectIds];
+  return queuedAction(actor.uuid, () => {
+    if (!conditionsAutomated()) return;
+    return removeCondition(actor, "bleeding", { effectIds });
+  });
+}
 
 export const conditionEffects = (actor, id) =>
   Array.from(actor.effects ?? []).filter(effect => effect.statuses?.has(id) && !effect.disabled);
