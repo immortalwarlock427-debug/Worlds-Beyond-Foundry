@@ -102,7 +102,7 @@ Checked against [Notion: Status Effects Explained](https://www.notion.so/351c720
 
 **Provisional combination rule:** one or more advantage sources and one or more disadvantage sources default to Normal, regardless of counts. Both sets of reasons remain visible. The fetched Notion pages do not specify cancellation, so this needs a GM ruling. This means ranged attacks against an Unconscious target currently combine its advantage with its inherited Prone disadvantage. No source count adds extra d20s.
 
-Not automated in this roll pass: dropping held gear, waking from non-damage Unconscious, charm-source targeting/social advantage, and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved. Incapacitation, mobility actions and Petrified are covered below.
+Not automated in this roll pass: charm-source targeting/social advantage and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved. Incapacitation, mobility actions, Petrified and Unconscious are covered below.
 
 Rules: `module/condition-rolls-core.mjs`. Foundry adapter, default-on setting and situational controls: `module/condition-rolls.mjs`. No actor/item schema change or migration.
 
@@ -116,6 +116,16 @@ Version 0.52.0 follows [Notion: Status Effects Explained](https://www.notion.so/
 - For a ruling, disable **Automate incapacitation** in world settings (default on). This is independent of status roll effects, Bleeding/Burning and exhaustion. Manual sheet corrections, ending an active ability/form and explicit unspent practice rolls remain available. Outside combat, the existing free sheet actions remain free; a Reaction ability used as an out-of-combat practice use retains its existing behavior.
 
 This applies the written AP/reaction restriction; it does not invent a ban on all zero-cost abilities, saves, healing received or automatic resource recovery. Rules: `module/condition-actions-core.mjs`; adapter and setting: `module/condition-actions.mjs`. No actor/item schema changes or migration.
+
+### Unconscious: held gear and waking
+
+Version 0.55.0 follows [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38), checked 2026-11-10. New native Actor Unconscious applications, including HUD statuses and zero-Health knockouts, release held weapons and shields without AP and add Prone. Strapped weapons, worn armor/accessories and stowed gear remain. Changing a name or adding another source while already Unconscious does not repeatedly drop gear; manually restoring equipment stays possible. Reactivating a disabled/expired source is a fresh application.
+
+Dropped gear is marked unequipped and its bonuses stop normally. The Item records, quantities and ownership remain on the sheet. Ground placement, retrieval and deciding when to re-equip are manual; the inventory is not a ground-loot simulation. Waking never automatically re-equips items or stands the character up. Use Stand up or End Prone as appropriate.
+
+The native effect records whether it began while Health was positive (`other`) or at zero/below (`health`). Actual automated damage wakes positive-Health non-damage knockouts. Fully prevented/zero damage and manual damage corrections do not. Healing wakes Unconscious at positive Health, including a sleeper who was already above zero. If a hit takes a sleeper to zero, its source becomes Health-dependent and stays Unconscious; the existing knockout/Trauma rules still apply once. Existing unmarked effects conservatively use Health at the event, without a migration. Effects newly applied after the hit's snapshot are not erased by that hit. Ending a condition removes only that status from composite effects, preserving their other conditions/bonuses.
+
+**Automate Unconscious gear and waking** defaults on, independent of the death/exhaustion settings. Turn it off for manual rulings; existing death automation still manages zero-Health Unconscious/recovery. Explicit status-effect rollback corrections do not drop gear; Health corrections do not count as waking hits. The death module still enforces its separate zero-Health invariant. This does not backfill Prone or drop equipment merely on world load, and Item-transferred status definitions are outside the Actor-status hooks. Rules: `module/unconscious-core.mjs`; adapter: `module/unconscious.mjs`. No actor/item schema changes or migration.
 
 ### Petrified resistance and status immunity
 
