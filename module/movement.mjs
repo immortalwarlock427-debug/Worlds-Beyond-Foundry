@@ -7,7 +7,7 @@ import { queuedAction } from "./action-support.mjs";
 import { collisionBlock } from "./positioning.mjs";
 import { confirmProvoking } from "./opportunity.mjs";
 import { wholeNumber } from "./number-display.mjs";
-import { actorExhaustion } from "./exhaustion.mjs";
+import { actorConditionMovement, conditionMovementBlock } from "./condition-movement.mjs";
 import { requireActionCapacity } from "./condition-actions.mjs";
 import {
   SURGE_AP,
@@ -103,9 +103,14 @@ export function movementQuote(tokenDocument, feet) {
       bank,
       surgeLeft,
       available,
-      multiplier: actorExhaustion(actor).movementMultiplier
+      multiplier: actorConditionMovement(actor).multiplier
     })
   };
+  const mobility = actorConditionMovement(actor);
+  if (feet > 0 && mobility.blocked.length) {
+    quote.affordable = false;
+    quote.reason = `${mobility.blocked.join(" / ")} prevents movement`;
+  }
   // Surge is movement-only AP too. Feet already bought earlier remain banked;
   // undo, Displace and movements outside this charging path stay corrections.
   try {
@@ -134,6 +139,10 @@ async function payForMovement(tokenDocument, movement) {
   return queuedAction(actor.uuid, async () => {
     const cost = movementQuote(tokenDocument, movement.passed.cost);
     if (!cost || (!cost.feet && !cost.credit)) return true;
+    if (!cost.affordable) {
+      ui.notifications.warn(`${actor.name}: ${cost.reason || "not enough AP for movement"}.`);
+      return false;
+    }
     let plan;
     try {
       requireActionCapacity(actor, { ap: cost.ap + cost.surge });
@@ -184,6 +193,11 @@ export function registerMovement() {
       // Form transformations find their own room (form-tokens.mjs) and cost no movement.
       if (operation.isPaste || operation.worldsBeyondFormLoadout) return;
       try {
+        const immobile = conditionMovementBlock(this, movement, operation);
+        if (immobile) {
+          ui.notifications.warn(immobile);
+          return false;
+        }
         const blocked = collisionBlock(this, [...movement.passed.waypoints, ...movement.pending.waypoints]);
         if (blocked) {
           ui.notifications.warn(blocked);

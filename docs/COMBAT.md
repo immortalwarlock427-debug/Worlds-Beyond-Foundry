@@ -102,7 +102,7 @@ Checked against [Notion: Status Effects Explained](https://www.notion.so/351c720
 
 **Provisional combination rule:** one or more advantage sources and one or more disadvantage sources default to Normal, regardless of counts. Both sets of reasons remain visible. The fetched Notion pages do not specify cancellation, so this needs a GM ruling. This means ranged attacks against an Unconscious target currently combine its advantage with its inherited Prone disadvantage. No source count adds extra d20s.
 
-Not automated in this roll pass: movement/standing and escape actions, Petrified resistance/immunity, dropping held gear, waking from non-damage Unconscious, charm-source targeting/social advantage, and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved. Incapacitation's action limits are covered below.
+Not automated in this roll pass: Petrified resistance/immunity, dropping held gear, waking from non-damage Unconscious, charm-source targeting/social advantage, and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved. Incapacitation and mobility actions are covered below.
 
 Rules: `module/condition-rolls-core.mjs`. Foundry adapter, default-on setting and situational controls: `module/condition-rolls.mjs`. No actor/item schema change or migration.
 
@@ -116,6 +116,21 @@ Version 0.52.0 follows [Notion: Status Effects Explained](https://www.notion.so/
 - For a ruling, disable **Automate incapacitation** in world settings (default on). This is independent of status roll effects, Bleeding/Burning and exhaustion. Manual sheet corrections, ending an active ability/form and explicit unspent practice rolls remain available. Outside combat, the existing free sheet actions remain free; a Reaction ability used as an out-of-combat practice use retains its existing behavior.
 
 This applies the written AP/reaction restriction; it does not invent a ban on all zero-cost abilities, saves, healing received or automatic resource recovery. Petrified damage resistance/status immunity and other condition movement rules remain later steps. Rules: `module/condition-actions-core.mjs`; adapter and setting: `module/condition-actions.mjs`. No actor/item schema changes or migration.
+
+### Prone, standing and escaping a grapple
+
+Version 0.53.0 follows [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38). The Status tab keeps **End** as a free manual correction and adds compact **Stand up** and **Escape** actions alongside the relevant conditions.
+
+- **Prone:** own-turn movement costs twice the AP, including when using Surge/Command and banked movement feet. Heavy armor and difficult terrain still contribute their normal costs. Unconscious includes Prone, while the separate incapacitation rule usually prevents spending any movement AP.
+- **Combination awaiting a ruling:** Notion doesn't specify whether Prone ×2 and exhaustion ×2 multiply. The new world setting **Multiply Prone and exhaustion movement penalties** defaults off: use the larger penalty, ×2. Turn it on for ×4. Heavy armor/terrain are applied before this multiplier. This is an explicit provisional choice, not a newly asserted Notion rule.
+- **Grappled/Restrained:** ordinary token translations stop, including outside combat or when movement AP charging is off. Already-bought movement feet cannot bypass them. GM Displace, teleport segments, undo, paste and form transformations remain available. Rotation/size-only changes don't count as translation. A mixed route still cannot walk an ordinary segment while immobilized just because another segment teleports.
+- **Stand up:** ends Prone and spends a fixed 5 AP in combat, using eligible Command AP first; Surge cannot pay for standing. Outside combat AP isn't charged. Exhaustion 9+ asks you to confirm assistance before standing. Incapacitation prevents this deliberate action; use End or the relevant world opt-out for a ruling.
+- **Escape:** choose STR or DEX, then enter the grappler's STR **modifier**. The field is required and intentionally blank: a HUD-applied grapple doesn't identify a source, so the system does not guess an enemy or reveal hidden stats. Meet or beat DC **12 + that modifier**. Each attempt costs a fixed 5 AP in combat, even on failure; outside combat AP isn't charged. Poisoned/Frightened/exhaustion check defaults apply and dice remain editable. Restrained has no universal escape check in the supplied rules and is not removed by Escape grapple.
+- **Multiple grapples:** use the Escape button on the specific Status row. It ends that native effect's Grappled status, leaving other grapples and other statuses in a composite effect active. A direct call without a selected effect refuses to guess between multiple grapples.
+- **Wonder:** a failed Escape is a normal non-attack check. Its reroll or Defy Fate can end the same original grapple without paying AP again. A new/different grapple is not removed by an old card. If a successful Wonder result cannot remove its condition, it warns to correct Status manually; the valid posted roll/Wonder spend remains.
+- **Rollback:** failed posting restores AP and ended native condition effects; partial deletion restores missing snapshots. Composite native effects retain their other statuses. Changes from item-provided conditions should be ended at their source; the buttons do not remove item definitions.
+
+**Automate condition movement** defaults on, independent of movement AP charging, incapacitation, exhaustion and roll-effect settings. Turn it off to handle Prone/immobilization manually. Explicit Stand up/Escape buttons still perform their named actions; End remains the manual alternative. Rules and adapters: `module/condition-movement-core.mjs`, `module/condition-movement.mjs`. No actor/item schema changes or migration. Source-aware grapples/fear/charm and automatic distance-based grapple release are deferred.
 
 <a id="dying"></a>
 ## Death and dying

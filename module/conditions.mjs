@@ -52,7 +52,8 @@ export const conditionsAutomated = () => {
   }
 };
 
-const conditionEffects = (actor, id) => Array.from(actor.effects ?? []).filter(effect => effect.statuses?.has(id) && !effect.disabled);
+export const conditionEffects = (actor, id) =>
+  Array.from(actor.effects ?? []).filter(effect => effect.statuses?.has(id) && !effect.disabled);
 
 // Start a condition. `sourceLevel` is the level of the creature that caused it (Bleeding and
 // Burning scale with it). Bleeding doesn't stack, so an existing one is left alone.
@@ -150,12 +151,7 @@ export async function endConditionAction(actor, id) {
       if (ap) await payAp(actor, ap, change);
       if (success) await removeCondition(actor, id);
       const title = id === "bleeding" ? "Shake It Off" : "Put out the flames";
-      const result =
-        id === "bleeding"
-          ? success
-            ? "Success: the bleeding stops."
-            : "Failure: still Bleeding."
-          : "The flames are out.";
+      const result = id === "bleeding" ? (success ? "Success: the bleeding stops." : "Failure: still Bleeding.") : "The flames are out.";
       return createActionMessage(
         {
           speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
@@ -186,10 +182,7 @@ async function undoTick(message) {
     if (!data?.applied || data.undone) return;
     const actor = await foundry.utils.fromUuid(data.actorUuid);
     if (!actor) throw new Error("That character no longer exists. Correct Health on its sheet.");
-    await actor.update(
-      { "system.health.damage": Math.max(0, actor.system.health.damage - data.amount) },
-      { worldsBeyondCorrection: true }
-    );
+    await actor.update({ "system.health.damage": Math.max(0, actor.system.health.damage - data.amount) }, { worldsBeyondCorrection: true });
     await message.setFlag(SCOPE, "conditionTick", { ...data, undone: true });
   });
 }
@@ -221,7 +214,8 @@ function decorateConditionCard(message, html) {
     const cost = endActionCost(data.id, actor.system.stats?.vit?.mod ?? 0);
     add(`${endActionLabel(data.id)} (${cost} AP)`, () => endConditionAction(actor, data.id));
   }
-  if (game.user.isGM && data.applied && !data.undone && data.amount > 0) add(`Undo ${wholeNumber(data.amount)} damage`, () => undoTick(message));
+  if (game.user.isGM && data.applied && !data.undone && data.amount > 0)
+    add(`Undo ${wholeNumber(data.amount)} damage`, () => undoTick(message));
   if (row.childElementCount) card.append(row);
 }
 
