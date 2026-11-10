@@ -7,6 +7,16 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Shake It Off checks
+
+Version 0.61.0 brings **Shake it off** (Status and Bleeding tick cards) into the shared VIT check flow: DC 12, 5 AP lowered by VIT in combat, free outside combat. The compact dialog defaults from Poisoned, linked Frightened sight and exhaustion, with editable Normal/Advantage/Disadvantage and fear visibility. Existing world automation opt-outs remain independent. Incapacitation prevents this deliberate recovery action even outside combat; End remains a manual correction.
+
+The readable check card supports Wonder and FTH 21 Defy Fate without paying AP again. Rerolls retain the original dice/modifier, audience and selected Bleeding effect IDs, so an old card cannot remove newly applied Bleeding. The result labels the check outcome rather than promising that a later replacement condition was removed. A failed attempt still pays its original AP. Put out remains a fixed 5-AP action without a check; this step does not infer DCs for other lingering effects.
+
+Condition removal shares the existing Stand up/Escape compensation helper: composite effects retain their other statuses, partial deletions restore snapshots, and failed initial card posts restore removed conditions and AP. A Wonder card is committed before applying its outcome; if status removal then fails it warns for manual correction, preserving the posted result and its single-use receipt.
+
+Rules checked against [Notion: Vitality](https://www.notion.so/351c72092efb813e9ab9c1193bdcbb47) and [Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38); the website’s current status UI remains a descriptive reference. Regression: `tests/condition-recovery.test.mjs` plus existing movement/Wonder tests. Native checks and limitations are recorded in the PR.
+
 ## Tracker refreshes across encounters
 
 Version 0.60.0 guards a Foundry 14.365 post-render edge case: an `updateCombat` batch for another encounter can omit the tracker’s viewed encounter, causing the native turn-scroll branch to test `turn` in `undefined`. The existing Worlds Beyond tracker subclass passes that post-render call as an ordinary refresh. The tracker still renders through Foundry; displayed-encounter turn updates and mixed batches containing it retain native scrolling. Original render options/data remain intact for other hooks. Empty update arrays and no viewed encounter are covered, and unrelated rendering errors still propagate.

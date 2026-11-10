@@ -1,3 +1,4 @@
+import { removeConditionEffects } from "./condition-removal.mjs";
 import { conditionMovement, grappleEscapeDc, escapedGrapple } from "./condition-movement-core.mjs";
 import { actorExhaustion } from "./exhaustion.mjs";
 import { conditionEffects } from "./conditions.mjs";
@@ -66,36 +67,6 @@ export function registerConditionMovement() {
   });
 }
 
-async function removeEffects(actor, effects, statusId, change) {
-  if (!effects.length) return 0;
-  const single = effects.filter(effect => effect.statuses.size === 1);
-  // A native effect can contain several statuses: keep its other conditions.
-  for (const effect of effects.filter(effect => effect.statuses.size > 1)) {
-    const statuses = [...effect.statuses];
-    await change(
-      () => effect.update({ statuses: statuses.filter(id => id !== statusId) }),
-      () => effect.update({ statuses }, { worldsBeyondCorrection: true })
-    );
-    if (effect.statuses.has(statusId)) throw new Error("The condition was not removed. Correct it on the Status tab.");
-  }
-  const snapshots = single.map(effect => effect.toObject());
-  const ids = single.map(effect => effect.id);
-  if (!ids.length) return effects.length;
-  // Register compensation before a possibly partial native batch deletion.
-  await change(
-    () => Promise.resolve(true),
-    async () => {
-      const missing = snapshots.filter(effect => !actor.effects.get(effect._id));
-      if (!missing.length) return true;
-      await actor.createEmbeddedDocuments("ActiveEffect", missing, { keepId: true, worldsBeyondCorrection: true });
-      return ids.every(id => actor.effects.get(id));
-    }
-  );
-  await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
-  if (ids.some(id => actor.effects.get(id))) throw new Error("The condition was not removed. Correct it on the Status tab.");
-  return effects.length;
-}
-
 export async function standUp(actor, { assisted = false } = {}) {
   if (!actor?.isOwner || actor.type !== "character") return;
   return queuedAction(actor.uuid, () =>
@@ -110,7 +81,7 @@ export async function standUp(actor, { assisted = false } = {}) {
       const ap = inCombat(actor) ? 5 : 0;
       if (ap) await payAp(actor, ap, change);
       requireActionCapacity(actor, { ap: 5 });
-      await removeEffects(actor, effects, "prone", change);
+      await removeConditionEffects(actor, effects, "prone", change);
       return createActionMessage(
         {
           speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
@@ -130,7 +101,9 @@ export async function resolveGrappleEscape(actor, context, roll, change) {
   const effects = conditionEffects(actor, "grappled").filter(
     effect => escape.effectIds.includes(effect.id) && sameGrappleSource(effect, escape.sources)
   );
-  return change ? removeEffects(actor, effects, "grappled", change) : reversibleAction(tx => removeEffects(actor, effects, "grappled", tx));
+  return change
+    ? removeConditionEffects(actor, effects, "grappled", change)
+    : reversibleAction(tx => removeConditionEffects(actor, effects, "grappled", tx));
 }
 
 export async function escapeGrapple(

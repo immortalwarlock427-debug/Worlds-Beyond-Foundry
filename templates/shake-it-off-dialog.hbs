@@ -1,0 +1,11 @@
+<div class="wb-check-options">
+  <p class="wb-dialog-meta">d20 + VIT · DC {{dc}} · {{#if cost}}{{cost}} AP{{else}}outside combat{{/if}}</p>
+  <p class="wb-condition-reasons" {{#unless conditionText}}hidden{{/unless}}>{{conditionText}}</p>
+  {{#if conditions.fear}}<label class="wb-check-toggle" data-tooltip="Defaults from linked sources and sight walls; change for darkness, senses or a ruling."><input type="checkbox" name="fearInSight" {{#if conditions.fearInSight}}checked{{/if}}> Fear source in sight</label>{{/if}}
+  <fieldset class="wb-dice-choices"><legend>Dice</legend>
+    <label><input type="radio" name="mode" value="normal" {{#if normal}}checked{{/if}}> Normal</label>
+    <label><input type="radio" name="mode" value="advantage" {{#if advantage}}checked{{/if}}> Advantage</label>
+    <label><input type="radio" name="mode" value="disadvantage" {{#if disadvantage}}checked{{/if}}> Disadvantage</label>
+  </fieldset>
+  <details class="wb-disclosure wb-help"><summary>Recovery details</summary><p>A failed attempt still spends AP in combat. Wonder can reroll this check without paying AP again. Success ends the Bleeding present when you rolled; End on Status remains a manual correction.</p></details>
+</div>

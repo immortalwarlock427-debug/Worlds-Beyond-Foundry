@@ -60,7 +60,7 @@ import { registerDarknessFade } from "./darkness-fade.mjs";
 import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
 import { registerHealing } from "./healing.mjs";
-import { registerConditions, endConditionAction, removeCondition } from "./conditions.mjs";
+import { registerConditions, promptEndConditionAction, removeCondition } from "./conditions.mjs";
 import { registerDeath, dyingContext, stabilize, treat } from "./death.mjs";
 import { registerConditionRolls } from "./condition-rolls.mjs";
 import { registerConditionActions } from "./condition-actions.mjs";
@@ -725,7 +725,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (operation === "condition" && row.endAction)
         return await (["prone", "grappled"].includes(row.endAction.id)
           ? promptMobilityAction(this.actor, row.endAction.id, uuid)
-          : endConditionAction(this.actor, row.endAction.id));
+          : promptEndConditionAction(this.actor, row.endAction.id));
       // A status condition ends by removing it, like clicking it off in the token HUD.
       if (operation === "end" && row.condition)
         return await removeCondition(this.actor, row.condition, {
