@@ -5,7 +5,8 @@ import { CONDITIONS, condition, mergeStatusEffects, TICKS, tickFormula, endActio
 import { newerRecoveryTurn } from "./recovery-core.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { inCombat, planApPayment, payAp } from "./combat-support.mjs";
-import { resistantTo, immuneTo, damagedHealth } from "./strike-core.mjs";
+import { immuneTo, damagedHealth } from "./strike-core.mjs";
+import { actorResistantTo, allowStatusApplication } from "./petrified.mjs";
 import { formatModifier } from "./stats.mjs";
 import { wholeNumber } from "./number-display.mjs";
 
@@ -59,6 +60,7 @@ export const conditionEffects = (actor, id) =>
 // Burning scale with it). Bleeding doesn't stack, so an existing one is left alone.
 export async function applyCondition(actor, id, { sourceLevel = null, sourceName = "" } = {}) {
   if (!actor || !condition(id) || actor.statuses?.has(id)) return null;
+  if (!allowStatusApplication(actor, [id])) return null;
   const effect = await foundry.documents.ActiveEffect.implementation.fromStatusEffect(id);
   const data = effect.toObject();
   foundry.utils.setProperty(data, `flags.${SCOPE}.condition`, {
@@ -102,7 +104,7 @@ export async function tick(actor, id, combat) {
   const roll = await new foundry.dice.Roll(formula).evaluate();
   const rolled = Math.max(0, Math.floor(roll.total));
   const immune = info.damageType && immuneTo(actor.system.immunities, info.damageType);
-  const resistant = !immune && info.damageType && resistantTo(actor.system.resistances, info.damageType);
+  const resistant = !immune && actorResistantTo(actor, info.damageType);
   const amount = immune ? 0 : resistant ? Math.floor(rolled / 2) : rolled;
   const previous = actor.system.health.damage;
   let applied = false;
@@ -111,7 +113,11 @@ export async function tick(actor, id, combat) {
   const notes = [
     `${formula} for a level ${wholeNumber(source.level)} source${source.name ? ` (${escapeHTML(source.name)})` : source.known ? "" : " (its own level; none was recorded)"}.`,
     "Armor Rating doesn't reduce it.",
-    immune ? `Immune to ${info.damageType}.` : resistant ? `Resistant to ${info.damageType}: halved.` : ""
+    immune
+      ? `Immune to ${info.damageType}.`
+      : resistant
+        ? `${info.damageType ? `Resistant to ${info.damageType}` : "Resistant to this damage"}: halved.`
+        : ""
   ].filter(Boolean);
   const content =
     `<div class="worlds-beyond wb-attack-card wb-condition-card"><h3>${escapeHTML(info.label)}</h3>` +

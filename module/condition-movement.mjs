@@ -72,7 +72,7 @@ async function removeEffects(actor, effects, statusId, change) {
     const statuses = [...effect.statuses];
     await change(
       () => effect.update({ statuses: statuses.filter(id => id !== statusId) }),
-      () => effect.update({ statuses })
+      () => effect.update({ statuses }, { worldsBeyondCorrection: true })
     );
     if (effect.statuses.has(statusId)) throw new Error("The condition was not removed. Correct it on the Status tab.");
   }
@@ -85,7 +85,7 @@ async function removeEffects(actor, effects, statusId, change) {
     async () => {
       const missing = snapshots.filter(effect => !actor.effects.get(effect._id));
       if (!missing.length) return true;
-      await actor.createEmbeddedDocuments("ActiveEffect", missing, { keepId: true });
+      await actor.createEmbeddedDocuments("ActiveEffect", missing, { keepId: true, worldsBeyondCorrection: true });
       return ids.every(id => actor.effects.get(id));
     }
   );
