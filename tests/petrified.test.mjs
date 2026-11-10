@@ -234,3 +234,16 @@ test("Petrified still permits the Dead/defeated marker at the death threshold", 
   assert.equal(actor.statuses.has("dead"), true);
   assert.equal(actor.statuses.has("unconscious"), false);
 });
+
+test("v14 duration registry suppression before its expiry update still reconciles zero Health", async () => {
+  const { actor, calls, effect } = fixture();
+  registerPetrified();
+  const stone = effect(["petrified"], { isSuppressed: true });
+  actor.statuses.clear();
+  actor.system.health.value = 0;
+  const options = {};
+  preventPetrifiedUpdate(stone, { duration: { expired: true } }, options);
+  await calls.hooks.updateActiveEffect(stone, { duration: { expired: true } }, options, "tester");
+  assert.equal(actor.statuses.has("unconscious"), true);
+  assert.deepEqual(calls.updates, []);
+});

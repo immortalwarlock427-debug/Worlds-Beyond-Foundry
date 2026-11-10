@@ -44,7 +44,9 @@ export function preventPetrifiedUpdate(effect, changes, options = {}) {
   if (!actor) return;
   // Batch updates share options. Retain each source rather than letting another
   // effect's pre-hook overwrite whether this one used to apply Petrified.
-  if (active(effect) && effect.statuses?.has("petrified")) {
+  // The v14 duration registry may suppress an effect before persisting expired.
+  // Remember the status even then, so expiration also restores Health markers.
+  if (effect.statuses?.has("petrified")) {
     options.worldsBeyondPetrifiedBefore ??= [];
     if (!options.worldsBeyondPetrifiedBefore.includes(effect.uuid)) options.worldsBeyondPetrifiedBefore.push(effect.uuid);
   }
