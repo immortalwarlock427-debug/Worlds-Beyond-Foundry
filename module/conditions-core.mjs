@@ -15,7 +15,8 @@ export const CONDITIONS = Object.freeze([
     id: "blind",
     name: "Blinded",
     img: "icons/svg/blind.svg",
-    description: "Fails all ability checks that require sight. Has disadvantage on attack rolls and Dodges, and attack rolls against it have advantage."
+    description:
+      "Fails all ability checks that require sight. Has disadvantage on attack rolls and Dodges, and attack rolls against it have advantage."
   },
   {
     id: "burning",
@@ -28,7 +29,8 @@ export const CONDITIONS = Object.freeze([
     id: "charmed",
     name: "Charmed",
     img: "icons/svg/heal.svg",
-    description: "Can't attack the charmer or target it with harmful effects. The charmer has advantage on rolls to interact with the charmed creature."
+    description:
+      "Can't attack the charmer or target it with harmful effects. The charmer has advantage on rolls to interact with the charmed creature."
   },
   { id: "deaf", name: "Deafened", img: "icons/svg/deaf.svg", description: "Fails all ability checks that require hearing." },
   {
@@ -49,7 +51,8 @@ export const CONDITIONS = Object.freeze([
     id: "invisible",
     name: "Invisible",
     img: "icons/svg/invisible.svg",
-    description: "Can't be seen without magic or a special sense. Attack rolls against it have disadvantage, and its attack rolls have advantage."
+    description:
+      "Can't be seen without magic or a special sense. Attack rolls against it have disadvantage, and its attack rolls have advantage."
   },
   {
     id: "paralysis",
@@ -120,3 +123,5 @@ export function endActionCost(id, vitModifier = 0) {
 }
 
 export const SHAKE_IT_OFF_DC = 12;
+
+export const shakeItOffSuccess = (total, success = false) => success === true || (Number.isFinite(total) && total >= SHAKE_IT_OFF_DC);

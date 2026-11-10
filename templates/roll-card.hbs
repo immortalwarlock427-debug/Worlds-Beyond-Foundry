@@ -7,6 +7,9 @@
   {{#if escapeGrapple}}<p class="{{#if escapeGrapple.success}}wb-roll-success{{else}}wb-result{{/if}}">{{#if escapeGrapple.success}}Success{{else}}Failed{{/if}} · escape DC {{escapeGrapple.dc}}</p>
     <p class="wb-roll-note">{{#if escapeGrapple.reroll}}Wonder · no additional AP{{else}}{{#if escapeGrapple.ap}}5 AP spent{{else}}Outside combat{{/if}}{{/if}}</p>
   {{/if}}
+  {{#if endBleeding}}<p class="{{#if endBleeding.success}}wb-roll-success{{else}}wb-result{{/if}}">{{#if endBleeding.success}}Success{{else}}Failed{{/if}} · recovery DC {{endBleeding.dc}}</p>
+    <p class="wb-roll-note">{{#if endBleeding.reroll}}Wonder · no additional AP{{else}}{{#if endBleeding.ap}}{{endBleeding.ap}} AP spent{{else}}Outside combat{{/if}}{{/if}}</p>
+  {{/if}}
   {{#if defense}}
     {{#if defense.incoming}}<p class="wb-roll-note">{{defense.incoming.attackerName}} · {{defense.incoming.weaponName}}{{#if defense.incoming.targetName}} → {{defense.incoming.targetName}}{{/if}}</p>{{/if}}
     {{#if defense.parry}}
