@@ -67,6 +67,7 @@ import { registerConditionActions } from "./condition-actions.mjs";
 import { registerConditionMovement, promptMobilityAction } from "./condition-movement.mjs";
 import { registerPetrified } from "./petrified.mjs";
 import { registerUnconscious } from "./unconscious.mjs";
+import { promptConditionSource } from "./condition-sources.mjs";
 import { registerExhaustion, exhaustionAutomated, exhaustionContext, overexert } from "./exhaustion.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
@@ -714,6 +715,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const row = effectContext(this.actor).statuses.find(row => row.uuid === uuid);
       if (!row) return; // A concurrent End already removed the live entry.
       const item = row.itemId ? this.actor.items.get(row.itemId) : null;
+      if (operation === "source" && row.canSetSource) return await promptConditionSource(this.actor, uuid);
       if (operation === "edit")
         return await (item
           ? item.sheet.render({ force: true })
@@ -723,7 +725,10 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           ? promptMobilityAction(this.actor, row.endAction.id, uuid)
           : endConditionAction(this.actor, row.endAction.id));
       // A status condition ends by removing it, like clicking it off in the token HUD.
-      if (operation === "end" && row.condition) return await removeCondition(this.actor, row.condition);
+      if (operation === "end" && row.condition)
+        return await removeCondition(this.actor, row.condition, {
+          effectIds: [effectRows(this.actor).find(effect => effect.uuid === uuid).id]
+        });
       if (operation === "end" && row.canEnd)
         return await (row.abilityId
           ? useAbility(this.actor, row.abilityId, { end: true })

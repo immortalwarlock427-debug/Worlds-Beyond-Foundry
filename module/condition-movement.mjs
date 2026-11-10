@@ -7,6 +7,8 @@ import { queuedAction, reversibleAction, createActionMessage } from "./action-su
 import { defaultCheckMode, actorConditionRoll, conditionRollText, conditionControls, bindConditionCheck } from "./condition-rolls.mjs";
 import { checkMode } from "./rolls.mjs";
 import { rollCard } from "./roll-actions.mjs";
+import { conditionSource, sameGrappleSource } from "./condition-sources-core.mjs";
+import { linkedGrappler } from "./condition-sources.mjs";
 
 const SCOPE = "worlds-beyond";
 function setting(key, fallback) {
@@ -125,22 +127,32 @@ export async function resolveGrappleEscape(actor, context, roll, change) {
   const escape = context.escapeGrapple;
   if (!escape || context.actorUuid !== actor.uuid || !escapedGrapple(roll?.total, escape.dc, context.success)) return 0;
   // An old roll or Wonder reroll must never remove a new/different grapple.
-  const effects = conditionEffects(actor, "grappled").filter(effect => escape.effectIds.includes(effect.id));
+  const effects = conditionEffects(actor, "grappled").filter(
+    effect => escape.effectIds.includes(effect.id) && sameGrappleSource(effect, escape.sources)
+  );
   return change ? removeEffects(actor, effects, "grappled", change) : reversibleAction(tx => removeEffects(actor, effects, "grappled", tx));
 }
 
-export async function escapeGrapple(actor, { stat = "str", grapplerStr, mode, fearInSight = true, effectId = "" } = {}) {
+export async function escapeGrapple(
+  actor,
+  { stat = "str", grapplerStr, useSource = null, sourceUuid = "", mode, fearInSight = true, effectId = "" } = {}
+) {
   if (!actor?.isOwner || actor.type !== "character") return;
   return queuedAction(actor.uuid, () =>
     reversibleAction(async change => {
       if (!["str", "dex"].includes(stat)) throw new Error("Escape using Strength or Dexterity.");
-      const dc = grappleEscapeDc(grapplerStr);
       if (!actor.statuses?.has("grappled")) throw new Error("This character is no longer Grappled.");
       requireActionCapacity(actor, { ap: 5 });
       const all = conditionEffects(actor, "grappled");
       if (!effectId && all.length > 1) throw new Error("Several grapples are active. Choose the grapple's Escape button on Status.");
       const effects = effectId ? all.filter(effect => effect.id === effectId) : all;
       if (!effects.length) throw new Error("Grappled comes from another source. End it at its source or correct the status manually.");
+      const linked = linkedGrappler(effects[0]);
+      useSource ??= grapplerStr == null && !!linked;
+      if (useSource && (!linked || (sourceUuid && linked.uuid !== sourceUuid)))
+        throw new Error("The linked grappler changed or its STR is unavailable. Reopen Escape, or enter a manual modifier.");
+      const modifier = useSource ? linked.modifier : grapplerStr;
+      const dc = grappleEscapeDc(modifier);
       const ap = inCombat(actor) ? 5 : 0;
       if (ap) planApPayment(actor, ap);
       mode ??= defaultCheckMode(actor, "check", { fearInSight });
@@ -153,7 +165,14 @@ export async function escapeGrapple(actor, { stat = "str", grapplerStr, mode, fe
         actorUuid: actor.uuid,
         mode,
         conditionText: conditionRollText(actorConditionRoll(actor, "check", { fearInSight })),
-        escapeGrapple: { dc, stat, effectIds: effects.map(effect => effect.id), ap }
+        escapeGrapple: {
+          dc,
+          stat,
+          effectIds: effects.map(effect => effect.id),
+          ap,
+          sources: Object.fromEntries(effects.map(effect => [effect.id, conditionSource(effect, "grappled")?.uuid ?? ""])),
+          ...(useSource ? { sourceUuid: linked.uuid, sourceName: linked.name } : {})
+        }
       };
       const content = await rollCard(roll, context);
       if (ap) await payAp(actor, ap, change);
@@ -186,6 +205,9 @@ export async function promptMobilityAction(actor, id, effectUuid = "") {
   }
   if (id !== "grappled") return;
   const effectId = conditionEffects(actor, "grappled").find(effect => effect.uuid === effectUuid)?.id ?? "";
+  const effects = conditionEffects(actor, "grappled");
+  const selected = effectId ? effects.find(effect => effect.id === effectId) : effects.length === 1 ? effects[0] : null;
+  const linked = selected ? linkedGrappler(selected) : null;
   const mode = defaultCheckMode(actor, "check");
   const choices = await foundry.applications.api.DialogV2.input({
     classes: [SCOPE, "wb-roll-dialog"],
@@ -195,6 +217,10 @@ export async function promptMobilityAction(actor, id, effectUuid = "") {
     rejectClose: false,
     content: await foundry.applications.handlebars.renderTemplate(`systems/${SCOPE}/templates/escape-grapple-dialog.hbs`, {
       dexterity: actor.system.stats.dex.mod > actor.system.stats.str.mod,
+      linkedSource: linked
+        ? { uuid: linked.uuid, name: linked.name, modifier: linked.modifier, dc: grappleEscapeDc(linked.modifier) }
+        : null,
+      sourceUnavailable: !!selected && !!conditionSource(selected, "grappled") && !linked,
       conditions: conditionControls(actor),
       conditionText: conditionRollText(actorConditionRoll(actor, "check")),
       normal: mode === "normal",

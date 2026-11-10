@@ -7,6 +7,7 @@ import { effectTimeLeft } from "./effect-duration.mjs";
 import { timerKind, abilityActive, abilityTimeLeft } from "./ability-timers-core.mjs";
 import { condition, TICKS, endActionCost } from "./conditions-core.mjs";
 import { MOBILITY_ACTIONS } from "./condition-movement-core.mjs";
+import { sourceConditions, conditionSourceText } from "./condition-sources-core.mjs";
 
 export const EFFECT_SCOPE = "worlds-beyond";
 export const effectFlags = effect => effect.flags?.[EFFECT_SCOPE] ?? {};
@@ -204,17 +205,21 @@ export function effectContext(actor) {
           : row.source,
       canEnd: item ? item.type === "ability" && item.system.kind !== "passive" && abilityActive(item) : true,
       condition: item ? null : row.condition,
+      canSetSource: !item && row.effect.parent === actor && sourceConditions(row.effect).length > 0,
+      conditionSourceText: item ? "" : conditionSourceText(row.effect),
       // Bleeding and Burning have their own actions: Shake It Off and putting out the flames.
       endAction:
-        !item && TICKS[row.condition]
-          ? {
-              id: row.condition,
-              label: row.condition === "bleeding" ? "Shake it off" : "Put out",
-              ap: endActionCost(row.condition, actor.system?.stats?.vit?.mod ?? 0)
-            }
-          : !item && MOBILITY_ACTIONS[row.condition]
-            ? { id: row.condition, ...MOBILITY_ACTIONS[row.condition] }
-            : null,
+        !item && row.effect.statuses?.has("grappled")
+          ? { id: "grappled", ...MOBILITY_ACTIONS.grappled }
+          : !item && TICKS[row.condition]
+            ? {
+                id: row.condition,
+                label: row.condition === "bleeding" ? "Shake it off" : "Put out",
+                ap: endActionCost(row.condition, actor.system?.stats?.vit?.mod ?? 0)
+              }
+            : !item && MOBILITY_ACTIONS[row.condition]
+              ? { id: row.condition, ...MOBILITY_ACTIONS[row.condition] }
+              : null,
       summaries: [row.summary],
       timers: row.timeLeft ? [row.timeLeft] : []
     });
