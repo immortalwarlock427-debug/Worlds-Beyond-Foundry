@@ -4,6 +4,7 @@ import { numberOr } from "./core-numbers.mjs";
 export const BLEED_OUT = 4;
 export const STABILIZE_DC = 12;
 export const STABILIZE_AP = 5;
+export const stabilizeSuccess = (total, success = false) => success === true || (Number.isFinite(total) && total >= STABILIZE_DC);
 export const TRAUMA_STEP = 5;
 
 const vitality = system => numberOr(system?.stats?.vit?.effective ?? system?.stats?.vit?.value, 12);

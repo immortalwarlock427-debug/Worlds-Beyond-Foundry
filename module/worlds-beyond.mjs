@@ -61,7 +61,7 @@ import { registerTokenAttacks } from "./token-attacks.mjs";
 import { registerStrikes } from "./strike.mjs";
 import { registerHealing } from "./healing.mjs";
 import { registerConditions, promptEndConditionAction, removeCondition } from "./conditions.mjs";
-import { registerDeath, dyingContext, stabilize, treat } from "./death.mjs";
+import { registerDeath, dyingContext, promptStabilize, treat } from "./death.mjs";
 import { registerConditionRolls } from "./condition-rolls.mjs";
 import { registerConditionActions } from "./condition-actions.mjs";
 import { registerConditionMovement, promptMobilityAction } from "./condition-movement.mjs";
@@ -313,7 +313,7 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       dying: async function (event, target) {
         try {
           if (target.dataset.operation === "treat") return await treat(this.actor);
-          if (target.dataset.operation === "stabilize") return await stabilize(this.actor);
+          if (target.dataset.operation === "stabilize") return await promptStabilize(this.actor);
         } catch (error) {
           ui.notifications.error(error.message);
         }

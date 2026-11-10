@@ -7,6 +7,14 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Stabilize check dice and Wonder
+
+Version 0.66.0 makes Stabilize an ordinary INT check with the shared readable roll card. The Overview and Bleeding Out card open a compact Normal/Advantage/Disadvantage dialog. Defaults reflect the helper’s Poisoned, linked Frightened sight and exhaustion; fear visibility and dice remain editable, with the existing independent world opt-outs. Cancel is free. DC 12 and the fixed 5-AP combat cost are unchanged; initial success/failure and compensation retain 0.65.0 behavior.
+
+Stabilize cards now support Wonder: each result can spend Wonder once and its new reroll can spend again. It retains the original dice, INT modifier, patient UUID and chat audience; AP is not charged again. FTH 21 Defy Fate declares success without another die roll. A successful Wonder result publishes the existing pending stabilization receipt and the active GM applies/acknowledges it, including when the helper owns the patient. Without an active GM it remains pending for later GM/manual application. Missing or currently recovered targets are not falsely acknowledged. This does not reverse a stabilization already applied by a prior successful result.
+
+The GM receipt hook runs independently of the helper’s Wonder action queue, preserving the established target/helper lock order. A failed Wonder post refunds Wonder and does not post a stabilization result; the original attempt’s AP stays spent. No schema change, new sensory requirement, automatic interaction advantage, Indomitable or treatment change. Rules checked against [Notion: Death and Dying](https://www.notion.so/707a548ff2354d0ba02e7979ca9bda1c) and [Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38). Regressions are in `tests/stabilization-recovery.test.mjs`; native checks and limits are recorded in the PR.
+
 ## Stabilization recovery
 
 Version 0.65.0 makes Stabilize’s target flag part of its existing compensated action. If the owned target update is cancelled/not retained, or the result card cannot post, stabilization and the helper’s own/Command AP return to their previous state. A target that was already stabilized keeps that state. The target must still be at 0 Health or below when the queued check starts and after rolling, before payment. Successful and failed attempts retain the existing d20 + INT, DC 12 and fixed 5-AP combat cost; outside-combat use remains free.

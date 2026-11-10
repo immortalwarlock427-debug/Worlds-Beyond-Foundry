@@ -6,6 +6,7 @@ import {
   BLEED_OUT,
   STABILIZE_DC,
   STABILIZE_AP,
+  stabilizeSuccess,
   deathThreshold,
   isDead,
   mercyDamage,
@@ -16,11 +17,13 @@ import { applyCondition, removeCondition } from "./conditions.mjs";
 import { newerRecoveryTurn } from "./recovery-core.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { inCombat, planApPayment, payAp } from "./combat-support.mjs";
-import { formatModifier } from "./stats.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { exhaustionAutomated } from "./exhaustion.mjs";
 import { exhaustionLevel } from "./exhaustion-core.mjs";
 import { unconsciousAutomated, wakeUnconscious } from "./unconscious.mjs";
+import { defaultCheckMode, actorConditionRoll, conditionRollText, conditionControls, bindConditionCheck } from "./condition-rolls.mjs";
+import { checkMode } from "./rolls.mjs";
+import { rollCard } from "./roll-actions.mjs";
 
 const SCOPE = "worlds-beyond";
 const escapeHTML = value =>
@@ -179,7 +182,33 @@ async function retainStabilized(target, change) {
   return true;
 }
 
-export async function stabilize(target, helper = helperFor(target)) {
+export async function promptStabilize(target, helper = helperFor(target)) {
+  if (!target || target.type !== "character") return;
+  if (!helper) throw new Error(`Select the token of the character who stabilizes ${target.name}.`);
+  requireDown(target);
+  const mode = defaultCheckMode(helper, "check");
+  const choices = await foundry.applications.api.DialogV2.input({
+    classes: [SCOPE, "wb-roll-dialog"],
+    position: { width: 380 },
+    window: { title: `Stabilize ${target.name}` },
+    ok: { label: "Try stabilization" },
+    rejectClose: false,
+    content: await foundry.applications.handlebars.renderTemplate(`systems/${SCOPE}/templates/stabilize-dialog.hbs`, {
+      targetName: target.name,
+      dc: STABILIZE_DC,
+      ap: inCombat(helper) ? STABILIZE_AP : 0,
+      conditions: conditionControls(helper),
+      conditionText: conditionRollText(actorConditionRoll(helper, "check")),
+      normal: mode === "normal",
+      advantage: mode === "advantage",
+      disadvantage: mode === "disadvantage"
+    }),
+    render: (event, dialog) => bindConditionCheck(dialog, helper, "int")
+  });
+  return choices ? stabilize(target, helper, choices) : null;
+}
+
+export async function stabilize(target, helper = helperFor(target), { mode, fearInSight } = {}) {
   if (!target || target.type !== "character") return;
   if (!helper) throw new Error(`Select the token of the character who stabilizes ${target.name}.`);
   return queuedAction(`stabilizeTarget:${target.uuid}`, () =>
@@ -190,21 +219,26 @@ export async function stabilize(target, helper = helperFor(target)) {
         if (ap) planApPayment(helper, ap);
         const mod = helper.system.stats?.int?.mod ?? 0;
         const messageMode = game.settings.get("core", "messageMode");
-        const roll = await new foundry.dice.Roll("1d20 + @mod", { mod }).evaluate({ allowInteractive: messageMode !== "blind" });
-        const success = roll.total >= STABILIZE_DC;
+        mode ??= defaultCheckMode(helper, "check", { fearInSight });
+        const roll = await new foundry.dice.Roll(checkMode(mode).formula, { mod }).evaluate({ allowInteractive: messageMode !== "blind" });
+        const success = stabilizeSuccess(roll.total);
         requireDown(target);
         if (ap) await payAp(helper, ap, change);
         const applied = success && target.isOwner ? await retainStabilized(target, change) : false;
+        const context = {
+          kind: "check",
+          label: `Stabilize ${target.name}`,
+          actorUuid: helper.uuid,
+          mode,
+          conditionText: conditionRollText(actorConditionRoll(helper, "check", { fearInSight })),
+          stabilizeCheck: { targetUuid: target.uuid, targetName: target.name, dc: STABILIZE_DC, ap, applied }
+        };
         return createActionMessage(
           {
             speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor: helper }),
-            content:
-              `<div class="worlds-beyond wb-ability-card wb-dying-card"><h3>Stabilize ${escapeHTML(target.name)}</h3>` +
-              `<p class="wb-dialog-meta">d20 ${formatModifier(mod)} (INT) vs DC ${STABILIZE_DC}${ap ? ` · ${ap} AP spent` : ""}</p>` +
-              (await roll.render()) +
-              `<p class="wb-result">${success ? (applied ? `${escapeHTML(target.name)} stops bleeding out and stays unconscious until healed.` : "Check succeeded. The GM applies stabilization to the target.") : "Failure."}</p></div>`,
+            content: await rollCard(roll, context),
             rolls: [roll],
-            flags: { [SCOPE]: { stabilize: { targetUuid: target.uuid, success, applied } } }
+            flags: { [SCOPE]: { check: context, stabilize: { targetUuid: target.uuid, success, applied } } }
           },
           { messageMode }
         );
@@ -290,7 +324,7 @@ function decorateBleedOut(message, html) {
     });
     row.append(button);
   };
-  if (target && dyingSummary(target.system).bleedingOut) add(`Stabilize (${STABILIZE_AP} AP)`, () => stabilize(target));
+  if (target && dyingSummary(target.system).bleedingOut) add(`Stabilize (${STABILIZE_AP} AP)`, () => promptStabilize(target));
   if (game.user.isGM && !data.undone && data.amount > 0) add(`Undo ${wholeNumber(data.amount)}`, () => undoTurnDamage(message, "bleedOut"));
   if (row.childElementCount) card.append(row);
 }
