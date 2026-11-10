@@ -287,16 +287,30 @@ export async function selfStabilize(actor) {
 
 // With no healing available, 10 minutes of treatment after combat brings a stabilized character to 1 Health.
 export async function treat(actor) {
-  if (!actor?.isOwner) return;
-  const summary = dyingSummary(actor.system);
-  if (!summary.down) throw new Error(`${actor.name} isn't at 0 Health or below.`);
-  if (!summary.stabilized) throw new Error(`Stabilize ${actor.name} first.`);
-  if (inCombat(actor)) throw new Error("Treatment takes 10 minutes after combat.");
-  await actor.update({ "system.health.damage": actor.system.health.max - 1 });
-  return createActionMessage({
-    speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<div class="worlds-beyond wb-ability-card wb-dying-card"><h3>Treatment</h3><p class="wb-result">After 10 minutes of treatment, ${escapeHTML(actor.name)} is back to 1 Health.</p></div>`,
-    flags: { [SCOPE]: { sheetActivity: { actorUuid: actor.uuid, label: "Treatment" } } }
+  if (!actor?.isOwner || actor.type !== "character") return;
+  return queuedAction(actor.uuid, async () => {
+    if (!actor.isOwner || actor.type !== "character") return;
+    const summary = dyingSummary(actor.system);
+    if (!summary.down) throw new Error(`${actor.name} isn't at 0 Health or below.`);
+    if (!summary.stabilized) throw new Error(`Stabilize ${actor.name} first.`);
+    if (inCombat(actor)) throw new Error("Treatment takes 10 minutes after combat.");
+    const saved = await actor.update({ "system.health.damage": actor.system.health.max - 1 });
+    if (!saved) throw new Error("The Health update was cancelled; no treatment card was posted.");
+    if (actor.system.health.value !== 1)
+      throw new Error("Treatment did not restore 1 Health. Check Health on the sheet; no treatment card was posted.");
+    try {
+      return await createActionMessage({
+        speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+        content: `<div class="worlds-beyond wb-ability-card wb-dying-card"><h3>Treatment</h3><p class="wb-result">After 10 minutes of treatment, ${escapeHTML(actor.name)} is back to 1 Health.</p></div>`,
+        flags: { [SCOPE]: { sheetActivity: { actorUuid: actor.uuid, label: "Treatment" } } }
+      });
+    } catch (error) {
+      // Healing runs native waking/Trauma hooks. A raw Health rollback would
+      // not undo those consequences and could cause another knockout.
+      throw new Error(`Treatment restored 1 Health, but its card was not posted. Check Health and Status on the sheet. ${error.message}`, {
+        cause: error
+      });
+    }
   });
 }
 

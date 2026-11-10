@@ -7,6 +7,12 @@ Attacks, abilities and areas resolve automatically (below), token movement spend
 The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
 
 
+## Verified treatment recovery
+
+Version 0.68.0 runs post-combat treatment on the character's local action queue and rechecks that they are still down, stabilized and outside a started encounter. Repeated local clicks cannot heal/post twice or treat a character who recovered while waiting. The native Health update must succeed and retain 1 Health before the treatment card announces recovery; cancelled, ignored or differently adjusted writes report a correction message instead.
+
+Treatment retains its existing meaning: confirm that 10 minutes of post-combat care happened, then restore 1 Health. It does not advance world time, start a real-time timer, cost AP or replace normal healing. Native Trauma, waking and other Health hooks still run. If Health succeeds but the card cannot post, the error explicitly says recovery was retained; Health is not rolled back independently of its status consequences. This is local serialization, not a cross-client transaction or universal consequence rollback. Rules: [Notion: Death and Dying](https://www.notion.so/707a548ff2354d0ba02e7979ca9bda1c). Regression: `tests/treatment.test.mjs`. Native checks and limits are recorded in the PR.
+
 ## Health snapshots in batch updates
 
 Version 0.67.0 keeps death/recovery and Unconscious waking snapshots separate by actor UUID in native batch updates. Previously, the last character's pre-update Health and sleeper effects could be reused for another character: a real recovery could miss Trauma or waking, an already-down character could receive another knockout's exhaustion, or an AP-only edit could count as someone else's recovery. Each character now uses its own pre-update Health, damage and Unconscious source IDs. Unlinked token copies stay distinct even when they share a base actor ID. Reused options clear only the edited character's stale entries; unrelated/invalid Health edits do not run the recovery pipeline.
