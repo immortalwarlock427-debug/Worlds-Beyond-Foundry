@@ -210,6 +210,7 @@ test("opportunity attacks spend a reaction instead of AP and can opt out", async
     rollAttack(f.actor, f.weapon, { opportunity: "leave", spendReaction: "on" }, { name: "Orc", evasion: 0 }),
     /No reactions left/
   );
+  f.weapon.system.signature.bulwark = true;
   await rollAttack(f.actor, f.weapon, { opportunity: "enter" }, { name: "Orc", evasion: 0 });
   assert.equal(f.actor.system.reactions.value, 0);
   assert.match(f.calls.posts.at(-1).data.content, /Opportunity attack \(Bulwark\)\./);
@@ -1008,8 +1009,10 @@ test("incapacitation rejects paid attacks and abilities before dice, ammunition,
   assert.equal(f.actor.system.mana.spent, 0);
   assert.equal(item.system.effectsActive, false);
   assert.equal(item.system.uses.spent, 0);
+  f.weapon.system.ranged = false;
   await assert.rejects(rollAttack(f.actor, f.weapon, { opportunity: "leave", spendReaction: true }), /Unconscious/);
   assert.equal(f.actor.system.reactions.value, 1);
+  f.weapon.system.ranged = true;
   await rollAttack(f.actor, f.weapon, { spendAp: false });
   assert.equal(f.actor.system.ap.value, 15, "explicit practice attack still works");
 });

@@ -239,6 +239,11 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
     reversibleAction(async change => {
       requireCharmedTargets(actor, target, { ignoreCharm: options.ignoreCharm === true });
       const mode = options.mode ?? "melee";
+      if (
+        options.opportunity &&
+        (mode !== "melee" || weapon.system.ranged || (options.opportunity === "enter" && !weapon.system.signature?.bulwark))
+      )
+        throw new Error("That weapon can no longer make this melee opportunity attack. Nothing was spent.");
       requireWeaponReady(actor, weapon, options.grip);
       const offWeapon = options.hands ? actor.items.get(options.hands) : null;
       const weapons = [weapon, ...(offWeapon && dualWieldPartners(weapon, actor.items).includes(offWeapon) ? [offWeapon] : [])];

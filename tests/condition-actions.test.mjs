@@ -94,7 +94,7 @@ test("incapacitated opponents never provoke warnings or open stale opportunity p
     id: "scene",
     grid: { size: 100, distance: 5, isHexagonal: false, getOffset: ({ x, y }) => ({ i: y / 100, j: x / 100 }) }
   };
-  const mover = { id: "mover", parent: scene, disposition: -1, width: 1, height: 1 };
+  const mover = { id: "mover", parent: scene, actor: { uuid: "Actor.mover", system: {} }, disposition: -1, width: 1, height: 1 };
   const attacker = { id: "attacker", parent: scene, actor: f.actor, disposition: 1, x: 0, y: 0, width: 1, height: 1 };
   f.actor.isOwner = true;
   f.actor.items = [{ id: "sword", type: "weapon", system: { equipped: true } }];
