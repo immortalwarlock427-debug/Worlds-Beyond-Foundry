@@ -194,6 +194,19 @@ const parry = { check: { defense: { type: "parry" }, actorUuid: "Actor.def" } };
 const block = { reaction: { kind: "block", actorUuid: "Actor.def" } };
 const save = { check: { kind: "save", actorUuid: "Actor.def" } };
 
+test("Petrified damage is halved once before armor, including custom/untyped damage and existing resistance", async () => {
+  for (const damageType of ["Slashing", "", "Cosmic"]) {
+    const w = world();
+    w.defender.statuses = new Set(["petrified"]);
+    w.defender.system.resistances = ["Slashing"];
+    w.setDamage([16]);
+    await beginStrike(w.attack([{ ...hand(), damageType }]));
+    assert.equal(w.calls.emits.length, 0);
+    assert.equal(w.defender.system.health.damage, 5, "16 / 2 minus 3 effective two-handed armor");
+    assert.deepEqual(w.defender.system.resistances, ["Slashing"]);
+  }
+});
+
 test("Stunned defense auto-resolves without asking for reactions, while a save still reaches the defender", async () => {
   const w = world();
   w.defender.statuses = new Set(["stun"]);

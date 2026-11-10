@@ -10,13 +10,13 @@ import { applyCondition, conditionsAutomated } from "./conditions.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
 import { actorConditionRoll, conditionRollText } from "./condition-rolls.mjs";
 import { actorIncapacitation, requireActionCapacity } from "./condition-actions.mjs";
+import { actorResistantTo } from "./petrified.mjs";
 import {
   strikeInfo,
   defenderState,
   avoidOptions,
   canBlock,
   avoidOutcome,
-  resistantTo,
   immuneTo,
   strikeDamage,
   damagedHealth,
@@ -256,7 +256,7 @@ function mitigation(damage, strike, defender, block) {
     rolled: damage.rolled,
     multiplier: damage.multiplier,
     negated: damage.negated,
-    resistant: resistantTo(defender.system.resistances, damage.damageType || strike.damageType),
+    resistant: actorResistantTo(defender, damage.damageType || strike.damageType),
     immune: immuneTo(defender.system.immunities, damage.damageType || strike.damageType),
     armor: defender.system.core?.armorRating ?? 0,
     twoHanded: !!damage.twoHanded,
