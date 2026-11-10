@@ -1,10 +1,10 @@
-# Existing combat support
+# Combat
 
 The sheet already supports weapon attack cards, damage previews, Block/Dodge/Parry, Command, reload, potion AP and turn refills. Command spends 5 own AP and offers 2 + CHA modifier (maximum 5); the recipient's AP total includes the grant. Sidebar actors and unlinked token copies are distinct recipients.
 
 Attacks, abilities and areas resolve automatically (below), token movement spends AP in combat, and leaving an enemy's reach offers an opportunity attack. Further milestone automation and modules are still to come. See [roadmap](ROADMAP.md).
 
-The sections below preserve rules sources and historical implementation checks. The shared [desktop audit](CHARACTER-SHEET-AUDIT.md) smoke-tests existing integration without starting the next combat phase.
+For current targeted attacks and healing, start with [automatic attack resolution](#resolution). The standalone sheet reactions and manual attack-card sections describe the fallback for table rulings, untargeted rolls or disabled automation. Historical validation notes are labeled by release; use the [desktop audit and combat play-through](CHARACTER-SHEET-AUDIT.md) for the current release.
 
 
 ## Verified treatment recovery
@@ -116,7 +116,7 @@ Record immunities with **Resistances & immunities → Edit** on the Details tab 
 
 ### Healing
 
-Set an ability's **Targeting** to **Heal the target**. **Healing** takes a formula like Damage (`2d8 + fth`) and the Area settings work the same way, so a circle can heal everyone ticked inside it. Using it pays the ability's costs, rolls once and posts a card. The active GM's client heals every target by that amount, up to full Health and up from below 0. The card then lists who healed how much. The GM gets **Undo healing** (puts the amount back on top of any damage taken since) and **Apply healing**. With **Automatic attack resolution** or **Apply damage automatically** off, the card waits for the GM's **Apply healing**. Healing doesn't end statuses yet; conditions are roadmap step 5.
+Set an ability's **Targeting** to **Heal the target**. **Healing** takes a formula like Damage (`2d8 + fth`) and the Area settings work the same way, so a circle can heal everyone ticked inside it. Using it pays the ability's costs, rolls once and posts a card. The active GM's client heals every target by that amount, up to full Health and up from below 0. The card then lists who healed how much. The GM gets **Undo healing** (puts the amount back on top of any damage taken since) and **Apply healing**. With **Automatic attack resolution** or **Apply damage automatically** off, the card waits for the GM's **Apply healing**. With Bleeding automation enabled, actual healing [ends Bleeding](#healing-and-bleeding-cleanup). Recovery from 0 Health or below follows the [death and dying](#dying) rules.
 
 ### Settings and opt-outs
 
@@ -133,7 +133,7 @@ The ability editor's **Targeting** section sets: attack roll vs Natural Evasion 
 - Weapon attacks don't offer a stat save. Notion defends against them with Natural Evasion and reactions; a free save would make Dodge pointless.
 - Resistance to a multi-type weapon (Mace: Bludgeoning, Piercing) needs every listed type resisted.
 - Immunity to a multi-type weapon needs every listed type, like Resistance.
-- Areas, multiple targets and map effects are roadmap step 4.
+- Areas, multiple targets and map effects are implemented; see [area abilities](#areas).
 
 ### Code
 
@@ -284,7 +284,7 @@ Roadmap step 5, third part, version 0.50.0. Checked against [Notion: Exhaustion 
 | 9 | Apply Prone. Cannot stand unaided until exhaustion drops; moving/standing remains GM-correctable through the status controls. |
 | 10 | Drop Health to 0, clear Stabilized, and let death/dying apply Unconscious and Bleeding Out. Healing to at least 1 lowers exhaustion to 9. |
 
-Effects accumulate, except the two explicit replacements. Final manual Health/AP maximum overrides win. Attack dialogs have an **Exhaustion** checkbox; uncheck to omit the penalty die. All dice choices remain editable, including Normal in the automatic defense prompt. Area attacks that require saves have no attack roll, so no attack penalty die. Prone's movement multiplier is not additionally implemented here: whether it stacks with exhaustion's ×2 is unresolved. Heavy armor/difficult terrain still contribute their existing movement costs.
+Effects accumulate, except the two explicit replacements. Final manual Health/AP maximum overrides win. Attack dialogs have an **Exhaustion** checkbox; uncheck to omit the penalty die. All dice choices remain editable, including Normal in the automatic defense prompt. Area attacks that require saves have no attack roll, so no attack penalty die. Prone and exhaustion both affect movement; the default uses the larger penalty (×2), with a setting to multiply them (×4) pending a ruling. Heavy armor/difficult terrain still contribute their existing movement costs.
 
 **Overexert** grants 5 AP and 1 exhaustion once per own turn in a started encounter. Its receipt includes encounter ID, round and turn; it works again next turn. AP may go above the normal maximum. A failed chat post refunds the grant and receipt. **Knocked Out** adds 1 exhaustion, capped at 10, when Health falls from positive to 0 or below; updates flagged as corrections or death sync do not trigger it. **Long rest** removes 2 levels, minimum 0. Other removals/gains use the editable tracker.
 
@@ -400,7 +400,7 @@ Reactions come back at the start of each creature's own turn. A character who sp
 - Notion doesn't say what provokes an opportunity attack. This uses D&D's rule: leaving an enemy's reach, which includes walking through it.
 - Bulwark attacks count as opportunity attacks, so they use a reaction and Flicker avoids them.
 - The attack happens after the move, not before the mover steps out. A hit doesn't stop the move (confirmed 2026-11-07).
-- No defensive reactions against opportunity attacks (decided 2026-11-07). Notion Defenses says so since 2026-11-09: the target can't Dodge, Parry or Block it; Resistance and Armor Rating still apply.
+- The target can't Dodge, Parry or Block an opportunity attack (decided 2026-11-07); Resistance and Armor Rating still apply. Whether a nearby ally can intercept with Parry or Block is unresolved. The automatic exchange currently offers no interception for opportunity attacks; keep exceptions as table rulings.
 
 ### Code
 
@@ -457,7 +457,7 @@ Roadmap step 4; reviewed action handling in version 0.9.2. Rules checked against
 
 1. **Attack** appears on equipped weapons. The dialog offers only the choices the weapon allows: melee or thrown, STR or DEX (with each option's AP cost), one- or two-handed grip for Versatile, long range, and Mounted with feet charged for Mount weapons.
 2. The attack card shows d20 + modifier, and Hit/Miss against the **targeted token's** Natural Evasion. With no target, it shows the total to compare by hand.
-3. **Roll damage** rolls on the card. A crit shows **Roll critical damage**. A natural 18–19 with Finesse/Paragon and no target shows both buttons. Each attack can roll damage once.
+3. An eligible targeted hit enters [automatic resolution](#resolution). On a manual card, **Roll damage** rolls on the card and a crit offers **Roll critical damage**. An untargeted natural 18–19 with Finesse/Paragon offers both choices. Each manual attack can roll damage once.
 
 <a id="attacks-rules-applied"></a>
 ### Rules applied
@@ -471,13 +471,13 @@ Roadmap step 4; reviewed action handling in version 0.9.2. Rules checked against
 - Hit: total meets or beats Natural Evasion. A natural 20 always hits and crits. Finesse and Paragon also crit on a natural 18 or 19 that hits.
 - Damage: the listed dice are rolled 1×/2×/3×/4×/5× at levels 1/5/10/15/20, with the modifier added once. Heavy and Paragon add double. Versatile in two hands uses the bracket damage and counts as Two-handed. Mount adds +1 per 10 ft charged, up to the attack modifier.
 - Critical: maximum of the scaled dice + modifier, plus the dice rolled again (Notion: 2d10 + 6 → 26 + 2d10).
-- Armor: with a target, the card shows how much of its Armor Rating counts. Two-handed hits ignore half, rounded down, so the half that counts rounds up. Puncture ignores 2 more afterward. [Linked defense controls](COMBAT.md#linked-defenses) open Dodge, Parry and Block from the weapon attack; Resistance selection and Health changes remain manual.
+- Armor: with a target, the card shows how much of its Armor Rating counts. Two-handed hits ignore half, rounded down, so the half that counts rounds up. Puncture ignores 2 more afterward. Automatic resolution reads the defender's recorded resistance and immunity and applies Health changes according to the world settings. [Linked defense controls](#linked-defenses) remain available on manual cards.
 - Signature properties print their Notion text on the damage card as reminders.
 
 <a id="attacks-not-yet"></a>
 ### Not yet
 
-- Automating signature properties one at a time. They print as reminders on the damage card.
+- Automating the remaining signature properties. Their text prints as a reminder on the damage card.
 - Fast Roll. Foundry rolls every die anyway.
 - Unarmed attacks.
 
@@ -492,7 +492,7 @@ Rechecked Notion [Defenses → Order of a Hit](https://www.notion.so/406c72092ef
 
 Examples: 16 damage with Resistance becomes 8, then AR 6 leaves 2. A Block of 1 leaves 1; Overwhelming Force would raise it back to 8 afterward. Against AR 7, a Two-handed Puncture hit counts 4 AR minus 2, or 2 AR total. The combined property hint now states that rounding correctly; the existing effective-armor math is preserved.
 
-New damage cards give conditional pre-Block previews for Resistance being present or absent and state the order explicitly. The target has no Resistance field yet, so the card does not select it automatically. The Overwhelming Force reminder comes after Block, even when no target was selected. Block's dialog/card use the same order. All explanations remain inside their existing expandable sections, and no Health is changed automatically.
+Manual damage cards show pre-Block previews for both resistance cases. Use the applicable preview when resolving by hand. The automatic exchange reads the target's recorded defenses and applies the resulting Health change when enabled. Block's dialog/card and the automatic exchange use the same order.
 
 <a id="attacks-validation"></a>
 ### Validation
@@ -535,8 +535,8 @@ This is the first defense interaction in roadmap step 5. The user confirmed star
 - **Spend 1 reaction** defaults on when this actor is in a started combat, including an unlinked token's own actor. Otherwise it defaults off. Checked spending requires one available reaction; players can correct the pool or untick it to roll without spending. Block spends no AP.
 - The chat card contains a native Foundry roll and whether a reaction was spent. It respects public, GM, blind and self visibility. Blind rolls disable interactive dice.
 - Dice and rendering failures do not spend reactions. A failed chat post refunds a spent reaction. A failed refund explicitly asks for manual correction. Actions share the existing local actor queue with attacks, reloads and consumables.
-- Equipment eligibility and ally distance remain reminders. Version 0.18.0 adds [linked weapon attack cards](COMBAT.md#linked-defenses), including spent Block use per incoming hand; standalone sheet rolls retain manual association. Apply Resistance first, then Armor Rating, then subtract Block from the remaining damage and change Health manually. Fully blocking the remainder also stops effects that require cutting into the defender. Account for Overwhelming Force's half-damage floor when applicable.
-- Base-sheet review item 1 rechecked Notion on 2026-11-02: Resistance halves the original damage rounded down, then Armor Rating and Block reduce it, then Overwhelming Force raises it to half the original rounded down if needed. The Block dialog/card and new damage cards state this same order. Shared Foundry-free `hitDamage` calculates the sequence for damage previews; Block continues to roll its reduction and leaves Health application manual. See [damage-order examples and tests](COMBAT.md#attacks-order-of-a-hit).
+- In a standalone or manual linked defense, compare equipment/ally reach at the table, apply Resistance and Armor Rating, then subtract Block and update Health by hand. The automatic exchange handles the target's Block and resulting Health through its own prompt. Fully blocking the remainder stops effects that require damage to get through; account for Overwhelming Force's half-damage floor where applicable.
+- Base-sheet review item 1 rechecked the order against Notion on 2026-11-02. The Block dialog/card and manual damage cards use the same order as the automatic exchange. See [damage-order examples and tests](#attacks-order-of-a-hit).
 - No actor/item schema fields changed. Chat messages record the actor, reaction kind and spending choice in a system flag; linked messages also retain incoming context. Linked spending uses the additive actor flag documented above.
 
 <a id="block-validation"></a>
@@ -579,7 +579,7 @@ Read on 2026-11-01:
 - **Spend 1 reaction** defaults on for an actor in a started combat, otherwise off. It spends one current reaction and no AP. With no reactions available, correct the pool or explicitly untick spending. Health and Wonder remain unchanged by the initial Dodge. The shared local action queue prevents Dodge and Block from spending the same final reaction on one client.
 - Dice/template failures do not spend. A failed chat post refunds the spent reaction; failed recovery reports manual correction. Chat visibility uses Foundry's public/GM/blind/self modes, and blind dice disable interaction.
 - Dodge is a non-attack d20 check, or a save for an area attack, so its card supports **Wonder**. A reroll retains its original modifier, dice mode, target, direct/area choice and private audience, then recomputes the result. It spends Wonder without another reaction. At FTH 21, Defy Fate declares success, giving full avoidance for direct Dodge or half damage for an area save. A result uses Wonder once; its new reroll may use it again as before.
-- Apply Health changes manually. Sheet-based Dodge accepts a manual total/DC; linked weapon cards prefill the total and track spent Dodge use per incoming hand. Distances and effect eligibility remain manual. A failed Dodge can be followed by Block or Parry with another reaction. Overwhelming Force does not stop a successful direct Dodge, but may raise damage back to its floor after an area save and other mitigation.
+- Standalone and manual linked Dodge rolls leave Health application to the table. Sheet-based Dodge accepts a manual total/DC; manual linked cards prefill the total and track spent use per incoming hand. The automatic exchange uses its defender popup and applies the outcome. A failed Dodge can be followed by another defense with another reaction. Overwhelming Force does not stop a successful direct Dodge, but may raise damage back to its floor after an area save and other mitigation.
 - No actor/item data fields changed. New Dodge chat messages store their comparison context in the existing system check flag, allowing Wonder to retain it. Old check/save/initiative/Block cards retain their behavior.
 
 <a id="dodge-validation"></a>
@@ -602,7 +602,7 @@ Test the installed branch before merging:
 <a id="parry"></a>
 ## Parry reaction
 
-Version 0.13.1 added Parry and keeps long roll dialogs scrollable above visible action buttons. Version 0.18.0 also opens it from [linked attack cards](COMBAT.md#linked-defenses); Health changes remain manual.
+Parry can be rolled from the sheet or [manual linked attack cards](#linked-defenses), where the table applies the outcome. In an [automatic exchange](#resolution), eligible defenders can choose Parry in the prompt and the system applies the outcome. Long roll dialogs scroll above visible action buttons.
 
 <a id="parry-sources-and-rule-choices"></a>
 ### Sources and rule choices
@@ -651,7 +651,7 @@ Test before merging:
 <a id="linked-defenses"></a>
 ## Defend from weapon attack cards
 
-Version 0.18.0 connects existing Block, Dodge and Parry dialogs to incoming weapon attacks. Health, damage mitigation and token movement remain manual.
+This section describes **manual weapon attack cards**. Version 0.18.0 introduced their linked Block, Dodge and Parry buttons. For current automated hits and Health changes, see [automatic attack resolution](#resolution); use **Resolve by hand** to return to the manual cards.
 
 <a id="linked-defenses-sources"></a>
 ### Sources
@@ -678,7 +678,7 @@ The current website's `js/app.js` incoming-attack and `useDefense` controls were
 
 No actor/item data model changes or migrations. New actor flag `flags.worlds-beyond.defenseUses.<messageId>_<handIndex>.<kind>` records spent linked uses. New message fields are additive. Saved worlds, actor values, item data and old messages are not rewritten on load. Flags persist like Wonder history; no automatic pruning or deletion is introduced.
 
-This step does not associate separate damage-result cards, automatically deduct Health, enforce an ordered defense chain, decide whether a prior Dodge/Parry succeeded before allowing another defense, or automate distance/effect eligibility. Players resolve those decisions, Resistance, Armor Rating, Block and Overwhelming Force in the existing rule order. Sheet-based manual defenses remain available for external rolls, area saves and corrections.
+Manual cards record the linked rolls and reaction use. Resolve the order of defenses, damage mitigation and Health by hand on this path. The automatic exchange has its own ordered defense and damage flow. Sheet-based manual defenses remain available for external rolls, area saves and corrections.
 
 <a id="linked-defenses-validation"></a>
 ### Validation
@@ -696,7 +696,7 @@ Before merging:
 <a id="token-attacks"></a>
 ## Token attacks and hand equipment
 
-Version 0.19.0 adds the user's requested token-click attack shortcut and compatible equipped hand gear. It reuses weapon attacks and linked defenses; Health, token movement and damage application remain manual.
+Version 0.19.0 introduced the token attack shortcut and hand loadouts. Current targeted attacks can enter [automatic resolution](#resolution), while [movement AP](#movement) handles map movement separately.
 
 <a id="token-attacks-rules-checked"></a>
 ### Rules checked
@@ -709,8 +709,8 @@ Titan's Might audit: searched Game Systems for Titan/Might/push and fetched matc
 ### How to attack
 
 1. In Foundry's normal token selection tool, select exactly one character token you own.
-2. Click another visible token. It becomes your target and your attacker remains selected. With one equipped weapon, its normal attack dialog opens; with several, choose the equipped weapon first.
-3. Confirm dice, grip, AP spending and other options, then Attack. The clicked target's exact actor/token identity and defenses are passed through even if another token was previously targeted. Normal attack/damage cards and Block/Dodge/Parry controls follow.
+2. **Alt-click** another visible token. It becomes your target and your attacker remains selected. Choose an available equipped weapon or targeted ability as offered.
+3. Confirm dice, grip, AP spending and other options, then attack. The clicked target's exact actor/token identity and defenses are used even if another token was previously targeted. With automation enabled, eligible hits open the defender's prompt; manual cards remain available.
 
 Select your attacker, then Alt-click the target to open the attack dialog. Double-click a token to open its sheet with normal Foundry permissions. Target/ruler tools keep their original behavior. Multi-selection does not guess an attacker. Invisible targets, placement/ruler/drag workflows and unowned attackers do not open this shortcut. This does not grant permission to control, move or edit another player's token. A pending attack dialog suppresses duplicate clicks for that attacker.
 
@@ -724,7 +724,7 @@ No weapon equipped gives an instruction to equip one. Legacy invalid loadouts gi
 - Equipping preserves the deliberately changed item first, keeps compatible gear and stows conflicts in the same Item update operation. For example, a Greatsword stows a sword/shield while keeping a Strapped crossbow; equipping a one-handed sword preserves a shield. A third Light weapon replaces one of the two already held. The user is told which items were stowed after a successful update.
 - Item-sheet Equipped checkboxes and changes to Light/Two-handed/Strapped on equipped items use the same batch preflight. Armor, quantities, damage, artwork and unrelated fields remain intact. New embedded weapon/shield copies start stowed, including drops of already equipped source items; world-directory/compendium records are not changed by this rule.
 - Existing actors are not rewritten when loading the world. Old invalid hand combinations stay saved until an intentional equipment edit; attacks require correcting them. Armor remains independently equippable. Inventory and defenses recompute from the resulting equipped gear as before.
-- Versatile weapons are equipped as one-handed. Choosing two hands for an attack requires that second hand to be free. Stow the shield/other held weapon first; Strapped remains compatible. Weapon swaps keep their existing free/manual AP handling; Minor action/Quickdraw swap AP costs are not added here.
+- Versatile weapons are equipped as one-handed. Choosing two hands for an attack requires that second hand to be free. Stow the shield/other held weapon first; Strapped remains compatible. See [combat equip and stow](EQUIPMENT.md) for current AP and Quickdraw handling.
 
 No actor/item schema fields were renamed, removed or added. Compatibility uses existing equipment flags/properties; there is no migration or automatic world-data cleanup. Batched updates are one client request, not a cross-client locking system.
 
@@ -733,7 +733,7 @@ No actor/item schema fields were renamed, removed or added. Compatibility uses e
 
 Automated tests cover ordinary/Light/Strapped/shield/two-hand combinations, deterministic conflict stowing, item-operation cancellation/creation and property changes, unchanged unrelated data, stale weapons, explicit target selection, equipped-only choosers, cancellation, ownership, token permission boundaries, modifier clicks and duplicate dialogs. Existing attacks, defenses, rolls and model tests run with `node --test`.
 
-The PR records real Foundry checks and limits. Before merging, test one-handed + shield, two Light weapons, Strapped + held gear and a two-handed swap using both the inventory and item editor. Select an owned token, Alt-click an enemy/player token, and confirm the attack names that target. Check double-click sheet access, a cancelled attack, multi-selection, unlinked tokens, player permissions and phone layout. Apply damage/Health manually.
+For current testing, use the [desktop audit](CHARACTER-SHEET-AUDIT.md). Check hand loadouts, Alt-click targeting, double-click sheet access, cancellations, unlinked tokens and player permissions. Verify the automated Health result separately from the manual fallback.
 
 <a id="command-delivery"></a>
 ## Command recipients and AP

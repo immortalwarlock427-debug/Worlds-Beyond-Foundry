@@ -8,10 +8,10 @@ The Worlds Beyond homebrew as a Foundry VTT v14 game system, verified against bu
 - **Resources and rests:** Health, AP, reactions, Wonder, optional Mana/Holy power and custom pools; final maximum/minimum overrides, overflow, percentage displays, solid/gradient colors and configurable recovery. Short rests spend level-based hit dice with VIT; long rests refill them. [Resources](docs/RESOURCES.md) · [Rests](docs/SHEET.md#core-numbers-short-rests-and-hit-dice)
 - **Equipment:** native Items, catalog, a website-style paper doll (armor, amulet, belt, two rings, Strapped weapons and both hands), compact inventory, currency, hand-gear rules, equipped bonuses, consumables and combat equip/stow AP. Seven supplied illustrations use WebP thumbnails. [Equipment guide](docs/EQUIPMENT.md)
 - **Abilities and forms:** editable abilities, spell presets, costs, restoration, bonuses, durations, uses/cooldowns, resource triggers, form portraits/token transformations and saved loadouts. Status shows active sources. [Abilities and forms](docs/ABILITIES-FORMS.md)
-- **Existing combat support:** weapon rolls, damage previews, Block/Dodge/Parry, Command AP, reload, potion costs and turn refills. Resistance recording is available; damage application remains manual. [Combat guide](docs/COMBAT.md)
+- **Combat:** targeted weapon attacks, abilities and areas can resolve defenses, resistance, immunity, damage and healing through the active GM. Movement AP, opportunity attacks, Command and turn refills are implemented. Manual defenses and resolution remain available. [Combat guide](docs/COMBAT.md)
 - **Interface:** Infinite Archive navy/brass styling, bundled fonts, separate tabs, optional rules/help and editable corrections. Desktop use and ordinary window resizing are the priority.
 
-The implementation is ready for the [final desktop character-sheet audit](docs/CHARACTER-SHEET-AUDIT.md). The audit and any resulting fixes come before wider combat automation, spell visuals or modules. See the [roadmap](docs/ROADMAP.md) for the single completion gate.
+The next step is the [desktop character-sheet audit and combined combat play-through](docs/CHARACTER-SHEET-AUDIT.md). Use a player client and disposable linked and unlinked tokens. The audit remains unsigned; additional visuals and module integrations can wait until after it. See the [roadmap](docs/ROADMAP.md#remaining-work-checkpoint).
 
 ## Installing and testing
 
@@ -26,7 +26,7 @@ With Node 24 or later, run `npm test` or `node --test`. There are no dependencie
 - `styles/`: system-scoped sheet/chat styles.
 - `icons/`, `fonts/`: local visuals, optimized thumbnails and licensed theme fonts. Original image paths remain available for compatibility.
 - `tests/`: dependency-free Node rules and adapter regressions. Foundry APIs are mocked where needed.
-- `docs/`: five topic guides, the roadmap and one release audit. Older filenames redirect to the consolidated sections for existing links.
+- `docs/`: consolidated topic guides, the roadmap and one release audit. Short files under older names are compatibility links to the current sections.
 - `.github/workflows/`: PR test automation.
 - `system.json`: system manifest; `en.json`: English labels.
 
