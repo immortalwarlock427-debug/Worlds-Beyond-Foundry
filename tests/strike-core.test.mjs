@@ -23,6 +23,16 @@ const weaponCard = {
 };
 const kinds = options => options.map(option => option.kind);
 
+test("incapacitated defenders have no defensive reactions even outside combat, but retain saves", () => {
+  for (const inCombat of [false, true]) {
+    const defender = defenderState({ inCombat, reactions: 10, reactionsBlocked: true, parry: { unlocked: true, armed: true } });
+    assert.deepEqual(kinds(avoidOptions({ check: "attack" }, defender)), ["take"]);
+    assert.deepEqual(kinds(avoidOptions({ check: "area" }, defender)), ["take"]);
+    assert.deepEqual(kinds(avoidOptions({ check: "save", dc: 15 }, defender)), ["save", "take"]);
+    assert.equal(canBlock(defender, [], 10), false);
+  }
+});
+
 test("save DCs default to 12 + modifier and accept an override", () => {
   assert.equal(saveDc(3), 15);
   assert.equal(saveDc(-1), 11);

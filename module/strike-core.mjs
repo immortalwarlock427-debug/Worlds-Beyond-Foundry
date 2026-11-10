@@ -59,9 +59,9 @@ export function strikeInfo(data, index = 0) {
 }
 
 // The defender's situation, gathered by the Foundry side. Outside combat reactions aren't spent.
-export function defenderState({ inCombat = false, reactions = 0, parry = {}, resistances = [], armor = 0 } = {}) {
+export function defenderState({ inCombat = false, reactions = 0, reactionsBlocked = false, parry = {}, resistances = [], armor = 0 } = {}) {
   return {
-    reactionsLeft: inCombat ? Math.max(0, numberOr(reactions, 0)) : Infinity,
+    reactionsLeft: reactionsBlocked ? 0 : inCombat ? Math.max(0, numberOr(reactions, 0)) : Infinity,
     parry: { unlocked: !!parry.unlocked, armed: !!parry.armed, used: !!parry.used },
     resistances: Array.isArray(resistances) ? resistances : [],
     armor: Math.max(0, numberOr(armor, 0))
@@ -162,7 +162,18 @@ export function strikeDamage({
   const original = finalDamage(rolled);
   // Immunity stops the damage completely, Overwhelming Force included (Notion Defenses).
   if (immune)
-    return { original, halved: 0, afterResistance: 0, armor: 0, afterArmor: 0, block: 0, afterBlock: 0, minimum: 0, total: 0, immune: true };
+    return {
+      original,
+      halved: 0,
+      afterResistance: 0,
+      armor: 0,
+      afterArmor: 0,
+      block: 0,
+      afterBlock: 0,
+      minimum: 0,
+      total: 0,
+      immune: true
+    };
   const minimum = overwhelming && !dodged ? Math.floor(original / 2) : 0;
   if (negated)
     return { original, halved: 0, afterResistance: 0, armor: 0, afterArmor: 0, block: 0, afterBlock: 0, minimum, total: minimum };

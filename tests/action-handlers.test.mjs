@@ -991,6 +991,29 @@ test("an ability without bonuses or trackers pays and posts without an empty nat
   assert.equal(item.system.effectsActive, false);
 });
 
+test("incapacitation rejects paid attacks and abilities before dice, ammunition, bonuses or resources change", async () => {
+  const f = fixture(),
+    item = bonusAbility(f);
+  f.actor.statuses = new Set(["unconscious"]);
+  await assert.rejects(rollAttack(f.actor, f.weapon, { spendAp: true }), /Unconscious/);
+  await assert.rejects(useAbility(f.actor, item.id), /Unconscious/);
+  item.system.kind = "reaction";
+  item.system.apCost = 0;
+  f.actor.system.reactions = { value: 1 };
+  await assert.rejects(useAbility(f.actor, item.id), /Unconscious/);
+  assert.equal(f.calls.evaluations.length, 0);
+  assert.equal(f.calls.posts.length, 0);
+  assert.equal(f.calls.updates.length, 0);
+  assert.equal(f.weapon.system.shots, 2);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(item.system.uses.spent, 0);
+  await assert.rejects(rollAttack(f.actor, f.weapon, { opportunity: "leave", spendReaction: true }), /Unconscious/);
+  assert.equal(f.actor.system.reactions.value, 1);
+  await rollAttack(f.actor, f.weapon, { spendAp: false });
+  assert.equal(f.actor.system.ap.value, 15, "explicit practice attack still works");
+});
+
 test("reaction abilities spend a reaction in combat and restore it if posting fails", async () => {
   const f = fixture(),
     item = bonusAbility(f);
@@ -1007,6 +1030,26 @@ test("reaction abilities spend a reaction in combat and restore it if posting fa
   await useAbility(f.actor, item.id, { end: true });
   await assert.rejects(useAbility(f.actor, item.id), /No reactions/);
   assert.equal(f.actor.system.reactions.value, 0);
+});
+
+test("becoming incapacitated while a reaction ability rolls refunds earlier AP without activating its benefits", async () => {
+  const f = fixture(),
+    item = bonusAbility(f);
+  item.system.kind = "reaction";
+  f.actor.system.reactions = { value: 1 };
+  const update = f.actor.update;
+  f.actor.update = async function (data) {
+    const result = await update.call(this, data);
+    if ("system.ap.value" in data && data["system.ap.value"] < 15) this.statuses = new Set(["stun"]);
+    return result;
+  };
+  await assert.rejects(useAbility(f.actor, item.id), /Stunned/);
+  assert.equal(f.actor.system.ap.value, 15);
+  assert.equal(f.actor.system.mana.spent, 0);
+  assert.equal(f.actor.system.reactions.value, 1);
+  assert.equal(item.system.effectsActive, false);
+  assert.equal(item.system.uses.spent, 0);
+  assert.equal(f.calls.posts.length, 0);
 });
 
 test("failed attack posting restores AP and loaded shots; cancelled spending posts nothing", async () => {

@@ -102,9 +102,20 @@ Checked against [Notion: Status Effects Explained](https://www.notion.so/351c720
 
 **Provisional combination rule:** one or more advantage sources and one or more disadvantage sources default to Normal, regardless of counts. Both sets of reasons remain visible. The fetched Notion pages do not specify cancellation, so this needs a GM ruling. This means ranged attacks against an Unconscious target currently combine its advantage with its inherited Prone disadvantage. No source count adds extra d20s.
 
-Not automated in this pass: movement/standing and escape actions, incapacitated AP/reaction restrictions, Petrified resistance/immunity, dropping held gear, waking from non-damage Unconscious, charm-source targeting/social advantage, and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved.
+Not automated in this roll pass: movement/standing and escape actions, Petrified resistance/immunity, dropping held gear, waking from non-damage Unconscious, charm-source targeting/social advantage, and source-aware fear movement/visibility. These remain separate steps; the token HUD's extra Foundry statuses are preserved. Incapacitation's action limits are covered below.
 
 Rules: `module/condition-rolls-core.mjs`. Foundry adapter, default-on setting and situational controls: `module/condition-rolls.mjs`. No actor/item schema change or migration.
+
+### Incapacitation and actions
+
+Version 0.52.0 follows [Notion: Status Effects Explained](https://www.notion.so/351c72092efb812098ded266c9753a38): **Incapacitated** can't spend AP or take reactions. **Paralyzed, Petrified, Stunned and Unconscious** include that restriction, even when only their own status icon is present. It does not empty the character's AP/reaction pools or change their maxima.
+
+- Paid attacks, ability/form use, consumables, reloads, equipment changes, Command, treatment and other actions using the shared AP payment stop before spending. A rejected paid attack does not roll or consume ammunition. Rejected abilities do not activate bonuses, uses or cooldowns.
+- Block, Dodge, Parry, Reaction abilities in combat and paid opportunity attacks cannot spend a reaction. Automatic attack resolution omits defensive reactions, including outside combat; ordinary saves remain available. Incapacitated creatures do not generate opportunity prompts or provoking warnings. An already-open action rechecks before spending.
+- On the character's own combat turn, movement cannot buy more feet with ordinary, Command or Surge AP. Already-paid movement feet remain available because they spend no new AP. Off-turn/free movement, GM Displace, form transformations and undo/refunds retain their existing correction behavior. This is an AP rule, not the separate Grappled/Restrained movement rule.
+- For a ruling, disable **Automate incapacitation** in world settings (default on). This is independent of status roll effects, Bleeding/Burning and exhaustion. Manual sheet corrections, ending an active ability/form and explicit unspent practice rolls remain available. Outside combat, the existing free sheet actions remain free; a Reaction ability used as an out-of-combat practice use retains its existing behavior.
+
+This applies the written AP/reaction restriction; it does not invent a ban on all zero-cost abilities, saves, healing received or automatic resource recovery. Petrified damage resistance/status immunity and other condition movement rules remain later steps. Rules: `module/condition-actions-core.mjs`; adapter and setting: `module/condition-actions.mjs`. No actor/item schema changes or migration.
 
 <a id="dying"></a>
 ## Death and dying

@@ -71,6 +71,19 @@ function fixture(mode = "public") {
   return { actor, calls, Roll, ChatMessage, DialogV2, handlebars };
 }
 
+test("Petrified cannot spend a Block reaction, but a practice roll and explicit opt-out stay available", async () => {
+  const f = fixture();
+  f.actor.statuses = new Set(["petrified"]);
+  await assert.rejects(rollBlock(f.actor, { spendReaction: true }), /Petrified/);
+  assert.equal(f.calls.evaluations.length, 0);
+  assert.equal(f.calls.updates.length, 0);
+  await rollBlock(f.actor);
+  assert.equal(f.actor.system.reactions.value, 2);
+  game.settings.get = (scope, key) => (key === "automateIncapacitation" ? false : "public");
+  await rollBlock(f.actor, { spendReaction: true });
+  assert.equal(f.actor.system.reactions.value, 1);
+});
+
 test("Block dialog defaults to spending only in a started combat containing this actor; cancel does nothing", async () => {
   const f = fixture();
   await promptBlock(f.actor);

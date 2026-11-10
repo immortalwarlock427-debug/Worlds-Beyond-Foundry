@@ -13,6 +13,7 @@ import { itemEffectRows } from "./effects-core.mjs";
 import { itemEffectAction } from "./effects.mjs";
 import { queuedAction, reversibleAction, createActionMessage } from "./action-support.mjs";
 import { inCombat, payAp, planApPayment } from "./combat-support.mjs";
+import { requireActionCapacity } from "./condition-actions.mjs";
 import { adjustedResourceSpent, customResourceId } from "./resources.mjs";
 import { endOtherForms } from "./forms.mjs";
 import { recoveryChoices, recoveryPool, restorationPlan, restorationAmount } from "./consumable-benefits.mjs";
@@ -331,6 +332,7 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
       const combat = inCombat(actor);
       const ap = combat ? (record.ap ?? 0) : 0;
       const reaction = combat && item.system.kind === "reaction";
+      requireActionCapacity(actor, { ap, reaction });
       if (reaction && !(actor.system.reactions.value >= 1)) throw new Error("No reactions left. Correct the tracker if needed.");
       const messageMode = game.settings.get("core", "messageMode");
       if (ap) planApPayment(actor, ap);
@@ -356,7 +358,10 @@ export async function useAbility(actor, id, { end = false, triggered = false, gu
       const reactionBefore = actor.system.reactions?.value;
       if (reaction)
         await change(
-          () => actor.update({ "system.reactions.value": reactionBefore - 1 }, updateOptions),
+          () => {
+            requireActionCapacity(actor, { reaction: true });
+            return actor.update({ "system.reactions.value": reactionBefore - 1 }, updateOptions);
+          },
           () => actor.update({ "system.reactions.value": reactionBefore }, updateOptions)
         );
       // Re-read expenditure after costs: paying and restoring the same pool must

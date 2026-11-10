@@ -8,6 +8,7 @@ import { collisionBlock } from "./positioning.mjs";
 import { confirmProvoking } from "./opportunity.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { actorExhaustion } from "./exhaustion.mjs";
+import { requireActionCapacity } from "./condition-actions.mjs";
 import {
   SURGE_AP,
   squareFactor,
@@ -92,7 +93,7 @@ export function movementQuote(tokenDocument, feet) {
   const ledger = turnLedger(actor.getFlag(SCOPE, FLAG), key);
   const { bank, surgeLeft } = ledgerTotals(ledger, surgeMax(actor));
   const available = apAvailable(actor.system, true);
-  return {
+  const quote = {
     actor,
     ledger,
     available,
@@ -105,6 +106,15 @@ export function movementQuote(tokenDocument, feet) {
       multiplier: actorExhaustion(actor).movementMultiplier
     })
   };
+  // Surge is movement-only AP too. Feet already bought earlier remain banked;
+  // undo, Displace and movements outside this charging path stay corrections.
+  try {
+    requireActionCapacity(actor, { ap: quote.ap + quote.surge });
+  } catch (error) {
+    quote.affordable = false;
+    quote.reason = error.message;
+  }
+  return quote;
 }
 
 async function payForMovement(tokenDocument, movement) {
@@ -126,6 +136,7 @@ async function payForMovement(tokenDocument, movement) {
     if (!cost || (!cost.feet && !cost.credit)) return true;
     let plan;
     try {
+      requireActionCapacity(actor, { ap: cost.ap + cost.surge });
       plan = apSpendPlan(actor.system, cost.ap, true);
     } catch (error) {
       ui.notifications.warn(`${actor.name}: ${error.message}`);
