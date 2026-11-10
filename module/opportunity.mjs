@@ -10,12 +10,62 @@ import { wholeNumber } from "./number-display.mjs";
 import { footprint, positioningSetting } from "./positioning.mjs";
 import { dialogBeside } from "./positioning-core.mjs";
 import { actorIncapacitation } from "./condition-actions.mjs";
+import { charmBlocksTarget } from "./charmed.mjs";
+import { requireWeaponReady } from "./loadout.mjs";
+import { shotsLeft } from "./attacks.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const SOCKET = `system.${SYSTEM_ID}`;
 const escapeHTML = value =>
   String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const openPrompts = new Set();
+
+const moverTarget = token => targetFromToken(token?.object ?? { actor: token?.actor, name: token?.name, document: token });
+
+// Readiness is shared by movement warnings, delivery and chooser replies. Do not
+// remeasure reach here: by delivery the mover has already left the triggering square.
+export function readyOpportunityWeapons(attacker, mover) {
+  const actor = attacker?.actor,
+    scene = attacker?.parent;
+  if (!enabled() || !scene || scene.id !== mover?.parent?.id || scene.grid?.isHexagonal || attacker.id === mover.id) return [];
+  if (attacker.hidden || mover.hidden || !mover.actor || actor?.type !== "character" || !(actor.system.reactions?.value >= 1)) return [];
+  if (actorIncapacitation(actor).length || !opposed(attacker.disposition, mover.disposition)) return [];
+  if (immuneToOpportunity(mover.actor.system?.stats?.agl?.effective) || charmBlocksTarget(actor, moverTarget(mover))) return [];
+  return threateningWeapons(actor.items).filter(weapon => {
+    try {
+      requireWeaponReady(actor, weapon);
+      return shotsLeft(weapon) !== 0;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function currentOpportunity(payload, expected = null) {
+  if (!enabled() || !["leave", "enter"].includes(payload.kind) || !Array.isArray(payload.weaponIds)) return null;
+  let attacker, mover;
+  try {
+    attacker = foundry.utils.fromUuidSync(payload.attackerTokenUuid);
+    mover = foundry.utils.fromUuidSync(payload.moverTokenUuid);
+  } catch {
+    return null;
+  }
+  const actor = attacker?.actor;
+  if (!actor?.isOwner || !mover?.actor) return null;
+  if (expected && (actor.uuid !== expected.actorUuid || mover.actor.uuid !== expected.moverActorUuid)) return null;
+  const inCombat = Array.from(game.combats ?? []).some(
+    combat =>
+      combat.started &&
+      Array.from(combat.combatants ?? []).some(
+        c => c.sceneId === attacker.parent?.id && (c.tokenId ?? c.token?.id) === attacker.id && !c.isDefeated
+      )
+  );
+  if (!inCombat) return null;
+  const weapons = readyOpportunityWeapons(attacker, mover).filter(
+    weapon => payload.weaponIds.includes(weapon.id) && (payload.kind !== "enter" || weapon.system.signature?.bulwark)
+  );
+  return weapons.length ? { attacker, mover, actor, weapons } : null;
+}
 
 function enabled() {
   try {
@@ -71,10 +121,7 @@ export function provokers(token, path, { visibleOnly = false } = {}) {
       const actor = combatant.actor;
       if (!attacker || attacker.id === token.id || attacker.hidden || combatant.isDefeated) continue;
       if (visibleOnly && attacker.object && !attacker.object.visible) continue; // Don't warn about unseen enemies.
-      if (actor?.type !== "character" || !(actor.system.reactions?.value >= 1)) continue;
-      if (actorIncapacitation(actor).length) continue;
-      if (!opposed(attacker.disposition, token.disposition)) continue;
-      const weapons = threateningWeapons(actor.items);
+      const weapons = readyOpportunityWeapons(attacker, token);
       const offer = opportunityWeapons({ attacker: footprint(scene, attacker), path: footprints, weapons, gridFeet });
       if (offer && !found.some(entry => entry.attacker.id === attacker.id)) found.push({ attacker, actor, offer });
     }
@@ -169,18 +216,16 @@ export async function confirmProvoking(token, movement) {
   return !!ok;
 }
 
-export async function showOpportunityPrompt({ attackerTokenUuid, moverTokenUuid, kind, weaponIds, movementId }) {
-  const attacker = foundry.utils.fromUuidSync(attackerTokenUuid);
-  const mover = foundry.utils.fromUuidSync(moverTokenUuid);
-  const actor = attacker?.actor;
-  if (!actor?.isOwner || !mover) return;
-  if (actorIncapacitation(actor).length) return;
+export async function showOpportunityPrompt(payload) {
+  const initial = currentOpportunity(payload);
+  if (!initial) return;
+  const { attacker, mover, actor, weapons } = initial;
+  const { attackerTokenUuid, moverTokenUuid, kind, movementId } = payload;
+  const expected = { actorUuid: actor.uuid, moverActorUuid: mover.actor.uuid };
   const key = `${attackerTokenUuid}:${moverTokenUuid}:${movementId}:${kind}`;
   if (openPrompts.has(key)) return;
   openPrompts.add(key);
   try {
-    const weapons = weaponIds.map(id => actor.items.get(id)).filter(Boolean);
-    if (!weapons.length) return;
     const reactions = wholeNumber(actor.system.reactions?.value ?? 0);
     const what =
       kind === "enter" ? `is moving into ${escapeHTML(actor.name)}'s Bulwark reach` : `is leaving ${escapeHTML(actor.name)}'s reach`;
@@ -199,8 +244,12 @@ export async function showOpportunityPrompt({ attackerTokenUuid, moverTokenUuid,
       ]
     });
     if (!choice || choice === "pass") return;
-    const target = targetFromToken(mover.object ?? { actor: mover.actor, name: mover.name, document: mover });
-    return await promptAttack(actor, choice, target, { opportunity: kind });
+    const current = currentOpportunity(payload, expected);
+    if (!current?.weapons.some(weapon => weapon.id === choice)) {
+      ui.notifications.info("That opportunity attack is no longer available. Nothing was spent.");
+      return;
+    }
+    return await promptAttack(current.actor, choice, moverTarget(current.mover), { opportunity: kind });
   } finally {
     openPrompts.delete(key);
   }
