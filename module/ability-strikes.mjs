@@ -13,6 +13,8 @@ import { itemList } from "./loadout.mjs";
 import { areaLabel, visualSettings } from "./area-core.mjs";
 import { broadcastEffect } from "./vfx.mjs";
 import { exhaustionAttackDie } from "./exhaustion.mjs";
+import { actorConditionRoll, targetStatuses, conditionControls, suggestedMode, conditionRollText } from "./condition-rolls.mjs";
+import { attackDistance } from "./positioning.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
 const escapeHTML = value =>
@@ -41,6 +43,12 @@ export async function promptAbilityStrike(actor, itemId, target) {
   if (abilityActive(item)) throw new Error(`${item.name} is already active. End it on the sheet before using it again.`);
   const plan = abilityStrikePlan(actor, item);
   const record = abilityRecord(item, actor.system);
+  const conditionPlan = actorConditionRoll(actor, "attack", {
+    target: targetStatuses(target),
+    delivery: "ranged",
+    distance: attackDistance(actor, target)
+  });
+  const defaultMode = suggestedMode(conditionPlan);
   const lines = [
     `<p class="wb-dialog-meta">${escapeHTML(actor.name)} → ${escapeHTML(target.name)}</p>`,
     `<p>${escapeHTML(record.summary)}</p>`,
@@ -55,7 +63,7 @@ export async function promptAbilityStrike(actor, itemId, target) {
       ? `<fieldset class="wb-dice-choices"><legend>Dice</legend>${["normal", "advantage", "disadvantage"]
           .map(
             mode =>
-              `<label><input type="radio" name="rollMode" value="${mode}"${mode === "normal" ? " checked" : ""}> ${checkMode(mode).label}</label>`
+              `<label><input type="radio" name="rollMode" value="${mode}"${mode === defaultMode ? " checked" : ""}> ${checkMode(mode).label}</label>`
           )
           .join("")}</fieldset>`
       : "";
@@ -63,17 +71,53 @@ export async function promptAbilityStrike(actor, itemId, target) {
   const exhaustionControl = penalty
     ? `<label class="wb-check-toggle"><input type="checkbox" name="exhaustionPenalty" checked> Exhaustion: −${penalty} attack</label>`
     : "";
+  const conditionHTML =
+    plan.check === "attack"
+      ? `<p class="wb-condition-reasons">${escapeHTML(conditionRollText(conditionPlan))}</p>` +
+        `<label>Attack delivery<select name="delivery"><option value="ranged">Ranged</option><option value="melee">Melee</option></select></label>` +
+        (conditionControls(actor).fear
+          ? '<label class="wb-check-toggle"><input type="checkbox" name="fearInSight" checked> Fear source in sight</label>'
+          : "") +
+        (conditionPlan.closeCritical
+          ? '<label class="wb-check-toggle"><input type="checkbox" name="conditionCritical" checked> Paralyzed within 5 ft: a hit is critical</label>'
+          : "")
+      : "";
   const form = await foundry.applications.api.DialogV2.input({
     classes: [SYSTEM_ID, "wb-roll-dialog"],
     position: { width: 380 },
     window: { title: `Use ${item.name}` },
-    content: `<div class="wb-check-options">${lines.join("")}${modes}${exhaustionControl}</div>`,
+    content: `<div class="wb-check-options">${lines.join("")}${conditionHTML}${modes}${exhaustionControl}</div>`,
+    render: (event, dialog) => {
+      if (plan.check !== "attack") return;
+      let previous = defaultMode;
+      const form = dialog.element;
+      const update = () => {
+        const p = actorConditionRoll(actor, "attack", {
+          target: targetStatuses(target),
+          delivery: form.querySelector('[name="delivery"]')?.value ?? "ranged",
+          distance: attackDistance(actor, target),
+          fearInSight: form.querySelector('[name="fearInSight"]')?.checked !== false
+        });
+        const text = form.querySelector(".wb-condition-reasons");
+        if (text) text.textContent = conditionRollText(p);
+        const next = suggestedMode(p);
+        if (next !== previous) {
+          const radio = form.querySelector(`[name="rollMode"][value="${next}"]`);
+          if (radio) radio.checked = true;
+          previous = next;
+        }
+      };
+      for (const name of ["delivery", "fearInSight"]) form.querySelector(`[name="${name}"]`)?.addEventListener("change", update);
+    },
     ok: { label: "Use" },
     rejectClose: false
   });
   if (!form) return;
   return rollAbilityStrike(actor, item, target, {
-    rollMode: form.rollMode ?? "normal",
+    rollMode: form.rollMode,
+    delivery: form.delivery ?? "ranged",
+    fearInSight: form.fearInSight !== false,
+    conditionCritical: form.conditionCritical !== false,
     exhaustionPenalty: form.exhaustionPenalty !== false
   });
 }
@@ -84,7 +128,16 @@ export async function rollAbilityStrike(
   actor,
   item,
   targets,
-  { rollMode = "normal", area = null, visual = null, use = null, exhaustionPenalty = true } = {}
+  {
+    rollMode,
+    area = null,
+    visual = null,
+    use = null,
+    exhaustionPenalty = true,
+    delivery = "ranged",
+    fearInSight = true,
+    conditionCritical = true
+  } = {}
 ) {
   const list = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
   const plan = abilityStrikePlan(actor, item);
@@ -115,6 +168,13 @@ export async function rollAbilityStrike(
   let rolls = [];
   if (!area && plan.check === "attack") {
     const target = list[0];
+    const conditions = actorConditionRoll(actor, "attack", {
+      target: targetStatuses(target),
+      delivery,
+      distance: attackDistance(actor, target),
+      fearInSight
+    });
+    rollMode ??= suggestedMode(conditions);
     const exhaustionDie = exhaustionAttackDie(actor, exhaustionPenalty);
     const formula = checkMode(rollMode).formula + (exhaustionDie ? ` - ${exhaustionDie}` : "");
     const roll = await new foundry.dice.Roll(formula, { mod: plan.mod }).evaluate({
@@ -122,10 +182,11 @@ export async function rollAbilityStrike(
     });
     const natural = roll.dice[0]?.total;
     const outcome = attackOutcome({ natural, total: roll.total, evasion: target?.evasion ?? null, threshold: 20 });
+    if (conditions.closeCritical && conditionCritical && outcome.hit !== false) outcome.critical = outcome.hit ? true : "if it hits";
     hands.push({ ...base, target, total: roll.total, natural, ...outcome });
     const breakdown = describeD20Roll(roll, rollMode);
     const result =
-      outcome.hit === null
+      !target || outcome.hit === null
         ? "Compare with the target's Natural Evasion."
         : outcome.hit
           ? outcome.critical
@@ -135,6 +196,8 @@ export async function rollAbilityStrike(
     sections.push(
       `<p>Attack with ${plan.stat ? `${statLabel(plan.stat)} (${formatModifier(plan.mod)})` : "no modifier"} · ${checkMode(rollMode).label}</p>` +
         `<p>${result}</p>` +
+        (conditionRollText(conditions) ? `<p>${escapeHTML(conditionRollText(conditions))}</p>` : "") +
+        (conditions.closeCritical && !conditionCritical ? "<p>Close Paralyzed critical omitted (correction).</p>" : "") +
         (exhaustionDie ? `<p>Exhaustion: subtract ${exhaustionDie} from the attack roll.</p>` : "") +
         (await roll.render()) +
         (breakdown ? `<p class="wb-dice-results">${breakdown.diceText}</p>` : "")

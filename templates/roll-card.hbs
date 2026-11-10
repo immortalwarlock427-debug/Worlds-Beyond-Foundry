@@ -1,5 +1,7 @@
 <article class="worlds-beyond wb-roll-card">
   <header><h3>{{label}}</h3><span class="wb-roll-mode">{{modeLabel}}</span></header>
+  {{#if conditionText}}<p class="wb-roll-note">{{conditionText}}</p>{{/if}}
+  {{#if automaticFailure}}<p class="wb-result">Failed · {{automaticFailure}}. No dice rolled.</p>{{/if}}
   {{#if success}}<p class="wb-roll-success">Success · Defy Fate</p>{{/if}}
   {{{rollHTML}}}
   {{#if defense}}

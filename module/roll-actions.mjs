@@ -4,10 +4,11 @@ import { checkMode, wonderAction, describeD20Roll } from "./rolls.mjs";
 import { dodgeOutcome, parryOutcome } from "./defenses.mjs";
 import { fitDialogDisclosures } from "./dialog-layout.mjs";
 import { resourceRestUpdates } from "./resources.mjs";
-import { queuedAction } from "./action-support.mjs";
+import { queuedAction, createActionMessage } from "./action-support.mjs";
+import { actorConditionRoll, defaultCheckMode, conditionControls, conditionRollText, bindConditionCheck } from "./condition-rolls.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { recoverActor } from "./recovery-actions.mjs";
-import { actorExhaustion, exhaustionMode, exhaustionAutomated } from "./exhaustion.mjs";
+import { actorExhaustion, exhaustionAutomated } from "./exhaustion.mjs";
 import { exhaustionLevel } from "./exhaustion-core.mjs";
 
 const SYSTEM_ID = "worlds-beyond";
@@ -24,19 +25,15 @@ export async function promptStatCheck(actor, statKey) {
     content: await renderTemplate("check-dialog", {
       label: stat.label,
       exhaustion: actorExhaustion(actor),
-      disadvantage: exhaustionMode(actor, "check") === "disadvantage",
+      disadvantage: defaultCheckMode(actor, "check") === "disadvantage",
+      conditions: conditionControls(actor),
+      conditionText: conditionRollText(actorConditionRoll(actor, "check")),
       heavyArmor: statKey === "agl" && !!actor.system.equipment?.heavyDisadvantage
     }),
     ok: { label: "Roll" },
     render: (event, dialog) => {
       fitDialogDisclosures(dialog);
-      const form = dialog.element;
-      form.querySelector('[name="kind"]')?.addEventListener("change", event => {
-        const heavy = statKey === "agl" && actor.system.equipment?.heavyDisadvantage;
-        const mode = event.target.value === "save" && heavy ? "disadvantage" : exhaustionMode(actor, event.target.value);
-        const radio = form.querySelector(`[name="mode"][value="${mode}"]`);
-        if (radio) radio.checked = true;
-      });
+      bindConditionCheck(dialog, actor, statKey);
     },
     rejectClose: false
   });
@@ -44,16 +41,36 @@ export async function promptStatCheck(actor, statKey) {
   return rollStatCheck(actor, statKey, choices);
 }
 
-export async function rollStatCheck(actor, statKey, { kind = "check", mode } = {}) {
+export async function rollStatCheck(
+  actor,
+  statKey,
+  { kind = "check", mode, fearInSight = true, requiresSight = false, requiresHearing = false } = {}
+) {
   const stat = STATS.find(stat => stat.key === statKey);
   if (!stat || !["check", "save"].includes(kind)) throw new Error("Choose a stat check or saving throw.");
-  mode ??= kind === "save" && statKey === "agl" && actor.system.equipment?.heavyDisadvantage ? "disadvantage" : exhaustionMode(actor, kind);
+  const conditions = actorConditionRoll(actor, kind, { fearInSight, requiresSight, requiresHearing });
+  mode ??= defaultCheckMode(actor, kind, {
+    fearInSight,
+    heavyArmor: kind === "save" && statKey === "agl" && actor.system.equipment?.heavyDisadvantage
+  });
   const plan = checkMode(mode);
   const label = `${stat.label} ${kind === "save" ? "saving throw" : "check"}`;
   const messageMode = game.settings.get("core", "messageMode");
+  const context = { kind, label, mode, actorUuid: actor.uuid, conditionText: conditionRollText(conditions) };
+  if (conditions.failures.length) {
+    context.automaticFailure = conditions.failures.join(" · ");
+    return createActionMessage(
+      {
+        speaker: foundry.documents.ChatMessage.implementation.getSpeaker({ actor }),
+        content: await renderTemplate("roll-card", { label, modeLabel: "Automatic failure", automaticFailure: context.automaticFailure }),
+        rolls: [],
+        flags: { [SYSTEM_ID]: { check: context } }
+      },
+      { messageMode }
+    );
+  }
   const roll = new foundry.dice.Roll(plan.formula, { mod: actor.system.stats[statKey].mod });
   await roll.evaluate({ allowInteractive: messageMode !== "blind" });
-  const context = { kind, label, mode, actorUuid: actor.uuid };
   const content = await rollCard(roll, context);
   return roll.toMessage(
     {
@@ -88,6 +105,7 @@ export async function rollCard(roll, context, { note = "", success = false } = {
     label: context.label,
     modeLabel: context.mode ? checkMode(context.mode).label : "Initiative",
     note,
+    conditionText: context.conditionText,
     success,
     defense: defense && { ...defense, target: wholeNumber(defense.target) },
     rollHTML: await roll.render()

@@ -1,4 +1,5 @@
 <div class="wb-check-options">
+  {{#if conditionText}}<p class="wb-dialog-meta">{{conditionText}} · dice remain editable.</p>{{/if}}
   {{#if incoming}}<p class="wb-dialog-meta">{{incoming.weaponName}} · attack {{incoming.total}}{{#if incoming.targetName}} → {{incoming.targetName}}{{/if}}</p>{{/if}}
   {{#if linkedUsed}}<p class="wb-warning">Dodge already used against this attack · reset to correct.</p>{{/if}}
   <p class="wb-dialog-meta">AGL mod {{modifier}} · 1 reaction</p>
