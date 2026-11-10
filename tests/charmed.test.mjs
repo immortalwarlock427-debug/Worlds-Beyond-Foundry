@@ -409,7 +409,7 @@ test("area confirmation excludes the charmer by default, carries explicit overri
   const result = await confirmAreaTargets(f.hero, f.ability("save"), tokens, { shape: "circle", size: 10 });
   assert.equal(result.tokens.length, 2);
   assert.equal(result.ignoreCharm, true);
-  assert.match(f.calls.dialogs.at(-1).content, /name="t_source"> charmer · Charmed: excluded/);
+  assert.match(f.calls.dialogs.at(-1).content, /name="t_source"> charmer · Charmed: linked charmer/);
   assert.match(f.calls.dialogs.at(-1).content, /Ignore Charmed targeting/);
   await confirmAreaTargets(f.hero, f.ability("heal"), tokens, { shape: "circle", size: 10 });
   assert.match(f.calls.dialogs.at(-1).content, /name="t_source" checked/);

@@ -150,7 +150,7 @@ export function placeArea({ settings, origin, aim = null, color = 0xd6a85c, cast
   });
 }
 
-// Everyone caught in the area starts ticked; untick allies or anyone it shouldn't hit.
+// Everyone except a protected charmer starts ticked; targets remain editable for rulings.
 export async function confirmAreaTargets(actor, item, tokens, settings) {
   const plan = abilityStrikePlan(actor, item);
   const record = abilityRecord(item, actor.system);
@@ -164,7 +164,7 @@ export async function confirmAreaTargets(actor, item, tokens, settings) {
     ? tokens
         .map(token => {
           const blocked = charmBlocksTarget(actor, targetFromToken(token), { harmful: plan.check !== "heal" });
-          return `<label class="wb-check-toggle"><input type="checkbox" name="t_${token.id}"${blocked ? "" : " checked"}> ${escapeHTML(token.name)}${blocked ? " · Charmed: excluded" : ""}</label>`;
+          return `<label class="wb-check-toggle"><input type="checkbox" name="t_${token.id}"${blocked ? "" : " checked"}> ${escapeHTML(token.name)}${blocked ? " · Charmed: linked charmer" : ""}</label>`;
         })
         .join("")
     : "<p>No one is inside the area.</p>";
