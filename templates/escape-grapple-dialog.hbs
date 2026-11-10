@@ -6,7 +6,7 @@
   <label>{{#if linkedSource}}Manual STR modifier (uncheck source to override){{else}}Grappler's STR modifier{{/if}}<input type="number" name="grapplerStr" step="1" placeholder="Ask the GM if unknown" {{#if linkedSource}}value="{{linkedSource.modifier}}"{{else}}required{{/if}}></label>
   <label>Escape with<select name="stat"><option value="str" {{#unless dexterity}}selected{{/unless}}>Strength</option><option value="dex" {{#if dexterity}}selected{{/if}}>Dexterity</option></select></label>
   <p class="wb-condition-reasons" {{#unless conditionText}}hidden{{/unless}}>{{conditionText}}</p>
-  {{#if conditions.fear}}<label class="wb-check-toggle"><input type="checkbox" name="fearInSight" checked> Fear source in sight</label>{{/if}}
+  {{#if conditions.fear}}<label class="wb-check-toggle" data-tooltip="Defaults from linked sources and sight walls; change for darkness, senses or a ruling."><input type="checkbox" name="fearInSight" {{#if conditions.fearInSight}}checked{{/if}}> Fear source in sight</label>{{/if}}
   <fieldset class="wb-dice-choices"><legend>Dice</legend>
     <label><input type="radio" name="mode" value="normal" {{#if normal}}checked{{/if}}> Normal</label>
     <label><input type="radio" name="mode" value="advantage" {{#if advantage}}checked{{/if}}> Advantage</label>

@@ -8,6 +8,7 @@ import { collisionBlock } from "./positioning.mjs";
 import { confirmProvoking } from "./opportunity.mjs";
 import { wholeNumber } from "./number-display.mjs";
 import { actorConditionMovement, conditionMovementBlock } from "./condition-movement.mjs";
+import { frightenedMovementBlock } from "./frightened.mjs";
 import { requireActionCapacity } from "./condition-actions.mjs";
 import {
   SURGE_AP,
@@ -193,7 +194,7 @@ export function registerMovement() {
       // Form transformations find their own room (form-tokens.mjs) and cost no movement.
       if (operation.isPaste || operation.worldsBeyondFormLoadout) return;
       try {
-        const immobile = conditionMovementBlock(this, movement, operation);
+        const immobile = conditionMovementBlock(this, movement, operation) || frightenedMovementBlock(this, movement, operation);
         if (immobile) {
           ui.notifications.warn(immobile);
           return false;

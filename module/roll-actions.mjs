@@ -45,7 +45,7 @@ export async function promptStatCheck(actor, statKey) {
 export async function rollStatCheck(
   actor,
   statKey,
-  { kind = "check", mode, fearInSight = true, requiresSight = false, requiresHearing = false } = {}
+  { kind = "check", mode, fearInSight, requiresSight = false, requiresHearing = false } = {}
 ) {
   const stat = STATS.find(stat => stat.key === statKey);
   if (!stat || !["check", "save"].includes(kind)) throw new Error("Choose a stat check or saving throw.");

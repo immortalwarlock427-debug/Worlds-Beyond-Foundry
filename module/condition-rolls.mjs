@@ -1,5 +1,6 @@
 import { conditionRollPlan, suggestedMode, conditionRollText } from "./condition-rolls-core.mjs";
 import { exhaustionMode } from "./exhaustion.mjs";
+import { frightenedInSight } from "./frightened.mjs";
 export { suggestedMode, conditionRollText } from "./condition-rolls-core.mjs";
 
 const SCOPE = "worlds-beyond";
@@ -18,6 +19,8 @@ export function targetStatuses(target) {
 export function actorConditionRoll(actor, kind, options = {}) {
   return conditionRollPlan({
     ...options,
+    fearInSight:
+      options.fearInSight ?? ((kind === "check" || kind === "attack") && actor?.statuses?.has("fear") ? frightenedInSight(actor) : true),
     kind,
     source: conditionRollsAutomated() ? statusIds(actor) : [],
     target: conditionRollsAutomated() ? (options.target ?? []) : []
@@ -29,6 +32,7 @@ export function defaultCheckMode(actor, kind, { heavyArmor = false, ...options }
 }
 export const conditionControls = actor => ({
   fear: conditionRollsAutomated() && actor?.statuses?.has("fear"),
+  fearInSight: actor?.statuses?.has("fear") ? frightenedInSight(actor) : true,
   blind: conditionRollsAutomated() && actor?.statuses?.has("blind"),
   deaf: conditionRollsAutomated() && actor?.statuses?.has("deaf")
 });
@@ -44,13 +48,13 @@ export function bindConditionCheck(dialog, actor, statKey) {
       if (label) label.hidden = kind !== "check";
     }
     const plan = actorConditionRoll(actor, kind, {
-      fearInSight: form.querySelector('[name="fearInSight"]')?.checked !== false,
+      fearInSight: form.querySelector('[name="fearInSight"]')?.checked,
       requiresSight: !!form.querySelector('[name="requiresSight"]')?.checked,
       requiresHearing: !!form.querySelector('[name="requiresHearing"]')?.checked
     });
     const mode = defaultCheckMode(actor, kind, {
       heavyArmor: kind === "save" && statKey === "agl" && actor.system.equipment?.heavyDisadvantage,
-      fearInSight: form.querySelector('[name="fearInSight"]')?.checked !== false
+      fearInSight: form.querySelector('[name="fearInSight"]')?.checked
     });
     const radio = form.querySelector(`[name="mode"][value="${mode}"]`);
     if (radio) radio.checked = true;

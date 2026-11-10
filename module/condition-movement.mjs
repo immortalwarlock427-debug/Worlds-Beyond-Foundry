@@ -135,7 +135,7 @@ export async function resolveGrappleEscape(actor, context, roll, change) {
 
 export async function escapeGrapple(
   actor,
-  { stat = "str", grapplerStr, useSource = null, sourceUuid = "", mode, fearInSight = true, effectId = "" } = {}
+  { stat = "str", grapplerStr, useSource = null, sourceUuid = "", mode, fearInSight, effectId = "" } = {}
 ) {
   if (!actor?.isOwner || actor.type !== "character") return;
   return queuedAction(actor.uuid, () =>

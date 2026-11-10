@@ -109,6 +109,7 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
       conditionText: conditionRollText(conditions),
       conditionCritical: conditions.closeCritical,
       fear: conditionControls(actor).fear,
+      fearInSight: conditionControls(actor).fearInSight,
       normal: suggested === "normal",
       advantage: suggested === "advantage",
       disadvantage: suggested === "disadvantage",
@@ -211,7 +212,7 @@ export function bindAttackDialog(
       target: targetStatuses(target),
       delivery: mode,
       distance: conditionDistance,
-      fearInSight: field("fearInSight")?.checked !== false
+      fearInSight: field("fearInSight")?.checked
     });
     const conditionText = form.querySelector(".wb-condition-reasons");
     if (conditionText) {
@@ -274,7 +275,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           target: targetStatuses(target),
           delivery: mode,
           distance: attackDistance(actor, target),
-          fearInSight: options.fearInSight !== false
+          fearInSight: options.fearInSight
         });
         const defaultMode = suggestedMode(conditions, reasons);
         const rollMode = options.rollMode ?? defaultMode;
