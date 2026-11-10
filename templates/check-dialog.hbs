@@ -8,6 +8,14 @@
   <label><span>{{label}} roll</span>
     <select name="kind"><option value="check">Ability check</option><option value="save">Saving throw</option></select>
   </label>
+  {{#if interactions.length}}<details class="wb-disclosure" data-wb-interaction>
+    <summary>Interaction check</summary>
+    <label class="wb-check-toggle"><input type="checkbox" name="interaction"> This is a roll to interact with the chosen creature</label>
+    <label>Interacting with<select name="interactionTarget">
+      <option value="">Choose a creature</option>
+      {{#each interactions}}<option value="{{uuid}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+    </select></label>
+  </details>{{/if}}
   <fieldset class="wb-dice-choices">
     <legend>Dice</legend>
     <label><input type="radio" name="mode" value="normal" {{#unless disadvantage}}checked{{/unless}}> Normal</label>

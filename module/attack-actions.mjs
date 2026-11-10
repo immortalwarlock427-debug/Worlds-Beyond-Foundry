@@ -8,6 +8,7 @@ import { wholeDisplay } from "./number-display.mjs";
 import { requireWeaponReady } from "./loadout.mjs";
 import { inCombat, availableAp, payAp } from "./combat-support.mjs";
 import { requireActionCapacity } from "./condition-actions.mjs";
+import { requireCharmedTargets, charmOverrideAvailable } from "./charmed.mjs";
 import { strikeAutomation } from "./strike-settings.mjs";
 import { attackDistance, positioningSetting } from "./positioning.mjs";
 import { rangeStatus, rangeText } from "./positioning-core.mjs";
@@ -109,6 +110,7 @@ export async function promptAttack(actor, itemId, target = currentTarget(), { op
       conditionText: conditionRollText(conditions),
       conditionCritical: conditions.closeCritical,
       fear: conditionControls(actor).fear,
+      charmOverride: charmOverrideAvailable(actor),
       fearInSight: conditionControls(actor).fearInSight,
       normal: suggested === "normal",
       advantage: suggested === "advantage",
@@ -235,6 +237,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
   const messageMode = game.settings.get("core", "messageMode");
   return queuedAction(actor.uuid, () =>
     reversibleAction(async change => {
+      requireCharmedTargets(actor, target, { ignoreCharm: options.ignoreCharm === true });
       const mode = options.mode ?? "melee";
       requireWeaponReady(actor, weapon, options.grip);
       const offWeapon = options.hands ? actor.items.get(options.hands) : null;
@@ -343,6 +346,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
           );
       }
       const footer = [
+        options.ignoreCharm === true ? "Charmed targeting ignored (ruling)." : "",
         options.opportunity
           ? `Opportunity attack${options.opportunity === "enter" ? " (Bulwark)" : ""}${reactionSpent ? " · 1 reaction spent" : ""}.`
           : "",
@@ -371,6 +375,7 @@ export async function rollAttack(actor, weapon, options, target = currentTarget(
             [SYSTEM_ID]: {
               attack: {
                 actorUuid: actor.uuid,
+                ignoreCharm: options.ignoreCharm === true,
                 attackerName: actor.name,
                 target,
                 overwhelmingForce: scores(actor).str >= 28,
