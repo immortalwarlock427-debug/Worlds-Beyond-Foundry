@@ -68,6 +68,7 @@ import { registerConditionMovement, promptMobilityAction } from "./condition-mov
 import { registerPetrified } from "./petrified.mjs";
 import { registerUnconscious } from "./unconscious.mjs";
 import { promptConditionSource } from "./condition-sources.mjs";
+import { registerFrightened } from "./frightened.mjs";
 import { registerExhaustion, exhaustionAutomated, exhaustionContext, overexert } from "./exhaustion.mjs";
 import { registerVfx } from "./vfx.mjs";
 import { isTargetedAbility, useTargetedAbility } from "./area-targeting.mjs";
@@ -795,6 +796,7 @@ Hooks.once("init", () => {
   registerConditionMovement();
   registerPetrified();
   registerUnconscious();
+  registerFrightened();
   registerVfx();
   registerMovementRuler();
   registerMovement();

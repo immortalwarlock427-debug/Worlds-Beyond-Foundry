@@ -1,6 +1,6 @@
 <div class="wb-check-options">
   <p class="wb-condition-reasons" {{#unless conditionText}}hidden{{/unless}}>{{conditionText}}</p>
-  {{#if conditions.fear}}<label class="wb-check-toggle"><input type="checkbox" name="fearInSight" checked> Fear source in sight</label>{{/if}}
+  {{#if conditions.fear}}<label class="wb-check-toggle" data-tooltip="Defaults from linked sources and sight walls; change for darkness, senses or a ruling."><input type="checkbox" name="fearInSight" {{#if conditions.fearInSight}}checked{{/if}}> Fear source in sight</label>{{/if}}
   {{#if conditions.blind}}<label class="wb-check-toggle"><input type="checkbox" name="requiresSight"> This check requires sight (Blinded: fails)</label>{{/if}}
   {{#if conditions.deaf}}<label class="wb-check-toggle"><input type="checkbox" name="requiresHearing"> This check requires hearing (Deafened: fails)</label>{{/if}}
   {{#if exhaustion.checkDisadvantage}}<p class="wb-dialog-meta">Exhaustion: checks at disadvantage{{#if exhaustion.defenseDisadvantage}}; saves too{{/if}}. Dice remain editable.</p>{{/if}}

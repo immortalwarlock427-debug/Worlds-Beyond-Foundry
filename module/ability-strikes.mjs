@@ -76,7 +76,7 @@ export async function promptAbilityStrike(actor, itemId, target) {
       ? `<p class="wb-condition-reasons">${escapeHTML(conditionRollText(conditionPlan))}</p>` +
         `<label>Attack delivery<select name="delivery"><option value="ranged">Ranged</option><option value="melee">Melee</option></select></label>` +
         (conditionControls(actor).fear
-          ? '<label class="wb-check-toggle"><input type="checkbox" name="fearInSight" checked> Fear source in sight</label>'
+          ? `<label class="wb-check-toggle"><input type="checkbox" name="fearInSight"${conditionControls(actor).fearInSight ? " checked" : ""}> Fear source in sight</label>`
           : "") +
         (conditionPlan.closeCritical
           ? '<label class="wb-check-toggle"><input type="checkbox" name="conditionCritical" checked> Paralyzed within 5 ft: a hit is critical</label>'
@@ -96,7 +96,7 @@ export async function promptAbilityStrike(actor, itemId, target) {
           target: targetStatuses(target),
           delivery: form.querySelector('[name="delivery"]')?.value ?? "ranged",
           distance: attackDistance(actor, target),
-          fearInSight: form.querySelector('[name="fearInSight"]')?.checked !== false
+          fearInSight: form.querySelector('[name="fearInSight"]')?.checked
         });
         const text = form.querySelector(".wb-condition-reasons");
         if (text) text.textContent = conditionRollText(p);
@@ -116,7 +116,7 @@ export async function promptAbilityStrike(actor, itemId, target) {
   return rollAbilityStrike(actor, item, target, {
     rollMode: form.rollMode,
     delivery: form.delivery ?? "ranged",
-    fearInSight: form.fearInSight !== false,
+    fearInSight: form.fearInSight,
     conditionCritical: form.conditionCritical !== false,
     exhaustionPenalty: form.exhaustionPenalty !== false
   });
@@ -135,7 +135,7 @@ export async function rollAbilityStrike(
     use = null,
     exhaustionPenalty = true,
     delivery = "ranged",
-    fearInSight = true,
+    fearInSight,
     conditionCritical = true
   } = {}
 ) {
